@@ -1,0 +1,156 @@
+// The machine: a figure that answers one question in steps. One button per step, in order; only the next is live,
+// so nobody skips the part that matters. Manual (the default) waits for every press; Auto plays them all on a loop.
+// Each step moves the camera to its view and runs the model through its stretch of time, at a speed the badge states
+// (×4, ×1/20, a year a second). Readout chips stay "–" until a step earns them. One line under the figure says the
+// big idea. Built on the stage (stage.js), so hover, click-to-break-down, drag and labels work as in a book.
+//
+// figure: {
+//   no, title, question, bigIdea,
+//   intro: { cam, look?, lit?, fig? },                     the view before the first step
+//   STEPS: [{ label, hint, run, play, real?, cam, look?, lit?, fig?, sounds?: [{ at, word, where: state => V | null }] }],
+//     run: model seconds the step covers; play: seconds it takes on screen; real: real-world seconds the step stands
+//     for, when the model's clock isn't real time (a year of saving), for the speed badge
+//   buildWorld(E) → { update(state, look), labels }, lookKeys, state(clock, reduced),
+//   readout(state, step) → text for the corner, chips: [{ label, from (step number, 1-based), value: state → text }],
+//   PLATES?: { key: { text, facts?(state) } }               breakdowns, as in a book
+// }
+import { createStage, ease } from './stage.js';
+
+const $ = id => document.getElementById(id);
+const touch = matchMedia('(pointer: coarse)').matches;
+const MODE_KEY = 'atlas:machine-mode';
+const GAP = 0.7, FIRST = 0.9, END = 1.8;          // ?render tour: seconds before the first step, between steps, at the end
+
+// a speed as the badge says it: ×4, ×1/20, or "1 year a second" for clocks far from real time
+export function speedLabel(realSeconds, playSeconds) {
+  const k = realSeconds / playSeconds;
+  if (Math.abs(k - 1) < 0.05) return '';
+  const units = [['year', 365.25 * 86400], ['day', 86400], ['hour', 3600], ['minute', 60]];
+  if (k >= 600) { const [u, s] = units.find(([, s]) => k >= s * 0.95); const n = k / s; return `${n >= 9.5 ? Math.round(n) : +n.toFixed(1)} ${u}${Math.abs(n - 1) < 0.05 ? '' : 's'} a second`; }
+  return k >= 1 ? `×${k >= 9.5 ? Math.round(k) : +k.toFixed(1)}` : `×1/${1 / k >= 9.5 ? Math.round(1 / k) : +(1 / k).toFixed(1)}`;
+}
+
+export function startMachine(figure) {
+  const { STEPS } = figure, N = STEPS.length;
+  const PAGES = [{ fig: figure.title, ...figure.intro, look: figure.intro.look || {} }, ...STEPS.map(s => ({ fig: s.fig || s.label, ...s, look: s.look || {} }))];
+  const T0 = []; { let t = 0; for (const s of STEPS) { T0.push(t); t += s.run; } }
+  const TEND = T0[N - 1] + STEPS[N - 1].run;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
+  if (RENDER) document.documentElement.classList.add('render');
+
+  // ---------- where the machine is: done steps, and the step playing (k, 1-based) u seconds in ----------
+  // everything drawn is a function of this, so the reader's presses and a recorded tour draw the same frames
+  function poseOf(done, k, u) {
+    if (!k) return { s: done, clock: done ? T0[done - 1] + STEPS[done - 1].run : 0, step: done, playing: false };
+    const st = STEPS[k - 1], p = Math.min(u / st.play, 1);
+    return { s: k - 1 + ease(Math.min(u / Math.min(0.9, st.play), 1)), clock: T0[k - 1] + st.run * p, step: k, playing: p < 1, u };
+  }
+  // the ?render tour: Auto from the first press to the end, a pure function of t
+  const TOUR = []; { let t = FIRST; for (const s of STEPS) { TOUR.push(t); t += s.play + GAP; } }
+  const DURATION = TOUR[N - 1] + STEPS[N - 1].play + END;
+  function tourAt(t) {
+    let k = 0; while (k < N && t >= TOUR[k]) k++;
+    if (!k) return [0, 0, 0];
+    const u = t - TOUR[k - 1];
+    return u >= STEPS[k - 1].play ? [k, 0, 0] : [k - 1, k, u];
+  }
+
+  // ---------- page ----------
+  document.title = `${figure.title} · Atlas`;
+  $('figtitle').textContent = figure.title; $('figno').textContent = `Fig. ${figure.no}`;
+  $('question').textContent = figure.question; $('bigidea').innerHTML = `<b>The big idea:</b> ${figure.bigIdea}`;
+  $('steps').innerHTML = STEPS.map((s, i) => `<li><button type="button" class="step" data-k="${i + 1}"><span class="n">${i + 1}</span><span class="lab">${s.label}</span></button></li>`).join('');
+  $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
+  const stepB = [...document.querySelectorAll('#steps .step')], chipEls = [...document.querySelectorAll('#chips .chip .v')];
+
+  let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !reduced ? 'auto' : 'manual');
+  let done = 0, k = 0, u = 0, wait = 0;
+  const syncMode = () => document.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { mode = b.dataset.mode; localStorage.setItem(MODE_KEY, mode); syncMode(); if (mode === 'auto' && !k) wait = 0.4; });
+  syncMode();
+  function press(n) { if (k || n !== done + 1) return; k = n; u = 0; }
+  function startOver() { done = 0; k = 0; u = 0; wait = mode === 'auto' ? 0.6 : 0; S.select(null); }
+  $('steps').addEventListener('click', e => { const b = e.target.closest('.step'); if (!b) return; if (mode === 'auto') { mode = 'manual'; syncMode(); } press(+b.dataset.k); });
+  $('again').onclick = startOver;
+  addEventListener('keydown', e => {
+    if (e.target.closest?.('button, input, select, textarea, a')) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (done === N) startOver(); else press(done + 1); }
+    if (e.key === 'Escape') S.select(null);
+  });
+
+  // ---------- the figure ----------
+  const S = createStage($('gl'), $('labels'), { ...figure, PAGES }, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  S.hooks.onHover = key => { $('hint').textContent = key ? `${S.E.ASM[key].userData.title}: click to look closer` : hintFor(); };
+  S.hooks.onSelect = key => {
+    const pl = $('plate');
+    if (!key || !figure.PLATES?.[key]) { pl.hidden = true; return; }
+    const ud = S.E.ASM[key].userData;
+    pl.innerHTML = `<button type="button" class="close">Close</button><div class="kicker">Closer</div><h2>${ud.title}</h2><p class="sub">${ud.sub || ''}</p><p>${figure.PLATES[key].text}</p><table class="data" id="facts"></table>`;
+    pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
+  };
+  const hintFor = () => k ? STEPS[k - 1].hint : done < N ? STEPS[done].hint : 'That is the whole machine. Start over to watch it again.';
+
+  // sound words: a short handwritten word drawn on the action, for a moment
+  const sounds = STEPS.flatMap((st, i) => (st.sounds || []).map(sd => { const el = document.createElement('div'); el.className = 'lbl sound'; el.textContent = sd.word; $('labels').appendChild(el); return { ...sd, step: i + 1, el }; }));
+  function drawSounds(pose, state) {
+    for (const sd of sounds) {
+      const age = pose.step === sd.step && pose.playing ? pose.u - sd.at : -1;
+      const on = age >= 0 && age < (sd.dur ?? 0.7);
+      const p = on && sd.where(state);
+      if (!p) { sd.el.style.opacity = 0; continue; }
+      const r = $('gl').getBoundingClientRect(), [x, y, front] = S.E.toScreen(p, r.width, r.height);
+      sd.el.style.opacity = front ? 1 - Math.max(0, age - (sd.dur ?? 0.7) * 0.6) / ((sd.dur ?? 0.7) * 0.4) : 0;
+      sd.el.style.left = `${x}px`; sd.el.style.top = `${y - 14 - 10 * age}px`;
+    }
+  }
+
+  let lastDone = -1, lastK = -1;
+  function draw(now, dt, pose) {
+    const state = S.step({ now, dt, s: pose.s, litPage: Math.round(pose.s), running: pose.playing || mode === 'auto', clockAt: pose.clock });
+    $('readout').textContent = figure.readout(state, pose.step ? STEPS[pose.step - 1] : null);
+    (figure.chips || []).forEach((c, i) => { chipEls[i].textContent = pose.step >= c.from ? c.value(state) : '–'; chipEls[i].parentNode.classList.toggle('on', pose.step >= c.from); });
+    const st = pose.playing ? STEPS[pose.step - 1] : null, sp = st ? speedLabel(st.real ?? st.run, st.play) : '';
+    $('speed').textContent = sp; $('speed').hidden = !sp;
+    drawSounds(pose, state);
+    if (S.selected && $('facts') && figure.PLATES[S.selected].facts) $('facts').innerHTML = figure.PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
+    const curDone = pose.playing ? pose.step - 1 : pose.step, curK = pose.playing ? pose.step : 0;
+    if (curDone !== lastDone || curK !== lastK) {
+      lastDone = curDone; lastK = curK;
+      stepB.forEach((b, i) => {
+        const n = i + 1;
+        b.classList.toggle('done', n <= curDone); b.classList.toggle('running', n === curK);
+        b.classList.toggle('next', !curK && n === curDone + 1);
+        b.disabled = !!curK || n !== curDone + 1;
+        b.setAttribute('aria-current', n === curK ? 'step' : 'false');
+      });
+      $('again').classList.toggle('strong', curDone === N);
+      $('hint').textContent = curK ? STEPS[curK - 1].hint : curDone < N ? STEPS[curDone].hint : 'That is the whole machine. Start over to watch it again.';
+    }
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;
+    if (k) {
+      u += reduced ? STEPS[k - 1].play : dt;                 // reduced motion: a step lands at once
+      if (u >= STEPS[k - 1].play) { done = k; k = 0; u = 0; wait = done === N ? END : GAP; }
+    } else if (mode === 'auto') {
+      wait -= dt;
+      if (wait <= 0) { if (done === N) startOver(); else press(done + 1); }
+    }
+    draw(now, dt, poseOf(done, k, u));
+    if (!RENDER) requestAnimationFrame(frame);
+  }
+  if (mode === 'auto') wait = FIRST;
+  document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
+
+  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver,
+    get state() { return { done, k, u, mode }; }, get clock() { return S.clock; } };
+  if (RENDER) {
+    window.DURATION = DURATION;
+    // stills land mid-step: each step's tour stretch, the intro before the first press
+    window.__atlas.tour = { starts: [0, ...TOUR], dwells: [FIRST, ...STEPS.map(s => s.play + GAP)] };
+    window.seek = t => { t = Math.min(Math.max(t, 0), DURATION); const [d, kk, uu] = tourAt(t); draw(t * 1000, 1 / 60, poseOf(d, kk, uu)); return t; };
+  }
+}

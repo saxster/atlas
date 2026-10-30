@@ -10,7 +10,8 @@
 //   import { CHAPTER } from './atlas/physics/oscillations/chapter.js';
 //   Live.register('atlas_shm', (stage, params, api) => mountAtlas(stage, params, api, CHAPTER, { page: 8 }),
 //     { label: 'Turn the figure in 3D', three: true });
-// params (from :::live atlas_shm {"page": 8, "height": 420}) override the defaults given here.
+// params (from :::live atlas_shm {"page": 8, "height": 420}) override the defaults given here. defaults.readout(state)
+// gives the book's own words for the readout (one figure, two texts), built from the same model numbers.
 import { createStage } from '../engine/stage.js';
 import { readTheme } from '../engine/theme.js';
 
@@ -65,7 +66,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
     const state = S.step({ now: lastT * 1000, dt, s: page, litPage: page, running });
     const k = S.selected;
     say(k ? describe(k) + (chapter.PLATES[k].facts ? '<br>' + chapter.PLATES[k].facts(state).map(([a, b]) => `${a} ${b}`).join(' · ') : '')
-      : chapter.readout(state, P).replace(/\n/g, '<br>'));
+      : opts.readout ? opts.readout(state) : chapter.readout(state, P).replace(/\n/g, '<br>'));
   }
   // the book's frames; dt > 0 means it is playing
   api.loop((dt, t) => { lastT = t; if (dt > 0) hostAt = performance.now(); draw(dt, dt > 0); });
