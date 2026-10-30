@@ -9,6 +9,8 @@ import * as M from './model.js';
 // the lamps need a warm hue; cosine gets a clear blue of its own
 PALETTE.amber = ['#f6dc9a', '#e9bf5c', '#c49a3a'];
 PALETTE.blue = ['#a9c3e2', '#5b88c0', '#3f6896'];
+// the square on the radius: a quiet grey, so it shows on the white board
+PALETTE.slate = ['#e4e4e8', '#cfcfd5', '#b4b4bb'];
 
 export const RW = 1.5;                  // world units per radius
 export const CY = 2.6;                  // height of every circle's centre O
@@ -121,11 +123,10 @@ export function buildWorld(E) {
   const drop0 = dyn(root, 3, { color: '#6e6e74', dash: 0.06 });
   const foot0 = [bar(g0, { w: 0.05, pal: 'blue', name: 'cos θ' }), bar(g0, { w: 0.05, pal: 'red', name: 'sin θ' })];
   label('vec', '<i>P</i>', () => riding(W0, M.steady(T), 1.2));
-  label('tick', '1', () => W0(1.0, -0.1, ZL)); label('tick', '−1', () => W0(-1.02, -0.1, ZL));
-  label('tick', '1', () => W0(-0.06, 1.0, ZL)); label('tick', '−1', () => W0(-0.06, -1.0, ZL));
+  label('mark', '1', () => W0(1.1, -0.1, ZL)); label('mark', '−1', () => W0(-1.13, -0.1, ZL));
+  label('mark', '1', () => W0(-0.1, 1.1, ZL)); label('mark', '−1', () => W0(-0.13, -1.1, ZL));
   label('mark', '<i>O</i>', () => W0(-0.1, -0.12, ZL));
   label('mark', 'θ', () => { const a = (M.steady(T) % M.TAU) / 2; return W0(0.36 * Math.cos(a), 0.36 * Math.sin(a), ZL); });
-  label('board', 'radius 1', () => W0(-1.38, 1.3, ZL));
   label('vec blue', 'cos θ', () => ex(g0) > 0.3 ? W0(Math.cos(M.steady(T)) / 2, Math.sin(M.steady(T)) < 0 ? 0.13 : -0.13, ZL) : null);
   label('vec red', 'sin θ', () => ex(g0) > 0.3 ? W0(Math.cos(M.steady(T)) + (Math.cos(M.steady(T)) < 0 ? -0.24 : 0.24), Math.sin(M.steady(T)) / 2, ZL) : null);
 
@@ -143,9 +144,9 @@ export function buildWorld(E) {
     const m = []; for (const s of M.SPECIAL) m.push(...W1(SX + 0.04, s.sin, 0.05).toArray(), ...W1(SX + 0.13, s.sin, 0.05).toArray());
     lines(root, m, '#6e6e74');
     for (const s of M.SPECIAL) label('tick', s.sinText, () => W1(SX - 0.07, s.sin, ZL)); }
-  label('vec red', 'sin θ', () => { const s = Math.sin(M.steady(T)); return Math.abs(s) > 0.12 ? W1(SX + 0.33, s / 2, ZL) : null; });
+  label('vec red', 'sin θ', () => { const s = Math.sin(M.steady(T)); return Math.abs(s) > 0.12 ? W1(SX + 0.26, s / 2, ZL) : null; });
   label('vec', '<i>P</i>', () => riding(W1, M.steady(T), 1.19));
-  label('board', 'light', () => W1(LX - 0.06, 1.52, ZL));
+  label('axis', 'level light', () => W1(LX - 0.1, 1.28, ZL));
 
   // ---------- 2 · cosine is the sideways shadow: light from above, a screen below ----------
   const S2 = STATIONS.cosine, B2 = board(S2, { b: [-1.45, 1.45, -1.75, 1.5], axes: [-1.3, 1.3, -1.25, 1.2] }), W2 = B2.W, p2 = pointP(W2, root);
@@ -164,7 +165,7 @@ export function buildWorld(E) {
     M.SPECIAL.forEach((s, i) => label('mark', s.cosText, () => W2(s.cos, SY - (i % 2 ? 0.27 : 0.13), ZL))); }
   label('vec blue', 'cos θ', () => { const c = Math.cos(M.steady(T)); return Math.abs(c) > 0.2 ? W2(c / 2, SY + 0.28, ZL) : null; });
   label('vec', '<i>P</i>', () => riding(W2, M.steady(T), 1.19));
-  label('board', 'light', () => W2(1.47, LY, ZL));
+  label('board', 'light', () => W2(1.04, LY - 0.14, ZL));
 
   // ---------- 3 · sin² + cos² = 1: the right triangle under P, and a square on each side ----------
   const S3 = STATIONS.pythag, B3 = board(S3, { b: [-1.45, 1.75, -1.45, 1.75], axes: [-1.3, 1.6, -1.3, 1.6] }), W3 = B3.W, p3 = pointP(W3, root, { arc: false });
@@ -184,10 +185,10 @@ export function buildWorld(E) {
     };
     return m;
   };
-  const sqS = plate('red', 'sin²θ'), sqC = plate('blue', 'cos²θ'), sqH = plate('paper', '1²');
+  const sqS = plate('red', 'sin²θ'), sqC = plate('blue', 'cos²θ'), sqH = plate('slate', '1²');
   const ctr = { s: V(), c: V(), h: V() };
-  label('vec red', 'sin²θ', () => ctr.s.clone().setZ(ZL + 0.6 * Math.max(ctr.s.z, 0)));
-  label('vec blue', 'cos²θ', () => ctr.c.clone().setZ(ZL + 0.6 * Math.max(ctr.c.z, 0)));
+  label('vec', 'sin²θ', () => ctr.s.clone().setZ(ZL + 0.6 * Math.max(ctr.s.z, 0)));
+  label('vec', 'cos²θ', () => ctr.c.clone().setZ(ZL + 0.6 * Math.max(ctr.c.z, 0)));
   label('vec', '1²', () => ctr.h.clone().setZ(ZL + 0.6 * Math.max(ctr.h.z, 0)));
   label('mark', 'θ', () => W3(0.22, 0.07, ZL));
 
@@ -225,8 +226,8 @@ export function buildWorld(E) {
     lines(root, c, '#6e6e74'); }
   label('mark', 'one turn: 2π', () => W5(PEN + Math.PI, -1.42, ZL));
   label('tick', '1', () => W5(PEN - 0.05, 1, ZL)); label('tick', '−1', () => W5(PEN - 0.05, -1, ZL)); label('tick', '0', () => W5(PEN - 0.05, 0.06, ZL));
-  label('board', '<i>y</i> = sin <i>t</i>', () => W5(PEN + 4.85, 1.28, ZL));
-  label('axis', 'paper moves →', () => W5(PEN + SL, -1.62, ZL));
+  label('board', '<i>y</i> = sin <i>t</i>', () => W5(PEN + 0.1, 1.32, ZL));
+  label('axis', 'paper moves →', () => W5(PEN + SL - 0.05, 1.32, ZL));
   label('vec blue', 'slope = cos <i>t</i>', () => ex(g5) > 0.3 ? W5(PEN + 3.2, Math.cos(M.steady(T) - 3.2) > 0 ? -0.85 : 0.85, ZL) : null);
 
   // ---------- 6 · tangent: the ray OP carried on to the line x = 1 ----------
@@ -240,14 +241,14 @@ export function buildWorld(E) {
   label('tick', '1', () => W6(0.92, 1, ZL));
   label('vec red', 'tan θ', () => { const y = M.tan(M.tsway(T)); return Math.abs(y) > 0.25 ? W6(1.32, y / 2, ZL) : null; });
   label('vec', '<i>P</i>', () => { const a = M.tsway(T); return W6(Math.cos(a) - 0.2 * Math.sin(a) - 0.12, Math.sin(a) + 0.2 * Math.cos(a), ZL); });
-  label('board', '<i>x</i> = 1', () => W6(1.08, 2.45, ZL));
+  label('board', '<i>x</i> = 1', () => W6(1.08, -1.22, ZL));
 
   // ---------- 7 · beyond 90°: the signs of the shadows in each quadrant ----------
   const S7 = STATIONS.signs, B7 = board(S7, { b: [-1.6, 1.6, -1.55, 1.55], axes: [-1.35, 1.35, -1.35, 1.35] }), W7 = B7.W, p7 = pointP(W7, root);
   const g7 = asm('signs', root, { title: 'The two shadows, signed', sub: 'right and up are +, left and down are −' });
   const c7 = bar(g7, { pal: 'blue', name: 'cos θ' }), s7 = bar(g7, { pal: 'red', name: 'sin θ' });
   const ref7 = dot(root, 0.05, 'dark', 'Reference angle', 'mid'), refL7 = dyn(root, 3, { color: '#8a8a8f', dash: 0.06 });
-  for (const [x, y, t] of [[1, 1, 'sin +&nbsp; cos +'], [-1, 1, 'sin +&nbsp; cos −'], [-1, -1, 'sin −&nbsp; cos −'], [1, -1, 'sin −&nbsp; cos +']]) label('mark', t, () => W7(x * 1.12, y * 1.36, ZL));
+  for (const [x, y, t] of [[1, 1, 'sin +&nbsp; cos +'], [-1, 1, 'sin +&nbsp; cos −'], [-1, -1, 'sin −&nbsp; cos −'], [1, -1, 'sin −&nbsp; cos +']]) label('mark', t, () => W7(x * 1.18, y > 0 ? 1.12 : -1.36, ZL));
   label('vec blue', 'cos θ', () => { const a = M.steady(T); return Math.abs(Math.cos(a)) > 0.3 ? W7(Math.cos(a) / 2, Math.sin(a) > 0 ? -0.15 : 0.15, ZL) : null; });
   label('vec red', 'sin θ', () => { const a = M.steady(T); return Math.abs(Math.sin(a)) > 0.3 ? W7(Math.cos(a) + (Math.cos(a) > 0 ? 0.26 : -0.26), Math.sin(a) / 2, ZL) : null; });
   label('vec', '<i>P</i>', () => riding(W7, M.steady(T), 1.2));

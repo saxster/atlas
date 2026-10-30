@@ -11,23 +11,24 @@ const cam = (k, az, el, dist, dx = 0, dy = -0.15) => ({ target: at(k, dx, dy), a
 
 // the charts' ranges, shared with chapter.js so the live cursors land on them
 export const RANGE = {
-  swell: { x0: 1, x1: 1.5, y0: 100, y1: 110, h: 150 },
-  edge: { x0: 0, x1: 2, y0: 88, y1: 112, h: 150 },
+  swell: { x0: 1, x1: 1.5, y0: 98, y1: 112, h: 150 },
+  edge: { x0: 0, x1: 2, y0: 86, y1: 118, h: 150 },
 };
 const swellChart = chart({ ...RANGE.swell, xlabel: 'lone-pair strength q (a bond pair is 1)', ylabel: 'H–X–H angle (°)', cursors: ['q5'],
-  label: 'Bond angle against lone-pair strength in the toy model, for ammonia and water, with the measured angles marked',
+  label: 'Bond angle against lone-pair strength in the toy model, for ammonia and water, with the measured angles marked at the fitted strength',
   series: [
-    { pts: samples(1, 1.5, 25, q => M.squeeze('AX3E', q).bond), tag: [1.42, M.squeeze('AX3E', 1.42).bond, 'NH₃ (1 lone pair)'] },
-    { cls: 'trend', pts: samples(1, 1.5, 25, q => M.squeeze('AX2E2', q).bond), tag: [1.02, M.squeeze('AX2E2', 1.02).bond - 1.6, 'H₂O (2)'] },
+    { pts: samples(1, 1.5, 25, q => M.squeeze('AX3E', q).bond), tag: [1.5, M.squeeze('AX3E', 1.5).bond, 'NH₃', true] },
+    { cls: 'trend', pts: samples(1, 1.5, 25, q => M.squeeze('AX2E2', q).bond), tag: [1.5, M.squeeze('AX2E2', 1.5).bond - 2.2, 'H₂O', true] },
   ],
-  marks: [[M.Q_LONE, N.angle, `${f(N.angle)}° measured`], [M.Q_LONE, O.angle, `${f(O.angle)}° measured`]] });
+  marks: [[M.Q_LONE, N.angle, ''], [M.Q_LONE, O.angle, '']] });
 const edgeChart = chart({ ...RANGE.edge, xlabel: 'lone pairs on the central atom', ylabel: 'H–X–H angle (°)', cursors: [],
   label: 'Measured bond angle against number of lone pairs: period 2 hydrides fall slowly from 109.5 degrees, period 3 hydrides drop to about 92 degrees',
   series: [
     { pts: [[0, C.angle], [1, N.angle], [2, O.angle]], tag: [1.15, N.angle + 0.4, 'CH₄, NH₃, H₂O'] },
-    { cls: 'trend', pts: [[0, M.MOL.SiH4.angle], [1, P3.angle], [2, HS.angle]], tag: [0.55, 97, 'SiH₄, PH₃, H₂S'] },
+    { cls: 'trend', pts: [[0, M.MOL.SiH4.angle], [1, P3.angle], [2, HS.angle]], tag: [0.12, 94, 'SiH₄, PH₃, H₂S'] },
+    { cls: 'grid', pts: [[2, HS.angle], [2, HS.angle]], tag: [2, HS.angle - 4.6, `${f(HS.angle, 1)}°`, true] },
   ],
-  marks: [[1, P3.angle, `${f(P3.angle, 1)}°`], [2, HS.angle, `${f(HS.angle, 1)}°`]] });
+  marks: [[1, P3.angle, `${f(P3.angle, 1)}°`], [2, HS.angle, '']] });
 
 export const PAGES = [
   {
@@ -41,7 +42,7 @@ export const PAGES = [
       </table>
       <p>A double or triple bond counts as one domain: its electrons all lie between the same two atoms. This chapter follows four domains, the commonest case, through methane, ammonia and water.</p>
       <p class="hintline">The lobes are electron pairs. Click a set to pull its pairs apart.</p>`,
-    cam: cam('domains', -8, 12, 15.5), lit: 'domains4', scene: 'domains', look: {}, parts: ['domains2', 'domains3', 'domains4'],
+    cam: cam('domains', -8, 12, 22.5), lit: 'domains4', scene: 'domains', look: {}, parts: ['domains2', 'domains3', 'domains4'],
     fig: 'Two, three and four electron pairs',
     alt: 'Two, three and four lobes round a central atom: a line, a flat triangle and a tetrahedron.',
   },
@@ -49,8 +50,8 @@ export const PAGES = [
     kicker: '1.1', title: 'The tetrahedral angle', sub: 'four corners of a cube',
     body: `
       <p class="lede">Four domains as far apart as possible point to the corners of a regular <b>tetrahedron</b>. The angle between any two is the same, and it can be found exactly.</p>
-      <p>Take alternate corners of a cube centred on the atom: (1, 1, 1), (−1, −1, 1), (1, −1, −1) and (−1, 1, −1). Every pair is related the same way. For the two in front,</p>
-      <div class="eq">cos θ = <b>a</b>·<b>b</b> / |<b>a</b>||<b>b</b>| = (−1 − 1 + 1)/(√3·√3) = −1/3</div>
+      <p>Take alternate corners of a cube centred on the atom: (1, 1, 1), (−1, −1, 1), (1, −1, −1) and (−1, 1, −1). Every pair is related the same way. For the two at the top, (1, 1, 1) and (−1, 1, −1),</p>
+      <div class="eq">cos θ = <b>a</b>·<b>b</b> / |<b>a</b>||<b>b</b>| = (−1 + 1 − 1)/(√3·√3) = −1/3</div>
       <div class="eq">θ = arccos(−1/3) = ${f(M.TET_DEG, 4)}°</div>
       <p>No other way of placing four points on a sphere keeps the closest two further apart. A flat square, the obvious guess on paper, puts neighbours only 90° apart; going into three dimensions buys ${f(M.TET_DEG - 90, 1)}° more.</p>
       <p class="hintline">Click the tetrahedron to pull its corners out along their vectors.</p>`,
@@ -59,7 +60,7 @@ export const PAGES = [
     alt: 'A wire cube; four alternate corners joined to its centre, with the angle between two of them marked.',
   },
   {
-    kicker: '1.2', title: 'Methane, CH₄', sub: 'four bonds, no lone pairs',
+    kicker: '1.2', title: 'Methane', sub: 'CH<sub>4</sub>: four bonds, no lone pairs',
     body: `
       <p class="lede">Carbon has four valence electrons; each hydrogen brings one. That makes four shared pairs, four domains, and nothing else on the carbon.</p>
       <p>All four domains are alike, so nothing distorts the tetrahedron: every H–C–H angle is ${f(M.TET_DEG, 1)}°. The shape is <b>tetrahedral</b>.</p>
@@ -76,7 +77,7 @@ export const PAGES = [
     alt: 'A carbon atom with four hydrogen atoms at the corners of a tetrahedron, one H–C–H angle marked 109.5 degrees.',
   },
   {
-    kicker: '1.3', title: 'Ammonia, NH₃', sub: 'three bonds and a lone pair',
+    kicker: '1.3', title: 'Ammonia', sub: 'NH<sub>3</sub>: three bonds and a lone pair',
     body: `
       <p class="lede">Nitrogen has five valence electrons. Three pair up with hydrogen; the other two stay on the nitrogen as a <b>lone pair</b>. Still four domains, still roughly tetrahedral.</p>
       <p>But the lone pair repels more strongly than a bond pair, so it pushes the three N–H bonds closer together: <b>lone pair–bond pair &gt; bond pair–bond pair</b>. The angle closes from ${f(M.TET_DEG, 1)}° to about 107°; measured, ${f(N.angle, 2)}°.</p>
@@ -93,7 +94,7 @@ export const PAGES = [
     alt: 'A nitrogen atom with three hydrogen atoms below it and a translucent lone-pair lobe above, one H–N–H angle marked 106.7 degrees.',
   },
   {
-    kicker: '1.4', title: 'Water, H₂O', sub: 'two bonds and two lone pairs',
+    kicker: '1.4', title: 'Water', sub: 'H<sub>2</sub>O: two bonds and two lone pairs',
     body: `
       <p class="lede">Oxygen has six valence electrons: two bond pairs and two lone pairs. Four domains again, and now two of them are lone.</p>
       <p>The repulsions rank <b>lone–lone &gt; lone–bond &gt; bond–bond</b>, so with two lone pairs the H–O–H angle closes further, to about 104.5°; measured, ${f(O.angle, 2)}°. The atoms make a <b>bent</b> (V-shaped) molecule, not a straight line.</p>
@@ -118,6 +119,7 @@ export const PAGES = [
         <tr><td>H₂O (predicted)</td><td>${f(M.PREDICT.H2O.bond, 2)}°</td><td>${f(O.angle, 2)}°</td></tr>
       </table>
       <div class="charts">${swellChart}</div>
+      <p class="hintline">Solid: NH₃. Dashed: H₂O. Dots: the measured angles, at the fitted q. The live dot follows the figure.</p>
       <p>One fitted number gets water within ${f(Math.abs(M.PREDICT.H2O.off), 2)}°. That supports the picture; it does not prove it. The real reason lies in quantum mechanics, and page 1.7 shows a case the toy gets badly wrong.</p>
       <p class="hintline">The lone pair grows from a bond pair's strength to ${f(M.Q_LONE, 2)} and back. Click it.</p>`,
     cam: cam('swell', -14, 12, 8.4, 0, 0), lit: 'swell', scene: 'swell', look: {},
@@ -135,7 +137,7 @@ export const PAGES = [
       <p>The bonds shorten from C–H to O–H: across the period the nuclear charge grows and pulls the shared pair in. The angles fall in the order VSEPR predicts, CH₄ &gt; NH₃ &gt; H₂O.</p>
       <p>Lone pairs do not show up in a structure: only the nuclei are located. They are drawn on the other pages as a reminder of what pushes the atoms where they are.</p>
       <p class="hintline">Data: NIST CCCBDB, experimental geometries. Click a molecule.</p>`,
-    cam: cam('real', -10, 12, 15.5, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
+    cam: cam('real', -10, 12, 25, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
     fig: 'Methane, ammonia and water as measured',
     alt: 'Methane, ammonia and water side by side at their measured bond lengths and angles, without lone pairs.',
   },
@@ -150,7 +152,7 @@ export const PAGES = [
       </table>
       <p>VSEPR gets the direction right and the size wrong. Sulfur and phosphorus are larger, their bonds longer, so the bond pairs crowd each other far less, and the bonds are made mostly from the central atom's p orbitals, which lie at 90°. Explaining that takes the quantum theory of bonding, not a counting rule.</p>
       <p class="hintline">Grey outlines: where the toy model would put sulfur's hydrogens.</p>`,
-    cam: cam('edge', -10, 12, 12, 0, -0.1), lit: 'h2s', scene: 'edge', look: {}, parts: ['edge_h2o', 'h2s'],
+    cam: cam('edge', -10, 12, 19, 0, -0.1), lit: 'h2s', scene: 'edge', look: {}, parts: ['edge_h2o', 'h2s'],
     fig: 'Water and hydrogen sulfide',
     alt: 'Water and hydrogen sulfide side by side with their measured angles, 104.5 and 92.1 degrees; ghost outlines show where VSEPR would put sulfur’s hydrogens.',
   },

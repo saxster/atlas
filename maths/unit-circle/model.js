@@ -54,10 +54,10 @@ export const steady = t => W * t;                 // P going round at a steady r
 export const PY = { lo: 20 * DEG, hi: 70 * DEG, T: 10 };
 export const sway = t => (PY.lo + PY.hi) / 2 + (PY.hi - PY.lo) / 2 * Math.sin(TAU * t / PY.T);
 // radians: the arc grows from 0 to a full turn and back, θ = π(1 − cos(2πt/T)), so it never jumps
-export const RADT = 24;
+export const RADT = 36;
 export const unwind = t => Math.PI * (1 - Math.cos(TAU * t / RADT));
 // tangent: P sways between −45° and 68°, short of 90°, where tan θ runs off to infinity
-export const TG = { lo: -45 * DEG, hi: 68 * DEG, T: 12 };
+export const TG = { lo: -45 * DEG, hi: 68 * DEG, T: 16 };
 export const tsway = t => (TG.lo + TG.hi) / 2 + (TG.hi - TG.lo) / 2 * Math.sin(TAU * t / TG.T);
 
 // ---------- the sine wave: P's height drawn on a strip that slides sideways ----------

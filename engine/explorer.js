@@ -4,7 +4,7 @@
 // take a seed: the same seed gives the same run, which is how checks.mjs can test them exactly.
 //
 // figure: {
-//   no, title, question, bigIdea, PAGES: [{ cam, look?, lit?, fig }] (the view; one page is enough),
+//   no, title, question, bigIdea, PAGES: [{ cam, look?, lit?, fig }] or params → that list (the view; one page is enough),
 //   params: { … defaults }, controls: [{ key, label, min, max, step, fmt?(v), rebuild? }],
 //     rebuild: the world's shape depends on it (rows of pegs), so the figure is rebuilt when it changes
 //   predict?: { q, choices: [text], answer(params) → index, why(params) → html },
@@ -43,7 +43,7 @@ export function startExplorer(figure) {
       const b = e.target.closest('[data-c]'); if (!b || predicted) return;
       guess = +b.dataset.c; predicted = true; b.classList.add('picked');
       $('predict').querySelectorAll('[data-c]').forEach(x => x.disabled = true);
-      $('run').disabled = false; $('run').focus();
+      $('run').disabled = false; $('controls').querySelectorAll('input').forEach(x => x.disabled = false); $('run').focus();
     });
   } else $('predict').hidden = true;
   function reveal() {
@@ -64,7 +64,9 @@ export function startExplorer(figure) {
     if (c.rebuild) build();
     reset();
   });
+  // the prediction is about the board as it first stands: the sliders wait until it is made
   $('run').textContent = figure.run.label; $('run').disabled = !predicted;
+  if (!predicted) $('controls').querySelectorAll('input').forEach(x => x.disabled = true);
   let clock = 0, running = false;
   const duration = () => figure.run.duration(params);
   function reset() { clock = 0; running = false; ran = false; $('run').textContent = figure.run.label; }
@@ -73,7 +75,8 @@ export function startExplorer(figure) {
 
   // ---------- the figure ----------
   let S = null;
-  const fig = () => ({ ...figure, PAGES: figure.PAGES.map(p => ({ look: {}, ...p })), buildWorld: E => figure.buildWorld(E, params), state: (c, r) => figure.state(c, r, params) });
+  // PAGES may depend on the settings (a taller board needs the camera further back): a function of params, or a list
+  const fig = () => ({ ...figure, PAGES: (typeof figure.PAGES === 'function' ? figure.PAGES(params) : figure.PAGES).map(p => ({ look: {}, ...p })), buildWorld: E => figure.buildWorld(E, params), state: (c, r) => figure.state(c, r, params) });
   function build() {
     if (S) {
       S.destroy();

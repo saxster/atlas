@@ -12,7 +12,7 @@ PALETTE.lobe = ['#f7f5fc', '#e8e4f3', '#cfc9e0'];
 
 export const S = 1.25;                     // world units per Å
 export const STATIONS = { domains: 0, tetra: 11, ch4: 21, nh3: 31, h2o: 41, swell: 51, real: 63, edge: 78 };
-export const SPACING = { domains: 3.1, real: 3.0, edge: 1.85 };
+export const SPACING = { domains: 2.9, real: 3.0, edge: 2.1 };
 const RAD = { H: 0.17, C: 0.30, N: 0.28, O: 0.27, S: 0.36 };          // drawn radii, world units (not atomic sizes)
 const PAL = { H: 'paper', C: 'ink', N: 'blue', O: 'red', S: 'sulfur' };
 const ELEMENT = { H: 'Hydrogen atoms', C: 'Carbon atom', N: 'Nitrogen atom', O: 'Oxygen atom', S: 'Sulfur atom' };
@@ -21,14 +21,18 @@ const R_ARC = 0.52, R_LAB = 0.9;           // angle arcs, and where their number
 const EX = 0.5;                            // how far a breakdown pulls each pair out along its own direction
 const ARC = '#5a5a60', FAINT = '#b9b9be';
 const v3 = a => V(a[0], a[1], a[2]);
+const cap = s => s[0].toUpperCase() + s.slice(1);
 
 // A lobe of electron density, pointing along +y from the nucleus: widest at u = 0.5^(1/k) of its length
 // (k < 1: bunched near the nucleus, as a lone pair; k > 1: further out, as a pair shared with a second nucleus).
-function lobeGeo(L, W, k) {
+function lobeGeo(L, W, k, y0 = 0) {
   const pts = [];
-  for (let i = 0; i <= 28; i++) { const u = i / 28; pts.push(new THREE.Vector2(W * Math.pow(Math.sin(Math.PI * Math.pow(u, k)), 0.62), L * u)); }
+  for (let i = 0; i <= 28; i++) { const u = i / 28; pts.push(new THREE.Vector2(W * Math.pow(Math.sin(Math.PI * Math.pow(u, k)), 0.62), y0 + L * u)); }
   return new THREE.LatheGeometry(pts, 36);
 }
+// formulas in labels: CH₄ → CH<sub>4</sub>, since the serif label face draws ₄ as an old-style 4
+const SUBS = '₀₁₂₃₄₅₆₇₈₉';
+export const chem = s => s.replace(/[₀-₉]+/g, m => `<sub>${[...m].map(c => SUBS.indexOf(c)).join('')}</sub>`);
 
 export function buildWorld(E) {
   const { scene, asm, camera } = E;
@@ -63,7 +67,7 @@ export function buildWorld(E) {
     m.renderOrder = 2;
     return m;
   };
-  const LONE = lobeGeo(0.95, 0.40, 0.8), PAIR = lobeGeo(1.05, 0.30, 1.25);
+  const LONE = lobeGeo(0.95, 0.40, 0.8, 0.16), PAIR = lobeGeo(1.05, 0.30, 1.25, 0.08);
   // an angle arc between directions a and b, radius R_ARC, in parent's frame; returns its midpoint direction
   const arcPts = (a, b, R = R_ARC, n = 24) => {
     const A = v3(a).normalize(), B = v3(b).normalize(), w = A.angleTo(B), c = [];
@@ -83,6 +87,8 @@ export function buildWorld(E) {
     return { spin, H, B, L, at: p => spin.localToWorld(p.clone()) };
   }
   const spins = [];
+  // the two bonds whose angle is labelled: the pair facing the reader (ring azimuths 30° and 150°, see model.domains)
+  const front = (k, d) => M.kindOf(k) === 'AX4' ? [d.bonds[1], d.bonds[2]] : [d.bonds[0], d.bonds[1]];
   const caption = (html, at) => label('mark', html, at);
 
   // ---------- 0 · electron pairs, as far apart as they can get: 2, 3 and 4 ----------
@@ -114,28 +120,28 @@ export function buildWorld(E) {
     ball(tSpin, 'H', M.scale(k, CUBE), { r: 0.1, name: 'Corners', ex: M.scale(u, EX) });
     stick(tSpin, u, l, { r: 0.03, pal: 'ink', name: 'Vectors', ex: M.scale(u, EX) });
   }
-  arc(tSpin, CORNERS[0], CORNERS[1]);
-  { const m = mid(CORNERS[0], CORNERS[1]);
+  arc(tSpin, CORNERS[0], CORNERS[3]);
+  { const m = mid(CORNERS[0], CORNERS[3]);
     label('board', `${M.TET_DEG.toFixed(2)}°`, () => toCam(tSpin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.3)); }
   label('tick', '(1, 1, 1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[0], CUBE * 1.12))), 0.3).add(V(0.15, 0.1, 0)));
-  label('tick', '(−1, −1, 1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[1], CUBE * 1.12))), 0.3));
+  label('tick', '(−1, 1, −1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[3], CUBE * 1.12))), 0.3));
 
   // ---------- 2–4 · methane, ammonia, water at their measured geometry ----------
   const one = (key, k, title, sub) => {
     const m = M.MOL[k], g = asm(key, root, { title, sub });
     const d = M.domains(M.kindOf(k), m.angle, M.squeeze(M.kindOf(k)).lone);
     const mol = molecule(g, STATIONS[key], m.centre, m.r, d); spins.push(mol.spin);
-    const [a, b] = M.kindOf(k) === 'AX2E2' ? d.bonds : [d.bonds[1], d.bonds[2]];
+    const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
     label('board', `${m.angle.toFixed(1)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    caption(`${m.formula} · ${m.shape}`, () => V(STATIONS[key], -1.42, 0));
-    if (d.lone.length) label('mark', d.lone.length > 1 ? 'lone pairs' : 'lone pair', () => toCam(mol.at(v3(d.lone[0]).multiplyScalar(1.15).add(V(0.5, 0.05, 0))), 0.2));
+    caption(`${chem(m.formula)} · ${m.shape}`, () => V(STATIONS[key], -1.42, 0));
+    if (d.lone.length) label('mark', d.lone.length > 1 ? 'lone pairs' : 'lone pair', () => toCam(mol.at(v3(d.lone[0]).multiplyScalar(0.8).add(V(0.85, 0.1, 0))), 0.2));
     return { g, mol, d };
   };
-  const ch4 = one('ch4', 'CH4', 'Methane, CH₄', 'four bonds, no lone pairs');
-  const nh3 = one('nh3', 'NH3', 'Ammonia, NH₃', 'three bonds and one lone pair');
-  const h2o = one('h2o', 'H2O', 'Water, H₂O', 'two bonds and two lone pairs');
+  const ch4 = one('ch4', 'CH4', 'Methane', 'four bonds, no lone pairs');
+  const nh3 = one('nh3', 'NH3', 'Ammonia', 'three bonds and one lone pair');
+  const h2o = one('h2o', 'H2O', 'Water', 'two bonds and two lone pairs');
 
   // ---------- 5 · why a lone pair pushes harder: it swells from a bond pair's size to its own ----------
   const X5 = STATIONS.swell, m5 = M.MOL.NH3;
@@ -149,8 +155,8 @@ export function buildWorld(E) {
   const arc5 = lines(s5, new Array(24 * 6).fill(0), ARC); arc5.geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
   let ang5 = M.TET_DEG, mid5 = V(0, -1, 0);
   label('board', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_LAB)), 0.45), () => `${ang5.toFixed(1)}°`);
-  label('mark', 'lone pair', () => toCam(s5.localToWorld(V(0.55, 1.12, 0)), 0.2));
-  caption('NH₃ · the lone pair grows', () => V(X5, -1.42, 0));
+  label('mark', 'lone pair', () => toCam(s5.localToWorld(V(0.85, 0.85, 0)), 0.2));
+  caption(`${chem('NH₃')} · the lone pair grows`, () => V(X5, -1.42, 0));
   function setSwell(q) {
     const u = (q - 1) / (M.Q_LONE - 1), sq = M.squeeze('AX3E', q), d = M.domains('AX3E', sq.bond);
     ang5 = sq.bond;
@@ -163,26 +169,26 @@ export function buildWorld(E) {
     // q = 1: the lone pair is the size of a bond pair; q = Q_LONE: shorter, and much wider near the nucleus
     lone5.scale.set(1 + 0.75 * u, 1 - 0.3 * u, 1 + 0.75 * u);
     lone5.userData.ex.set(0, EX, 0);
-    const a = arc5.geometry.attributes.position; arcPts(d.bonds[1], d.bonds[2]).forEach((v, i) => { a.array[i] = v; });
+    const a = arc5.geometry.attributes.position; arcPts(d.bonds[0], d.bonds[1]).forEach((v, i) => { a.array[i] = v; });
     a.needsUpdate = true; arc5.geometry.computeBoundingSphere();
-    mid5 = mid(d.bonds[1], d.bonds[2]);
+    mid5 = mid(d.bonds[0], d.bonds[1]);
   }
   setSwell(1);
 
   // ---------- 6 · the real molecules: measured lengths and angles, atoms only ----------
   const X6 = STATIONS.real;
   const real = M.MAIN.map((k, i) => {
-    const m = M.MOL[k], key = `real_${k}`, g = asm(key, root, { title: `${m.formula}, as measured`, sub: `${m.centre}–H ${m.r.toFixed(3)} Å, ${m.angle.toFixed(2)}°` });
+    const m = M.MOL[k], key = `real_${k}`, g = asm(key, root, { title: `${cap(m.name)}, as measured`, sub: `${m.centre}–H ${m.r.toFixed(3)} Å, ${m.angle.toFixed(2)}°` });
     const x = X6 + (i - 1) * SPACING.real, d = M.domains(M.kindOf(k), m.angle);
     const mol = molecule(g, x, m.centre, m.r, d, { lone: false }); spins.push(mol.spin);
-    const [a, b] = M.kindOf(k) === 'AX2E2' ? d.bonds : [d.bonds[1], d.bonds[2]];
+    const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
     label('board', `${m.angle.toFixed(2)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
     // the length, beside the bond on the left: half way along it, pushed out sideways
     const bl = v3(a), side = V(-bl.y, bl.x, 0).normalize().multiplyScalar(i === 0 ? -0.22 : 0.22);
     label('tick', `${m.r.toFixed(3)} Å`, () => toCam(mol.at(bl.clone().multiplyScalar(m.r * S * 0.55).add(side).add(V(-0.08, 0, 0))), 0.4));
-    caption(m.formula, () => V(x, -1.42, 0));
+    caption(chem(m.formula), () => V(x, -1.42, 0));
     return { g, mol };
   });
 
@@ -190,13 +196,13 @@ export function buildWorld(E) {
   const X7 = STATIONS.edge, edge = {};
   for (const [k, sgn] of [['H2O', -1], ['H2S', 1]]) {
     const m = M.MOL[k], key = k === 'H2O' ? 'edge_h2o' : 'h2s', p = M.PREDICT[k];
-    const g = asm(key, root, { title: `${m.formula}, ${m.name}`, sub: `measured ${m.angle.toFixed(1)}°; the toy VSEPR model says ${p.bond.toFixed(1)}°` });
+    const g = asm(key, root, { title: cap(m.name), sub: `measured ${m.angle.toFixed(1)}°; the toy VSEPR model says ${p.bond.toFixed(1)}°` });
     const x = X7 + sgn * SPACING.edge, d = M.domains('AX2E2', m.angle, p.lone);
     const mol = molecule(g, x, m.centre, m.r, d); spins.push(mol.spin);
     arc(mol.spin, d.bonds[0], d.bonds[1]);
     const mm = mid(d.bonds[0], d.bonds[1]);
     label('board', `${m.angle.toFixed(1)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB + 0.12)), 0.45));
-    caption(`${m.formula} · measured`, () => V(x, -1.42, 0));
+    caption(`${chem(m.formula)} · measured`, () => V(x, -1.42, 0));
     edge[k] = { g, mol, d };
   }
   // where the rule of thumb would put sulfur's hydrogens: ghost outlines at the model's angle
@@ -208,8 +214,9 @@ export function buildWorld(E) {
       for (let s = 0.22; s < 0.92; s += 0.1) c.push(...M.scale(u, rr * s), ...M.scale(u, rr * (s + 0.05)));
     }
     lines(ghost, c, '#a8a8ae');
-    const lm = v3(gd.bonds[1]);
-    label('tick', `VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr + 0.3).add(V(0.95, -0.05, 0))), 0.3)); }
+    // named beside the left-hand ghost, in the open space between the two molecules
+    const lm = v3(gd.bonds[0]);
+    label('tick', `VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr).add(V(-0.3, 0.05, 0))), 0.3)); }
 
   // ---------- per frame ----------
   function update({ t, q }) {
