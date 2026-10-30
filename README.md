@@ -1,55 +1,69 @@
 # Atlas
 
-One figure engine and the subject atlases built on it, seeded from Atlas of Physics (below). Physics lives in
-`physics/` (`physics/subject.js` lists its chapters); new subjects are new top-level directories. See CLAUDE.md.
+One figure engine and the subject atlases built on it. Each idea is one working figure: a pure model you can
+check, drawn in 3D like a textbook diagram (paper solids, ink edges, one lit thing). The same figures embed in the
+Kym story-first textbooks, record as videos, and are listed in a cross-subject concept index.
 
-## Atlas of Physics
+Seeded from [Atlas of Physics](https://github.com/nathanliow/atlas-of-physics) by Nathan Liow (MIT), whose fifteen
+AP Physics chapters live on in `physics/`.
 
-An interactive textbook. Each chapter is one simple motion drawn in 3D like a textbook diagram
-(paper solids, ink edges, one lit thing). No apparatus: only the
-moving object, its vectors, axes and graphs. Scroll turns the pages and moves the camera; hover
-lights a thing; click breaks it down (a vector into components, a graph into slope and area).
+## What is here
+
+| Subject | Figures | Grammar |
+|---|---|---|
+| `physics/` | 15 chapters, AP Physics 1 and C | book |
+| `maths/` | the unit circle: sine and cosine as shadows | book |
+| `chemistry/` | the shapes of molecules (VSEPR), with the measured molecules in 3Dmol | book |
+| `statistics/` | the Galton board: 500 balls make a bell | explorer |
+| `economics/` | ₹1,000 a month at 8 %: compound interest | machine |
+| `concepts/` | 28 ideas in 5 threads that cross subjects (exponentials, circles and waves, the bell curve …) | index |
+
+Three ways for a reader to work a figure:
+
+- **Book** (`engine/book.js`). The reader scrolls to turn the page and the camera moves. Hovering lights a part;
+  clicking it breaks it down. Each page carries practice questions.
+- **Machine** (`engine/machine.js`). Numbered steps, and only the next one can be pressed. Manual or Auto, and
+  the choice is remembered. A speed badge shows how fast the figure runs against real time, and readouts fill in
+  as each step earns them.
+- **Explorer** (`engine/explorer.js`). The reader predicts first, then runs the experiment with sliders and a
+  seeded run. The model works out the answer and shows it after the run.
+
+All three share `engine/stage.js`: the world, the camera, hover and click, labels, and a deterministic clock. Under
+`?render`, `window.seek(t)` draws any moment, the same every time. Stills, tests, videos and reduced motion all
+come from that.
+
+## Run it
 
 ```
-index.html              contents (chapter cards)
-atlas.css               shared tokens (Anatomy light theme)
-engine/
-  render.js             renderer: paper shading + normal/depth ink edges, picking, explode, camera
-  parts.js              paper materials, solid arrows, line helpers
-kinematics/
-  model.js              the physics (a ball thrown up; a projectile): every motion and number
-  checks.mjs            invariants of the model — node <chapter>/checks.mjs (every chapter has one)
-  world.js              the figure: ball, axis, arrows, strobe, graphs, projectile and shadow
-  pages.js              chapter text (after the AP Physics graphic organizers), cameras, breakdowns
-  practice.js           AP-style questions per page ({ pageIndex: [{ q, choices, answer, why } | { q, solution }] })
-  main.js               scroll → page turn + camera; hover / click / Esc
-newton/ circular/ energy/ momentum/ oscillations/ rotation/ fluids/
-                        AP Physics 1 + Physics C: Mechanics, chapters 2–8 (Physics C pages tagged in their kicker)
-electrostatics/ gauss/ potential/ capacitors/ circuits/ magnetism/ induction/
-                        AP Physics C E&M, chapters 9–15
-                        every chapter: model, checks, world, pages, main, index.html
-engine/book.js          the shared book: scroll → page turn + camera, hover / click / tap, labels,
-                        practice, deep links (<chapter>/#<page index>), pager on small screens
-engine/xrefs.js         "Compare" analogies between chapters, shown on both pages
-equations/              the AP equation sheets, each equation linked to the pages that show it
-tools/shoot.mjs         headless screenshots of every page and a few opened parts
-tools/uitest.mjs        one page by deep link: practice, compare links, overflow (any viewport, touch)
-tools/taptest.mjs       phone viewport: a tap opens a breakdown
-tools/perf.mjs          per-chapter load time, fps, script and layout cost
-tools/allpages.mjs      every page by deep link: practice present, no console errors
-tools/dumptext.mjs      the rendered text of every page of a chapter, for proofreading
-tools/prof.mjs          CPU profile of one chapter; tools/loadprof.mjs the same for page load
-tools/picktest.mjs      hover near a moving part, then click: does it open?
-tools/scrolltest.mjs    scroll an overflowing left page to the bottom and screenshot it
+python3 -m http.server 8137        # any static server; three.js loads from jsDelivr
+open http://localhost:8137/
 ```
 
-Tools need `npm install` (puppeteer-core) and Chrome (set `CHROME` to its path if not at the macOS default). Screenshots: `CHAPTER=newton PARTS=rest:0,car:5 node tools/shoot.mjs shots/newton` (PARTS = key or key:page)
+Keys: ← → turn pages, Esc puts a part back. Deep links: `physics/newton/#4`.
 
-Run: `python3 -m http.server 8137` (any static server; three.js loads from jsDelivr) and open http://127.0.0.1:8137/
-Keys: ← → turn pages, Esc puts a part back. Links: `newton/#4` opens page 2.4.
-Phones and tablets: the figure stacks over the text, swipes snap to whole pages, a tap breaks a part down;
-resolution steps down by itself if frames run slow.
+## Check it
 
-AP® is a trademark of the College Board, which does not endorse this site. The equation sheet follows the published AP Physics equation tables.
+```
+npm install                        # puppeteer-core; the browser tools need Chrome (CHROME=… if not the macOS default)
+npm run check                      # every model's checks, the link checks, generated pages current
+npm run test:browser               # with the server above: every page, controls, machine, explorer, textbook adapter
+node tools/stills.mjs shots        # a still of every page at desktop and phone sizes
+node tools/jumps.mjs               # frames that change far more than their neighbours
+node tools/labels.mjs              # labels that overlap, or hide behind a solid
+node tools/record.mjs maths/unit-circle   # a 1080p60 MP4 with a soundtrack at −14 LUFS (needs ffmpeg)
+```
 
-MIT licensed.
+`CLAUDE.md` has the rules for adding a subject, chapter or figure, and every tool.
+
+## In the textbooks
+
+`tools/vendor.mjs <book>/source/live/atlas <subject/chapter>` copies a figure and the engine files it needs into a
+book. The book's `:::live` widget mounts it through `adapters/kym-live.js`, in the book's light, sepia or dark
+theme, offline.
+
+## Licences
+
+Code is MIT (`LICENSE`; Atlas of Physics © 2026 Nathan Liow). 3Dmol.js (BSD-3-Clause) loads from jsDelivr only
+when a reader asks for a measured molecule. Molecular geometries are NIST CCCBDB experimental values.
+AP® is a trademark of the College Board, which does not endorse this site. The physics equation sheets follow the
+published AP Physics equation tables.
