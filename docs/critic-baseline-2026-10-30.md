@@ -16,8 +16,9 @@ Re-run and compare after changing a chapter.
 - **Jumps.** The jump floor is now 0.6 % of pixels, so fewer frames flag. Spot checks (newton, energy) are still
   scene loops restarting and forces switching off at the end of a push: designed, not render glitches. Book videos
   would read better if each page's clock started when the page arrives (not done yet).
-- **Labels.** Labels anchored near the canvas edge now slide inside it (), so they can be read
-  rather than cut off. Three of them now partly overlap a neighbour on kinematics phone pages 6–8 (, , the second ). Most remaining findings are physics labels crowding each other on phones, and
+- **Labels.** Labels anchored near the canvas edge now slide inside it (`engine/stage.js`), so they can be read
+  rather than cut off. Three of them now partly overlap a neighbour on kinematics phone pages 6–8 (`aimed 37° upstream`,
+  `vRG`, the second `0`). Most remaining findings are physics labels crowding each other on phones, and
   magnetism page 5's grid of ⊗ symbols. These are content polish for the chapters, not engine faults.
 
 ## jumps.mjs
