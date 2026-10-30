@@ -27,7 +27,7 @@ export function buildWorld(E) {
     path.update(u => { const p = M.at(v, angle, u * span); return [p.x, p.y]; });
     ball.set(0, [s.x, s.y]);
     vel.set([s.x, s.y], [s.x + s.vx * 0.6, s.y + s.vy * 0.6]);   // the arrow shows 0.6 s of travel at the current velocity
-    vel.object.visible = !s.landed && vel.object.visible;
+    vel.object.visible = !s.landed;
   }
   return { update, labels };
 }
