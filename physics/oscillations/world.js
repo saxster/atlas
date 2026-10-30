@@ -180,7 +180,7 @@ export function buildWorld(E) {
   label('tick', `<i>L</i> = ${M.PEND.L.toFixed(1)} m`, () => PIV.clone().add(V(-0.08, -0.75, 0)));
 
   // ---------- 7 · double the period: 4× the mass, 4× the length ----------
-  const X6 = STATIONS.double, D = M.DOUBLE, PY6 = 3.4;
+  const X6 = STATIONS.double, D = M.DOUBLE, PY6 = D.L4 + 0.4;   // the long bob clears the floor by 0.4 m
   const g6s = asm('springs4', root, { title: 'Mass and period', sub: 'four times the mass, twice the period' });
   const o6a = oscillator(g6s, X6 - 1.9, 0.6), o6b = oscillator(g6s, X6 - 1.9, -0.6, { s: S4 });
   label('tick', '<i>m</i>', () => V(o6a.b.position.x + S / 2, S + 0.14, 0.6 + S / 2)); label('tick', '4<i>m</i>', () => V(o6b.b.position.x + S4 / 2, S4 + 0.14, -0.6 + S4 / 2));

@@ -145,7 +145,7 @@ export const PAGES = [
       <div class="charts">${chart({ x0: 0, x1: 4, y0: 0, y1: 3.5, xlabel: 'mass on the 16 N/m spring (kg)', ylabel: 'period (s)', label: 'Period against mass: a square root', h: 120,
         series: [{ pts: sample(m => M.periodSpring(m, M.K), 0, 4) }], marks: [[1, M.periodSpring(1, M.K), 'm: 1.57 s', 6, 14], [4, M.periodSpring(4, M.K), '4m: 3.14 s', -64, 16]] })}</div>
       <p class="hintline">Click either pair to count their cycles.</p>`,
-    cam: { target: at('double', -0.45, 1.6), az: -12, el: 10, dist: 16.5 }, lit: 'springs4', scene: 'double', look: {},
+    cam: { target: at('double', -0.45, 2.1), az: -12, el: 10, dist: 19 }, lit: 'springs4', scene: 'double', look: {},
     fig: '4× mass, 4× length: 2× period',
   },
   {

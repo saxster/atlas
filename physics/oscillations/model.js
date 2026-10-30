@@ -61,7 +61,7 @@ export const vmaxPendulum = (L, th0) => Math.sqrt(2 * G * L * (1 - Math.cos(th0)
 export const P_T = periodPendulum(PEND.L);   // 2.458 s
 
 // ---------- proportional reasoning: double the period ----------
-export const DOUBLE = { m: 1.0, m4: 4.0, L: 0.75, L4: 3.0, th0: 9 * DEG };
+export const DOUBLE = { m: 1.0, m4: 4.0, L: 1.0, L4: 4.0, th0: 9 * DEG };   // 1 m and 4 m: periods of 2.0 s and 4.0 s, the round numbers the kym textbook uses
 // ---------- what the period ignores: amplitude (springs) and mass (pendulums) ----------
 export const IGNORE = { A1: 0.25, A2: 0.50, m1: 1.0, m2: 4.0, L: 1.5, th0: 8 * DEG };
 
