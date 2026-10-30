@@ -23,7 +23,8 @@ export async function showMolecule(el, xyz, { background = '#fbfbfa' } = {}) {
   // the heavy atoms named; hydrogens are the small white balls, as in every model kit
   for (const a of model.selectedAtoms({ elem: 'H', invert: true }))
     viewer.addLabel(a.elem, { position: { x: a.x, y: a.y, z: a.z }, fontColor: '#ffffff', backgroundOpacity: 0, fontSize: 15, alignment: 'center', inFront: true });
-  viewer.zoomTo(); viewer.zoom(1.6); viewer.render();
+  // tipped towards the reader, so no bond points straight out of the screen and the shape reads as 3D from the start
+  viewer.zoomTo(); viewer.rotate(-22, 'x'); viewer.rotate(28, 'y'); viewer.zoom(1.6); viewer.render();
   viewer.spin('y', 0.4);
   // the XYZ comment line says where the coordinates come from
   const source = xyz.split('\n')[1]?.trim();

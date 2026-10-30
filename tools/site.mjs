@@ -14,8 +14,8 @@ const SHELF = [
   ['maths', 'Mathematics', 'trigonometry, calculus, linear algebra'],
   ['statistics', 'Statistics', 'probability, sampling, inference'],
   ['chemistry', 'Chemistry', 'molecules, reactions, energy'],
-  ['biology', 'Biology', 'cells, molecules, living machines'],
   ['economics', 'Economics', 'money, markets, growth'],
+  ['biology', 'Biology', 'cells, molecules, living machines'],
 ];
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const head = (title, css, extra = '') => `<!doctype html>

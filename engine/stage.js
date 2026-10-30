@@ -41,14 +41,24 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     return { el, at: L.at, text: L.text, last: L.html };   // text: optional () => html for live values
   });
   function placeLabels(w, h) {
+    const shown = [];
     for (const L of labels) {
       const p = L.at();
       if (!p) { L.el.style.opacity = 0; continue; }
       const [x, y, front] = E.toScreen(p, w, h);
-      L.el.style.opacity = front && x > 8 && x < w - 8 && y > 8 && y < h - 8 ? 1 : 0;
+      const on = front && x > 8 && x < w - 8 && y > 8 && y < h - 8;
+      L.el.style.opacity = on ? 1 : 0;
       L.el.style.left = `${x}px`; L.el.style.top = `${y}px`;
       if (L.text) { const h = L.text(); if (h !== L.last) { L.el.innerHTML = h; L.last = h; } }
+      if (on) shown.push([L, x]);
     }
+    // a label whose anchor is near an edge slides in, so its words stay inside the figure (one layout read for all)
+    if (!shown.length) return;
+    const left = labelsEl.getBoundingClientRect().left, boxes = shown.map(([L]) => L.el.getBoundingClientRect());
+    shown.forEach(([L, x], i) => {
+      const over = boxes[i].right - left - (w - 6), under = 6 - (boxes[i].left - left);
+      if (over > 0) L.el.style.left = `${x - over}px`; else if (under > 0) L.el.style.left = `${x + under}px`;
+    });
   }
 
   // ---------- hover / click ----------

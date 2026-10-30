@@ -97,7 +97,9 @@ export function startMachine(figure) {
     pl.innerHTML = `<button type="button" class="close">Close</button><div class="kicker">Closer</div><h2>${ud.title}</h2><p class="sub">${ud.sub || ''}</p><p>${figure.PLATES[key].text}</p><table class="data" id="facts"></table>`;
     pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
   };
-  const hintFor = () => k ? STEPS[k - 1].hint : done < N ? STEPS[done].hint : 'That is the whole machine. Start over to watch it again.';
+  // the caption says what the running or last finished step shows, and stays until the next one starts
+  const hintAt = (d, r) => r ? STEPS[r - 1].hint : d ? STEPS[d - 1].hint + (d === N ? ' Start over to watch it again.' : '') : `Press 1 to start: ${STEPS[0].label.toLowerCase()}.`;
+  const hintFor = () => hintAt(done, k);
 
   // sound words: a short handwritten word drawn on the action, for a moment
   const sounds = STEPS.flatMap((st, i) => (st.sounds || []).map(sd => { const el = document.createElement('div'); el.className = 'lbl sound'; el.textContent = sd.word; $('labels').appendChild(el); return { ...sd, step: i + 1, el }; }));
@@ -135,7 +137,7 @@ export function startMachine(figure) {
       // phones show the steps as a scrolling row: keep the running or next one in view
       const at = stepB[(curK || curDone + 1) - 1]; if (at && narrowQ.matches && !RENDER) at.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       $('again').classList.toggle('strong', curDone === N);
-      $('hint').textContent = curK ? STEPS[curK - 1].hint : curDone < N ? STEPS[curDone].hint : 'That is the whole machine. Start over to watch it again.';
+      $('hint').textContent = hintAt(curDone, curK);
     }
   }
 
@@ -152,7 +154,7 @@ export function startMachine(figure) {
     draw(now, dt, poseOf(done, k, u));
     if (!RENDER) requestAnimationFrame(frame);
   }
-  if (mode === 'auto') wait = FIRST;
+  if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
   window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver,

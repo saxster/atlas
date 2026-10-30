@@ -4,7 +4,7 @@ body { min-height: 100vh; padding: 0 16px 80px; }
 header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 header a { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); text-decoration: none; }
 .hero { text-align: center; margin: 56px auto 40px; max-width: 760px; }
-.hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; }
+.hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; text-wrap: balance; }
 .hero p { font: italic 400 clamp(19px, 2.2vw, 24px)/1.4 var(--serif); color: var(--muted); margin-top: 16px; }
 nav { position: sticky; top: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px; background: color-mix(in srgb, var(--page) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--faint); }
 nav .in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 6px 22px; flex-wrap: wrap; }

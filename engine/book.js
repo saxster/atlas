@@ -9,7 +9,7 @@ import { XREFS } from './xrefs.js';
 const $ = id => document.getElementById(id);
 const touch = matchMedia('(pointer: coarse)').matches;
 const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or press Esc to close';
-const DEFAULT_HINT = touch ? 'Drag sideways to turn · tap to break it down' : 'Drag to turn · shift-drag to pan · click to break it down';
+const DEFAULT_HINT = touch ? 'Drag to turn · tap a part' : 'Drag to turn · shift-drag to pan · click to break it down';
 // this chapter as cross-references name it, subject and directory: physics/kinematics (pages are #3 after it)
 const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').slice(-2).join('/');
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -104,7 +104,7 @@ export function startBook(chapter) {
   function closeMolecule() { if (!mol) return; mol.view?.destroy(); mol.panel.remove(); mol = null; }
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${p.body}${partsHtml(i)}${moleculeHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
+  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${moleculeHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice to mark it and show the worked solution
   $('sheet').addEventListener('click', e => {
     const b = e.target.closest('button'), q = b && b.closest('.q');

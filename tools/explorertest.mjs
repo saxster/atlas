@@ -29,7 +29,7 @@ check('Run runs it', (await st()).running && (await st()).clock > 0);
 check('chips fill in as it runs', (await chips()).some(t => t !== '–'));
 await finish();
 const first = await chips();
-if (hasPredict) check('after the run, the answer and its reason appear', await p.$eval('#predict .why', w => !w.hidden && w.textContent.length > 40) && !!await p.$('#predict .right'));
+if (hasPredict) check('after the run, the answer and its reason appear', await p.$eval('#why', w => !w.hidden && w.textContent.length > 40) && !!await p.$('#predict .right'));
 const sliders = await p.$$eval('#controls input', xs => xs.map(x => ({ key: x.dataset.key, min: x.min, max: x.max, value: x.value })));
 for (const s of sliders) { await slide(s.key, s.max); await wait(250); await slide(s.key, s.min); await wait(250); await slide(s.key, s.value); await wait(250); }
 check('every slider to both ends and back: no errors, run reset', !errors.length && (await st()).clock === 0, errors.slice(0, 2).join(' | '));

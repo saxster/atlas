@@ -67,10 +67,13 @@
 .predict .choices button { width: 100%; display: flex; gap: 10px; align-items: baseline; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--faint); background: var(--card); font: 14px/1.3 var(--sans); color: var(--text); cursor: pointer; }
 .predict .choices button:disabled { cursor: default; }
 .predict .letter { font: 500 12px var(--mono); color: var(--muted); }
-.predict .picked { border-color: var(--hi); }
-.predict .right { border-color: #2e8b57; background: #eef7f1; }
-.predict .wrong { border-color: var(--red); background: #fdf0f0; }
-.predict .why { font: 14px/1.5 var(--sans); margin-top: 8px; }
+/* the states must outrank the plain button rule above */
+.predict .choices button.picked { border-color: var(--hi); box-shadow: inset 0 0 0 1px var(--hi); }
+.predict .choices button.right { border-color: #2e8b57; background: #eef7f1; box-shadow: inset 0 0 0 1px #2e8b57; }
+.predict .choices button.wrong { border-color: var(--red); background: #fdf0f0; box-shadow: inset 0 0 0 1px var(--red); }
+.predict .choices button.right::after { content: 'answer'; margin-left: auto; font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #2e8b57; }
+.predict .choices button.wrong::after { content: 'your guess'; margin-left: auto; font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--red); }
+.why { font: 14px/1.5 var(--sans); color: var(--text); padding: 10px 12px; border-radius: 8px; background: var(--card); box-shadow: var(--lift); }
 .controls { display: grid; gap: 12px; }
 .slider { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font: 13px var(--sans); color: var(--text); }
 .slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--hi); }
@@ -102,7 +105,7 @@
   .figpage.explorer .side, .figpage.explorer .figwrap { display: contents; }
   .figpage.explorer .question { order: 0; } .figpage.explorer .figure { order: 1; }
   .figpage.explorer .predict { order: 2; } .figpage.explorer .controls { order: 3; }
-  .figpage.explorer .run { order: 4; } .figpage.explorer .again { order: 5; }
+  .figpage.explorer .run { order: 4; } .figpage.explorer .again { order: 5; } .figpage.explorer .why { order: 5; }
   .figpage.explorer .chips { order: 6; } .figpage.explorer .chart { order: 7; }
   .figpage.explorer .bigidea { order: 8; } .figpage.explorer .plate { order: 9; }
 }

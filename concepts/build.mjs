@@ -33,7 +33,7 @@ for (const s of all) {
 
 // ---------- the concepts ----------
 // a subject may have ideas before it has a figure (biology): its file is read all the same, in the shelf's order
-const ORDER = ['physics', 'maths', 'statistics', 'chemistry', 'biology', 'economics'];
+const ORDER = ['physics', 'maths', 'statistics', 'chemistry', 'economics', 'biology'];
 const NAMES = { ...Object.fromEntries(ORDER.map(id => [id, id[0].toUpperCase() + id.slice(1)])), maths: 'Mathematics',
   ...Object.fromEntries(all.map(s => [s.id, s.name.replace(/^Atlas of /, '')])) };
 const files = fs.readdirSync(path.join(ROOT, 'concepts')).filter(f => f.endsWith('.js') && f !== 'threads.js').map(f => f.slice(0, -3))

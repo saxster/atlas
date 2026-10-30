@@ -38,7 +38,7 @@ export function startExplorer(figure) {
   let predicted = !figure.predict || RENDER, guess = null, ran = false;
   if (figure.predict) {
     $('predict').innerHTML = `<div class="kicker">Predict first</div><p class="q">${figure.predict.q}</p><ol class="choices">${figure.predict.choices.map((c, i) =>
-      `<li><button type="button" data-c="${i}"><span class="letter">${'ABCDE'[i]}</span><span>${c}</span></button></li>`).join('')}</ol><div class="why" hidden></div>`;
+      `<li><button type="button" data-c="${i}"><span class="letter">${'ABCDE'[i]}</span><span>${c}</span></button></li>`).join('')}</ol>`;
     $('predict').addEventListener('click', e => {
       const b = e.target.closest('[data-c]'); if (!b || predicted) return;
       guess = +b.dataset.c; predicted = true; b.classList.add('picked');
@@ -46,9 +46,12 @@ export function startExplorer(figure) {
       $('run').disabled = false; $('controls').querySelectorAll('input').forEach(x => x.disabled = false); $('run').focus();
     });
   } else $('predict').hidden = true;
+  // the answer and its reason go under Run, not under the choices, so nothing the reader is pointing at moves
+  const why = document.createElement('div'); why.className = 'why'; why.id = 'why'; why.hidden = true; why.setAttribute('aria-live', 'polite');
+  $('again').after(why);
   function reveal() {
     if (!figure.predict || guess === null) return;
-    const a = figure.predict.answer(params), why = $('predict').querySelector('.why');
+    const a = figure.predict.answer(params);
     $('predict').querySelectorAll('[data-c]').forEach(x => x.classList.toggle('right', +x.dataset.c === a));
     if (guess !== a) $('predict').querySelector(`[data-c="${guess}"]`).classList.add('wrong');
     why.innerHTML = (guess === a ? '<b>Right.</b> ' : '<b>Not quite.</b> ') + figure.predict.why(params); why.hidden = false;

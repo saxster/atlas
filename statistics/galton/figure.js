@@ -20,7 +20,7 @@ export const FIGURE = {
     { key: 'rows', label: 'Rows of pegs', min: 4, max: 16, step: 1, rebuild: true },
     { key: 'p', label: 'Chance of bouncing right', min: 0.1, max: 0.9, step: 0.05, fmt: v => v.toFixed(2), rebuild: true },
     { key: 'n', label: 'Balls', min: 100, max: 1000, step: 100, rebuild: true },
-    { key: 'seed', label: 'Seed (the same seed, the same pile)', min: 1, max: 50, step: 1 },
+    { key: 'seed', label: 'Which run (the same number, the same pile)', min: 1, max: 50, step: 1 },
   ],
   predict: {
     q: 'Drop 500 balls through 12 rows of pegs. Each ball is equally likely to bounce left or right at every peg. Which slot ends up with the most balls?',

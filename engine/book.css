@@ -273,7 +273,7 @@
   .eq { overflow-x: auto; }
   .pager button { height: 44px; }
   /* no hover on a phone: say what the figure does, under its number */
-  .corner.bl { display: block; top: 32px; bottom: auto; left: 14px; max-width: 40%; font-size: 11px; line-height: 1.4; }
+  .corner.bl { display: block; top: 32px; bottom: auto; left: 14px; font-size: 11px; line-height: 1.4; white-space: nowrap; }   /* one short line, clear of the scene */
   .corner.tr { max-width: 55%; }
   .lbl.vec { font-size: 19px; }
 }
@@ -326,7 +326,7 @@ html.embed .book { position: fixed; inset: 0; transform: none; width: 100vw; hei
 html.embed .page.right { position: absolute; inset: 0; border-radius: 0; box-shadow: none; }
 html.embed .playbtn-embed { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2; }
 /* a page's measured molecule (book.js openMolecule, adapters/molecule.js): a button under the parts, a panel over the figure */
-.molbtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 4px 0 18px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--faint); background: var(--card); cursor: pointer; font: 500 15px var(--sans); color: var(--strong); text-align: left; }
+.molbtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 18px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--faint); background: var(--card); cursor: pointer; font: 500 15px var(--sans); color: var(--strong); text-align: left; }
 .molbtn span { font: 12px var(--mono); color: var(--muted); }
 .molbtn:hover { border-color: var(--mid); }
 .molpanel { position: absolute; inset: 12px; z-index: 3; background: var(--card); border-radius: 12px; box-shadow: 0 0 0 1px var(--faint), 0 8px 30px rgba(0,0,0,.08); display: flex; flex-direction: column; }
