@@ -11,7 +11,7 @@
 //   run: { label, duration(params) → seconds, real?(params) → real-world seconds, for the speed badge },
 //   buildWorld(E, params), state(clock, reduced, params), lookKeys,
 //   readout(state, params) → corner text, chips: [{ label, value: (state, params) → text }],
-//   chart?(state, params) → svg markup, PLATES?, narrowZoom? (camera distance factor on phones)
+//   chart?(state, params) → svg markup, PLATES?, narrowZoom? (camera distance factor on phones), frameAspect? (as machine.js)
 // }
 import { createStage } from './stage.js';
 import { speedLabel } from './machine.js';

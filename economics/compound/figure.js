@@ -12,7 +12,8 @@ export const FIGURE = {
   bigIdea: `interest earns interest, so the pot grows faster every year. After 20 years, ${M.rupees(M.deposited(M.MONTHS))} paid in has become ${M.rupees(M.pot(M.MONTHS))}: more of it is interest than savings.`,
   intro: { cam: { target: [colX(1) + 0.6, 1.55, 0], az: -12, el: 13, dist: 13.5 }, lit: 'coin', fig: 'An empty pot' },
   lookKeys: ['coin', 'simple', 'late'],
-  narrowZoom: 1.45,
+  // the twenty columns are a wide scene: framed for the 1.65 canvas a desktop gives, pulled back on anything narrower
+  frameAspect: 1.65, narrowZoom: 1.1,
   // designed discrete changes: each month's coin and deposit in the coin-by-coin year, the coin landing, each new year's column
   events: [...Array.from({ length: 13 }, (_, m) => m), ...Array.from({ length: 12 }, (_, m) => m + 0.85), ...Array.from({ length: M.YEARS }, (_, y) => 12 * y)],
   STEPS: [

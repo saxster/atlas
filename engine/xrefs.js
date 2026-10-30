@@ -27,4 +27,11 @@ export const XREFS = [
   ['physics/circular/6', '3.6 Angular velocity', 'physics/oscillations/2', '6.2 x, v and a', 'Simple harmonic motion is the shadow of uniform circular motion, with the same ω.'],
   ['physics/energy/7', '4.7 Conservation of energy', 'physics/fluids/7', '8.7 Bernoulli', 'Bernoulli’s equation is energy conservation per unit volume: <i>P</i> + ½ρ<i>v</i>² + ρ<i>gh</i>.'],
   ['physics/fluids/6', '8.6 Continuity', 'physics/circuits/7', '13.7 Kirchhoff’s rules', 'What flows in flows out: <i>A</i>₁<i>v</i>₁ = <i>A</i>₂<i>v</i>₂ ↔ the junction rule ΣI = 0.'],
+  // across subjects
+  ['maths/unit-circle/5', '1.5 The sine wave', 'physics/oscillations/2', '6.2 x, v and a', 'The block’s <i>x</i> = <i>A</i> cos ω<i>t</i> is the sideways shadow of a point going round at ω; its graph is the trace on the strip.'],
+  ['maths/unit-circle/0', 'Ch. 1 The unit circle', 'physics/circular/6', '3.6 Angular velocity', 'θ = ω<i>t</i>: the point goes round at a steady ω, and arc length <i>s</i> = <i>r</i>θ gives <i>v</i> = <i>r</i>ω.'],
+  ['maths/unit-circle/4', '1.4 Radians', 'physics/circular/6', '3.6 Angular velocity', '<i>v</i> = <i>r</i>ω needs ω in rad/s, because a radian is an arc one radius long.'],
+  ['maths/unit-circle/7', '1.7 Beyond 90°', 'physics/oscillations/8', '6.8 The SHM equation', 'The phase φ is where the point starts on its circle; the signs of <i>x</i> and <i>v</i> follow its quadrant.'],
+  ['chemistry/vsepr/0', 'Ch. 1 The shapes of molecules', 'physics/electrostatics/2', '9.2 Coulomb’s law', 'Like charges repel: each electron pair pushes on the others, so they spread out round the atom.'],
+  ['chemistry/vsepr/5', '1.5 Why lone pairs push harder', 'physics/potential/1', '11.1 Assembling charges', 'The toy model is the energy of assembled charges, Σ<i>kq</i><sub>i</sub><i>q</i><sub>j</sub>/<i>r</i>, at its lowest on a sphere.'],
 ];

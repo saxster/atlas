@@ -145,7 +145,7 @@ export function buildWorld(E) {
     lines(root, m, '#6e6e74');
     for (const s of M.SPECIAL) label('tick', s.sinText, () => W1(SX - 0.07, s.sin, ZL)); }
   label('vec red', 'sin θ', () => { const s = Math.sin(M.steady(T)); return Math.abs(s) > 0.12 ? W1(SX + 0.26, s / 2, ZL) : null; });
-  label('vec', '<i>P</i>', () => riding(W1, M.steady(T), 0.83));     // inside, clear of the shadow's label
+  label('vec', '<i>P</i>', () => riding(W1, M.steady(T) - 0.24, 0.84));     // inside and just behind P, off the radius and clear of the shadow's label
   label('axis', 'level light', () => W1(LX - 0.1, 1.28, ZL));
 
   // ---------- 2 · cosine is the sideways shadow: light from above, a screen below ----------
@@ -164,7 +164,7 @@ export function buildWorld(E) {
     // staggered, so the close surds don't collide
     M.SPECIAL.forEach((s, i) => label('mark', s.cosText, () => W2(s.cos, SY - (i % 2 ? 0.36 : 0.13), ZL))); }
   label('vec blue', 'cos θ', () => { const c = Math.cos(M.steady(T)); return Math.abs(c) > 0.2 ? W2(c / 2, SY + 0.28, ZL) : null; });
-  label('vec', '<i>P</i>', () => riding(W2, M.steady(T), 0.83));
+  label('vec', '<i>P</i>', () => riding(W2, M.steady(T) - 0.24, 0.84));
   label('board', 'light', () => W2(-1.3, LY - 0.17, ZL));
 
   // ---------- 3 · sin² + cos² = 1: the right triangle under P, and a square on each side ----------

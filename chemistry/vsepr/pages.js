@@ -75,6 +75,7 @@ export const PAGES = [
       <p class="hintline">Click the molecule to pull its bonds apart.</p>`,
     cam: cam('ch4', -30, 22, 10, 0, 0.1), lit: 'ch4', scene: 'ch4', look: {},
     fig: 'Methane: a tetrahedron',
+    molecule: M.XYZ.CH4,   // "See the real molecule": the measured structure in 3Dmol
     alt: 'A carbon atom with four hydrogen atoms at the corners of a tetrahedron, one H–C–H angle marked 109.5 degrees.',
   },
   {
@@ -92,6 +93,7 @@ export const PAGES = [
       <p class="hintline">Nitrogen is blue. Click to pull the bonds and the lone pair apart.</p>`,
     cam: cam('nh3', -14, 16, 9.4, 0, 0.05), lit: 'nh3', scene: 'nh3', look: {},
     fig: 'Ammonia: a trigonal pyramid',
+    molecule: M.XYZ.NH3,   // "See the real molecule": the measured structure in 3Dmol
     alt: 'A nitrogen atom with three hydrogen atoms below it and a translucent lone-pair lobe above, one H–N–H angle marked 106.7 degrees.',
   },
   {
@@ -103,10 +105,11 @@ export const PAGES = [
         <tr><th></th><th>lone pairs</th><th>angle</th><th>shape</th></tr>
         ${M.MAIN.map(k => `<tr><td>${M.MOL[k].formula}</td><td>${M.MOL[k].lone}</td><td>${f(M.MOL[k].angle, 2)}°</td><td>${M.MOL[k].shape}</td></tr>`).join('')}
       </table>
-      <p>Each lone pair takes about ${f((C.angle - O.angle) / 2, 1)}° off the angle between the bonds. Water's bend is why it is polar, and so why it dissolves salt and clings to glass.</p>
+      <p>Each lone pair takes about ${f((C.angle - O.angle) / 2, 1)}° off the angle between the bonds. With oxygen pulling harder on the shared pairs, the bend is why water is polar, and so why it dissolves salt and clings to glass.</p>
       <p class="hintline">Oxygen is red. Click to pull the pairs apart.</p>`,
     cam: cam('h2o', -14, 16, 9.4, 0, 0.05), lit: 'h2o', scene: 'h2o', look: {},
     fig: 'Water: bent',
+    molecule: M.XYZ.H2O,   // "See the real molecule": the measured structure in 3Dmol
     alt: 'An oxygen atom with two hydrogen atoms below it and two translucent lone-pair lobes above, the H–O–H angle marked 104.5 degrees.',
   },
   {
@@ -138,7 +141,7 @@ export const PAGES = [
       <p>The bonds shorten from C–H to O–H: across the period the nuclear charge grows and pulls the shared pair in. The angles fall in the order VSEPR predicts, CH₄ &gt; NH₃ &gt; H₂O.</p>
       <p>Lone pairs do not show up in a structure: only the nuclei are located. They are drawn on the other pages as a reminder of what pushes the atoms where they are.</p>
       <p class="hintline">Data: NIST CCCBDB, experimental geometries. Click a molecule.</p>`,
-    cam: cam('real', -10, 12, 21, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
+    cam: cam('real', -10, 12, 23.5, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
     fig: 'Methane, ammonia and water as measured',
     alt: 'Methane, ammonia and water side by side at their measured bond lengths and angles, without lone pairs.',
   },
@@ -155,6 +158,7 @@ export const PAGES = [
       <p class="hintline">Grey outlines: where the toy model would put sulfur's hydrogens.</p>`,
     cam: cam('edge', -10, 12, 19, 0, -0.1), lit: 'h2s', scene: 'edge', look: {}, parts: ['edge_h2o', 'h2s'],
     fig: 'Water and hydrogen sulfide',
+    molecule: M.XYZ.H2S,   // "See the real molecule": the measured structure in 3Dmol
     alt: 'Water and hydrogen sulfide side by side with their measured angles, 104.5 and 92.1 degrees; ghost outlines show where VSEPR would put sulfur’s hydrogens.',
   },
 ];

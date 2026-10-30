@@ -9,39 +9,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="atlas.css">
-<style>
-  body { min-height: 100vh; padding: 0 16px 80px; }
-  header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
-  header b { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); }
-  .hero { text-align: center; margin: 72px auto 64px; max-width: 760px; }
-  .hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; }
-  .hero p { font: italic 400 clamp(19px, 2.2vw, 24px)/1.4 var(--serif); color: var(--muted); margin-top: 16px; }
-  .shelf { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 22px; }
-  .card { background: var(--card); border-radius: 14px; box-shadow: var(--lift); padding: 18px 20px 20px; text-decoration: none; display: flex; flex-direction: column; min-height: 360px; transition: transform .5s cubic-bezier(.16,1,.3,1); }
-  @media (hover: hover) { a.card:hover { transform: translateY(-4px) rotate(-.4deg); } }
-  .card .no { font: 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
-  .card h2 { font: 400 30px/1.05 var(--serif); color: var(--strong); margin-top: 18px; }
-  .card h2 + i { font: italic 400 20px/1.2 var(--serif); color: var(--muted); }
-  .card img { margin-top: auto; width: 100%; aspect-ratio: 9 / 8; object-fit: cover; border-radius: 6px; }
-  .card.soon { box-shadow: none; background: transparent; border: 1px dashed var(--faint); }
-  .card.soon h2 { color: var(--lo); } .card.soon h2 + i { color: var(--faint); }
-  .card .wait { margin-top: auto; font: 11px var(--mono); color: var(--lo); letter-spacing: .06em; text-transform: uppercase; }
-</style>
+<link rel="stylesheet" href="engine/shelf.css">
 </head>
 <body>
+<!-- written by tools/site.mjs from the subject.js manifests: edit those, then run it -->
   <header><b>Atlas</b><span>Ideas, taken apart</span></header>
   <section class="hero">
     <h1>Every subject, taken apart.</h1>
     <p>Each idea as one working figure: a model you can check, a thing you can move</p>
   </section>
   <section class="shelf">
-    <a class="card" href="physics/"><span class="no">15 chapters</span><h2>Physics</h2><i>mechanics, electricity and magnetism</i>
+    <a class="card" href="physics/"><div class="no"><span>15 chapters</span></div><h2>Physics</h2><i>mechanics, electricity and magnetism</i>
       <img src="physics/img/oscillations.jpg" alt="A block on a spring drawing its own cosine on a paper strip"></a>
-    <div class="card soon"><span class="no">in preparation</span><h2>Mathematics</h2><i>trigonometry, calculus, linear algebra</i><span class="wait">coming</span></div>
-    <div class="card soon"><span class="no">in preparation</span><h2>Statistics</h2><i>probability, sampling, inference</i><span class="wait">coming</span></div>
-    <div class="card soon"><span class="no">in preparation</span><h2>Chemistry</h2><i>molecules, reactions, energy</i><span class="wait">coming</span></div>
-    <div class="card soon"><span class="no">in preparation</span><h2>Biology</h2><i>cells, molecules, living machines</i><span class="wait">coming</span></div>
-    <div class="card soon"><span class="no">in preparation</span><h2>Economics</h2><i>money, markets, growth</i><span class="wait">coming</span></div>
+    <a class="card" href="maths/"><div class="no"><span>1 chapter</span></div><h2>Mathematics</h2><i>trigonometry, calculus and linear algebra</i>
+      <img src="maths/img/unit-circle.jpg" alt="A point on a circle lit from the side, its shadow on a screen showing its height, the sine"></a>
+    <a class="card" href="statistics/"><div class="no"><span>1 figure</span></div><h2>Statistics</h2><i>probability, sampling and inference</i>
+      <img src="statistics/img/galton.jpg" alt="A board of pegs with balls piled in slots beneath it, the pile following a bell curve"></a>
+    <a class="card" href="chemistry/"><div class="no"><span>1 chapter</span></div><h2>Chemistry</h2><i>molecules, reactions and energy</i>
+      <img src="chemistry/img/vsepr.jpg" alt="Methane, ammonia and water side by side at their measured bond angles"></a>
+    <div class="card soon"><div class="no"><span>in preparation</span></div><h2>Biology</h2><i>cells, molecules, living machines</i><span class="wait">coming</span></div>
+    <a class="card" href="economics/"><div class="no"><span>1 figure</span></div><h2>Economics</h2><i>money, markets and growth</i>
+      <img src="economics/img/compound.jpg" alt="Twenty columns of coins, one per year, each taller than the last, with the interest part stacked on the savings"></a>
   </section>
+  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a></p>
 </body>
 </html>

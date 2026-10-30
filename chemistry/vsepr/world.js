@@ -137,7 +137,7 @@ export function buildWorld(E) {
     arc(mol.spin, a, b);
     const mm = mid(a, b);
     label('mark', ctr(`${m.angle.toFixed(1)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    caption(`${chem(m.formula)} · ${m.shape}`, () => V(STATIONS[key], -1.3, 0));
+    caption(chem(m.formula), () => V(STATIONS[key], -1.3, 0));          // the shape's name is in the figure's title
     if (d.lone.length) label('mark', d.lone.length > 1 ? 'lone pairs' : 'lone pair', () => toCam(mol.at(v3(d.lone[0]).multiplyScalar(0.8).add(V(0.85, 0.1, 0))), 0.2));
     return { g, mol, d };
   };
@@ -158,7 +158,7 @@ export function buildWorld(E) {
   let ang5 = M.TET_DEG, mid5 = V(0, -1, 0);
   label('mark', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_LAB)), 0.45), () => ctr(`${ang5.toFixed(1)}°`));
   label('mark', 'lone pair', () => toCam(s5.localToWorld(V(0.85, 0.85, 0)), 0.2));
-  caption(`${chem('NH₃')} · the lone pair grows`, () => V(X5, -1.3, 0));
+  caption(chem('NH₃'), () => V(X5, -1.3, 0));
   function setSwell(q) {
     const u = (q - 1) / (M.Q_LONE - 1), sq = M.squeeze('AX3E', q), d = M.domains('AX3E', sq.bond);
     ang5 = sq.bond;
@@ -187,7 +187,7 @@ export function buildWorld(E) {
     arc(mol.spin, a, b);
     const mm = mid(a, b);
     label('mark', ctr(`${m.angle.toFixed(2)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    caption(chem(m.formula), () => V(x, -1.3, 0));
+    caption(chem(m.formula), () => V(x, -1.6, 0));                    // below water's angle, which hangs lowest
     return { g, mol };
   });
 

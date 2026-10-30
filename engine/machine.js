@@ -13,7 +13,8 @@
 //   buildWorld(E) → { update(state, look), labels }, lookKeys, state(clock, reduced),
 //   readout(state, step) → text for the corner, chips: [{ label, from (step number, 1-based), value: state → text }],
 //   PLATES?: { key: { text, facts?(state) } }               breakdowns, as in a book
-//   narrowZoom?: camera distance factor on phones (narrow figures need to stand further back)
+//   narrowZoom?: camera distance factor on phones (narrow figures need to stand further back),
+//   frameAspect?: the canvas aspect the cameras were framed for (default 1.25); a narrower canvas pulls back
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }

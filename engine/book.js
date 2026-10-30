@@ -20,7 +20,8 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&
 // calm (chapter or subject): the figure is still until the reader scrolls, taps, presses a key or presses Play.
 // still?(): true when the reader's own settings ask for no motion (a book's Still mode); counts as reduced motion.
 // tourDwell?: seconds each page holds in the ?render tour (default 4); a page may set its own dwell.
-// narrowZoom?: camera distance factor on phones. A page may list parts: ['ball', 'vArrow'], the things on it that
+// molecule?: a page's measured structure (XYZ text, or () => XYZ): a button opens it in 3Dmol over the figure
+// (adapters/molecule.js, loaded only when asked). narrowZoom?: camera distance factor on phones. A page may list parts: ['ball', 'vArrow'], the things on it that
 // open a breakdown; without a list, the page's lit thing is its part.
 export function startBook(chapter) {
   const { PAGES, PLATES } = chapter;
@@ -68,7 +69,8 @@ export function startBook(chapter) {
     if (!links.length) return '';
     return `<aside class="xref"><div class="kicker">Compare</div>${links.map(([to, label, note]) => {
       const d = to.slice(0, to.lastIndexOf('/')), k = to.slice(to.lastIndexOf('/') + 1);
-      return `<p><a href="${d === DIR ? '' : `../../${d}/`}#${k}">${label} →</a> ${note}</p>`; }).join('')}</aside>`;
+      const subj = d.split('/')[0], other = subj !== DIR.split('/')[0] ? `${subj[0].toUpperCase()}${subj.slice(1)} · ` : '';   // another subject says so
+      return `<p><a href="${d === DIR ? '' : `../../${d}/`}#${k}">${other}${label} →</a> ${note}</p>`; }).join('')}</aside>`;
   };
   // the parts of this page's figure, as buttons: the keyboard's way into a breakdown
   const partsOf = i => (PAGES[i].parts || (PAGES[i].lit ? [PAGES[i].lit] : [])).filter(k => PLATES[k] && E.ASM[k]);
@@ -78,14 +80,37 @@ export function startBook(chapter) {
     return `<div class="kicker parts-k">Take the figure apart</div><ul class="parts">${ks.map(k => { const u = E.ASM[k].userData;
       return `<li><button type="button" data-part="${k}">${PLATES[k].title || u.title || k}<span>${PLATES[k].sub || u.sub || ''}</span></button></li>`; }).join('')}</ul>`;
   };
+  // a page with a measured structure offers it: the real molecule, beside the drawn model
+  const moleculeHtml = i => PAGES[i].molecule ? `<button type="button" class="molbtn" data-molecule="${i}">See the real molecule <span>measured bond lengths and angles, in 3D</span></button>` : '';
+  let mol = null;
+  async function openMolecule(i, from) {
+    closeMolecule();
+    const panel = document.createElement('div'); panel.className = 'molpanel';
+    panel.innerHTML = `<div class="molhead"><span class="kicker">The real molecule</span><button type="button" class="close">Close</button></div><div class="molview"><p class="molnote">Loading the molecule viewer…</p></div>`;
+    $('gl').parentElement.appendChild(panel);
+    panel.querySelector('.close').onclick = closeMolecule;
+    panel.querySelector('.close').focus();
+    const xyz = typeof PAGES[i].molecule === 'function' ? PAGES[i].molecule() : PAGES[i].molecule;
+    const mine = mol = { panel, from };   // closed (or replaced) while loading: what loads is dropped
+    try {
+      const { showMolecule } = await import('../adapters/molecule.js');
+      const el = panel.querySelector('.molview'); el.innerHTML = '';
+      const view = await showMolecule(el, xyz, { background: getComputedStyle(panel).backgroundColor });
+      if (mol !== mine) return view.destroy();
+      mine.view = view;
+      panel.insertAdjacentHTML('beforeend', `<p class="molsrc">Drag to turn · ${view.source || ''}</p>`);
+    } catch (e) { if (mol === mine) panel.querySelector('.molview').innerHTML = '<p class="molnote">The molecule viewer needs the internet, and it could not be reached. The drawn model shows the same angles.</p>'; }
+  }
+  function closeMolecule() { if (!mol) return; mol.view?.destroy(); mol.panel.remove(); mol = null; }
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
+  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${p.body}${partsHtml(i)}${moleculeHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice to mark it and show the worked solution
   $('sheet').addEventListener('click', e => {
     const b = e.target.closest('button'), q = b && b.closest('.q');
     if (b?.dataset.turn) return goto(+b.dataset.turn);
     if (b?.dataset.part) { begin(); return select(b.dataset.part, b); }
+    if (b?.dataset.molecule) return openMolecule(+b.dataset.molecule, b);
     if (!q) return;
     const item = PRACTICE[shown][+q.dataset.q];
     if (b.dataset.c !== undefined) {
@@ -103,6 +128,7 @@ export function startBook(chapter) {
   function showPage(i) {
     if (i === shown) return;
     shown = i;
+    closeMolecule();
     $('sheet').innerHTML = sheetHtml(i);
     $('left').scrollTop = 0;
     $('pagenum').textContent = `${i + 1} / ${N}`;
@@ -176,6 +202,7 @@ export function startBook(chapter) {
   // from: the button that asked (a part button), so focus can go back to it when the breakdown closes
   function select(k, from) { pendingFrom = from || null; S.select(k); }
   addEventListener('keydown', e => {
+    if (e.key === 'Escape' && mol) { const back = mol.from; closeMolecule(); back?.focus(); return; }
     if (e.key === 'Escape' && S.selected) { const back = returnFocus; select(null); back?.focus(); }
     if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) begin();
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goto(Math.round(scrollY / pageH) + 1); }

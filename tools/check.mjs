@@ -1,5 +1,6 @@
 // node tools/check.mjs [subject/chapter …] — the engine's own self-test, every chapter's model invariants (its checks.mjs), then each subject's
-// generated-page link checks (equations/check.mjs where a subject has one). Exit 1 on the first failure.
+// generated-page link checks (equations/check.mjs where a subject has one), the concept index and the contents pages.
+// Exit 1 on the first failure.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,3 +22,5 @@ if (!only.length) for (const s of await subjects()) {
   const eq = path.join(ROOT, s.id, 'equations', 'check.mjs');
   if (fs.existsSync(eq)) execFileSync(process.execPath, [eq], { cwd: ROOT, stdio: 'inherit' });
 }
+// the generated pages: the concept index (every link, every xref) and the contents pages must match their sources
+if (!only.length) for (const f of ['concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });

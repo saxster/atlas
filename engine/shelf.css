@@ -1,0 +1,37 @@
+/* The contents pages: the root shelf of subjects and each subject's shelf of chapters and figures (tools/site.mjs
+   writes them). Cards are paper on the desk; a subject still in preparation is a dashed outline. */
+body { min-height: 100vh; padding: 0 16px 80px; }
+header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; align-items: center; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+header b, header .home { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); text-decoration: none; }
+header span { display: flex; align-items: center; gap: 18px; }
+header a { color: inherit; text-decoration: none; } header span a:hover { color: var(--strong); }
+.hero { text-align: center; margin: 72px auto 64px; max-width: 760px; }
+.hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; }
+.hero p { font: italic 400 clamp(19px, 2.2vw, 24px)/1.4 var(--serif); color: var(--muted); margin-top: 16px; }
+.shelf { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 22px; }
+.section { max-width: 1180px; margin: 56px auto 18px; padding: 0 4px; font: 500 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.card { position: relative; background: var(--card); border-radius: 14px; box-shadow: var(--lift); padding: 18px 20px 20px; text-decoration: none; display: flex; flex-direction: column; min-height: 360px; transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s; }
+@media (hover: hover) { a.card:hover { transform: translateY(-4px) rotate(-.4deg); } }
+a.card:focus-visible { transform: translateY(-4px) rotate(-.4deg); }
+.card .no { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.card h2 { font: 400 30px/1.05 var(--serif); color: var(--strong); margin-top: 18px; }
+.card h2 + i { font: italic 400 20px/1.2 var(--serif); color: var(--muted); }
+.card img { margin-top: auto; width: 100%; aspect-ratio: 9 / 8; object-fit: cover; border-radius: 6px; }
+.card.soon { box-shadow: none; background: transparent; border: 1px dashed var(--faint); }
+.card.soon h2 { color: var(--lo); } .card.soon h2 + i { color: var(--faint); }
+.card .wait { margin-top: auto; font: 11px var(--mono); color: var(--lo); letter-spacing: .06em; text-transform: uppercase; }
+.foot { max-width: 1180px; margin: 48px auto 0; text-align: center; font: italic 20px var(--serif); }
+.foot a { color: var(--strong); text-underline-offset: 4px; text-decoration-color: var(--faint); }
+/* phones: each card a row, its picture beside its title, so the shelf can be taken in */
+@media (max-width: 600px) {
+  body { padding: 0 12px 56px; }
+  header { padding: 18px 4px; }
+  .hero { margin: 36px auto 32px; }
+  .section { margin: 36px auto 12px; }
+  .shelf { gap: 10px; }
+  .card { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 104px; grid-template-rows: auto auto 1fr; column-gap: 14px; padding: 14px 14px 14px 16px; }
+  .card h2 { font-size: 25px; margin-top: 10px; }
+  .card h2 + i { font-size: 17px; }
+  .card img { grid-column: 2; grid-row: 1 / 4; margin: 0; width: 104px; align-self: center; }
+  .card.soon { display: flex; }
+}

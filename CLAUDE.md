@@ -22,10 +22,12 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
 
 ## Test lanes
 - FOCUSED: `node physics/<chapter>/checks.mjs` (PASS/FAIL rows, exit 1 on failure), or `node tools/check.mjs physics/newton`
-- SMOKE: `npm run check` (every chapter of every subject + each subject's equation-sheet link check)
+- SMOKE: `npm run check` (engine self-test, every chapter and figure's checks, the equation-sheet links, the concept
+  index's links and xrefs, and that the generated pages are current)
 - FULL: `npm run check`, then with `python3 -m http.server 8137` running: `npm run test:browser`
-  (every page by deep link: practice present, no console errors; then tools/controls.mjs: Play/Pause, calm,
-  parts as keyboard buttons, Esc focus, top bar fits 360 px)
+  (every book page by deep link: practice present, no console errors; tools/controls.mjs: Play/Pause, calm,
+  parts as keyboard buttons, Esc focus, top bar fits 360 px, render determinism, embed; then the machine, explorer
+  and kym-adapter tests)
 
 Browser tools need Chrome (set `CHROME` if not at the macOS default). Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor
@@ -45,3 +47,22 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   changes more than 3× its nearest neighbours' pixels. Scene loop restarts and forces switching off are flagged
   too; they are designed, so read the frames (`--frames`) before "fixing" one.
 - `node tools/labels.mjs [chapters]`: labels overlapping each other, or anchored behind a solid.
+
+## Generated pages (`npm run site` writes them; `npm run check` fails when one is stale)
+- `tools/site.mjs`: the root shelf and each subject's contents page, from `subject.js` (`cards`, `hero`, `tagline`,
+  `cover`). Physics keeps its hand-made `physics/index.html` (`contents: false`).
+- `tools/cards.mjs [subject/id …]`: each card's picture, `<subject>/img/<id>.jpg`, drawn from the `?render` tour
+  (`cards[id].page` for a book, `cards[id].at` seconds for a machine or explorer).
+- `concepts/build.mjs`: `concepts/index.html` from `concepts/<subject>.js` (ideas, formulas, `shownIn` refs) and
+  `concepts/threads.js` (one idea across subjects). `shownIn: []` shows as "not shown yet". It also fails on any
+  `engine/xrefs.js` pair that points at a missing page.
+
+## Figure options worth knowing
+- `frameAspect` (chapter or figure): the canvas aspect the cameras were framed for (default 1.25); a narrower canvas
+  pulls back. `narrowZoom`: extra distance on phones.
+- A book page's `molecule` (XYZ text, ångström) adds "See the real molecule": `adapters/molecule.js` loads 3Dmol.js
+  2.5.5 (BSD-3) from jsDelivr only when tapped, and says so when offline.
+- Grammars: `engine/book.js` (scroll-book), `engine/machine.js` (steps, Manual/Auto), `engine/explorer.js`
+  (predict, sliders, seeded run). Each page's `<main>` class and markup follow the pilots
+  (`economics/compound`, `statistics/galton`).
+- Textbook embeds: `adapters/kym-live.js` (`mountAtlas`), copied into a book by `tools/vendor.mjs`.
