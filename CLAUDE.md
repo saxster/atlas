@@ -12,7 +12,9 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   the model a second, independent way before anything is drawn.
 - Layout: one top-level directory per subject (`physics/`, later `maths/` …) with a `subject.js` manifest
   listing its chapters; `tools/chapters.mjs` discovers them. URLs are `/<subject>/<chapter>/#<page>`.
-- A chapter is five files: model, checks, world, pages, practice (+ main.js, index.html).
+- A chapter is five files: model, checks, world, pages, practice, plus `chapter.js` (exports `CHAPTER`: pages,
+  world, clock, readout; importable alone, so a textbook can embed the figure), `main.js` (`startBook(CHAPTER)`)
+  and `index.html`. The figure is `engine/stage.js`; `engine/book.js` is the book around it.
 - Cross-references (`engine/xrefs.js`) use `subject/chapter/page` ids and may cross subjects.
 - Engine code stays subject-free: nothing physics-specific in `engine/`.
 - No GPL, NC, ND or unlicensed assets in the engine. SA assets only book-side.
