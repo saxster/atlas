@@ -2,10 +2,10 @@
 // Play/Pause, calm mode (?calm: still until asked), a page's parts as keyboard buttons, Esc returning focus, and
 // the top bar fitting phones from 360 px, ?render determinism and ?embed. Exit 1 on any failure.
 import puppeteer from 'puppeteer-core';
-import { chapters as allChapters } from './chapters.mjs';
+import { chapters as allChapters, key } from './chapters.mjs';
 import { CHROME, GL_ARGS } from './chrome.mjs';
 
-const c = process.argv[2] || 'physics/newton', base = 'http://127.0.0.1:8137';
+const c = key(process.argv[2] || 'physics/newton'), base = 'http://127.0.0.1:8137';
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 900 });
 const errors = []; p.on('pageerror', e => errors.push(e.message));

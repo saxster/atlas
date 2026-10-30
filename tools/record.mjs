@@ -9,15 +9,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { serve, launch, open } from './render.mjs';
-import { ROOT } from './chapters.mjs';
+import { ROOT, key } from './chapters.mjs';
 
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
-const target = args.find(a => !a.startsWith('--') && !args[args.indexOf(a) - 1]?.startsWith('--'));
+const arg = args.find(a => !a.startsWith('--') && !args[args.indexOf(a) - 1]?.startsWith('--')), target = arg && key(arg);
 if (!target) { console.log('usage: node tools/record.mjs <subject/id> [--out dir] [--size WxH] [--fps n] [--silent]'); process.exit(2); }
 const [W, H] = opt('--size', '1920x1080').split('x').map(Number), FPS = +opt('--fps', 60);
 const outDir = path.resolve(opt('--out', path.join(ROOT, 'videos'))); fs.mkdirSync(outDir, { recursive: true });
-const name = target.replace('/', '-'), video = path.join(outDir, `${name}.mp4`), silent = path.join(outDir, `${name}.silent.mp4`);
+const name = target.replace(/^examples\//, '').replace('/', '-'), video = path.join(outDir, `${name}.mp4`), silent = path.join(outDir, `${name}.silent.mp4`);
 
 const { server, base } = serve(), browser = await launch();
 const R = await open(browser, base, target, W, H);

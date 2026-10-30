@@ -3,34 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atlas</title>
+<title>Atlas · teaching figures for any subject</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="atlas.css">
+<link rel="stylesheet" href="engine/atlas.css">
 <link rel="stylesheet" href="engine/shelf.css">
+<style>
+  .lib { max-width: 760px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
+  .lib h2 { font: 400 28px/1.2 var(--serif); color: var(--strong); margin: 40px 0 10px; }
+  .lib pre { background: var(--card); box-shadow: var(--lift); border-radius: 10px; padding: 14px 18px; overflow-x: auto; font: 13px/1.6 var(--mono); color: var(--strong); }
+  .lib a { color: var(--strong); text-underline-offset: 3px; }
+  .lib ul { padding-left: 20px; }
+</style>
 </head>
 <body>
-<!-- written by tools/site.mjs from the subject.js manifests: edit those, then run it -->
-  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
+  <header><b>Atlas</b><span><a href="examples/">Examples</a><a href="https://github.com/saxster/atlas">Source</a></span></header>
   <section class="hero">
-    <h1>Every subject, taken apart.</h1>
-    <p>Each idea as one working figure: a model you can check, a thing you can move</p>
+    <h1>Teaching figures for any subject.</h1>
+    <p>A small library: write the model, say what to draw, and get a 3D paper-and-ink figure a reader can work</p>
   </section>
-  <section class="shelf">
-    <a class="card" href="physics/"><div class="no"><span>15 chapters</span></div><h2>Physics</h2><i>mechanics, electricity and magnetism</i>
-      <img src="physics/img/oscillations.jpg" alt="A block on a spring drawing its own cosine on a paper strip"></a>
-    <a class="card" href="maths/"><div class="no"><span>1 chapter</span></div><h2>Mathematics</h2><i>trigonometry, calculus and linear algebra</i>
-      <img src="maths/img/unit-circle.jpg" alt="A point on a circle lit from the side, its shadow on a screen showing its height, the sine"></a>
-    <a class="card" href="statistics/"><div class="no"><span>1 figure</span></div><h2>Statistics</h2><i>probability, sampling and inference</i>
-      <img src="statistics/img/galton.jpg" alt="A board of pegs with balls piled in slots beneath it, the pile following a bell curve"></a>
-    <a class="card" href="chemistry/"><div class="no"><span>1 chapter</span></div><h2>Chemistry</h2><i>molecules, reactions and energy</i>
-      <img src="chemistry/img/vsepr.jpg" alt="Methane, ammonia and water side by side at their measured bond angles"></a>
-    <a class="card" href="economics/"><div class="no"><span>1 figure</span></div><h2>Economics</h2><i>money, markets and growth</i>
-      <img src="economics/img/compound.jpg" alt="Twenty columns of coins, one per year, each taller than the last, with the interest part stacked on the savings"></a>
-    <div class="card soon"><div class="no"><span>in preparation</span></div><h2>Biology</h2><i>cells, molecules, living machines</i><span class="wait">coming</span></div>
-  </section>
-  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a></p>
+  <main class="lib">
+    <h2>Three ways to work a figure</h2>
+    <ul>
+      <li><b>Book.</b> Scroll turns the page and the camera moves; click a part to break it down. <a href="examples/minimal/book/">Example</a></li>
+      <li><b>Machine.</b> Numbered steps, one live at a time, Manual or Auto. <a href="examples/minimal/machine/">Example</a></li>
+      <li><b>Explorer.</b> Predict first, then drag the sliders and run it. <a href="examples/minimal/explorer/">Example</a></li>
+    </ul>
+    <h2>Start</h2>
+<pre>npm install github:saxster/atlas three
+npx atlas new biology/heart --grammar machine</pre>
+    <p>That writes a model, its checks, the figure and a page. Every number on screen comes from the model, and the checks prove the model a second way.</p>
+    <h2>Built with it</h2>
+    <p><a href="examples/">Twenty figures</a> across physics, maths, chemistry, statistics and economics, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
+  </main>
 </body>
 </html>

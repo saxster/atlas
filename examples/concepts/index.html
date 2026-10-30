@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concepts · Atlas</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/atlas.css">
+<link rel="stylesheet" href="concepts.css">
+</head>
+<body>
+<!-- written by concepts/build.mjs from concepts/*.js: edit those, then run it -->
+  <header><a href="../">Atlas</a><span>21 of 28 ideas have a figure</span></header>
+  <section class="hero">
+    <h1>One idea, many subjects.</h1>
+    <p>Every idea in the atlases, and the figures that show it</p>
+  </section>
+  <nav><div class="in"><a href="#threads">Threads</a><a href="#physics">Physics</a><a href="#maths">Mathematics</a><a href="#statistics">Statistics</a><a href="#chemistry">Chemistry</a><a href="#economics">Economics</a><a href="#biology">Biology</a><a href="../physics/equations/">AP equation sheets</a></div></nav>
+  <main>
+  <h2 class="part" id="threads">Threads</h2>
+  <section class="group thread" id="thread-exponential">
+    <h3>Change in proportion to what is there</h3>
+    <p class="idea">When a thing grows or shrinks by a fixed fraction of itself, it follows an exponential: savings earning interest, a capacitor filling, a falling ball nearing its terminal speed, a population, a radioactive sample.</p>
+    <ul>
+      <li class="" id="exponential"><div class="e"><i>dy</i>/<i>dt</i> = <i>ky</i> &nbsp;⇒&nbsp; <i>y</i> = <i>y</i><sub>0</sub><i>e</i><sup><i>kt</i></sup></div><div class="m"><div class="n">Exponential growth and decay<span class="home">Mathematics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a><a href="../physics/circuits/#8"><span class="subj">Physics</span>13.8 RC circuits</a><a href="../physics/newton/#11"><span class="subj">Physics</span>2.11 Drag proportional to v</a></div></div></li>
+      <li class="" id="compound-interest"><div class="e"><i>A</i> = <i>P</i>(1 + <i>r</i>)<sup><i>n</i></sup></div><div class="m"><div class="n">Compound interest<span class="home">Economics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a></div></div></li>
+      <li class="" id="rule-of-72"><div class="e"><i>T</i> = ln 2 / ln(1 + <i>r</i>) ≈ 72/(100<i>r</i>) years</div><div class="m"><div class="n">Doubling time<span class="home">Economics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a></div></div></li>
+      <li class="" id="rc-charging"><div class="e"><i>q</i> = <i>Q</i>(1 − <i>e</i><sup>−<i>t</i>/<i>RC</i></sup>)</div><div class="m"><div class="n">A capacitor charging through a resistor<span class="home">Physics</span></div><div class="chips"><a href="../physics/circuits/#8"><span class="subj">Physics</span>13.8 RC circuits</a></div></div></li>
+      <li class="" id="linear-drag"><div class="e"><i>v</i> = <i>v</i><sub>T</sub>(1 − <i>e</i><sup>−<i>t</i>/τ</sup>)</div><div class="m"><div class="n">Falling against drag proportional to v<span class="home">Physics</span></div><div class="chips"><a href="../physics/newton/#11"><span class="subj">Physics</span>2.11 Drag proportional to v</a></div></div></li>
+      <li class="unshown" id="population-growth"><div class="e"><i>N</i> = <i>N</i><sub>0</sub><i>e</i><sup><i>rt</i></sup></div><div class="m"><div class="n">Unchecked population growth<span class="home">Biology</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="radioactive-decay"><div class="e"><i>N</i> = <i>N</i><sub>0</sub><i>e</i><sup>−λ<i>t</i></sup>, &nbsp;half-life ln 2/λ</div><div class="m"><div class="n">Radioactive decay<span class="home">Chemistry</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group thread" id="thread-circle">
+    <h3>Every wave is a turning circle seen from the side</h3>
+    <p class="idea">A point going round a circle, watched edge-on, goes up and down as a sine. That is why springs, pendulums and alternating current all have a 2π in them.</p>
+    <ul>
+      <li class="" id="sine"><div class="e"><i>P</i> = (cos θ, sin θ)</div><div class="m"><div class="n">Sine and cosine are the shadows of a turning point<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#1"><span class="subj">Mathematics</span>1.1 Sine is the height</a><a href="../maths/unit-circle/#2"><span class="subj">Mathematics</span>1.2 Cosine is the sideways shadow</a><a href="../maths/unit-circle/#5"><span class="subj">Mathematics</span>1.5 The sine wave</a></div></div></li>
+      <li class="" id="radian"><div class="e"><i>s</i> = <i>r</i>θ, &nbsp;one turn = 2π</div><div class="m"><div class="n">A radian is an arc one radius long<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#4"><span class="subj">Mathematics</span>1.4 Radians</a></div></div></li>
+      <li class="" id="angular-velocity"><div class="e">ω = Δθ/Δ<i>t</i>, &nbsp;<i>v</i> = <i>r</i>ω</div><div class="m"><div class="n">Angular velocity<span class="home">Physics</span></div><div class="chips"><a href="../physics/circular/#6"><span class="subj">Physics</span>3.6 Angular velocity</a></div></div></li>
+      <li class="" id="shm"><div class="e"><i>x</i> = <i>A</i> cos ω<i>t</i></div><div class="m"><div class="n">Simple harmonic motion<span class="home">Physics</span></div><div class="chips"><a href="../physics/oscillations/#2"><span class="subj">Physics</span>6.2 x, v and a</a><a href="../physics/oscillations/#8"><span class="subj">Physics</span>6.8 The SHM equation</a></div></div></li>
+      <li class="" id="pendulum-period"><div class="e"><i>T</i> = 2π√(ℓ/<i>g</i>)</div><div class="m"><div class="n">The period of a pendulum<span class="home">Physics</span></div><div class="chips"><a href="../physics/oscillations/#5"><span class="subj">Physics</span>6.5 The pendulum</a><a href="../physics/oscillations/#6"><span class="subj">Physics</span>6.6 Double the period</a></div></div></li>
+    </ul>
+  </section>
+  <section class="group thread" id="thread-bell">
+    <h3>Many small chances add up to a bell</h3>
+    <p class="idea">Add up many small, independent pushes and the total spreads as a normal curve, whatever each push looks like: balls on a pegboard, measurement error, molecules diffusing.</p>
+    <ul>
+      <li class="" id="binomial"><div class="e">P(<i>k</i>) = C(<i>n</i>, <i>k</i>) <i>p</i><sup><i>k</i></sup>(1 − <i>p</i>)<sup><i>n</i>−<i>k</i></sup>, &nbsp;mean <i>np</i>, variance <i>np</i>(1 − <i>p</i>)</div><div class="m"><div class="n">The binomial distribution<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="" id="normal-curve"><div class="e"><i>f</i>(<i>x</i>) = <i>e</i><sup>−(<i>x</i>−μ)²/2σ²</sup> / σ√(2π)</div><div class="m"><div class="n">The normal curve<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="" id="clt"><div class="e">the central limit theorem</div><div class="m"><div class="n">Sums of many small chances are bell-shaped<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="unshown" id="measurement-error"><div class="e">repeated readings spread as a normal curve about the true value</div><div class="m"><div class="n">Measurement error<span class="home">Statistics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="diffusion"><div class="e">mean squared distance = 2<i>Dt</i></div><div class="m"><div class="n">Diffusion spreads as a bell<span class="home">Biology</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group thread" id="thread-slope">
+    <h3>A rate is a slope</h3>
+    <p class="idea">How fast one thing changes as another does is the steepness of its graph: velocity from position, marginal cost from total cost.</p>
+    <ul>
+      <li class="" id="derivative"><div class="e"><i>f</i> ′(<i>x</i>) = lim (<i>f</i>(<i>x</i> + <i>h</i>) − <i>f</i>(<i>x</i>))/<i>h</i></div><div class="m"><div class="n">The derivative is the slope of the graph<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#5"><span class="subj">Mathematics</span>1.5 The sine wave</a><a href="../physics/kinematics/#9"><span class="subj">Physics</span>1.9 Calculus kinematics</a></div></div></li>
+      <li class="" id="velocity-slope"><div class="e"><i>v</i> = <i>dx</i>/<i>dt</i></div><div class="m"><div class="n">Velocity is the slope of position<span class="home">Physics</span></div><div class="chips"><a href="../physics/kinematics/#2"><span class="subj">Physics</span>1.2 Velocity</a><a href="../physics/kinematics/#9"><span class="subj">Physics</span>1.9 Calculus kinematics</a></div></div></li>
+      <li class="unshown" id="marginal-cost"><div class="e">MC = <i>dC</i>/<i>dQ</i></div><div class="m"><div class="n">Marginal cost is the slope of total cost<span class="home">Economics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group thread" id="thread-balance">
+    <h3>Systems settle where pushes balance</h3>
+    <p class="idea">A reaction, a market and a pendulum all come to rest where the pushes either way cancel, and move back when disturbed.</p>
+    <ul>
+      <li class="unshown" id="equilibrium"><div class="e"><i>K</i> = [products]/[reactants]</div><div class="m"><div class="n">A reaction settles where forward and back balance<span class="home">Chemistry</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="supply-demand"><div class="e"><i>Q</i><sub>d</sub>(<i>P</i>) = <i>Q</i><sub>s</sub>(<i>P</i>)</div><div class="m"><div class="n">Supply and demand settle where they cross<span class="home">Economics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <h2 class="part">By subject</h2>
+  <section class="group" id="physics">
+    <h3>Physics</h3>
+    <ul>
+      <li class="" id="velocity-slope"><div class="e"><i>v</i> = <i>dx</i>/<i>dt</i></div><div class="m"><div class="n">Velocity is the slope of position<span class="home">Physics</span></div><div class="chips"><a href="../physics/kinematics/#2"><span class="subj">Physics</span>1.2 Velocity</a><a href="../physics/kinematics/#9"><span class="subj">Physics</span>1.9 Calculus kinematics</a></div></div></li>
+      <li class="" id="angular-velocity"><div class="e">ω = Δθ/Δ<i>t</i>, &nbsp;<i>v</i> = <i>r</i>ω</div><div class="m"><div class="n">Angular velocity<span class="home">Physics</span></div><div class="chips"><a href="../physics/circular/#6"><span class="subj">Physics</span>3.6 Angular velocity</a></div></div></li>
+      <li class="" id="shm"><div class="e"><i>x</i> = <i>A</i> cos ω<i>t</i></div><div class="m"><div class="n">Simple harmonic motion<span class="home">Physics</span></div><div class="chips"><a href="../physics/oscillations/#2"><span class="subj">Physics</span>6.2 x, v and a</a><a href="../physics/oscillations/#8"><span class="subj">Physics</span>6.8 The SHM equation</a></div></div></li>
+      <li class="" id="pendulum-period"><div class="e"><i>T</i> = 2π√(ℓ/<i>g</i>)</div><div class="m"><div class="n">The period of a pendulum<span class="home">Physics</span></div><div class="chips"><a href="../physics/oscillations/#5"><span class="subj">Physics</span>6.5 The pendulum</a><a href="../physics/oscillations/#6"><span class="subj">Physics</span>6.6 Double the period</a></div></div></li>
+      <li class="" id="rc-charging"><div class="e"><i>q</i> = <i>Q</i>(1 − <i>e</i><sup>−<i>t</i>/<i>RC</i></sup>)</div><div class="m"><div class="n">A capacitor charging through a resistor<span class="home">Physics</span></div><div class="chips"><a href="../physics/circuits/#8"><span class="subj">Physics</span>13.8 RC circuits</a></div></div></li>
+      <li class="" id="linear-drag"><div class="e"><i>v</i> = <i>v</i><sub>T</sub>(1 − <i>e</i><sup>−<i>t</i>/τ</sup>)</div><div class="m"><div class="n">Falling against drag proportional to v<span class="home">Physics</span></div><div class="chips"><a href="../physics/newton/#11"><span class="subj">Physics</span>2.11 Drag proportional to v</a></div></div></li>
+    </ul>
+  </section>
+  <section class="group" id="maths">
+    <h3>Mathematics</h3>
+    <ul>
+      <li class="" id="sine"><div class="e"><i>P</i> = (cos θ, sin θ)</div><div class="m"><div class="n">Sine and cosine are the shadows of a turning point<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#1"><span class="subj">Mathematics</span>1.1 Sine is the height</a><a href="../maths/unit-circle/#2"><span class="subj">Mathematics</span>1.2 Cosine is the sideways shadow</a><a href="../maths/unit-circle/#5"><span class="subj">Mathematics</span>1.5 The sine wave</a></div></div></li>
+      <li class="" id="pythagorean-identity"><div class="e">sin²θ + cos²θ = 1</div><div class="m"><div class="n">The Pythagorean identity<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#3"><span class="subj">Mathematics</span>1.3 sin²θ + cos²θ = 1</a></div></div></li>
+      <li class="" id="radian"><div class="e"><i>s</i> = <i>r</i>θ, &nbsp;one turn = 2π</div><div class="m"><div class="n">A radian is an arc one radius long<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#4"><span class="subj">Mathematics</span>1.4 Radians</a></div></div></li>
+      <li class="" id="tangent"><div class="e">tan θ = sin θ / cos θ</div><div class="m"><div class="n">Tangent is the slope of the radius<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#6"><span class="subj">Mathematics</span>1.6 Tangent</a></div></div></li>
+      <li class="" id="derivative"><div class="e"><i>f</i> ′(<i>x</i>) = lim (<i>f</i>(<i>x</i> + <i>h</i>) − <i>f</i>(<i>x</i>))/<i>h</i></div><div class="m"><div class="n">The derivative is the slope of the graph<span class="home">Mathematics</span></div><div class="chips"><a href="../maths/unit-circle/#5"><span class="subj">Mathematics</span>1.5 The sine wave</a><a href="../physics/kinematics/#9"><span class="subj">Physics</span>1.9 Calculus kinematics</a></div></div></li>
+      <li class="" id="exponential"><div class="e"><i>dy</i>/<i>dt</i> = <i>ky</i> &nbsp;⇒&nbsp; <i>y</i> = <i>y</i><sub>0</sub><i>e</i><sup><i>kt</i></sup></div><div class="m"><div class="n">Exponential growth and decay<span class="home">Mathematics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a><a href="../physics/circuits/#8"><span class="subj">Physics</span>13.8 RC circuits</a><a href="../physics/newton/#11"><span class="subj">Physics</span>2.11 Drag proportional to v</a></div></div></li>
+    </ul>
+  </section>
+  <section class="group" id="statistics">
+    <h3>Statistics</h3>
+    <ul>
+      <li class="" id="binomial"><div class="e">P(<i>k</i>) = C(<i>n</i>, <i>k</i>) <i>p</i><sup><i>k</i></sup>(1 − <i>p</i>)<sup><i>n</i>−<i>k</i></sup>, &nbsp;mean <i>np</i>, variance <i>np</i>(1 − <i>p</i>)</div><div class="m"><div class="n">The binomial distribution<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="" id="normal-curve"><div class="e"><i>f</i>(<i>x</i>) = <i>e</i><sup>−(<i>x</i>−μ)²/2σ²</sup> / σ√(2π)</div><div class="m"><div class="n">The normal curve<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="" id="clt"><div class="e">the central limit theorem</div><div class="m"><div class="n">Sums of many small chances are bell-shaped<span class="home">Statistics</span></div><div class="chips"><a href="../statistics/galton/"><span class="subj">Statistics</span>Fig. Where 500 balls land</a></div></div></li>
+      <li class="unshown" id="measurement-error"><div class="e">repeated readings spread as a normal curve about the true value</div><div class="m"><div class="n">Measurement error<span class="home">Statistics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group" id="chemistry">
+    <h3>Chemistry</h3>
+    <ul>
+      <li class="" id="vsepr"><div class="e">VSEPR: domains → shape</div><div class="m"><div class="n">Electron pairs spread as far apart as they can<span class="home">Chemistry</span></div><div class="chips"><a href="../chemistry/vsepr/#0"><span class="subj">Chemistry</span>Ch. 1 The shapes of molecules</a><a href="../chemistry/vsepr/#1"><span class="subj">Chemistry</span>1.1 The tetrahedral angle</a></div></div></li>
+      <li class="" id="tetrahedral-angle"><div class="e">cos θ = −1/3, &nbsp;θ = 109.47°</div><div class="m"><div class="n">The tetrahedral angle<span class="home">Chemistry</span></div><div class="chips"><a href="../chemistry/vsepr/#1"><span class="subj">Chemistry</span>1.1 The tetrahedral angle</a><a href="../chemistry/vsepr/#2"><span class="subj">Chemistry</span>1.2 Methane</a></div></div></li>
+      <li class="" id="lone-pairs"><div class="e">CH<sub>4</sub> 109.5° &gt; NH<sub>3</sub> 106.7° &gt; H<sub>2</sub>O 104.5°</div><div class="m"><div class="n">Lone pairs squeeze the bonds together<span class="home">Chemistry</span></div><div class="chips"><a href="../chemistry/vsepr/#3"><span class="subj">Chemistry</span>1.3 Ammonia</a><a href="../chemistry/vsepr/#4"><span class="subj">Chemistry</span>1.4 Water</a><a href="../chemistry/vsepr/#5"><span class="subj">Chemistry</span>1.5 Why lone pairs push harder</a></div></div></li>
+      <li class="unshown" id="equilibrium"><div class="e"><i>K</i> = [products]/[reactants]</div><div class="m"><div class="n">A reaction settles where forward and back balance<span class="home">Chemistry</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="radioactive-decay"><div class="e"><i>N</i> = <i>N</i><sub>0</sub><i>e</i><sup>−λ<i>t</i></sup>, &nbsp;half-life ln 2/λ</div><div class="m"><div class="n">Radioactive decay<span class="home">Chemistry</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group" id="economics">
+    <h3>Economics</h3>
+    <ul>
+      <li class="" id="compound-interest"><div class="e"><i>A</i> = <i>P</i>(1 + <i>r</i>)<sup><i>n</i></sup></div><div class="m"><div class="n">Compound interest<span class="home">Economics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a></div></div></li>
+      <li class="" id="annuity"><div class="e">FV = <i>c</i>·((1 + <i>i</i>)<sup><i>n</i></sup> − 1)/<i>i</i></div><div class="m"><div class="n">Saving a fixed sum every month<span class="home">Economics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a></div></div></li>
+      <li class="" id="rule-of-72"><div class="e"><i>T</i> = ln 2 / ln(1 + <i>r</i>) ≈ 72/(100<i>r</i>) years</div><div class="m"><div class="n">Doubling time<span class="home">Economics</span></div><div class="chips"><a href="../economics/compound/"><span class="subj">Economics</span>Fig. ₹1,000 a month at 8 %</a></div></div></li>
+      <li class="unshown" id="marginal-cost"><div class="e">MC = <i>dC</i>/<i>dQ</i></div><div class="m"><div class="n">Marginal cost is the slope of total cost<span class="home">Economics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="supply-demand"><div class="e"><i>Q</i><sub>d</sub>(<i>P</i>) = <i>Q</i><sub>s</sub>(<i>P</i>)</div><div class="m"><div class="n">Supply and demand settle where they cross<span class="home">Economics</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  <section class="group" id="biology">
+    <h3>Biology</h3>
+    <ul>
+      <li class="unshown" id="diffusion"><div class="e">mean squared distance = 2<i>Dt</i></div><div class="m"><div class="n">Diffusion spreads as a bell<span class="home">Biology</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+      <li class="unshown" id="population-growth"><div class="e"><i>N</i> = <i>N</i><sub>0</sub><i>e</i><sup><i>rt</i></sup></div><div class="m"><div class="n">Unchecked population growth<span class="home">Biology</span></div><div class="chips"><span class="none">not shown yet</span></div></div></li>
+    </ul>
+  </section>
+  </main>
+</body>
+</html>

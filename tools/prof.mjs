@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
 import { CHROME, GL_ARGS } from './chrome.mjs';
-const c = process.argv[2], pg = +(process.argv[3] || 3);
+import { key } from './chapters.mjs';
+const c = key(process.argv[2]), pg = +(process.argv[3] || 3);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
 await page.goto(`http://127.0.0.1:8137/${c}/`, { waitUntil: 'load' }); await page.waitForFunction('window.__atlas');

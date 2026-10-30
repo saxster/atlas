@@ -5,8 +5,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { serve, launch } from './render.mjs';
+import { key } from './chapters.mjs';
 
-const [outArg, chapter = 'physics/oscillations', pg = '8'] = process.argv.slice(2);
+const [outArg, chArg = 'physics/oscillations', pg = '8'] = process.argv.slice(2), chapter = key(chArg);
 const out = outArg && path.resolve(outArg); if (out) fs.mkdirSync(out, { recursive: true });
 const { server, base } = serve(), browser = await launch();
 const p = await browser.newPage(); await p.setViewport({ width: 900, height: 900, deviceScaleFactor: 1 });

@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
 import { CHROME, GL_ARGS } from './chrome.mjs';
-const c = process.argv[2];
+import { key } from './chapters.mjs';
+const c = key(process.argv[2]);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
 const cdp = await page.createCDPSession(); await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 200 }); await cdp.send('Profiler.start');

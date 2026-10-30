@@ -3,7 +3,7 @@
 // the median of its neighbours (and enough pixels to see): a pop, a flash, a part teleporting, a frame that blows up.
 // Slow moves should be continuous, so their pixel counts rise and fall smoothly. Frames at a figure's declared
 // designed events (window.__atlas.events: a coin dropping in, a step starting) are counted apart. Exit 1 on any jump.
-import { everything as allChapters } from './chapters.mjs';
+import { everything as allChapters, key } from './chapters.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { serve, launch, open } from './render.mjs';
@@ -15,7 +15,7 @@ const fi = args.indexOf('--frames'), FRAMES = fi >= 0 ? args.splice(fi, 2)[1] : 
 // them, a pop doesn't. FLOOR: a jump must change at least 0.6 % of the figure (a coin-sized patch moving smoothly is
 // not a jump; the glitches worth catching, a part blowing up or teleporting, change several per cent).
 const FACTOR = 3, WINDOW = 2, FLOOR = 0.006;
-const list = args.length ? args : await allChapters();
+const list = args.length ? args.map(key) : await allChapters();
 const { server, base } = serve(), browser = await launch();
 let total = 0;
 for (const c of list) {

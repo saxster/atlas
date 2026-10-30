@@ -4,9 +4,9 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, subjects, everything as chapters } from './chapters.mjs';
+import { ROOT, subjects, everything as chapters, key } from './chapters.mjs';
 
-const only = process.argv.slice(2);
+const only = process.argv.slice(2).map(key);
 const run = file => {
   try { execFileSync(process.execPath, [file], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] }); return true; }
   catch (e) { process.stdout.write(e.stdout?.toString() || ''); process.stderr.write(e.stderr?.toString() || ''); return false; }
@@ -19,8 +19,8 @@ for (const c of only.length ? only : await chapters()) {
 }
 console.log(`${n} chapters and figures: all checks pass`);
 if (!only.length) for (const s of await subjects()) {
-  const eq = path.join(ROOT, s.id, 'equations', 'check.mjs');
+  const eq = path.join(ROOT, 'examples', s.id, 'equations', 'check.mjs');
   if (fs.existsSync(eq)) execFileSync(process.execPath, [eq], { cwd: ROOT, stdio: 'inherit' });
 }
 // the generated pages: the concept index (every link, every xref) and the contents pages must match their sources
-if (!only.length) for (const f of ['concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
+if (!only.length) for (const f of ['examples/concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });

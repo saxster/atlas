@@ -1,8 +1,9 @@
 // open a page whose left text overflows, scroll the left page to the bottom, screenshot it
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import puppeteer from 'puppeteer-core';
 import { CHROME, GL_ARGS } from './chrome.mjs';
+import { key } from './chapters.mjs';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const [ch, pg, out] = process.argv.slice(2);
+const [chArg, pg, out] = process.argv.slice(2), ch = key(chArg);
 const server = http.createServer((q, s) => { let p = path.join(ROOT, decodeURIComponent(new URL(q.url, 'http://x').pathname)); if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p += '/index.html'; if (!fs.existsSync(p)) { s.writeHead(404); return s.end(); } s.writeHead(200, { 'content-type': p.endsWith('.js') || p.endsWith('.mjs') ? 'text/javascript' : p.endsWith('.css') ? 'text/css' : p.endsWith('.json') ? 'application/json' : 'text/html' }); fs.createReadStream(p).pipe(s); }).listen(0);
 const b = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const p = await b.newPage(); await p.setViewport({ width: 1440, height: 900 });

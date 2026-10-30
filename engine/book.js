@@ -4,7 +4,6 @@
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
 import { createStage, smooth, ease } from './stage.js';
-import { XREFS } from './xrefs.js';
 
 const $ = id => document.getElementById(id);
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -16,7 +15,8 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&
 
 // chapter: { no, subject, PAGES, PLATES, buildWorld(E), lookKeys, state(clock, reduced), readout(state),
 //            forceLook?(selected, look), onFrame?(state, sheetEls), clock0? }
-// subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source, calm? }
+// subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source, calm?, xrefs? }
+//   xrefs: [[subject/dir/page, label, subject/dir/page, label, note]], shown on both pages as a "Compare" note
 // calm (chapter or subject): the figure is still until the reader scrolls, taps, presses a key or presses Play.
 // still?(): true when the reader's own settings ask for no motion (a book's Still mode); counts as reduced motion.
 // tourDwell?: seconds each page holds in the ?render tour (default 4); a page may set its own dwell.
@@ -65,7 +65,7 @@ export function startBook(chapter) {
       <div class="why" hidden>${q.why || q.solution}</div></div>`).join('')}</section>`;
   };
   const xrefHtml = i => {
-    const here = `${DIR}/${i}`, links = XREFS.flatMap(([a, al, b, bl, note]) => a === here ? [[b, bl, note]] : b === here ? [[a, al, note]] : []);
+    const here = `${DIR}/${i}`, links = (chapter.subject?.xrefs || []).flatMap(([a, al, b, bl, note]) => a === here ? [[b, bl, note]] : b === here ? [[a, al, note]] : []);
     if (!links.length) return '';
     return `<aside class="xref"><div class="kicker">Compare</div>${links.map(([to, label, note]) => {
       const d = to.slice(0, to.lastIndexOf('/')), k = to.slice(to.lastIndexOf('/') + 1);

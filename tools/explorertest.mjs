@@ -3,8 +3,9 @@
 // resets the run (and rebuilds the board where it must) without errors; the same seed gives the same pile;
 // ?render frames are the same for the same t. Exit 1 on any failure.
 import { serve, launch } from './render.mjs';
+import { key } from './chapters.mjs';
 
-const fig = process.argv[2] || 'statistics/galton';
+const fig = key(process.argv[2] || 'statistics/galton');
 const { server, base } = serve(), browser = await launch();
 const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
 const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });

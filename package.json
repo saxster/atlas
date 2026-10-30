@@ -1,18 +1,38 @@
 {
-  "name": "atlas",
-  "version": "1.0.0",
-  "description": "One figure engine and the subject atlases built on it",
+  "name": "@saxster/atlas",
+  "version": "0.1.0",
+  "description": "Paper-and-ink 3D teaching figures for any subject: a checked model, three ways to work it (book, machine, explorer), stills, video and textbook embeds",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "repository": "github:saxster/atlas",
+  "exports": {
+    ".": "./engine/index.js",
+    "./adapters/*": "./adapters/*",
+    "./*": "./engine/*"
+  },
+  "bin": {
+    "atlas": "./bin/atlas.mjs"
+  },
+  "files": [
+    "engine",
+    "adapters",
+    "bin",
+    "docs",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "check": "node tools/check.mjs",
     "test:browser": "node tools/allpages.mjs && node tools/controls.mjs && node tools/machinetest.mjs && node tools/explorertest.mjs && node tools/adaptertest.mjs",
     "site": "node tools/site.mjs && node concepts/build.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "type": "module",
-  "private": true,
+  "peerDependencies": {
+    "three": ">=0.180"
+  },
   "devDependencies": {
     "puppeteer-core": "^25.16.0"
-  }
+  },
+  "keywords": [],
+  "author": ""
 }

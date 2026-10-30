@@ -3,8 +3,9 @@
 // its speed, and finishes; Space runs the next step; Start over resets; Auto plays on by itself, loops, and is
 // remembered on the next visit; ?render frames are the same for the same t. Exit 1 on any failure.
 import { serve, launch } from './render.mjs';
+import { key } from './chapters.mjs';
 
-const fig = process.argv[2] || 'economics/compound';
+const fig = key(process.argv[2] || 'economics/compound');
 const { server, base } = serve(), browser = await launch();
 const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
 const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });

@@ -1,7 +1,8 @@
 // node tools/uitest.mjs <chapter> <page> <out.png> [w h touch] — deep link, practice and compare blocks, a tap.
 import puppeteer from 'puppeteer-core';
 import { CHROME, GL_ARGS } from './chrome.mjs';
-const [c, pg, out, w = 1440, h = 900, touch] = process.argv.slice(2);
+import { key } from './chapters.mjs';
+const [cArg, pg, out, w = 1440, h = 900, touch] = process.argv.slice(2), c = key(cArg);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage();
 const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !m.location().url?.includes('/_vercel/insights/')) errors.push(m.text()); });

@@ -4,12 +4,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { ROOT, subjects } from './chapters.mjs';
+import { ROOT, subjects, key, EXAMPLES } from './chapters.mjs';
 import { serve, launch, open } from './render.mjs';
 
-const only = process.argv.slice(2);
+const only = process.argv.slice(2).map(key);
 const jobs = (await subjects()).filter(s => s.contents !== false).flatMap(s =>
-  [...(s.chapters || []), ...(s.figures || [])].map(id => ({ s, id, key: `${s.id}/${id}`, card: s.cards?.[id] || {}, book: (s.chapters || []).includes(id) })))
+  [...(s.chapters || []), ...(s.figures || [])].map(id => ({ s, id, key: `examples/${s.id}/${id}`, card: s.cards?.[id] || {}, book: (s.chapters || []).includes(id) })))
   .filter(j => !only.length || only.includes(j.key));
 const { server, base } = serve(), browser = await launch();
 let bad = 0;
@@ -24,7 +24,7 @@ for (const j of jobs) {
   // the picture is the scene and its labels: the figure's hint, corners and badges are page furniture
   await R.page.addStyleTag({ content: '.hintbar, .corner, .speed, .hint, #hint, .fig-no, .readout { visibility: hidden !important; }' });
   await R.seek(t);
-  const out = path.join(ROOT, j.s.id, 'img', `${j.id}.jpg`); fs.mkdirSync(path.dirname(out), { recursive: true });
+  const out = path.join(EXAMPLES, j.s.id, 'img', `${j.id}.jpg`); fs.mkdirSync(path.dirname(out), { recursive: true });
   await R.page.screenshot({ path: out, type: 'jpeg', quality: 90, clip });
   execFileSync('sips', ['-z', '800', '900', '-s', 'formatOptions', '84', out], { stdio: 'ignore' });   // macOS; 900×800
   if (R.errors.length) bad++;

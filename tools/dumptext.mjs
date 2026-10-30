@@ -3,7 +3,8 @@
 import fs from 'fs';
 import puppeteer from 'puppeteer-core';
 import { CHROME, GL_ARGS } from './chrome.mjs';
-const [c, out] = process.argv.slice(2);
+import { key } from './chapters.mjs';
+const [cArg, out] = process.argv.slice(2), c = key(cArg);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });
 const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
 await page.goto(`http://127.0.0.1:8137/${c}/`, { waitUntil: 'networkidle0' }); await page.waitForFunction('window.__atlas');
