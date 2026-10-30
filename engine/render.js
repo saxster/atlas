@@ -5,9 +5,14 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { TONE } from './parts.js';
+import { TONE, ATLAS_INKS, applyTheme } from './parts.js';
 
-export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa' } = {}) {
+// theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
+export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null } = {}) {
+  const th = applyTheme(theme);
+  // themed: the scene is drawn into a linear buffer and OutputPass encodes it to sRGB once, so the clear colour goes in
+  // already linear or the paper comes out lifted (kym_physics found dark paper turning grey)
+  if (th) bg = new THREE.Color(th.sheet).convertSRGBToLinear();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
   renderer.setClearColor(bg);
   const scene = new THREE.Scene();
@@ -47,7 +52,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     uniforms: {
       tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null },
       uRes: { value: new THREE.Vector2() }, uPx: { value: 1 }, cameraNear: { value: near }, cameraFar: { value: far },
-      uInk: { value: ['#d4d4d6', '#b4b4b8', '#8a8a8f', '#2c2c30', '#000000'].map(c => new THREE.Color(c)) },
+      uInk: { value: (th ? th.inks : ATLAS_INKS).map(c => new THREE.Color(c)) },
     },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: `
@@ -187,5 +192,13 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   const v = new THREE.Vector3();
   function toScreen(p, w, h) { v.copy(p).project(camera); return [(v.x * 0.5 + 0.5) * w, (-v.y * 0.5 + 0.5) * h, v.z < 1]; }
 
-  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, pick, stepExplode, placeCamera, distFor, toScreen };
+  // free the GPU: a book page may open and close many figures, and browsers cap live WebGL contexts
+  function dispose() {
+    scene.traverse(o => { if (o.geometry) o.geometry.dispose(); const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach(x => x.dispose()); });
+    for (const m of nmats.values()) m.dispose();
+    normalRT.dispose(); colorRT.dispose(); composer.dispose?.();
+    renderer.dispose(); renderer.forceContextLoss();
+  }
+
+  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };
 }

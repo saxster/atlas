@@ -39,6 +39,39 @@ export const PALETTE = {
   blue: ['#8fb0f0', '#5b86d6', '#3d63a8'],          // velocity / system totals, where a chapter needs a second hue
   board: ['#fdfdfb', '#f7f7f4', '#ececE8'],
 };
+let before = null;                                  // the palette as it was before a theme replaced it
+export const ATLAS_INKS = ['#d4d4d6', '#b4b4b8', '#8a8a8f', '#2c2c30', '#000000'];
+
+// A host's theme (a book's sepia, light or dark) in place of the atlas's own paper: every palette is mixed from the
+// sheet and ink colours, so paper is paper in each theme. theme: { sheet, ink, red?, blue?, green?, ochre? } as CSS
+// hex; null puts the atlas palette back. Returns { sheet, ink, dark, inks } for the renderer. Call before the world
+// is built (materials made earlier keep their colours). Chapters may add or recolour palettes as they load (a lit
+// filament, a chapter's own blue); without a theme those stand untouched. Mixing as in kym_physics' spread/parts.js.
+export function applyTheme(theme) {
+  if (!theme) {
+    if (before) { for (const k of Object.keys(PALETTE)) delete PALETTE[k]; Object.assign(PALETTE, before); before = null; cache.clear(); }
+    return null;
+  }
+  if (!before) before = JSON.parse(JSON.stringify(PALETTE));
+  cache.clear();
+  const sheet = new THREE.Color(theme.sheet), ink = new THREE.Color(theme.ink);
+  const dark = sheet.getHSL({}).l < 0.4;
+  const mix = (a, b, u) => '#' + a.clone().lerp(b, u).getHexString();
+  const tri = (c, spread = 1) => { const base = new THREE.Color(c); return [mix(base, sheet, 0.35 * spread), mix(base, ink, 0.02), mix(base, ink, 0.16 * spread)]; };
+  const paperTop = dark ? sheet.clone().lerp(ink, 0.10) : sheet.clone().lerp(new THREE.Color('#ffffff'), 0.6);
+  Object.assign(PALETTE, {
+    paper: ['#' + paperTop.getHexString(), mix(sheet, ink, dark ? 0.06 : 0.04), mix(sheet, ink, dark ? 0.0 : 0.14)],
+    base: [mix(sheet, ink, 0.03), mix(sheet, ink, 0.07), mix(sheet, ink, 0.17)],
+    dark: [mix(sheet, ink, 0.45), mix(sheet, ink, 0.52), mix(sheet, ink, 0.60)],
+    ink: [mix(sheet, ink, 0.75), mix(sheet, ink, 0.86), mix(sheet, ink, 0.95)],
+    red: tri(theme.red || '#a94730'),
+    blue: tri(theme.blue || '#356d83'),
+    green: tri(theme.green || '#2e604a'),
+    ochre: tri(theme.ochre || '#936022'),
+    board: [mix(sheet, ink, 0.0), mix(sheet, ink, 0.02), mix(sheet, ink, 0.06)],
+  });
+  return { sheet: '#' + sheet.getHexString(), ink: '#' + ink.getHexString(), dark, inks: [0.18, 0.32, 0.5, 0.82, 1].map(u => mix(sheet, ink, u)) };
+}
 const cache = new Map();
 export function shadeMat(pal = 'paper', { opacity = 1 } = {}) {
   const key = pal + opacity;

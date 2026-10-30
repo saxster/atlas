@@ -1,15 +1,12 @@
 // The book: scroll turns the pages and moves the camera; hover lights a thing; click breaks
-// it down. A chapter supplies its pages, breakdowns, world and clock; this does the rest.
+// it down. A chapter supplies its pages, breakdowns, world and clock; this does the rest. The figure itself is the
+// stage (stage.js); the book is everything around it: pages, the leaf turning, practice, the top bar, Play.
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
-import { createEngine } from './render.js';
+import { createStage, smooth, ease } from './stage.js';
 import { XREFS } from './xrefs.js';
 
 const $ = id => document.getElementById(id);
-const clamp01 = x => Math.min(Math.max(x, 0), 1);
-const smooth = (a, b, x) => { const u = clamp01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
-const ease = u => (u = clamp01(u), u < 0.5 ? 4 * u ** 3 : 1 - (-2 * u + 2) ** 3 / 2);
-const lerp = (a, b, u) => a + (b - a) * u;
 const touch = matchMedia('(pointer: coarse)').matches;
 const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or press Esc to close';
 const DEFAULT_HINT = touch ? 'Drag sideways to turn · tap to break it down' : 'Drag to turn · shift-drag to pan · click to break it down';
@@ -151,115 +148,16 @@ export function startBook(chapter) {
   });
 
   // ---------- scene ----------
-  const E = createEngine($('gl'), { fov: 18, near: 0.2, far: 300 });
-  const W = chapter.buildWorld(E);
-  // the figure's box, read once per resize: reading it every frame forced a layout after each DOM write.
-  // Its size is the layout size, so the book zooming open (cover.js) cannot shrink the canvas; cover.js refits after.
-  let rect;
-  const fit = () => { const c = $('gl'), b = c.getBoundingClientRect(); rect = { left: b.left, top: b.top, width: c.clientWidth, height: c.clientHeight }; E.resize(rect.width, rect.height); };
-  addEventListener('resize', fit);
-  new ResizeObserver(fit).observe($('gl')); fit();
+  const S = createStage($('gl'), $('labels'), chapter, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  const E = S.E;
 
-  // ---------- labels anchored to the scene ----------
-  const labels = (W.labels || []).map(L => {
-    const el = document.createElement('div'); el.className = 'lbl ' + L.cls; el.innerHTML = L.html; $('labels').appendChild(el);
-    return { el, at: L.at, text: L.text, last: L.html };   // text: optional () => html for live values
-  });
-  function placeLabels(w, h) {
-    for (const L of labels) {
-      const p = L.at();
-      if (!p) { L.el.style.opacity = 0; continue; }
-      const [x, y, front] = E.toScreen(p, w, h);
-      L.el.style.opacity = front && x > 8 && x < w - 8 && y > 8 && y < h - 8 ? 1 : 0;
-      L.el.style.left = `${x}px`; L.el.style.top = `${y}px`;
-      if (L.text) { const h = L.text(); if (h !== L.last) { L.el.innerHTML = h; L.last = h; } }
-    }
-  }
-
-  // ---------- hover / click ----------
-  let hovered = null, selected = null, pageLit = PAGES[0].lit;
-  const relight = () => E.setLit(hovered || selected || pageLit);
-  // hover is re-checked every frame at the pointer's last spot, so moving things light up as they
-  // pass under a still cursor and a click lands on whatever is lit at that moment
-  // Hover is latched: once something lights up it stays lit (and time stays stopped) until the
-  // pointer moves LATCH px from where it caught it, so a moving thing can't slip out from under it.
-  let pointer = null, anchor = null;
-  const LATCH = 40;
-  function hoverAt(fromMove) {
-    if (!pointer || (drag && drag.moved)) return;
-    if (hovered && anchor && Math.hypot(pointer.x - anchor.x, pointer.y - anchor.y) < LATCH) return;
-    if (!fromMove && hovered) return;            // per-frame checks only catch new things passing under
-    const r = rect;
-    const k = E.pick(pointer.x - r.left, pointer.y - r.top, r.width, r.height);
-    if (k) anchor = { ...pointer };
-    if (k !== hovered) {
-      hovered = k; relight();
-      if (k) timeRate = 0;                       // stop at once, so it stays where it was caught
-      $('gl').classList.toggle('pointing', !!k);
-      $('hint').textContent = k ? `${E.ASM[k].userData.title} — click to break it down` : selected ? CLOSE_HINT : DEFAULT_HINT;
-    }
-  }
-  // drag turns the camera around the subject; shift- or right-drag pans; a still click selects
-  const orbit = { az: 0, el: 0, pan: new E.THREE.Vector3() };
-  let drag = null;
-  $('gl').addEventListener('contextmenu', e => e.preventDefault());
-  $('gl').addEventListener('pointerdown', e => {
-    begin();
-    drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2, moved: false };
-    $('gl').setPointerCapture(e.pointerId);
-  });
-  $('gl').addEventListener('pointerup', e => {
-    if (drag && !drag.moved && e.button === 0) {
-      // a finger has no hover: a tap picks whatever is under it
-      const k = e.pointerType === 'mouse' ? hovered : E.pick(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
-      select(k && k !== selected ? k : null);
-    }
-    drag = null; $('gl').classList.remove('dragging');
-  });
-  $('gl').addEventListener('dblclick', () => { orbit.az = 0; orbit.el = 0; orbit.pan.set(0, 0, 0); });
-  $('gl').addEventListener('pointermove', e => {
-    if (drag) {
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
-      drag.moved = true; drag.x = e.clientX; drag.y = e.clientY;
-      $('gl').classList.add('dragging');
-      if (drag.pan) {
-        // world units per screen pixel at the target's depth, so the scene follows the cursor
-        const cam = E.camera, k = 2 * Math.tan(E.THREE.MathUtils.degToRad(cam.fov / 2)) * cam.position.distanceTo(lookAt) / rect.height;
-        const right = new E.THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), up = new E.THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
-        orbit.pan.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
-      } else { orbit.az -= dx * 0.35; orbit.el += dy * 0.25; }
-      return;
-    }
-    pointer = { x: e.clientX, y: e.clientY };
-    hoverAt(true);
-  });
-  $('gl').addEventListener('pointerleave', () => { pointer = null; anchor = null; hovered = null; relight(); $('gl').classList.remove('pointing'); });
-  addEventListener('keydown', e => {
-    if (e.key === 'Escape' && selected) { const back = returnFocus; select(null); back?.focus(); }
-    if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) begin();
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goto(Math.round(scrollY / pageH) + 1); }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goto(Math.round(scrollY / pageH) - 1); }
-  });
-
-  let selectScroll = 0, focusAmt = 0, lastFocus = null, returnFocus = null;
-  function focusOf(k) {
-    const g0 = E.ASM[k];
-    // an assembly may name its own breakdown view: userData.focus = () => ({ target: [x, y, z], radius })
-    if (g0.userData.focus) { const f = g0.userData.focus(); return { target: f.target, dist: Math.max(E.distFor(f.radius), g0.userData.minDist ?? 2) }; }
-    const g = g0, box = new E.THREE.Box3();
-    g.updateMatrixWorld(true);
-    const shown = o => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };   // hidden parents too
-    g.traverse(o => { if (o.isMesh && o.userData.part !== undefined && shown(o)) box.expandByObject(o); });
-    const s = box.getBoundingSphere(new E.THREE.Sphere());
-    return { target: s.center.toArray(), dist: Math.max(E.distFor(Math.max(s.radius, g.userData.minRadius ?? 1.2)), g.userData.minDist ?? 8) };   // a scene may allow a closer zoom
-  }
-  function select(k, from) {
-    if (k && !E.ASM[k]) return;
-    selected = k;
-    returnFocus = from || null;
-    for (const [key, g] of Object.entries(E.ASM)) g.userData.target = key === k ? 1 : 0;
-    selectScroll = scrollY; relight();
+  // ---------- hover / click: the stage reports, the book shows ----------
+  let returnFocus = null, pendingFrom = null, selectScroll = 0;
+  S.hooks.onPointerDown = () => begin();
+  S.hooks.onHover = k => { $('hint').textContent = k ? `${E.ASM[k].userData.title} — click to break it down` : S.selected ? CLOSE_HINT : DEFAULT_HINT; };
+  S.hooks.onSelect = k => {
+    returnFocus = pendingFrom; pendingFrom = null;
+    selectScroll = scrollY;
     const plate = $('plate');
     if (!k) { plate.hidden = true; $('hint').textContent = DEFAULT_HINT; return; }
     const u = E.ASM[k].userData;
@@ -272,9 +170,17 @@ export function startBook(chapter) {
       <table class="data" id="facts" aria-live="off"></table>`;
     plate.hidden = false;
     plate.querySelector('.close').onclick = () => { const back = returnFocus; select(null); back?.focus(); };
-    if (from) plate.querySelector('.close').focus();
+    if (returnFocus) plate.querySelector('.close').focus();
     $('hint').textContent = CLOSE_HINT;
-  }
+  };
+  // from: the button that asked (a part button), so focus can go back to it when the breakdown closes
+  function select(k, from) { pendingFrom = from || null; S.select(k); }
+  addEventListener('keydown', e => {
+    if (e.key === 'Escape' && S.selected) { const back = returnFocus; select(null); back?.focus(); }
+    if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) begin();
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goto(Math.round(scrollY / pageH) + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goto(Math.round(scrollY / pageH) - 1); }
+  });
 
   // a small badge says when motion is stopped (pointing at something, or a breakdown open)
   const paused = document.createElement('div');
@@ -286,7 +192,6 @@ export function startBook(chapter) {
   // resolution follows the device: if frames run slow for two seconds running, draw fewer pixels
   // ponytail: only ever steps down (to 1 px per CSS px); stepping back up would need hysteresis
   let last0 = performance.now(), slow = 0, win = [], dprCap = touch ? 1.5 : 2;
-  E.setDprCap(dprCap);
   function adapt(ms) {
     win.push(ms);
     if (win.length < 120) return;
@@ -296,22 +201,20 @@ export function startBook(chapter) {
     slow = avg > 1000 / 45 ? slow + 1 : 0;
     if (slow >= 2 && dprCap > 1) { dprCap = Math.max(1, dprCap - 0.25); E.setDprCap(dprCap); slow = 0; }
   }
-  let timeRate = 1, last = performance.now(), clock = chapter.clock0 || 0, orbitPage = 0, orbitHome = false;
-  const lookAt = new E.THREE.Vector3();
+  let last = performance.now();
   const EMBED_PAGE = Math.min(Math.max(+Q.get('page') || 0, 0), N - 1);
   let tourT = 0;
   function frame(now) {
     const dt = RENDER ? 1 / 60 : Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;   // a frame stamp can predate setup
     const s = RENDER ? tourAt(tourT) : EMBED ? EMBED_PAGE : Math.min(Math.max(scrollY / pageH, 0), N - 1);
     const i = Math.min(Math.floor(s), N - 1), f = s - i, j = Math.min(i + 1, N - 1);
-    if (selected && Math.abs(scrollY - selectScroll) > pageH * 0.25) select(null);
+    if (S.selected && Math.abs(scrollY - selectScroll) > pageH * 0.25) select(null);
     if (!RENDER) adapt(now - last0);
     last0 = now;
 
     // text: the leaf turns over the second half of each page's scroll
     const flip = narrow() || i === j ? 0 : smooth(0.5, 1, f);
     showPage(flip > 0.999 ? j : (narrow() ? Math.round(s) : i));
-    if (PAGES[shown].lit !== pageLit) { pageLit = PAGES[shown].lit; relight(); }
     const leaf = $('leaf');
     if (flip > 0.001 && flip < 0.999) {
       if (leafFor !== j) { leafFor = j; $('leafsheet').innerHTML = sheetHtml(j); $('leafnext').textContent = PAGES[j].fig; leafFolio.lastElementChild.textContent = j + 1; }
@@ -322,70 +225,21 @@ export function startBook(chapter) {
     } else leaf.style.visibility = 'hidden';
     $('cue').style.opacity = s < 0.05 ? 1 : 0;
 
-    // camera: the scroll path, blended toward the opened thing
-    const u = ease(smooth(0.3, 1, f));
-    const A = PAGES[i].cam, B = PAGES[j].cam;
-    let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: lerp(A.az, B.az, u), el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) };
-    cam.dist *= Math.max(1, 1.25 / E.camera.aspect);
-    if (narrow()) cam.dist *= chapter.narrowZoom ?? 1;
-    if (!reduced && !drag && started && !userPaused) cam.az += Math.sin(now / 5200) * 1.2;
-    const page = Math.round(s);
-    if (page !== orbitPage) { orbitPage = page; orbitHome = true; }
-    if (drag && drag.moved) orbitHome = false;
-    if (orbitHome) { const k = Math.exp(-dt * 3); orbit.az *= k; orbit.el *= k; orbit.pan.multiplyScalar(k); }
-    focusAmt += ((selected ? 1 : 0) - focusAmt) * (1 - Math.exp(-dt * 4));
-    if (selected) lastFocus = focusOf(selected);
-    if (focusAmt > 0.001 && lastFocus) {
-      const F = lastFocus;
-      cam = { target: cam.target.map((v, k) => lerp(v, F.target[k], focusAmt)), az: cam.az, el: lerp(cam.el, Math.max(cam.el, 6), focusAmt), dist: lerp(cam.dist, F.dist, focusAmt) };
-    }
-    cam.az += orbit.az;
-    cam.el = Math.min(Math.max(cam.el + orbit.el, -4), 85);
-    cam.target = cam.target.map((v, k) => v + orbit.pan.getComponent(k));
-    lookAt.fromArray(cam.target);
-    E.placeCamera(cam);
-
-    // physics: time pauses while something is open, so it can be read
-    // time eases to a stop while something is pointed at or open, so moving things can be caught and read
-    timeRate = selected || hovered || !started || userPaused ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
-    if (RENDER) clock = (chapter.clock0 || 0) + tourT;
-    else if (!reduced) clock += dt * timeRate;
-    paused.classList.toggle('on', !reduced && started && !userPaused && !!(selected || hovered));
-    const state = chapter.state(clock, reduced);
-    const LA = PAGES[i].look, LB = PAGES[j].look, look = {};
-    for (const key of chapter.lookKeys) look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
-    if (chapter.forceLook) chapter.forceLook(selected, look);
-    W.update(state, look);
-    E.stepExplode(dt);
+    // the figure: camera, time, world, labels (stage.js); time pauses while something is pointed at or open
+    const state = S.step({ now, dt, s, litPage: shown, running: started && !userPaused, narrow: narrow(), narrowZoom: chapter.narrowZoom ?? 1,
+      clockAt: RENDER ? (chapter.clock0 || 0) + tourT : undefined });
+    paused.classList.toggle('on', !reduced && started && !userPaused && !!(S.selected || S.hovered));
 
     $('readout').textContent = chapter.readout(state, PAGES[shown]);
     if (chapter.onFrame) chapter.onFrame(state, [$('sheet'), $('leafsheet')]);
-    if (selected && $('facts')) $('facts').innerHTML = PLATES[selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
-
-    hoverAt(false);
-    E.render();
-    placeLabels(rect.width, rect.height);
+    if (S.selected && $('facts')) $('facts').innerHTML = PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
     if (!RENDER) requestAnimationFrame(frame);
   }
-  relight();
+  S.relight();
   { const k = fromHash(); if (k !== null) goto(k, true); }
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  // for tools/labels.mjs: every label on screen, its box, and whether a solid stands between it and the camera
-  const ray = new E.THREE.Raycaster(), anchorV = new E.THREE.Vector3();
-  function labelReport() {
-    const solids = []; E.scene.traverse(o => { if (o.isMesh && o.visible && o.userData.part !== undefined && o.material.depthTest !== false && !o.material.transparent) solids.push(o); });   // arrows draw over solids and glass shows through: neither hides a label
-    const box = $('gl').getBoundingClientRect();
-    // a vector's label rides its arrow, which is drawn over the solids as in a free-body diagram: never hidden
-    return labels.filter(L => +L.el.style.opacity > 0).map(L => {
-      const p = L.at(), r = L.el.getBoundingClientRect();
-      anchorV.copy(p); const d = E.camera.position.distanceTo(anchorV);
-      ray.set(E.camera.position, anchorV.clone().sub(E.camera.position).normalize()); ray.far = d * 0.97;
-      const hit = ray.intersectObjects(solids, false).find(h => { for (let o = h.object; o; o = o.parent) if (!o.visible) return false; return true; });
-      return { text: L.el.textContent, box: [r.left - box.left, r.top - box.top, r.width, r.height], hiddenBy: hit && !L.el.classList.contains('vec') ? (hit.object.userData.part || 'a solid') : null };
-    });
-  }
-  window.__atlas = { E, select, goto, N, labelReport, get started() { return started; }, get clock() { return clock; } };
+  window.__atlas = { E, S, select, goto, N, labelReport: S.labelReport, get started() { return started; }, get clock() { return S.clock; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;
