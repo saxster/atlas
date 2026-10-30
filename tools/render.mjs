@@ -31,10 +31,14 @@ export async function open(browser, base, chapter, w = 1440, h = 900, query = 'r
   await page.goto(`${base}/${chapter}/?${query}`, { waitUntil: 'networkidle0' });
   await page.waitForFunction('window.seek', { timeout: 30000 });
   const seek = t => page.evaluate(t => window.seek(t), t);
-  // the first frame after load rasterises a little differently; one throwaway frame settles it
+  // pre-roll: draw the tour once and let the fonts settle, so glyphs that need a fallback font (₹ is not in EB Garamond)
+  // are loaded before any frame is kept; the first frame after load also rasterises a little differently
+  for (let t = 0, D = await page.evaluate(() => window.DURATION); t <= D; t += D / 12) await seek(t);
+  await page.evaluate(() => document.fonts.ready); await new Promise(r => setTimeout(r, 300));
   await seek(0); await page.screenshot();
-  const { duration, dwells, turn } = await page.evaluate(() => ({ duration: window.DURATION, dwells: window.__atlas.tour.dwells, turn: window.__atlas.tour.turn }));
-  const starts = dwells.map((_, i) => dwells.slice(0, i).reduce((a, d) => a + d + turn, 0));
+  // a book's tour is dwells and turns; a machine or explorer gives its stretches' starts outright
+  const { duration, dwells, turn = 0, given } = await page.evaluate(() => ({ duration: window.DURATION, dwells: window.__atlas.tour.dwells, turn: window.__atlas.tour.turn, given: window.__atlas.tour.starts }));
+  const starts = given || dwells.map((_, i) => dwells.slice(0, i).reduce((a, d) => a + d + turn, 0));
   return { page, errors, seek, duration, pages: dwells.length, starts, dwells, turn,
     mid: i => starts[i] + dwells[i] / 2,                     // the middle of page i's dwell
     shot: (file, t) => seek(t).then(() => page.screenshot({ path: file })) };

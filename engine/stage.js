@@ -137,13 +137,15 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   // s: the page position; litPage: whose lit thing is lit (the page whose text shows); running: time may advance
   // (false while paused or still); clockAt: set the clock outright (a recorded tour) instead of advancing it.
   let clock = chapter.clock0 || 0, focusAmt = 0, lastFocus = null, orbitPage = 0, orbitHome = false;
-  function step({ now, dt, s, litPage = Math.round(s), running = true, narrow = false, narrowZoom = 1, clockAt }) {
+  // blend: 'turn' eases each page's camera and look in over the second part of the scroll (a book's page turn);
+  // 'linear' follows s as it is, for a caller that already eases s (a machine's step).
+  function step({ now, dt, s, litPage = Math.round(s), running = true, narrow = false, narrowZoom = 1, clockAt, blend = 'turn' }) {
     s = Math.min(Math.max(s, 0), N - 1);
     const i = Math.min(Math.floor(s), N - 1), f = s - i, j = Math.min(i + 1, N - 1);
     if (PAGES[litPage].lit !== pageLit) { pageLit = PAGES[litPage].lit; relight(); }
 
     // camera: the scroll path, blended toward the opened thing
-    const u = ease(smooth(0.3, 1, f));
+    const u = blend === 'linear' ? f : ease(smooth(0.3, 1, f));
     const A = PAGES[i].cam, B = PAGES[j].cam;
     let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: lerp(A.az, B.az, u), el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) };
     cam.dist *= Math.max(1, 1.25 / E.camera.aspect);

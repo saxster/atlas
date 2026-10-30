@@ -1,0 +1,13 @@
+/* Labels anchored to the figure's scene (stage.js places them): vectors, ticks, axes, marks, and a machine's sound words.
+   Shared by the book (book.css) and the machine and explorer pages (figure.css). */
+#labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.lbl { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; transition: opacity .25s; }
+.lbl.vec { font: italic 22px/1 var(--serif); color: var(--hi); }
+.lbl.vec.red { color: var(--red); }
+.lbl.tick { font: 11px/1 var(--mono); color: var(--muted); transform: translate(-100%, -50%); }
+.lbl.board { font: italic 17px/1 var(--serif); color: var(--hi); transform: translate(0, -50%); }
+.lbl.axis { font: italic 15px/1 var(--serif); color: var(--muted); transform: translate(-100%, -50%); }
+.lbl.vec.blue { color: #3d63a8; }
+.lbl.vec.grey { color: var(--mid); }
+.lbl.mark { font: 15px/1 var(--serif); color: #86868c; }
+.lbl.sound { font: italic 600 19px/1 var(--serif); color: var(--red); letter-spacing: .02em; transform: translate(-50%, -100%) rotate(-6deg); }

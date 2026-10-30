@@ -38,7 +38,9 @@ if (page >= 0) {
 }
 
 // ?render: seek(t) is a pure function of t, so the same t gives the same pixels in any order
-await open(`/${c}/?render`); await p.evaluate(() => seek(0)); await p.screenshot();
+await open(`/${c}/?render`);
+await p.evaluate(async () => { for (let t = 0; t <= DURATION; t += DURATION / 12) seek(t); await document.fonts.ready; }); await wait(300);   // pre-roll: fonts settle
+await p.evaluate(() => seek(0)); await p.screenshot();
 // the figure (canvas, labels, readout): the top bar's dots re-rasterise a few pixels differently after a repaint
 const at = async t => { await p.evaluate(t => seek(t), t); return (await p.$('#right')).screenshot({ encoding: 'base64' }); };
 const f1 = await at(3.2), f2 = await at(20), f3 = await at(1), f4 = await at(3.2);

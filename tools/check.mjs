@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, subjects, chapters } from './chapters.mjs';
+import { ROOT, subjects, everything as chapters } from './chapters.mjs';
 
 const only = process.argv.slice(2);
 const run = file => {
@@ -16,7 +16,7 @@ for (const c of only.length ? only : await chapters()) {
   if (!run(path.join(ROOT, c, 'checks.mjs'))) { console.log(`FAIL ${c}`); process.exit(1); }
   n++;
 }
-console.log(`${n} chapters: all checks pass`);
+console.log(`${n} chapters and figures: all checks pass`);
 if (!only.length) for (const s of await subjects()) {
   const eq = path.join(ROOT, s.id, 'equations', 'check.mjs');
   if (fs.existsSync(eq)) execFileSync(process.execPath, [eq], { cwd: ROOT, stdio: 'inherit' });

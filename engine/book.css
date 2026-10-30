@@ -1,3 +1,4 @@
+@import url("labels.css");
 /* The open book. The document scrolls; the book stays put and turns its pages. */
 .book-body { overflow-x: hidden; }
 .scroll-space { width: 1px; }
@@ -135,17 +136,9 @@
 .hintline { font: 12px var(--mono); color: var(--muted); letter-spacing: .03em; }
 .data.cols td, .data.cols th { width: 50%; vertical-align: top; }
 .data.eqs td:first-child { font: 17px var(--serif); color: var(--strong); }
-#labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.lbl { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; transition: opacity .25s; }
-.lbl.vec { font: italic 22px/1 var(--serif); color: var(--hi); }
-.lbl.vec.red { color: var(--red); }
-.lbl.tick { font: 11px/1 var(--mono); color: var(--muted); transform: translate(-100%, -50%); }
-.lbl.board { font: italic 17px/1 var(--serif); color: var(--hi); transform: translate(0, -50%); }
-.lbl.axis { font: italic 15px/1 var(--serif); color: var(--muted); transform: translate(-100%, -50%); }
 .chart .mark { fill: var(--hi); }
 .chart .lab sub { font-size: 8px; }
 
-.lbl.vec.blue { color: #3d63a8; }
 .chart .total { stroke: #3d63a8; }
 
 /* paused badge on the figure */
@@ -159,9 +152,7 @@
 .paused.on { opacity: 1; transform: translate(-50%, 0); }
 .paused .bars { width: 8px; height: 9px; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) { .paused { transition: none; } }
-.lbl.vec.grey { color: var(--mid); }
 
-.lbl.mark { font: 15px/1 var(--serif); color: #86868c; }
 
 /* a left page whose text runs long scrolls instead of being clipped */
 @media (min-width: 901px) { .page.left { overflow-y: auto; scrollbar-width: thin; } }

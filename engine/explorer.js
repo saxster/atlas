@@ -11,13 +11,14 @@
 //   run: { label, duration(params) → seconds, real?(params) → real-world seconds, for the speed badge },
 //   buildWorld(E, params), state(clock, reduced, params), lookKeys,
 //   readout(state, params) → corner text, chips: [{ label, value: (state, params) → text }],
-//   chart?(state, params) → svg markup, PLATES?
+//   chart?(state, params) → svg markup, PLATES?, narrowZoom? (camera distance factor on phones)
 // }
 import { createStage } from './stage.js';
 import { speedLabel } from './machine.js';
 
 const $ = id => document.getElementById(id);
 const touch = matchMedia('(pointer: coarse)').matches;
+const narrowQ = matchMedia('(max-width: 900px)');
 const END = 1.5;
 
 export function startExplorer(figure) {
@@ -91,7 +92,7 @@ export function startExplorer(figure) {
   build();
 
   function draw(now, dt, c) {
-    const state = S.step({ now, dt, s: 0, litPage: 0, running, clockAt: c });
+    const state = S.step({ now, dt, s: 0, litPage: 0, running, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
     $('readout').textContent = figure.readout(state, params);
     (figure.chips || []).forEach((ch, i) => { chipEls[i].textContent = c > 0 || ran ? ch.value(state, params) : '–'; chipEls[i].parentNode.classList.toggle('on', c > 0 || ran); });
     if (figure.chart) $('chart').innerHTML = figure.chart(state, params);

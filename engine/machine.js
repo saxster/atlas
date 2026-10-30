@@ -13,11 +13,15 @@
 //   buildWorld(E) → { update(state, look), labels }, lookKeys, state(clock, reduced),
 //   readout(state, step) → text for the corner, chips: [{ label, from (step number, 1-based), value: state → text }],
 //   PLATES?: { key: { text, facts?(state) } }               breakdowns, as in a book
+//   narrowZoom?: camera distance factor on phones (narrow figures need to stand further back)
+//   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
+//     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, ease } from './stage.js';
+import { createStage, smooth } from './stage.js';
 
 const $ = id => document.getElementById(id);
 const touch = matchMedia('(pointer: coarse)').matches;
+const narrowQ = matchMedia('(max-width: 900px)');
 const MODE_KEY = 'atlas:machine-mode';
 const GAP = 0.7, FIRST = 0.9, END = 1.8;          // ?render tour: seconds before the first step, between steps, at the end
 
@@ -25,7 +29,7 @@ const GAP = 0.7, FIRST = 0.9, END = 1.8;          // ?render tour: seconds befor
 export function speedLabel(realSeconds, playSeconds) {
   const k = realSeconds / playSeconds;
   if (Math.abs(k - 1) < 0.05) return '';
-  const units = [['year', 365.25 * 86400], ['day', 86400], ['hour', 3600], ['minute', 60]];
+  const units = [['year', 365.25 * 86400], ['month', 365.25 * 86400 / 12], ['day', 86400], ['hour', 3600], ['minute', 60]];
   if (k >= 600) { const [u, s] = units.find(([, s]) => k >= s * 0.95); const n = k / s; return `${n >= 9.5 ? Math.round(n) : +n.toFixed(1)} ${u}${Math.abs(n - 1) < 0.05 ? '' : 's'} a second`; }
   return k >= 1 ? `×${k >= 9.5 ? Math.round(k) : +k.toFixed(1)}` : `×1/${1 / k >= 9.5 ? Math.round(1 / k) : +(1 / k).toFixed(1)}`;
 }
@@ -44,8 +48,11 @@ export function startMachine(figure) {
   function poseOf(done, k, u) {
     if (!k) return { s: done, clock: done ? T0[done - 1] + STEPS[done - 1].run : 0, step: done, playing: false };
     const st = STEPS[k - 1], p = Math.min(u / st.play, 1);
-    return { s: k - 1 + ease(Math.min(u / Math.min(0.9, st.play), 1)), clock: T0[k - 1] + st.run * p, step: k, playing: p < 1, u };
+    // the camera glides to the step's view over up to 1.6 s (smoothstep: no sudden swing in the middle)
+    return { s: k - 1 + smooth(0, 1, u / Math.min(1.6, st.play)), clock: T0[k - 1] + st.run * p, step: k, playing: p < 1, u };
   }
+  // when a step's glide is halfway (s crosses k − ½, where the lit thing changes): smooth(0, 1, x) = ½ at x = ½
+  const bisectHalf = st => 0.5 * Math.min(1.6, st.play);
   // the ?render tour: Auto from the first press to the end, a pure function of t
   const TOUR = []; { let t = FIRST; for (const s of STEPS) { TOUR.push(t); t += s.play + GAP; } }
   const DURATION = TOUR[N - 1] + STEPS[N - 1].play + END;
@@ -107,10 +114,10 @@ export function startMachine(figure) {
 
   let lastDone = -1, lastK = -1;
   function draw(now, dt, pose) {
-    const state = S.step({ now, dt, s: pose.s, litPage: Math.round(pose.s), running: pose.playing || mode === 'auto', clockAt: pose.clock });
+    const state = S.step({ now, dt, s: pose.s, litPage: Math.round(pose.s), running: pose.playing || mode === 'auto', clockAt: pose.clock, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1, blend: 'linear' });
     $('readout').textContent = figure.readout(state, pose.step ? STEPS[pose.step - 1] : null);
     (figure.chips || []).forEach((c, i) => { chipEls[i].textContent = pose.step >= c.from ? c.value(state) : '–'; chipEls[i].parentNode.classList.toggle('on', pose.step >= c.from); });
-    const st = pose.playing ? STEPS[pose.step - 1] : null, sp = st ? speedLabel(st.real ?? st.run, st.play) : '';
+    const st = pose.playing ? STEPS[pose.step - 1] : null, sp = st && (st.real ?? st.run) > 0 ? speedLabel(st.real ?? st.run, st.play) : '';   // a step that only changes the view has no speed
     $('speed').textContent = sp; $('speed').hidden = !sp;
     drawSounds(pose, state);
     if (S.selected && $('facts') && figure.PLATES[S.selected].facts) $('facts').innerHTML = figure.PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
@@ -124,6 +131,8 @@ export function startMachine(figure) {
         b.disabled = !!curK || n !== curDone + 1;
         b.setAttribute('aria-current', n === curK ? 'step' : 'false');
       });
+      // phones show the steps as a scrolling row: keep the running or next one in view
+      const at = stepB[(curK || curDone + 1) - 1]; if (at && narrowQ.matches && !RENDER) at.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       $('again').classList.toggle('strong', curDone === N);
       $('hint').textContent = curK ? STEPS[curK - 1].hint : curDone < N ? STEPS[curDone].hint : 'That is the whole machine. Start over to watch it again.';
     }
@@ -151,6 +160,11 @@ export function startMachine(figure) {
     window.DURATION = DURATION;
     // stills land mid-step: each step's tour stretch, the intro before the first press
     window.__atlas.tour = { starts: [0, ...TOUR], dwells: [FIRST, ...STEPS.map(s => s.play + GAP)] };
+    // designed discrete changes, as tour times: the figure's own events, mapped through the steps, and every step's ends
+    const tourOf = c => { for (let i = 0; i < N; i++) if (STEPS[i].run > 0 && c >= T0[i] && c <= T0[i] + STEPS[i].run) return TOUR[i] + (c - T0[i]) / STEPS[i].run * STEPS[i].play; return null; };
+    // …and the moment each step's lit thing takes over from the last (halfway through its camera glide: one thing lit at a time)
+    const litSwitch = STEPS.flatMap((st, i) => PAGES[i + 1].lit !== PAGES[i].lit ? [TOUR[i] + bisectHalf(st)] : []);
+    window.__atlas.events = [...(figure.events || []).map(tourOf).filter(t => t !== null), ...TOUR, ...TOUR.map((t, i) => t + STEPS[i].play), ...litSwitch].sort((a, b) => a - b);
     window.seek = t => { t = Math.min(Math.max(t, 0), DURATION); const [d, kk, uu] = tourAt(t); draw(t * 1000, 1 / 60, poseOf(d, kk, uu)); return t; };
   }
 }

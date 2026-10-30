@@ -2,7 +2,7 @@
 // (1440×900) and phone (390×844) sizes, drawn by seek(t) so they are the same every run. Reports console errors.
 import fs from 'node:fs';
 import path from 'node:path';
-import { chapters as allChapters } from './chapters.mjs';
+import { everything as allChapters } from './chapters.mjs';
 import { serve, launch, open } from './render.mjs';
 
 const [outArg, ...only] = process.argv.slice(2);

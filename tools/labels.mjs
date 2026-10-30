@@ -1,7 +1,7 @@
 // node tools/labels.mjs [subject/chapter …] — at the middle of every page, at desktop and phone sizes: labels that
 // overlap each other, and labels whose anchor is hidden behind a solid (the label floats over the wrong thing).
 // Exit 1 on any finding.
-import { chapters as allChapters } from './chapters.mjs';
+import { everything as allChapters } from './chapters.mjs';
 import { serve, launch, open } from './render.mjs';
 
 const list = process.argv.length > 2 ? process.argv.slice(2) : await allChapters();
