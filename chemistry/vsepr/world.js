@@ -6,9 +6,10 @@ import * as THREE from 'three';
 import { part, cyl, lines, shadeMat, PALETTE, V } from '../../engine/parts.js';
 import * as M from './model.js';
 
-// the chapter's own colours: sulfur's yellow, and a faint violet-grey for electron pairs
+// the chapter's own colours: sulfur's yellow; violet for a lone pair, sage green for a bond pair (an electron domain)
 PALETTE.sulfur = ['#f4e7a6', '#e3c75c', '#b99b36'];
-PALETTE.lobe = ['#f7f5fc', '#e8e4f3', '#cfc9e0'];
+PALETTE.lone = ['#8d6be0', '#6a45c8', '#4c2e99'];
+PALETTE.pair = ['#6fb488', '#4f9a6c', '#3a7a52'];
 
 export const S = 1.25;                     // world units per Å
 export const STATIONS = { domains: 0, tetra: 11, ch4: 21, nh3: 31, h2o: 41, swell: 51, real: 63, edge: 78 };
@@ -17,7 +18,7 @@ const RAD = { H: 0.17, C: 0.30, N: 0.28, O: 0.27, S: 0.36 };          // drawn r
 const PAL = { H: 'paper', C: 'ink', N: 'blue', O: 'red', S: 'sulfur' };
 const ELEMENT = { H: 'Hydrogen atoms', C: 'Carbon atom', N: 'Nitrogen atom', O: 'Oxygen atom', S: 'Sulfur atom' };
 const UP = V(0, 1, 0);
-const R_ARC = 0.52, R_LAB = 0.9;           // angle arcs, and where their numbers sit (world units from the centre)
+const R_ARC = 0.62, R_OUT = 0.17;          // angle arcs (world units from the centre), and how far past an arc's middle its number sits
 const EX = 0.5;                            // how far a breakdown pulls each pair out along its own direction
 const ARC = '#5a5a60', FAINT = '#b9b9be';
 const v3 = a => V(a[0], a[1], a[2]);
@@ -34,6 +35,10 @@ function lobeGeo(L, W, k, y0 = 0) {
 const SUBS = '₀₁₂₃₄₅₆₇₈₉';
 // arc numbers: the centred 'mark' label, set in the board labels' italic ink (the board class hangs text right of its anchor)
 const ctr = html => `<span style="font:italic 17px/1 var(--serif);color:var(--hi)">${html}</span>`;
+// coordinates on the cube: tick labels, in ink and large enough to read
+const coord = html => `<span style="font:13px/1 var(--mono);color:var(--hi)">${html}</span>`;
+// phones: the readout fills the figure's bottom-right corner, so captions under a lone molecule move to its left
+const narrow = () => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 900px), (max-height: 520px)').matches;
 export const chem = s => s.replace(/[₀-₉]+/g, m => `<sub>${[...m].map(c => SUBS.indexOf(c)).join('')}</sub>`);
 
 export function buildWorld(E) {
@@ -61,15 +66,18 @@ export function buildWorld(E) {
     const m = part(parent, STICK, { pal, tone: 'mid', name, pos: M.scale(u, l / 2), ex: e });
     m.scale.set(r, l, r); m.quaternion.setFromUnitVectors(UP, v3(u)); return m;
   };
-  const lobeMat = op => shadeMat('lobe', { opacity: op });
-  const lobe = (parent, geo, u, { name = 'Lone pairs', op = 0.45, ex: e = [0, 0, 0] } = {}) => {
-    const m = part(parent, geo, { tone: 'lo', name, ex: e, mat: lobeMat(op) });
+  // an electron pair: a tinted, translucent lobe with an ink outline. The blend happens in linear light, so an
+  // opacity of 0.5 reads on paper as roughly a 30 % tint. edge: false for a lobe that wraps its bond and
+  // H atom (page 1.5's bond pairs), whose outline would hide theirs in the edge pass.
+  const lobe = (parent, geo, u, { name = 'Lone pairs', pal = 'lone', op = 0.5, edge = true, ex: e = [0, 0, 0] } = {}) => {
+    const m = part(parent, geo, { tone: 'mid', name, ex: e, mat: shadeMat(pal, { opacity: op }) });
     m.quaternion.setFromUnitVectors(UP, v3(u));
-    m.userData.noEdge = true;                       // soft: no ink outline, so the atoms inside stay drawn
+    if (!edge) m.userData.noEdge = true;
     m.renderOrder = 2;
     return m;
   };
-  const LONE = lobeGeo(0.95, 0.40, 0.8, 0.16), PAIR = lobeGeo(1.05, 0.30, 1.25, 0.08);
+  // lobes start at the atom's surface, so the atom keeps its own outline
+  const LONE = lobeGeo(0.9, 0.42, 0.8, 0.24), PAIR = lobeGeo(1.0, 0.30, 1.25, 0.12);
   // an angle arc between directions a and b, radius R_ARC, in parent's frame; returns its midpoint direction
   const arcPts = (a, b, R = R_ARC, n = 24) => {
     const A = v3(a).normalize(), B = v3(b).normalize(), w = A.angleTo(B), c = [];
@@ -79,6 +87,8 @@ export function buildWorld(E) {
   };
   const arc = (parent, a, b, color = ARC) => lines(parent, arcPts(a, b), color);
   const mid = (a, b) => v3(a).normalize().add(v3(b).normalize()).normalize();
+  // an angle's number: at its arc's middle, a little further out, brought toward the camera so nothing hides it
+  const arcAt = (obj, m, R = R_ARC) => () => toCam(obj.localToWorld(m.clone().multiplyScalar(R + R_OUT)), 0.45);
   // a molecule: centre atom, bonds and H atoms along d.bonds, lone-pair lobes along d.lone; all inside a group that rocks
   function molecule(g, x, el, rA, d, { lone = true, y = 0 } = {}) {
     const spin = new THREE.Group(); spin.position.set(x, y, 0); g.add(spin);
@@ -100,9 +110,9 @@ export function buildWorld(E) {
     const g = asm(`domains${n}`, root, { title: `${n} electron pairs`, sub: `${M.SPREAD_NAME[n]}: ${M.SPREAD[n].toFixed(n === 4 ? 1 : 0)}° apart` });
     const x = X0 + (n - 3) * SPACING.domains, spin = new THREE.Group(); spin.position.set(x, 0, 0); g.add(spin); spins.push(spin);
     ball(spin, 'C', [0, 0, 0], { r: 0.17, pal: 'dark', name: 'Central atom' });
-    for (const u of sets[n]) lobe(spin, PAIR, u, { name: 'Electron pairs', op: 0.7, ex: M.scale(u, EX) });
+    for (const u of sets[n]) lobe(spin, PAIR, u, { name: 'Electron pairs', pal: 'pair', op: 0.5, ex: M.scale(u, EX) });
     if (n > 2) { const [a, b] = n === 4 ? [sets[4][1], sets[4][2]] : [sets[3][1], sets[3][2]]; arc(spin, a, b);
-      const m = mid(a, b); label('mark', ctr(`${M.SPREAD[n].toFixed(n === 4 ? 1 : 0)}°`), () => toCam(spin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.4)); }
+      const m = mid(a, b); label('mark', ctr(`${M.SPREAD[n].toFixed(n === 4 ? 1 : 0)}°`), arcAt(spin, m)); }
     caption(`${n} pairs`, () => V(x, -1.3, 0));
     DOM[n] = { g, spin };
   }
@@ -124,9 +134,11 @@ export function buildWorld(E) {
   }
   arc(tSpin, CORNERS[0], CORNERS[3]);
   { const m = mid(CORNERS[0], CORNERS[3]);
-    label('mark', ctr(`${M.TET_DEG.toFixed(2)}°`), () => toCam(tSpin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.3)); }
-  label('tick', '(1, 1, 1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[0], CUBE * 1.12))), 0.3).add(V(0.15, 0.1, 0)));
-  label('tick', '(−1, 1, −1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[3], CUBE * 1.12))), 0.3));
+    label('mark', ctr(`${M.TET_DEG.toFixed(2)}°`), arcAt(tSpin, m)); }
+  label('tick', coord('(1, 1, 1)'), () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[0], CUBE * 1.12))), 0.3).add(V(0.15, 0.1, 0)));
+  // on phones the corner hint runs along the figure's top edge, so this one sits below its corner instead of above
+  label('tick', coord('(−1, 1, −1)'), () => narrow() ? toCam(tSpin.localToWorld(v3(M.scale(CORNERS[3], CUBE))), 0.3).add(V(0.1, -0.34, 0))
+    : toCam(tSpin.localToWorld(v3(M.scale(CORNERS[3], CUBE * 1.12))), 0.3));
 
   // ---------- 2–4 · methane, ammonia, water at their measured geometry ----------
   const one = (key, k, title, sub) => {
@@ -136,8 +148,8 @@ export function buildWorld(E) {
     const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
-    label('mark', ctr(`${m.angle.toFixed(1)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    caption(chem(m.formula), () => V(STATIONS[key], -1.3, 0));          // the shape's name is in the figure's title
+    label('mark', ctr(`${m.angle.toFixed(1)}°`), arcAt(mol.spin, mm));
+    caption(chem(m.formula), () => narrow() ? V(STATIONS[key] - 1.6, -1.05, 0) : V(STATIONS[key], -1.3, 0));   // the shape's name is in the figure's title
     if (d.lone.length) label('mark', d.lone.length > 1 ? 'lone pairs' : 'lone pair', () => toCam(mol.at(v3(d.lone[0]).multiplyScalar(0.8).add(V(0.85, 0.1, 0))), 0.2));
     return { g, mol, d };
   };
@@ -151,14 +163,15 @@ export function buildWorld(E) {
   const s5 = new THREE.Group(); s5.position.set(X5, 0, 0); g5.add(s5); spins.push(s5);
   ball(s5, 'N', [0, 0, 0]);
   const PAIR5 = lobeGeo(m5.r * S, 0.24, 1.0);                       // a bond pair: shared, stretched between N and H
+  const LONE5 = lobeGeo(1, 1, 0.85, 0.2);                            // the lone pair, unit size: scaled each frame by its strength
   const sw = { H: [], B: [], P: [] };
-  for (let i = 0; i < 3; i++) { sw.H.push(ball(s5, 'H', [0, 0, 0])); sw.B.push(stick(s5, [0, 1, 0], m5.r * S)); sw.P.push(lobe(s5, PAIR5, [0, 1, 0], { name: 'Bond pairs', op: 0.45 })); }
-  const lone5 = lobe(s5, PAIR5, [0, 1, 0], { name: 'Lone pair', op: 0.55 });
+  for (let i = 0; i < 3; i++) { sw.H.push(ball(s5, 'H', [0, 0, 0])); sw.B.push(stick(s5, [0, 1, 0], m5.r * S)); sw.P.push(lobe(s5, PAIR5, [0, 1, 0], { name: 'Bond pairs', pal: 'pair', op: 0.36, edge: false })); }
+  const lone5 = lobe(s5, LONE5, [0, 1, 0], { name: 'Lone pair', op: 0.5 });
   const arc5 = lines(s5, new Array(24 * 6).fill(0), ARC); arc5.geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
   let ang5 = M.TET_DEG, mid5 = V(0, -1, 0);
-  label('mark', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_LAB)), 0.45), () => ctr(`${ang5.toFixed(1)}°`));
+  label('mark', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_ARC + R_OUT)), 0.45), () => ctr(`${ang5.toFixed(1)}°`));
   label('mark', 'lone pair', () => toCam(s5.localToWorld(V(0.85, 0.85, 0)), 0.2));
-  caption(chem('NH₃'), () => V(X5, -1.3, 0));
+  caption(chem('NH₃'), () => narrow() ? V(X5 - 1.6, -1.05, 0) : V(X5, -1.3, 0));
   function setSwell(q) {
     const u = (q - 1) / (M.Q_LONE - 1), sq = M.squeeze('AX3E', q), d = M.domains('AX3E', sq.bond);
     ang5 = sq.bond;
@@ -169,7 +182,9 @@ export function buildWorld(E) {
       sw.P[i].quaternion.setFromUnitVectors(UP, v3(b)); sw.P[i].userData.ex.set(...e);
     });
     // q = 1: the lone pair is the size of a bond pair; q = Q_LONE: shorter, and much wider near the nucleus
-    lone5.scale.set(1 + 0.75 * u, 1 - 0.3 * u, 1 + 0.75 * u);
+    // q = 1: exactly a bond pair's domain (0.24 wide, as long as the bond); at full strength more than twice as wide
+    const W = 0.24 + (0.56 - 0.24) * u, L = m5.r * S + (1.0 - m5.r * S) * u;
+    lone5.scale.set(W, L, W);
     lone5.userData.ex.set(0, EX, 0);
     const a = arc5.geometry.attributes.position; arcPts(d.bonds[0], d.bonds[1]).forEach((v, i) => { a.array[i] = v; });
     a.needsUpdate = true; arc5.geometry.computeBoundingSphere();
@@ -186,7 +201,7 @@ export function buildWorld(E) {
     const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
-    label('mark', ctr(`${m.angle.toFixed(2)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
+    label('mark', ctr(`${m.angle.toFixed(2)}°`), arcAt(mol.spin, mm));
     caption(chem(m.formula), () => V(x, -1.6, 0));                    // below water's angle, which hangs lowest
     return { g, mol };
   });
@@ -200,22 +215,21 @@ export function buildWorld(E) {
     const mol = molecule(g, x, m.centre, m.r, d); spins.push(mol.spin);
     arc(mol.spin, d.bonds[0], d.bonds[1]);
     const mm = mid(d.bonds[0], d.bonds[1]);
-    label('mark', ctr(`${m.angle.toFixed(1)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB + 0.12)), 0.45));
+    label('mark', ctr(`${m.angle.toFixed(1)}°`), arcAt(mol.spin, mm));
     caption(chem(m.formula), () => V(x, -1.9, 0));
     edge[k] = { g, mol, d };
   }
-  // where the rule of thumb would put sulfur's hydrogens: ghost outlines at the model's angle
+  // where the rule of thumb would put sulfur's hydrogens: full-size translucent grey atoms on dashed bonds, at the model's angle
   const ghost = new THREE.Group(); edge.H2S.mol.spin.add(ghost);
-  { const gd = M.domains('AX2E2', M.PREDICT.H2S.bond), rr = M.MOL.H2S.r * S, c = [], ghostMat = new THREE.LineBasicMaterial({ color: '#a8a8ae' });
+  { const gd = M.domains('AX2E2', M.PREDICT.H2S.bond), rr = M.MOL.H2S.r * S, c = [], gm = shadeMat('dark', { opacity: 0.3 });
     for (const u of gd.bonds) {
-      const l = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(RAD.H, 1)), ghostMat); l.userData = { noEdge: true };
-      l.position.set(...M.scale(u, rr)); ghost.add(l);
-      for (let s = 0.22; s < 0.92; s += 0.1) c.push(...M.scale(u, rr * s), ...M.scale(u, rr * (s + 0.05)));
+      const m = part(ghost, SPH, { tone: 'mid', name: 'VSEPR’s prediction', pos: M.scale(u, rr), mat: gm }); m.scale.setScalar(RAD.H); m.renderOrder = 2;
+      for (let s = 0.22; s < 0.9; s += 0.09) c.push(...M.scale(u, rr * s), ...M.scale(u, rr * (s + 0.05)));
     }
-    lines(ghost, c, '#a8a8ae');
+    lines(ghost, c, '#7a7a80');
     // named under the left-hand ghost, in the open space between the two molecules
     const lm = v3(gd.bonds[0]);
-    label('mark', `VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr).add(V(-0.05, -0.42, 0))), 0.3)); }
+    label('mark', `<span style="color:var(--hi)">VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°</span>`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr).add(V(-0.05, -0.45, 0))), 0.3)); }
 
   // ---------- per frame ----------
   function update({ t, q }) {

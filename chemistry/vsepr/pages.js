@@ -127,7 +127,7 @@ export const PAGES = [
       <p>One fitted number gets water within ${f(Math.abs(M.PREDICT.H2O.off), 2)}°. That supports the picture; it does not prove it. The real reason lies in quantum mechanics, and page 1.7 shows a case the toy gets badly wrong.</p>
       <p class="hintline">The lone pair grows from a bond pair's strength to ${f(M.Q_LONE, 2)} and back. Click it.</p>`,
     cam: cam('swell', -14, 16, 9.4, 0, 0.05), lit: 'swell', scene: 'swell', look: {},
-    fig: 'A lone pair swells and the bonds close',
+    fig: 'A lone pair swells',
     alt: 'Ammonia with faint bond-pair lobes along its bonds; the lone-pair lobe widens and the H–N–H angle closes from 109.5 to 106.7 degrees.',
   },
   {

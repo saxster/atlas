@@ -109,6 +109,7 @@ export const PREDICT = Object.fromEntries(Object.keys(MOL).map(k => { const s = 
 // ---------- the figure's clock ----------
 export const ROCK = { amp: 18, period: 14 };          // each molecule rocks ±18° about its axis, every 14 s, so it reads as 3D
 export const rock = t => ROCK.amp * Math.sin(2 * Math.PI * t / ROCK.period);
-// page 5: the lone pair swells from a bond pair's strength (q = 1) to its fitted strength and back, every SWELL s
-export const SWELL = 9;
+// page 5: the lone pair swells from a bond pair's strength (q = 1) to its fitted strength and back, every SWELL s.
+// 8.3 s puts its fullest at the middle of page 1.5's dwell in the ?render tour (t = 29 s), so stills and cards show it.
+export const SWELL = 8.3;
 export const swellQ = t => 1 + (Q_LONE - 1) * (1 - Math.cos(2 * Math.PI * t / SWELL)) / 2;
