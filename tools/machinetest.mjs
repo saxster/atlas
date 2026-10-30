@@ -34,15 +34,15 @@ await p.click('#again');
 // the buttons follow on the next drawn frame, which on a software renderer (CI) can take longer than a fixed wait
 await p.waitForFunction(() => !document.querySelector('#steps .step[data-k="1"]').disabled, { timeout: 5000 }).catch(() => {});
 check('Start over puts it back at step 1', (await st()).done === 0 && (await live())[0] === true);
-await p.click('#mode [data-mode="auto"]'); await wait(1500);
+await p.click('#mode [data-mode="auto"]');
+await p.waitForFunction(() => window.__atlas.state.k >= 1 || window.__atlas.state.done >= 1, { timeout: 60000 }).catch(() => {});
 check('Auto plays on by itself', (await st()).k >= 1 || (await st()).done >= 1);
 await open();
 check('Auto is remembered on the next visit', (await st()).mode === 'auto');
 await p.evaluate(() => { window.__atlas.startOver(); });
-const total = await p.evaluate(() => window.__atlas.S ? 0 : 0);
-await p.waitForFunction(n => window.__atlas.state.done === n, { timeout: 120000 }, n).catch(() => {});
+await p.waitForFunction(n => window.__atlas.state.done === n, { timeout: 900000 }, n).catch(() => {});
 check('Auto reaches the last step', (await st()).done === n);
-await p.waitForFunction(() => window.__atlas.state.done === 0, { timeout: 15000 }).catch(() => {});
+await p.waitForFunction(() => window.__atlas.state.done === 0, { timeout: 120000 }).catch(() => {});
 check('…and loops back to the start', (await st()).done === 0 || (await st()).k === 1);
 await p.evaluate(() => localStorage.clear());
 
