@@ -145,11 +145,11 @@ export function buildWorld(E) {
     lines(root, m, '#6e6e74');
     for (const s of M.SPECIAL) label('tick', s.sinText, () => W1(SX - 0.07, s.sin, ZL)); }
   label('vec red', 'sin θ', () => { const s = Math.sin(M.steady(T)); return Math.abs(s) > 0.12 ? W1(SX + 0.26, s / 2, ZL) : null; });
-  label('vec', '<i>P</i>', () => riding(W1, M.steady(T), 1.19));
+  label('vec', '<i>P</i>', () => riding(W1, M.steady(T), 0.83));     // inside, clear of the shadow's label
   label('axis', 'level light', () => W1(LX - 0.1, 1.28, ZL));
 
   // ---------- 2 · cosine is the sideways shadow: light from above, a screen below ----------
-  const S2 = STATIONS.cosine, B2 = board(S2, { b: [-1.45, 1.45, -1.75, 1.5], axes: [-1.3, 1.3, -1.25, 1.2] }), W2 = B2.W, p2 = pointP(W2, root);
+  const S2 = STATIONS.cosine, B2 = board(S2, { b: [-1.45, 1.45, -1.85, 1.5], axes: [-1.3, 1.3, -1.25, 1.2] }), W2 = B2.W, p2 = pointP(W2, root);
   const g2 = asm('cosine', root, { title: 'Cosine: the sideways shadow', sub: 'P’s shadow cast by light from above' });
   const LY = 1.36, SY = -1.38;
   part(g2, box(2.7 * RW, 0.1, 0.26, 0.03), { tone: 'mid', pal: 'amber', pos: W2(0, LY, 0.02).toArray(), name: 'Lamp' });
@@ -162,10 +162,10 @@ export function buildWorld(E) {
     const m = []; for (const s of M.SPECIAL) m.push(...W2(s.cos, SY + 0.04, 0.05).toArray(), ...W2(s.cos, SY + 0.13, 0.05).toArray());
     lines(root, m, '#6e6e74');
     // staggered, so the close surds don't collide
-    M.SPECIAL.forEach((s, i) => label('mark', s.cosText, () => W2(s.cos, SY - (i % 2 ? 0.27 : 0.13), ZL))); }
+    M.SPECIAL.forEach((s, i) => label('mark', s.cosText, () => W2(s.cos, SY - (i % 2 ? 0.36 : 0.13), ZL))); }
   label('vec blue', 'cos θ', () => { const c = Math.cos(M.steady(T)); return Math.abs(c) > 0.2 ? W2(c / 2, SY + 0.28, ZL) : null; });
-  label('vec', '<i>P</i>', () => riding(W2, M.steady(T), 1.19));
-  label('board', 'light', () => W2(1.04, LY - 0.14, ZL));
+  label('vec', '<i>P</i>', () => riding(W2, M.steady(T), 0.83));
+  label('board', 'light', () => W2(-1.3, LY - 0.17, ZL));
 
   // ---------- 3 · sin² + cos² = 1: the right triangle under P, and a square on each side ----------
   const S3 = STATIONS.pythag, B3 = board(S3, { b: [-1.45, 1.75, -1.45, 1.75], axes: [-1.3, 1.6, -1.3, 1.6] }), W3 = B3.W, p3 = pointP(W3, root, { arc: false });
@@ -214,7 +214,7 @@ export function buildWorld(E) {
   const B5 = board(S5, { b: [-1.45, PEN + SL + 0.3, -1.45, 1.45], axes: [-1.3, PEN + SL + 0.15, -1.3, 1.3] }), W5 = B5.W, p5 = pointP(W5, root);
   part(root, new THREE.BoxGeometry(SL * RW, 2.3 * RW, 0.012), { tone: 'lo', pal: 'base', pos: W5(PEN + SL / 2, 0, -0.07).toArray(), name: 'Strip' });
   const g5 = asm('wave', root, { title: 'The trace', sub: 'P’s height against how far it has turned' });
-  const trace5 = part(g5, liveTube(280, 0.022), { pal: 'red', name: 'Trace, y = sin t', tone: 'hi' });
+  const trace5 = part(g5, liveTube(280, 0.03), { pal: 'red', name: 'Trace, y = sin t', tone: 'hi' });
   const pen5 = dot(g5, 0.06, 'ink', 'Pen');
   const slope5 = part(g5, liveTube(280, 0.014), { pal: 'blue', name: 'Slope, cos t', tone: 'hi' });
   const level5 = dyn(root, 2, { color: '#8a8a8f', dash: 0.07 });
@@ -224,7 +224,7 @@ export function buildWorld(E) {
     for (const u of [0, M.TAU]) c.push(...W5(PEN + u, yb - 0.06).toArray(), ...W5(PEN + u, yb + 0.06).toArray());
     for (let k = 1; k <= 6; k++) c.push(...W5(PEN + k, -1.17).toArray(), ...W5(PEN + k, -1.12).toArray());
     lines(root, c, '#6e6e74'); }
-  label('mark', 'one turn: 2π', () => W5(PEN + Math.PI, -1.42, ZL));
+  label('mark', 'one turn: 2π', () => W5(PEN + Math.PI, -1.56, ZL));
   label('tick', '1', () => W5(PEN - 0.05, 1, ZL)); label('tick', '−1', () => W5(PEN - 0.05, -1, ZL)); label('tick', '0', () => W5(PEN - 0.05, 0.06, ZL));
   label('board', '<i>y</i> = sin <i>t</i>', () => W5(PEN + 0.1, 1.32, ZL));
   label('axis', 'paper moves →', () => W5(PEN + SL - 0.05, 1.32, ZL));
@@ -253,6 +253,13 @@ export function buildWorld(E) {
   label('vec red', 'sin θ', () => { const a = M.steady(T); return Math.abs(Math.sin(a)) > 0.3 ? W7(Math.cos(a) + (Math.cos(a) > 0 ? 0.26 : -0.26), Math.sin(a) / 2, ZL) : null; });
   label('vec', '<i>P</i>', () => riding(W7, M.steady(T), 1.2));
 
+  // ---------- breakdown views: each opens onto its whole board, not just the lit part ----------
+  const view = (g, W, x, y, r) => { g.userData.focus = () => ({ target: W(x, y).toArray(), radius: r }); };
+  view(g0, W0, 0, 0.05, 2.3); view(g1, W1, -0.02, 0, 2.45); view(g2, W2, 0, -0.2, 2.6); view(g3, W3, 0.15, 0.15, 2.7);
+  view(g5, W5, 3.4, 0, 7.2); view(g6, W6, 0.15, 0.6, 3.2); view(g7, W7, 0, 0, 2.45);
+  let th4 = 0;                                 // the radian board opens onto the unrolled arc, however long it is
+  g4.userData.focus = () => { const top = Math.max(1.2, th4); return { target: W4(0.2, (top - 1.25) / 2).toArray(), radius: RW * (top + 1.3) / 2 + 0.3 }; };
+
   // ---------- per frame ----------
   function update(t, look) {
     T = t;
@@ -276,7 +283,7 @@ export function buildWorld(E) {
       ctr.s.copy(sqS.set(F, P, V(1, 0, 0), phi));
       ctr.h.copy(sqH.set(O, P, V(-s, c, 0), phi)); }
     // 4 · radians (opened: the arc unrolled up the line x = 1)
-    { const th = M.unwind(t), e = ex(g4), n = 160; p4.set(th);
+    { const th = M.unwind(t), e = ex(g4), n = 160; p4.set(th); th4 = th;
       const pts = []; for (let i = 0; i <= n; i++) { const a = th * i / n, k = Math.min(e, 1); pts.push(W4((1 - k) * Math.cos(a) + k, (1 - k) * Math.sin(a) + k * a, 0.01)); }
       arc4.visible = th > 0.02; if (arc4.visible) arc4.geometry.update(pts);
       unroll4.visible = e > 0.3; }

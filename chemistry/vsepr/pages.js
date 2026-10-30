@@ -5,6 +5,7 @@ import { STATIONS, SPACING } from './world.js';
 import { chart, samples } from '../../engine/chart.js';
 
 const f = (x, n = 2) => (x < -1e-9 ? '−' : '') + Math.abs(x).toFixed(n);
+const fr = (x, n = 1) => f(+x.toFixed(n), n);       // rounded first, so −0.0003 shows as 0.0, not −0.0
 const C = M.MOL.CH4, N = M.MOL.NH3, O = M.MOL.H2O, HS = M.MOL.H2S, P3 = M.MOL.PH3;
 const at = (k, dx = 0, dy = -0.15) => [STATIONS[k] + dx, dy, 0];
 const cam = (k, az, el, dist, dx = 0, dy = -0.15) => ({ target: at(k, dx, dy), az, el, dist });
@@ -18,7 +19,7 @@ const swellChart = chart({ ...RANGE.swell, xlabel: 'lone-pair strength q (a bond
   label: 'Bond angle against lone-pair strength in the toy model, for ammonia and water, with the measured angles marked at the fitted strength',
   series: [
     { pts: samples(1, 1.5, 25, q => M.squeeze('AX3E', q).bond), tag: [1.5, M.squeeze('AX3E', 1.5).bond, 'NH₃', true] },
-    { cls: 'trend', pts: samples(1, 1.5, 25, q => M.squeeze('AX2E2', q).bond), tag: [1.5, M.squeeze('AX2E2', 1.5).bond - 2.2, 'H₂O', true] },
+    { cls: 'trend', pts: samples(1, 1.5, 25, q => M.squeeze('AX2E2', q).bond), tag: [1.4, M.squeeze('AX2E2', 1.4).bond - 1.5, 'H₂O', true] },
   ],
   marks: [[M.Q_LONE, N.angle, ''], [M.Q_LONE, O.angle, '']] });
 const edgeChart = chart({ ...RANGE.edge, xlabel: 'lone pairs on the central atom', ylabel: 'H–X–H angle (°)', cursors: [],
@@ -72,7 +73,7 @@ export const PAGES = [
       </table>
       <p>Carbon is dark grey and hydrogen white. Positions are to scale; the atoms are drawn small so the bonds can be seen.</p>
       <p class="hintline">Click the molecule to pull its bonds apart.</p>`,
-    cam: cam('ch4', -14, 12, 8.4), lit: 'ch4', scene: 'ch4', look: {},
+    cam: cam('ch4', -30, 22, 10, 0, 0.1), lit: 'ch4', scene: 'ch4', look: {},
     fig: 'Methane: a tetrahedron',
     alt: 'A carbon atom with four hydrogen atoms at the corners of a tetrahedron, one H–C–H angle marked 109.5 degrees.',
   },
@@ -89,7 +90,7 @@ export const PAGES = [
         <tr><td>N above the plane of the H atoms</td><td>${f(M.pyramidHeight('NH3'), 3)} Å</td></tr>
       </table>
       <p class="hintline">Nitrogen is blue. Click to pull the bonds and the lone pair apart.</p>`,
-    cam: cam('nh3', -14, 12, 8.4, 0, 0), lit: 'nh3', scene: 'nh3', look: {},
+    cam: cam('nh3', -14, 16, 9.4, 0, 0.05), lit: 'nh3', scene: 'nh3', look: {},
     fig: 'Ammonia: a trigonal pyramid',
     alt: 'A nitrogen atom with three hydrogen atoms below it and a translucent lone-pair lobe above, one H–N–H angle marked 106.7 degrees.',
   },
@@ -104,7 +105,7 @@ export const PAGES = [
       </table>
       <p>Each lone pair takes about ${f((C.angle - O.angle) / 2, 1)}° off the angle between the bonds. Water's bend is why it is polar, and so why it dissolves salt and clings to glass.</p>
       <p class="hintline">Oxygen is red. Click to pull the pairs apart.</p>`,
-    cam: cam('h2o', -14, 12, 8.4, 0, 0), lit: 'h2o', scene: 'h2o', look: {},
+    cam: cam('h2o', -14, 16, 9.4, 0, 0.05), lit: 'h2o', scene: 'h2o', look: {},
     fig: 'Water: bent',
     alt: 'An oxygen atom with two hydrogen atoms below it and two translucent lone-pair lobes above, the H–O–H angle marked 104.5 degrees.',
   },
@@ -122,7 +123,7 @@ export const PAGES = [
       <p class="hintline">Solid: NH₃. Dashed: H₂O. Dots: the measured angles, at the fitted q. The live dot follows the figure.</p>
       <p>One fitted number gets water within ${f(Math.abs(M.PREDICT.H2O.off), 2)}°. That supports the picture; it does not prove it. The real reason lies in quantum mechanics, and page 1.7 shows a case the toy gets badly wrong.</p>
       <p class="hintline">The lone pair grows from a bond pair's strength to ${f(M.Q_LONE, 2)} and back. Click it.</p>`,
-    cam: cam('swell', -14, 12, 8.4, 0, 0), lit: 'swell', scene: 'swell', look: {},
+    cam: cam('swell', -14, 16, 9.4, 0, 0.05), lit: 'swell', scene: 'swell', look: {},
     fig: 'A lone pair swells and the bonds close',
     alt: 'Ammonia with faint bond-pair lobes along its bonds; the lone-pair lobe widens and the H–N–H angle closes from 109.5 to 106.7 degrees.',
   },
@@ -137,7 +138,7 @@ export const PAGES = [
       <p>The bonds shorten from C–H to O–H: across the period the nuclear charge grows and pulls the shared pair in. The angles fall in the order VSEPR predicts, CH₄ &gt; NH₃ &gt; H₂O.</p>
       <p>Lone pairs do not show up in a structure: only the nuclei are located. They are drawn on the other pages as a reminder of what pushes the atoms where they are.</p>
       <p class="hintline">Data: NIST CCCBDB, experimental geometries. Click a molecule.</p>`,
-    cam: cam('real', -10, 12, 25, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
+    cam: cam('real', -10, 12, 21, 0, -0.1), lit: 'real_NH3', scene: 'real', look: {}, parts: ['real_CH4', 'real_NH3', 'real_H2O'],
     fig: 'Methane, ammonia and water as measured',
     alt: 'Methane, ammonia and water side by side at their measured bond lengths and angles, without lone pairs.',
   },
@@ -148,7 +149,7 @@ export const PAGES = [
       <div class="charts">${edgeChart}</div>
       <table class="data">
         <tr><th></th><th>measured</th><th>toy model</th><th>off by</th></tr>
-        ${['H2O', 'H2S', 'NH3', 'PH3'].map(k => `<tr><td>${M.MOL[k].formula}</td><td>${f(M.MOL[k].angle, 1)}°</td><td>${f(M.PREDICT[k].bond, 1)}°</td><td>${f(M.PREDICT[k].off, 1)}°</td></tr>`).join('')}
+        ${['H2O', 'H2S', 'NH3', 'PH3'].map(k => `<tr><td>${M.MOL[k].formula}</td><td>${f(M.MOL[k].angle, 1)}°</td><td>${f(M.PREDICT[k].bond, 1)}°</td><td>${fr(M.PREDICT[k].off, 1)}°</td></tr>`).join('')}
       </table>
       <p>VSEPR gets the direction right and the size wrong. Sulfur and phosphorus are larger, their bonds longer, so the bond pairs crowd each other far less, and the bonds are made mostly from the central atom's p orbitals, which lie at 90°. Explaining that takes the quantum theory of bonding, not a counting rule.</p>
       <p class="hintline">Grey outlines: where the toy model would put sulfur's hydrogens.</p>`,

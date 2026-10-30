@@ -3,7 +3,7 @@
 // gauges and chart show what comes out, so pushing a slider to its end shows what each number does. Stochastic models
 // take a seed: the same seed gives the same run, which is how checks.mjs can test them exactly.
 //
-// figure: {
+// The page's <main> carries class "figpage explorer" (figure.css orders it for phones). figure: {
 //   no, title, question, bigIdea, PAGES: [{ cam, look?, lit?, fig }] or params → that list (the view; one page is enough),
 //   params: { … defaults }, controls: [{ key, label, min, max, step, fmt?(v), rebuild? }],
 //     rebuild: the world's shape depends on it (rows of pegs), so the figure is rebuilt when it changes
@@ -70,7 +70,13 @@ export function startExplorer(figure) {
   let clock = 0, running = false;
   const duration = () => figure.run.duration(params);
   function reset() { clock = 0; running = false; ran = false; $('run').textContent = figure.run.label; }
-  $('run').onclick = () => { if (running) { running = false; $('run').textContent = 'Go on'; return; } if (clock >= duration()) clock = 0; running = true; $('run').textContent = 'Pause'; };
+  $('run').onclick = () => {
+    if (running) { running = false; $('run').textContent = 'Go on'; return; }
+    if (clock >= duration()) clock = 0;
+    running = true; $('run').textContent = 'Pause';
+    // on a phone the figure sits above the controls: bring it into view to watch the run
+    if (narrowQ.matches) document.querySelector('.figure').scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+  };
   $('again').onclick = () => reset();
 
   // ---------- the figure ----------

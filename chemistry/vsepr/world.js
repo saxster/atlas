@@ -32,6 +32,8 @@ function lobeGeo(L, W, k, y0 = 0) {
 }
 // formulas in labels: CH₄ → CH<sub>4</sub>, since the serif label face draws ₄ as an old-style 4
 const SUBS = '₀₁₂₃₄₅₆₇₈₉';
+// arc numbers: the centred 'mark' label, set in the board labels' italic ink (the board class hangs text right of its anchor)
+const ctr = html => `<span style="font:italic 17px/1 var(--serif);color:var(--hi)">${html}</span>`;
 export const chem = s => s.replace(/[₀-₉]+/g, m => `<sub>${[...m].map(c => SUBS.indexOf(c)).join('')}</sub>`);
 
 export function buildWorld(E) {
@@ -60,7 +62,7 @@ export function buildWorld(E) {
     m.scale.set(r, l, r); m.quaternion.setFromUnitVectors(UP, v3(u)); return m;
   };
   const lobeMat = op => shadeMat('lobe', { opacity: op });
-  const lobe = (parent, geo, u, { name = 'Lone pairs', op = 0.62, ex: e = [0, 0, 0] } = {}) => {
+  const lobe = (parent, geo, u, { name = 'Lone pairs', op = 0.45, ex: e = [0, 0, 0] } = {}) => {
     const m = part(parent, geo, { tone: 'lo', name, ex: e, mat: lobeMat(op) });
     m.quaternion.setFromUnitVectors(UP, v3(u));
     m.userData.noEdge = true;                       // soft: no ink outline, so the atoms inside stay drawn
@@ -100,8 +102,8 @@ export function buildWorld(E) {
     ball(spin, 'C', [0, 0, 0], { r: 0.17, pal: 'dark', name: 'Central atom' });
     for (const u of sets[n]) lobe(spin, PAIR, u, { name: 'Electron pairs', op: 0.7, ex: M.scale(u, EX) });
     if (n > 2) { const [a, b] = n === 4 ? [sets[4][1], sets[4][2]] : [sets[3][1], sets[3][2]]; arc(spin, a, b);
-      const m = mid(a, b); label('board', `${M.SPREAD[n].toFixed(n === 4 ? 1 : 0)}°`, () => toCam(spin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.4)); }
-    caption(`${n} pairs · ${M.SPREAD_NAME[n]}`, () => V(x, -1.42, 0));
+      const m = mid(a, b); label('mark', ctr(`${M.SPREAD[n].toFixed(n === 4 ? 1 : 0)}°`), () => toCam(spin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.4)); }
+    caption(`${n} pairs`, () => V(x, -1.3, 0));
     DOM[n] = { g, spin };
   }
 
@@ -122,7 +124,7 @@ export function buildWorld(E) {
   }
   arc(tSpin, CORNERS[0], CORNERS[3]);
   { const m = mid(CORNERS[0], CORNERS[3]);
-    label('board', `${M.TET_DEG.toFixed(2)}°`, () => toCam(tSpin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.3)); }
+    label('mark', ctr(`${M.TET_DEG.toFixed(2)}°`), () => toCam(tSpin.localToWorld(m.clone().multiplyScalar(R_LAB)), 0.3)); }
   label('tick', '(1, 1, 1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[0], CUBE * 1.12))), 0.3).add(V(0.15, 0.1, 0)));
   label('tick', '(−1, 1, −1)', () => toCam(tSpin.localToWorld(v3(M.scale(CORNERS[3], CUBE * 1.12))), 0.3));
 
@@ -134,8 +136,8 @@ export function buildWorld(E) {
     const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
-    label('board', `${m.angle.toFixed(1)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    caption(`${chem(m.formula)} · ${m.shape}`, () => V(STATIONS[key], -1.42, 0));
+    label('mark', ctr(`${m.angle.toFixed(1)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
+    caption(`${chem(m.formula)} · ${m.shape}`, () => V(STATIONS[key], -1.3, 0));
     if (d.lone.length) label('mark', d.lone.length > 1 ? 'lone pairs' : 'lone pair', () => toCam(mol.at(v3(d.lone[0]).multiplyScalar(0.8).add(V(0.85, 0.1, 0))), 0.2));
     return { g, mol, d };
   };
@@ -151,12 +153,12 @@ export function buildWorld(E) {
   const PAIR5 = lobeGeo(m5.r * S, 0.24, 1.0);                       // a bond pair: shared, stretched between N and H
   const sw = { H: [], B: [], P: [] };
   for (let i = 0; i < 3; i++) { sw.H.push(ball(s5, 'H', [0, 0, 0])); sw.B.push(stick(s5, [0, 1, 0], m5.r * S)); sw.P.push(lobe(s5, PAIR5, [0, 1, 0], { name: 'Bond pairs', op: 0.45 })); }
-  const lone5 = lobe(s5, PAIR5, [0, 1, 0], { name: 'Lone pair', op: 0.62 });
+  const lone5 = lobe(s5, PAIR5, [0, 1, 0], { name: 'Lone pair', op: 0.55 });
   const arc5 = lines(s5, new Array(24 * 6).fill(0), ARC); arc5.geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
   let ang5 = M.TET_DEG, mid5 = V(0, -1, 0);
-  label('board', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_LAB)), 0.45), () => `${ang5.toFixed(1)}°`);
+  label('mark', '', () => toCam(s5.localToWorld(mid5.clone().multiplyScalar(R_LAB)), 0.45), () => ctr(`${ang5.toFixed(1)}°`));
   label('mark', 'lone pair', () => toCam(s5.localToWorld(V(0.85, 0.85, 0)), 0.2));
-  caption(`${chem('NH₃')} · the lone pair grows`, () => V(X5, -1.42, 0));
+  caption(`${chem('NH₃')} · the lone pair grows`, () => V(X5, -1.3, 0));
   function setSwell(q) {
     const u = (q - 1) / (M.Q_LONE - 1), sq = M.squeeze('AX3E', q), d = M.domains('AX3E', sq.bond);
     ang5 = sq.bond;
@@ -184,11 +186,8 @@ export function buildWorld(E) {
     const [a, b] = front(k, d);
     arc(mol.spin, a, b);
     const mm = mid(a, b);
-    label('board', `${m.angle.toFixed(2)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
-    // the length, beside the bond on the left: half way along it, pushed out sideways
-    const bl = v3(a), side = V(-bl.y, bl.x, 0).normalize().multiplyScalar(i === 0 ? -0.22 : 0.22);
-    label('tick', `${m.r.toFixed(3)} Å`, () => toCam(mol.at(bl.clone().multiplyScalar(m.r * S * 0.55).add(side).add(V(-0.08, 0, 0))), 0.4));
-    caption(chem(m.formula), () => V(x, -1.42, 0));
+    label('mark', ctr(`${m.angle.toFixed(2)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB)), 0.45));
+    caption(chem(m.formula), () => V(x, -1.3, 0));
     return { g, mol };
   });
 
@@ -201,8 +200,8 @@ export function buildWorld(E) {
     const mol = molecule(g, x, m.centre, m.r, d); spins.push(mol.spin);
     arc(mol.spin, d.bonds[0], d.bonds[1]);
     const mm = mid(d.bonds[0], d.bonds[1]);
-    label('board', `${m.angle.toFixed(1)}°`, () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB + 0.12)), 0.45));
-    caption(`${chem(m.formula)} · measured`, () => V(x, -1.42, 0));
+    label('mark', ctr(`${m.angle.toFixed(1)}°`), () => toCam(mol.at(mm.clone().multiplyScalar(R_LAB + 0.12)), 0.45));
+    caption(chem(m.formula), () => V(x, -1.9, 0));
     edge[k] = { g, mol, d };
   }
   // where the rule of thumb would put sulfur's hydrogens: ghost outlines at the model's angle
@@ -214,9 +213,9 @@ export function buildWorld(E) {
       for (let s = 0.22; s < 0.92; s += 0.1) c.push(...M.scale(u, rr * s), ...M.scale(u, rr * (s + 0.05)));
     }
     lines(ghost, c, '#a8a8ae');
-    // named beside the left-hand ghost, in the open space between the two molecules
+    // named under the left-hand ghost, in the open space between the two molecules
     const lm = v3(gd.bonds[0]);
-    label('tick', `VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr).add(V(-0.3, 0.05, 0))), 0.3)); }
+    label('mark', `VSEPR ≈ ${M.PREDICT.H2S.bond.toFixed(0)}°`, () => toCam(edge.H2S.mol.at(lm.clone().multiplyScalar(rr).add(V(-0.05, -0.42, 0))), 0.3)); }
 
   // ---------- per frame ----------
   function update({ t, q }) {

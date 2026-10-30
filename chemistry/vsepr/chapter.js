@@ -12,6 +12,7 @@ const mol = k => { const m = M.MOL[k]; return `H–${m.centre}–H ${f(m.angle, 
 export const CHAPTER = {
   subject: SUBJECT,
   no: 1, PAGES, PLATES, clock0: 0,
+  narrowZoom: 1.12,                // phones: a little more room round the molecules for the captions and corners
   lookKeys: [],
   buildWorld(E) {
     const W = buildWorld(E);
@@ -31,7 +32,7 @@ export const CHAPTER = {
       case 'nh3': return mol('NH3');
       case 'h2o': return mol('H2O');
       case 'swell': return `lone-pair strength q ${f(q, 3)}\nH–N–H ${f(M.squeeze('AX3E', q).bond, 2)}° (toy model)`;
-      case 'real': return M.MAIN.map(k => `${M.MOL[k].formula} ${f(M.MOL[k].angle, 2)}°`).join('   ');
+      case 'real': return M.MAIN.map(k => `${M.MOL[k].centre}–H ${f(M.MOL[k].r, 3)} Å`).join('   ') + '\n' + M.MAIN.map(k => `${M.MOL[k].formula} ${f(M.MOL[k].angle, 2)}°`).join('   ');
       case 'edge': return `H₂O ${f(M.MOL.H2O.angle, 1)}°   H₂S ${f(M.MOL.H2S.angle, 1)}°\nVSEPR says ≈ ${f(M.PREDICT.H2S.bond, 0)}° for both`;
     }
     return '';

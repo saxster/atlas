@@ -27,8 +27,8 @@ export function buildWorld(E, params) {
   // slots: thin walls between them
   const gs = asm('pile', root, { title: 'The pile', sub: 'how many balls landed in each slot' });
   for (let s = 0; s <= rows + 1; s++) part(gs, new THREE.BoxGeometry(0.02, H, 0.24), { tone: 'lo', pal: 'paper', pos: [(s - rows / 2 - 0.5) * M.DX, H / 2, 0], name: 'Slot wall' });
-  for (const s of [0, rows / 2 | 0, rows]) label('tick', String(s), () => V(M.slotX(rows, s) + 0.04, -0.12, 0.2));
-  label('axis', 'rights', () => V(M.slotX(rows, 0) - 0.15, -0.12, 0.2));
+  // the slot numbers are the numbers of rights; the end ticks say so (a separate axis label crowded them on phones)
+  for (const s of [0, rows / 2 | 0, rows]) label('tick', s === rows / 2 | 0 ? String(s) : `${s} rights`, () => V(M.slotX(rows, s) + 0.04, -0.12, 0.2));
 
   // the balls
   const balls = new THREE.InstancedMesh(new THREE.SphereGeometry(M.R, 12, 8), shadeMat('red'), 1000);

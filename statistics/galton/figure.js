@@ -14,7 +14,7 @@ export const FIGURE = {
   bigIdea: 'each ball\'s fall is a string of coin tosses, one at every peg. No single ball can be predicted, but add up hundreds and the pile always takes the same bell shape, centred on rows × p.',
   // the view frames the whole board, whose height follows the settings (taller slots for taller piles)
   PAGES: p => { const T = M.top(p.rows, p.p, p.n) + 0.6, w = (p.rows + 2) * M.DX; return [{ cam: { target: [0, T / 2, 0], az: 0, el: 4, dist: 1.25 * Math.max(T, w * 0.9) / Math.tan(9 * Math.PI / 180) / 2 }, lit: 'pile', fig: 'A Galton board' }]; },
-  narrowZoom: 1.25,
+  narrowZoom: 0.65,   // a tall board: the stage's portrait allowance (made for wide scenes) stands it too far back
   params: { rows: 12, p: 0.5, n: 500, seed: 1 },
   controls: [
     { key: 'rows', label: 'Rows of pegs', min: 4, max: 16, step: 1, rebuild: true },

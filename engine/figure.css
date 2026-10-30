@@ -97,4 +97,13 @@
   .corner.tr { font-size: 15px; }
   .bigidea { font-size: 18px; }
 }
+/* an explorer on a phone: the question, then the figure (look before predicting), then predict, sliders and Run */
+@media (max-width: 900px) {
+  .figpage.explorer .side, .figpage.explorer .figwrap { display: contents; }
+  .figpage.explorer .question { order: 0; } .figpage.explorer .figure { order: 1; }
+  .figpage.explorer .predict { order: 2; } .figpage.explorer .controls { order: 3; }
+  .figpage.explorer .run { order: 4; } .figpage.explorer .again { order: 5; }
+  .figpage.explorer .chips { order: 6; } .figpage.explorer .chart { order: 7; }
+  .figpage.explorer .bigidea { order: 8; } .figpage.explorer .plate { order: 9; }
+}
 html.render *, html.render *::before, html.render *::after { transition: none !important; animation: none !important; }

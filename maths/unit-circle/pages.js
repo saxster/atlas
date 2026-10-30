@@ -90,7 +90,7 @@ export const PAGES = [
       <p class="hintline">Click the triangle: the squares fold part way up off the board.</p>`,
     cam: { target: at('pythag', 0.25, 0.25), az: -12, el: 8, dist: 17.5 }, lit: 'pythag', scene: 'pythag', look: { unfold: 1 },
     fig: 'A square on each side of the triangle under P',
-    alt: 'The right triangle under P with a red square on its vertical side, a blue square on its horizontal side and a white square on the radius.',
+    alt: 'The right triangle under P with a red square on its vertical side, a blue square on its horizontal side and a grey square on the radius.',
   },
   {
     kicker: '1.4', title: 'Radians', sub: 'measuring an angle by its arc',
@@ -174,7 +174,7 @@ export const PLATES = {
     facts: s => [['θ', `${f(deg(th(s)), 1)}°`], ['shadow height sin θ', f(Math.sin(th(s)))], ['quadrant', `${M.quadrant(th(s))}`]] },
   cosine: { text: `The light now falls straight down. P’s shadow lands on the screen below, as far across as P. The blue bar is cos θ: positive to the right of O, negative to the left.`,
     facts: s => [['θ', `${f(deg(th(s)), 1)}°`], ['shadow across cos θ', f(Math.cos(th(s)))], ['sin(90° − θ)', f(Math.sin(Math.PI / 2 - th(s)))]] },
-  pythag: { text: `The squares fold part way up so you can see they are three separate areas. Flat on the board, the red and the blue together cover exactly as much as the white one on the radius: sin²θ + cos²θ = 1², for any θ.`,
+  pythag: { text: `The squares fold part way up so you can see they are three separate areas. Flat on the board, the red and the blue together cover exactly as much as the grey one on the radius: sin²θ + cos²θ = 1², for any θ.`,
     facts: s => { const a = M.sway(s.t), c = Math.cos(a), n = Math.sin(a); return [['θ', `${f(a / M.DEG, 1)}°`], ['sin²θ (red)', f(n * n)], ['cos²θ (blue)', f(c * c)], ['sum', f(n * n + c * c, 6)]]; } },
   radian: { text: `The red arc straightened up the line x = 1. It is as long as the angle in radians: a mark every radius, six marks and a bit for a full turn, ${f(M.FULL)}.`,
     facts: s => { const a = M.unwind(s.t); return [['angle', `${f(a / M.DEG, 1)}°`], ['in radians', f(a)], ['arc s', `${f(M.arc(a))} radii`], ['full turn', `2π = ${f(M.FULL)}`]]; } },
