@@ -66,3 +66,10 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   (predict, sliders, seeded run). Each page's `<main>` class and markup follow the pilots
   (`economics/compound`, `statistics/galton`).
 - Textbook embeds: `adapters/kym-live.js` (`mountAtlas`), copied into a book by `tools/vendor.mjs`.
+
+## Video (needs ffmpeg; output in `videos/`, ignored)
+- `node tools/record.mjs <subject/id> [--size 1920x1080] [--fps 60] [--silent]`: seeks the `?render` tour frame by
+  frame into H.264; fails unless the frame count is round(DURATION × fps). Writes a contact sheet (a frame per 3 s)
+  and a timeline (`starts`, `events`) for the score.
+- `node tools/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
+  page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, then measured (PASS/FAIL).
