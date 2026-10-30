@@ -20,7 +20,7 @@ check('plays at once by default', await p.evaluate(() => __atlas.started) && awa
 await open(`/${c}/?calm#1`);
 const c0 = await clock(); await wait(900);
 check('calm: still until asked', c0 === await clock() && await p.$eval('#play', e => e.getAttribute('aria-pressed')) === 'false');
-await p.click('#play'); await wait(900); const c1 = await clock();
+await p.click('#play'); await p.waitForFunction(c => __atlas.clock > c, { timeout: 15000 }, c0).catch(() => {}); const c1 = await clock();
 check('calm: Play starts it', c1 > c0, `clock ${c1.toFixed(2)} s`);
 await p.click('#play'); await wait(300); const c2 = await clock(); await wait(700);
 check('Pause stops it', c2 === await clock());
