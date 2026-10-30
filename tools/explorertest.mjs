@@ -40,8 +40,12 @@ await p.goto(`${base}/${fig}/?render`, { waitUntil: 'networkidle0' }); await p.w
 await p.evaluate(async () => { for (let t = 0; t <= DURATION; t += DURATION / 12) seek(t); await document.fonts.ready; }); await wait(300);
 await p.evaluate(() => seek(0)); await p.screenshot();
 const at = async t => { await p.evaluate(t => seek(t), t); return (await p.$('#right')).screenshot({ encoding: 'base64' }); };
+// one warm pass over the test frames first: a label drawn for the first time may pull in a web font, and on a cold
+// cache (CI) it can land between two captures of the same frame
+for (const t of [3, 7, 1]) await at(t);
+await p.evaluate(() => document.fonts.ready); await wait(300);
 const a = await at(3), b = await at(7), c = await at(1), d = await at(3);
-check('render: the same t gives the same frame, in any order', a === d && a !== b && b !== c);
+check('render: the same t gives the same frame, in any order', a === d && a !== b && b !== c, `3 s again ${a === d ? 'same' : 'DIFFERS'}, 3 vs 7 ${a !== b ? 'differ' : 'SAME'}, 7 vs 1 ${b !== c ? 'differ' : 'SAME'}`);
 check('no page errors', !errors.length, errors.join(' | '));
 for (const r of rows) console.log(r.filter(Boolean).join('  '));
 await browser.close(); server.close();

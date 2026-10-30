@@ -29,7 +29,8 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   parts as keyboard buttons, Esc focus, top bar fits 360 px, render determinism, embed; then the machine, explorer
   and kym-adapter tests)
 
-Browser tools need Chrome (set `CHROME` if not at the macOS default). Screenshots:
+Browser tools need Chrome (`tools/chrome.mjs`: set `CHROME` if it is elsewhere; `GL=swiftshader` renders in software, as
+CI's Linux runners do). CI (`.github/workflows/check.yml`) runs SMOKE and `npm run test:browser` on every push. Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor
 screenshots for visual comparison; the scene animates, so compare by eye, not pixel diff.
 

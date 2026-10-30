@@ -49,6 +49,9 @@ await open('?render');
 await p.evaluate(async () => { for (let t = 0; t <= DURATION; t += DURATION / 12) seek(t); await document.fonts.ready; }); await wait(300);
 await p.evaluate(() => seek(0)); await p.screenshot();
 const at = async t => { await p.evaluate(t => seek(t), t); return (await p.$('#right')).screenshot({ encoding: 'base64' }); };
+// a warm pass first, so a web font a label pulls in can't land between two captures of the same frame (cold CI cache)
+for (const t of [5, 20, 1]) await at(t);
+await p.evaluate(() => document.fonts.ready); await wait(300);
 const a = await at(5), b = await at(20), c = await at(1), d = await at(5);
 check('render: the same t gives the same frame, in any order', a === d && a !== b && b !== c);
 check('no page errors', !errors.length, errors.join(' | '));
