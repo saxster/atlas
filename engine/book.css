@@ -226,6 +226,22 @@
 .pager button:hover { background: #f0f0ec; }
 .eqlink { font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-decoration: none; text-transform: uppercase; }
 .eqlink:hover { color: var(--strong); }
+.playbtn {
+  border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer;
+  font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 7px 12px; border-radius: 999px;
+}
+.playbtn:hover { border-color: var(--mid); }
+.playbtn[aria-pressed="false"] { background: var(--hi); color: var(--card); border-color: var(--hi); }
+.playbtn .icon { display: none; }
+/* a page's parts as buttons: the keyboard's way into a breakdown (book.js partsHtml) */
+.parts-k { margin-top: 22px; }
+.parts { list-style: none; padding: 0; margin: 10px 0 18px; display: grid; gap: 2px; max-width: 440px; }
+.parts button {
+  width: 100%; display: flex; gap: 14px; align-items: baseline; text-align: left; border: 0; background: none; cursor: pointer;
+  padding: 7px 10px; border-radius: 6px; font: 15px var(--sans); color: var(--text);
+}
+.parts button span { margin-left: auto; text-align: right; font: 12px var(--mono); color: var(--muted); }
+.parts button:hover, .parts button:focus-visible { background: #0000000a; color: var(--strong); }
 .gh { display: flex; color: var(--muted); }
 .gh:hover { color: var(--strong); }
 
@@ -244,8 +260,10 @@
 @media (max-width: 900px) {
   .dots { display: none; }
   .pager { display: flex; }
-  .eqlink { order: 3; }
-  .gh { order: 4; }
+  .playbtn { order: 3; width: 32px; height: 32px; padding: 0; font-size: 10px; letter-spacing: 0; flex: none; }
+  .playbtn .word { display: none; } .playbtn .icon { display: inline; }
+  .eqlink { order: 4; }
+  .gh { order: 5; }
   .topbar { gap: 12px; }
   .brand, #pagenum { white-space: nowrap; }
   .pager button { width: 32px; }
@@ -276,12 +294,12 @@
   .sheet p, .plate p { font-size: 16px; line-height: 1.6; }
 }
 @media (max-width: 400px) {
-  .topbar { gap: 8px; }
+  .topbar { gap: 8px; padding-left: 16px; padding-right: 16px; }
   .brand { font-size: 17px; }
-  .pager button { width: 28px; }
+  .pager button { width: 26px; }
+  .gh { display: none; }   /* room for Play; the contents page still links the repo */
 }
 @media (max-width: 340px) {
-  .gh { display: none; }   /* the smallest phones: the contents page still links the repo */
   .pager button { width: 24px; }
 }
 /* tablets upright: a taller figure, roomier text */

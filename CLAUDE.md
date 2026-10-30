@@ -22,7 +22,8 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
 - FOCUSED: `node physics/<chapter>/checks.mjs` (PASS/FAIL rows, exit 1 on failure), or `node tools/check.mjs physics/newton`
 - SMOKE: `npm run check` (every chapter of every subject + each subject's equation-sheet link check)
 - FULL: `npm run check`, then with `python3 -m http.server 8137` running: `npm run test:browser`
-  (every page by deep link: practice present, no console errors)
+  (every page by deep link: practice present, no console errors; then tools/controls.mjs: Play/Pause, calm,
+  parts as keyboard buttons, Esc focus, top bar fits 360 px)
 
 Browser tools need Chrome (set `CHROME` if not at the macOS default). Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor

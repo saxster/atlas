@@ -4,7 +4,7 @@
   "description": "One figure engine and the subject atlases built on it",
   "scripts": {
     "check": "node tools/check.mjs",
-    "test:browser": "node tools/allpages.mjs"
+    "test:browser": "node tools/allpages.mjs && node tools/controls.mjs"
   },
   "keywords": [],
   "author": "",

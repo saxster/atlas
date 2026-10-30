@@ -1,0 +1,52 @@
+// node tools/controls.mjs [subject/chapter] — the book's controls in a browser (needs the static server on :8137):
+// Play/Pause, calm mode (?calm: still until asked), a page's parts as keyboard buttons, Esc returning focus, and
+// the top bar fitting phones from 360 px. Exit 1 on any failure.
+import puppeteer from 'puppeteer-core';
+import { chapters as allChapters } from './chapters.mjs';
+
+const c = process.argv[2] || 'physics/newton', base = 'http://127.0.0.1:8137';
+const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 900 });
+const errors = []; p.on('pageerror', e => errors.push(e.message));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const rows = [], check = (name, ok, info = '') => rows.push([ok ? 'PASS' : 'FAIL', name, info]);
+const open = async url => { await p.goto(base + url, { waitUntil: 'networkidle0' }); await p.waitForFunction('window.__atlas'); };
+const clock = () => p.evaluate(() => __atlas.clock);
+
+await open(`/${c}/`); await wait(600);
+check('plays at once by default', await p.evaluate(() => __atlas.started) && await p.$eval('#play', e => e.getAttribute('aria-label')) === 'Pause');
+
+await open(`/${c}/?calm#1`);
+const c0 = await clock(); await wait(900);
+check('calm: still until asked', c0 === await clock() && await p.$eval('#play', e => e.getAttribute('aria-pressed')) === 'false');
+await p.click('#play'); await wait(900); const c1 = await clock();
+check('calm: Play starts it', c1 > c0, `clock ${c1.toFixed(2)} s`);
+await p.click('#play'); await wait(300); const c2 = await clock(); await wait(700);
+check('Pause stops it', c2 === await clock());
+
+// the first page with a part button: open it from the keyboard, close with Esc, focus comes back
+const n = await p.evaluate(() => __atlas.N);
+let page = -1;
+for (let i = 0; i < n && page < 0; i++) { await p.evaluate(i => __atlas.goto(i, true), i); await wait(250); if (await p.$('#sheet .parts button')) page = i; }
+check('pages list their parts as buttons', page >= 0, `first on page ${page}`);
+if (page >= 0) {
+  const key = await p.$eval('#sheet .parts button', b => b.dataset.part);
+  await p.focus('#sheet .parts button'); await p.keyboard.press('Enter'); await wait(500);
+  check('Enter on a part opens its breakdown, focus on Close', await p.evaluate(() => !document.getElementById('plate').hidden && document.activeElement.classList.contains('close')));
+  await p.keyboard.press('Escape'); await wait(300);
+  check('Esc closes it and focus returns to the part', await p.evaluate(k => document.getElementById('plate').hidden && document.activeElement.dataset.part === k, key));
+}
+
+// the top bar fits phones, for every chapter at the narrowest width
+const narrow = [];
+for (const ch of await allChapters()) for (const w of [360, 390]) {
+  await p.setViewport({ width: w, height: 800, isMobile: true, hasTouch: true });
+  await open(`/${ch}/`);
+  const r = await p.evaluate(() => Math.max(...[...document.querySelectorAll('.topbar > *')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.getBoundingClientRect().right)));
+  if (r > w) narrow.push(`${ch}@${w}: ${r.toFixed(0)}px`);
+}
+check('top bar fits phones (360, 390) in every chapter', !narrow.length, narrow.join(', '));
+check('no page errors', !errors.length, errors.join(' | '));
+for (const r of rows) console.log(r.filter(Boolean).join('  '));
+await browser.close();
+process.exit(rows.every(r => r[0] === 'PASS') ? 0 : 1);

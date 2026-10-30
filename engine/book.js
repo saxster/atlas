@@ -1,5 +1,7 @@
 // The book: scroll turns the pages and moves the camera; hover lights a thing; click breaks
 // it down. A chapter supplies its pages, breakdowns, world and clock; this does the rest.
+// From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
+// the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
 import { createEngine } from './render.js';
 import { XREFS } from './xrefs.js';
 
@@ -13,15 +15,20 @@ const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or pr
 const DEFAULT_HINT = touch ? 'Drag sideways to turn · tap to break it down' : 'Drag to turn · shift-drag to pan · click to break it down';
 // this chapter as cross-references name it, subject and directory: physics/kinematics (pages are #3 after it)
 const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').slice(-2).join('/');
-const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 // chapter: { no, subject, PAGES, PLATES, buildWorld(E), lookKeys, state(clock, reduced), readout(state),
 //            forceLook?(selected, look), onFrame?(state, sheetEls), clock0? }
-// subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source }
+// subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source, calm? }
+// calm (chapter or subject): the figure is still until the reader scrolls, taps, presses a key or presses Play.
+// still?(): true when the reader's own settings ask for no motion (a book's Still mode); counts as reduced motion.
+// narrowZoom?: camera distance factor on phones. A page may list parts: ['ball', 'vArrow'], the things on it that
+// open a breakdown; without a list, the page's lit thing is its part.
 export function startBook(chapter) {
   const { PAGES, PLATES } = chapter;
   const N = PAGES.length;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches || !!chapter.still?.();
+  const calm = chapter.calm ?? chapter.subject?.calm ?? new URLSearchParams(location.search).has('calm');
   const narrowQ = matchMedia('(max-width: 900px), (max-height: 520px)'), narrow = () => narrowQ.matches;
   // one page of scroll; held steady while a phone's toolbar slides in and out (only a width change resizes it)
   let pageH = innerHeight, lastW = innerWidth;
@@ -51,13 +58,22 @@ export function startBook(chapter) {
       const d = to.slice(0, to.lastIndexOf('/')), k = to.slice(to.lastIndexOf('/') + 1);
       return `<p><a href="${d === DIR ? '' : `../../${d}/`}#${k}">${label} →</a> ${note}</p>`; }).join('')}</aside>`;
   };
+  // the parts of this page's figure, as buttons: the keyboard's way into a breakdown
+  const partsOf = i => (PAGES[i].parts || (PAGES[i].lit ? [PAGES[i].lit] : [])).filter(k => PLATES[k] && E.ASM[k]);
+  const partsHtml = i => {
+    const ks = partsOf(i);
+    if (!ks.length) return '';
+    return `<div class="kicker parts-k">Take the figure apart</div><ul class="parts">${ks.map(k => { const u = E.ASM[k].userData;
+      return `<li><button type="button" data-part="${k}">${PLATES[k].title || u.title || k}<span>${PLATES[k].sub || u.sub || ''}</span></button></li>`; }).join('')}</ul>`;
+  };
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${p.body}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
+  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice to mark it and show the worked solution
   $('sheet').addEventListener('click', e => {
     const b = e.target.closest('button'), q = b && b.closest('.q');
     if (b?.dataset.turn) return goto(+b.dataset.turn);
+    if (b?.dataset.part) { begin(); return select(b.dataset.part, b); }
     if (!q) return;
     const item = PRACTICE[shown][+q.dataset.q];
     if (b.dataset.c !== undefined) {
@@ -83,17 +99,32 @@ export function startBook(chapter) {
     $('folio').textContent = i + 1;
     $('figno').textContent = `Fig. ${chapter.no}${i ? '.' + i : ''}`;
     $('figtitle').textContent = PAGES[i].fig;
+    if (partsOf(i).length) $('gl').setAttribute('aria-label', `Figure ${chapter.no}${i ? '.' + i : ''}: ${PAGES[i].fig}. ${PAGES[i].alt || ''} The buttons under the text take it apart.`);
     [...$('dots').children].forEach((b, k) => b.setAttribute('aria-current', k === i));
   }
-  const goto = (i, now) => scrollTo({ top: Math.max(0, Math.min(N - 1, i)) * pageH, behavior: reduced || now ? 'auto' : 'smooth' });
+  const goto = (i, now) => (now || begin(), scrollTo({ top: Math.max(0, Math.min(N - 1, i)) * pageH, behavior: reduced || now ? 'auto' : 'smooth' }));
   const fromHash = () => { const m = /^#(\d+)$/.exec(location.hash); return m && +m[1] < N ? +m[1] : null; };
   history.scrollRestoration = 'manual';
   addEventListener('hashchange', () => { const k = fromHash(); if (k !== null) goto(k); });
   // a compact pager for small screens, where a row of dots would not fit
   const { links: barLinks = [], source } = chapter.subject || {};
   $('dots').insertAdjacentHTML('afterend', '<span class="pager"><button type="button" aria-label="Previous page">‹</button><span id="pagenum"></span><button type="button" aria-label="Next page">›</button></span>'
+    + (reduced ? '' : '<button type="button" class="playbtn" id="play" aria-pressed="false">Play</button>')
     + barLinks.map(l => `<a class="${l.cls || ''}" href="${l.href}">${l.label}</a>`).join('')
     + (source ? `<a class="gh" href="${source}" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>` : ''));
+  // Play / Pause. Calm chapters start still: the reader's scrolling, a key, a tap or Play starts them; a deep link doesn't
+  let started = !calm, userPaused = false;
+  const playB = $('play');
+  const syncPlay = () => {
+    if (!playB) return;
+    const on = started && !userPaused, word = on ? 'Pause' : 'Play';
+    playB.innerHTML = `<span class="word">${word}</span><span class="icon" aria-hidden="true">${on ? '❚❚' : '▶'}</span>`;
+    playB.setAttribute('aria-label', word); playB.setAttribute('aria-pressed', String(on));
+  };
+  function begin() { if (!started) { started = true; syncPlay(); } }
+  if (playB) playB.onclick = () => { if (!started) { started = true; userPaused = false; } else userPaused = !userPaused; syncPlay(); };
+  syncPlay();
+  for (const ev of ['wheel', 'touchmove']) addEventListener(ev, begin, { passive: true });
   const [prevB, nextB] = document.querySelectorAll('.pager button');
   prevB.onclick = () => goto(Math.round(scrollY / pageH) - 1); nextB.onclick = () => goto(Math.round(scrollY / pageH) + 1);
   PAGES.forEach((p, i) => {
@@ -157,6 +188,7 @@ export function startBook(chapter) {
   let drag = null;
   $('gl').addEventListener('contextmenu', e => e.preventDefault());
   $('gl').addEventListener('pointerdown', e => {
+    begin();
     drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2, moved: false };
     $('gl').setPointerCapture(e.pointerId);
   });
@@ -188,12 +220,13 @@ export function startBook(chapter) {
   });
   $('gl').addEventListener('pointerleave', () => { pointer = null; anchor = null; hovered = null; relight(); $('gl').classList.remove('pointing'); });
   addEventListener('keydown', e => {
-    if (e.key === 'Escape') select(null);
+    if (e.key === 'Escape' && selected) { const back = returnFocus; select(null); back?.focus(); }
+    if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) begin();
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goto(Math.round(scrollY / pageH) + 1); }
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goto(Math.round(scrollY / pageH) - 1); }
   });
 
-  let selectScroll = 0, focusAmt = 0, lastFocus = null;
+  let selectScroll = 0, focusAmt = 0, lastFocus = null, returnFocus = null;
   function focusOf(k) {
     const g0 = E.ASM[k];
     // an assembly may name its own breakdown view: userData.focus = () => ({ target: [x, y, z], radius })
@@ -205,8 +238,10 @@ export function startBook(chapter) {
     const s = box.getBoundingSphere(new E.THREE.Sphere());
     return { target: s.center.toArray(), dist: Math.max(E.distFor(Math.max(s.radius, g.userData.minRadius ?? 1.2)), g.userData.minDist ?? 8) };   // a scene may allow a closer zoom
   }
-  function select(k) {
+  function select(k, from) {
+    if (k && !E.ASM[k]) return;
     selected = k;
+    returnFocus = from || null;
     for (const [key, g] of Object.entries(E.ASM)) g.userData.target = key === k ? 1 : 0;
     selectScroll = scrollY; relight();
     const plate = $('plate');
@@ -218,9 +253,10 @@ export function startBook(chapter) {
       <h1>${u.title}</h1>
       <div class="sub">${u.sub}</div>
       <p>${PLATES[k].text}</p>
-      <table class="data" id="facts"></table>`;
+      <table class="data" id="facts" aria-live="off"></table>`;
     plate.hidden = false;
-    plate.querySelector('.close').onclick = () => select(null);
+    plate.querySelector('.close').onclick = () => { const back = returnFocus; select(null); back?.focus(); };
+    if (from) plate.querySelector('.close').focus();
     $('hint').textContent = CLOSE_HINT;
   }
 
@@ -272,7 +308,8 @@ export function startBook(chapter) {
     const A = PAGES[i].cam, B = PAGES[j].cam;
     let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: lerp(A.az, B.az, u), el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) };
     cam.dist *= Math.max(1, 1.25 / E.camera.aspect);
-    if (!reduced && !drag) cam.az += Math.sin(now / 5200) * 1.2;
+    if (narrow()) cam.dist *= chapter.narrowZoom ?? 1;
+    if (!reduced && !drag && started && !userPaused) cam.az += Math.sin(now / 5200) * 1.2;
     const page = Math.round(s);
     if (page !== orbitPage) { orbitPage = page; orbitHome = true; }
     if (drag && drag.moved) orbitHome = false;
@@ -291,9 +328,9 @@ export function startBook(chapter) {
 
     // physics: time pauses while something is open, so it can be read
     // time eases to a stop while something is pointed at or open, so moving things can be caught and read
-    timeRate = selected || hovered ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
+    timeRate = selected || hovered || !started || userPaused ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
     if (!reduced) clock += dt * timeRate;
-    paused.classList.toggle('on', !reduced && !!(selected || hovered));
+    paused.classList.toggle('on', !reduced && started && !userPaused && !!(selected || hovered));
     const state = chapter.state(clock, reduced);
     const LA = PAGES[i].look, LB = PAGES[j].look, look = {};
     for (const key of chapter.lookKeys) look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
@@ -314,5 +351,5 @@ export function startBook(chapter) {
   { const k = fromHash(); if (k !== null) goto(k, true); }
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frame(t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, select, goto };
+  window.__atlas = { E, select, goto, N, get started() { return started; }, get clock() { return clock; } };
 }
