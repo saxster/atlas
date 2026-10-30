@@ -56,11 +56,11 @@ check('six radii round the circle fall short of a turn by 2π − 6', near(M.FUL
 
 // ---------- the sine wave ----------
 const ts = [0, 1.3, 4.1, 7.7, 12.9, 31];
-check('the traced wave is sin: wave(t, u) = sin(ωt − u)', ts.every(t => [0, 0.4, 2, 5.5, 6.9].every(u => near(M.wave(t, u), Math.sin(M.W * t - u), 1e-12))));
-check('…and each traced point is P\'s RK4 height when it was drawn', ts.every(t => [0.7, 3.3, 6.1].every(u => near(M.wave(t, u), turn(M.W * t - u, 800).y, 1e-8))));
-check('one turn draws one wavelength: the strip moves 2π', near(M.WAVELENGTH, 2 * Math.PI, 1e-12), `${M.WAVELENGTH.toFixed(4)} radii in ${M.TURN} s`);
-check('the trace repeats every 2π along the strip', ts.every(t => [0.2, 1.5].every(u => near(M.wave(t, u + 2 * Math.PI), M.wave(t, u), 1e-9))));
-check('the strip is long enough to show a whole wavelength', M.STRIP.len > 2 * Math.PI);
+check('the traced wave is sin: wave(t, u) = sin(ωt − u/K)', ts.every(t => [0, 0.4, 2, 3.5].every(u => near(M.wave(t, u), Math.sin(M.W * t - u / M.K), 1e-12))));
+check('…and each traced point is P\'s RK4 height when it was drawn', ts.every(t => [0.7, 1.6, 3.3].every(u => near(M.wave(t, u), turn(M.W * t - u / M.K, 800).y, 1e-8))));
+check('one turn draws one wavelength: the paper moves K·2π (t = 2π)', near(M.WAVELENGTH, M.K * 2 * Math.PI, 1e-12) && near(M.WAVELENGTH / M.K, 2 * Math.PI, 1e-12), `${M.WAVELENGTH.toFixed(4)} radii of paper in ${M.TURN} s`);
+check('the trace repeats every wavelength along the strip', ts.every(t => [0.2, 1.5].every(u => near(M.wave(t, u + M.WAVELENGTH), M.wave(t, u), 1e-9))));
+check('the strip is long enough to show a whole wavelength', M.STRIP.len > M.WAVELENGTH && near(M.STRIP.len, M.K * M.STRIP.tmax));
 
 // ---------- tangent ----------
 check('tan θ = sin θ / cos θ (Math.tan agrees)', angles.filter(a => Math.abs(Math.cos(a)) > 0.05).every(a => near(M.tan(a), Math.tan(a), 1e-9)));

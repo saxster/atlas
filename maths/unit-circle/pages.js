@@ -113,9 +113,9 @@ export const PAGES = [
   {
     kicker: '1.5', title: 'The sine wave', sub: 'the height, drawn against the turn',
     body: `
-      <p class="lede">Let <i>P</i> go round at a steady rate, and let a strip of paper slide to the right at one radius per radian. A pen held level with <i>P</i> draws its height against how far it has turned:</p>
+      <p class="lede">Let <i>P</i> go round at a steady rate, and let a strip of paper slide steadily to the right. A pen held level with <i>P</i> draws its height against how far it has turned, <i>t</i> radians:</p>
       <div class="eq"><i>y</i> = sin <i>t</i></div>
-      <p>After one turn the paper has moved 2π: one <b>wavelength</b>. Then <i>P</i> repeats itself, and so does the trace: sin(<i>t</i> + 2π) = sin <i>t</i>. Sine is <b>periodic</b> with period 2π.</p>
+      <p>The paper moves ${f(M.K, 1)} of a radius for each radian, so the graph is squeezed sideways by half; its <i>t</i> axis is marked in radians. After one turn the trace has run from <i>t</i> = 0 to <i>t</i> = 2π: one <b>wavelength</b>. Then <i>P</i> repeats itself, and so does the trace: sin(<i>t</i> + 2π) = sin <i>t</i>. Sine is <b>periodic</b> with period 2π.</p>
       <table class="data">
         <tr><th><i>t</i></th>${['0', 'π/2', 'π', '3π/2', '2π'].map(x => `<td>${x}</td>`).join('')}</tr>
         <tr><th>sin <i>t</i></th>${[0, 1, 2, 3, 4].map(k => `<td>${f(Math.sin(k * Math.PI / 2), 0)}</td>`).join('')}</tr>
@@ -124,7 +124,7 @@ export const PAGES = [
       <div class="charts">${chart({ ...RANGES.wave, xlabel: 't', ylabel: 'y = sin t', cursors: ['wave'], label: 'y equals sin t over two turns',
         series: [{ cls: 'grid', pts: [[M.TAU, -1], [M.TAU, 1]] }, { pts: samples(0, RANGES.wave.x1, 200, Math.sin) }], marks: [[M.TAU, 0, '2π']] })}</div>
       <p class="hintline">Click the trace for its slope, cos t, in blue.</p>`,
-    cam: { target: at('wave', 3.4 * 1.5, 0), az: -3, el: 5, dist: 43 }, lit: 'wave', scene: 'wave', look: {},
+    cam: { target: at('wave', 1.9 * 1.5, 0), az: -3, el: 5, dist: 27.5 }, lit: 'wave', scene: 'wave', look: {},
     fig: 'P’s height drawn on a sliding strip',
     alt: 'P goes round the circle on the left; a pen level with P draws a red sine wave on a paper strip sliding to the right.',
   },
@@ -142,7 +142,7 @@ export const PAGES = [
       <div class="charts">${chart({ ...RANGES.tan, xlabel: 'θ (°)', ylabel: 'tan θ', cursors: ['tan'], label: 'tan theta from minus 90 to 90 degrees, running off to infinity at both ends',
         series: [{ cls: 'grid', pts: [[45, -4], [45, 4]] }, { pts: samples(-Math.atan(4) / M.DEG, Math.atan(4) / M.DEG, 160, d => Math.tan(d * M.DEG)) }], marks: [[45, 1, '1 at 45°']] })}</div>
       <p class="hintline">Click the red length to see the two triangles of the same shape.</p>`,
-    cam: { target: at('tangent', 0.2, 0.9), az: -6, el: 4, dist: 20 }, lit: 'tangent', scene: 'tangent', look: {},
+    cam: { target: at('tangent', 0.2, 1.2), az: -6, el: 4, dist: 22.5 }, lit: 'tangent', scene: 'tangent', look: {},
     fig: 'The ray OP meets x = 1 at height tan θ',
     alt: 'The radius OP is extended as a ray until it meets the vertical line x = 1; a red bar on that line measures from the x axis up to the meeting point.',
   },
@@ -178,7 +178,7 @@ export const PLATES = {
     facts: s => { const a = M.sway(s.t), c = Math.cos(a), n = Math.sin(a); return [['θ', `${f(a / M.DEG, 1)}°`], ['sin²θ (red)', f(n * n)], ['cos²θ (blue)', f(c * c)], ['sum', f(n * n + c * c, 6)]]; } },
   radian: { text: `The red arc straightened up the line x = 1. It is as long as the angle in radians: a mark every radius, six marks and a bit for a full turn, ${f(M.FULL)}.`,
     facts: s => { const a = M.unwind(s.t); return [['angle', `${f(a / M.DEG, 1)}°`], ['in radians', f(a)], ['arc s', `${f(M.arc(a))} radii`], ['full turn', `2π = ${f(M.FULL)}`]]; } },
-  wave: { text: `The blue curve is the slope of the red trace at each point: steepest (±1) where the trace crosses the middle, zero at its tops and bottoms. It is the cosine, shifted a quarter turn: the derivative of sin t is cos t.`,
+  wave: { text: `The blue curve is the slope of the red trace (height per unit of t) at each point: steepest (±1) where the trace crosses the middle, zero at its tops and bottoms. It is the cosine, shifted a quarter turn: the derivative of sin t is cos t.`,
     facts: s => [['turned t', `${f(th(s) % M.TAU)} of 2π`], ['height sin t', f(Math.sin(th(s)))], ['slope cos t', f(Math.cos(th(s)))], ['wavelength', `2π = ${f(M.WAVELENGTH)}`]] },
   tangent: { text: `Blue and red: the triangle under P, across cos θ and up sin θ. The big triangle under the meeting point is the same shape, across 1 and up tan θ. Same shape, same ratio: tan θ = sin θ / cos θ.`,
     facts: s => { const a = M.tsway(s.t); return [['θ', `${f(a / M.DEG, 1)}°`], ['sin θ / cos θ', f(Math.sin(a) / Math.cos(a))], ['height on x = 1', f(M.tangentPoint(a).y)], ['slope of OP', f(M.tan(a))]]; } },

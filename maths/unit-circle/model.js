@@ -61,9 +61,12 @@ export const TG = { lo: -45 * DEG, hi: 68 * DEG, T: 16 };
 export const tsway = t => (TG.lo + TG.hi) / 2 + (TG.hi - TG.lo) / 2 * Math.sin(TAU * t / TG.T);
 
 // ---------- the sine wave: P's height drawn on a strip that slides sideways ----------
-// The strip moves at ω (one radius per radian), so one turn draws one wavelength, 2π long.
-export const STRIP = { len: 7.0 };                // strip length, in radii
-export const SPEED = W * R;                       // strip speed: radii per second
-export const WAVELENGTH = SPEED * TURN;           // distance the strip moves in one turn: 2π
-// a point u along the strip from the pen was drawn u/SPEED seconds ago, when the angle was ωt − u
+// The paper moves K radii for every radian P turns (K = ½: the graph is squeezed sideways by half, so a whole
+// wavelength fits the page). Along the strip, the paper's t axis has t = u / K at distance u from the pen.
+export const K = 0.5;                             // paper radii per radian of turn
+export const STRIP = { tmax: TAU + 1 };           // the strip shows t from 0 to 2π + 1: one turn and a bit
+STRIP.len = K * STRIP.tmax;                       // strip length, in radii (3.64)
+export const SPEED = K * W * R;                   // strip speed: radii per second
+export const WAVELENGTH = SPEED * TURN;           // paper moved in one turn: K·2π = π radii, which is t = 2π
+// a point u along the strip from the pen was drawn u/SPEED seconds ago, when the angle was ωt − u/K
 export const wave = (t, u) => sin(steady(t - u / SPEED));
