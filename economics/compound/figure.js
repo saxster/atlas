@@ -12,7 +12,7 @@ const first = { target: [colX(1) + 0.5, 0.62, 0], az: -14, el: 14, dist: 7.5 }; 
 export const FIGURE = {
   no: 'E.1', title: '₹1,000 a month at 8 %', question: 'How does ₹1,000 a month grow?',
   bigIdea: `interest earns interest, so the pot grows faster every year. After 20 years, ${M.rupees(M.deposited(M.MONTHS))} paid in has become ${M.rupees(M.pot(M.MONTHS))}: more of it is interest than savings.`,
-  intro: { cam: first, lit: 'coin', fig: 'An empty pot' },
+  intro: { cam: first, lit: 'coin', fig: 'An empty pot', look: { coin: 1 }, frameAspect: 1.25 },
   lookKeys: ['coin', 'simple', 'late'],
   // the twenty columns are a wide scene: framed for the 1.65 canvas a desktop gives, pulled back on anything narrower
   frameAspect: 1.65, narrowZoom: 1.22,   // phones: room on the right for the column labels
@@ -21,7 +21,7 @@ export const FIGURE = {
   STEPS: [
     { label: 'Save ₹1,000 a month', fig: 'The first year, coin by coin', run: 12, play: 7, real: 12 * M.MONTH_S,
       hint: `Each month a ₹1,000 coin goes in. First the bank adds ${(100 * M.r).toFixed(2)} % of what is already there.`,
-      cam: first, lit: 'coin', look: { coin: 1 },
+      cam: first, lit: 'coin', look: { coin: 1 }, frameAspect: 1.25,   // a close-up: framed for any canvas
       sounds: Array.from({ length: 12 }, (_, k) => ({ at: (k + 0.85) * 7 / 12, word: 'clink', dur: 0.5, where: () => V(colX(1), M.pot(k) * UNIT + 0.2, 0) })) },
     { label: 'Five years', fig: 'A thin skin of interest', run: 48, play: 5, real: 48 * M.MONTH_S,
       hint: 'Red is interest. In the first years it is a thin skin on top of what you paid in.',

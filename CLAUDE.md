@@ -58,7 +58,7 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   `engine/xrefs.js` pair that points at a missing page.
 
 ## Figure options worth knowing
-- `frameAspect` (chapter or figure): the canvas aspect the cameras were framed for (default 1.25); a narrower canvas
+- `frameAspect` (chapter, figure, or one page or step): the canvas aspect the cameras were framed for (default 1.25); a narrower canvas
   pulls back. `narrowZoom`: extra distance on phones.
 - A book page's `molecule` (XYZ text, ångström) adds "See the real molecule": `adapters/molecule.js` loads 3Dmol.js
   2.5.5 (BSD-3) from jsDelivr only when tapped, and says so when offline.

@@ -158,7 +158,9 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     const u = blend === 'linear' ? f : ease(smooth(0.3, 1, f));
     const A = PAGES[i].cam, B = PAGES[j].cam;
     let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: lerp(A.az, B.az, u), el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) };
-    cam.dist *= Math.max(1, (chapter.frameAspect ?? 1.25) / E.camera.aspect);   // a canvas narrower than the cameras were framed for pulls back
+    // a canvas narrower than the cameras were framed for pulls back; a page may say its own (a close-up in a wide figure)
+    const fa = k => PAGES[k].frameAspect ?? chapter.frameAspect ?? 1.25;
+    cam.dist *= Math.max(1, lerp(fa(i), fa(j), u) / E.camera.aspect);
     if (narrow) cam.dist *= narrowZoom;
     if (!reduced && !drag && running) cam.az += Math.sin(now / 5200) * 1.2;
     const page = Math.round(s);

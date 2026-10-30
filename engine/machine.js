@@ -14,7 +14,8 @@
 //   readout(state, step) → text for the corner, chips: [{ label, from (step number, 1-based), value: state → text }],
 //   PLATES?: { key: { text, facts?(state) } }               breakdowns, as in a book
 //   narrowZoom?: camera distance factor on phones (narrow figures need to stand further back),
-//   frameAspect?: the canvas aspect the cameras were framed for (default 1.25); a narrower canvas pulls back
+//   frameAspect?: the canvas aspect the cameras were framed for (default 1.25); a narrower canvas pulls back.
+//     A step (or intro) may give its own, for a close-up inside a wide figure
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
