@@ -28,7 +28,9 @@ check('when it ends, the next step is live and pulses', (await st()).done === 1 
 await p.focus('body'); await p.keyboard.press('Space'); await wait(200);
 check('Space runs the next step', (await st()).k === 2);
 await p.waitForFunction(() => window.__atlas.state.k === 0, { timeout: 30000 });
-await p.click('#again'); await wait(200);
+await p.click('#again');
+// the buttons follow on the next drawn frame, which on a software renderer (CI) can take longer than a fixed wait
+await p.waitForFunction(() => !document.querySelector('#steps .step[data-k="1"]').disabled, { timeout: 5000 }).catch(() => {});
 check('Start over puts it back at step 1', (await st()).done === 0 && (await live())[0] === true);
 await p.click('#mode [data-mode="auto"]'); await wait(1500);
 check('Auto plays on by itself', (await st()).k >= 1 || (await st()).done >= 1);
