@@ -5,6 +5,7 @@ export { startBook } from './book.js';
 export { startMachine, speedLabel } from './machine.js';
 export { startExplorer } from './explorer.js';
 export { part, box, cyl, xAxis, zAxis, lines, arrow, setArrow, liveTube, shadeMat, PALETTE, TONE, V, applyTheme } from './parts.js';
+export { axes, plot, surface, curve, vector, particles, molecule, parseXYZ } from './prims.js';
 export { chart, samples, scale, moveCursor } from './chart.js';
 export { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCDF, chiSquareCritical, normalQuantile, binomial } from './checks.js';
 export { rng } from './rng.js';
