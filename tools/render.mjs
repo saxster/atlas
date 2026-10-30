@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { ROOT } from './chapters.mjs';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml' };
 export function serve() {
@@ -19,7 +20,7 @@ export function serve() {
 }
 
 export async function launch() {
-  return puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+  return puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 }
 
 export async function open(browser, base, chapter, w = 1440, h = 900, query = 'render') {

@@ -1,9 +1,10 @@
 // hover a moving ball near (not on) it, then click: does it open?
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import puppeteer from 'puppeteer-core';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 const ROOT = new URL('..', import.meta.url).pathname;
 const server = http.createServer((q, s) => { let p = path.join(ROOT, decodeURIComponent(new URL(q.url, 'http://x').pathname)); if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p += '/index.html'; if (!fs.existsSync(p)) { s.writeHead(404); return s.end(); } s.writeHead(200, { 'content-type': p.endsWith('.js') || p.endsWith('.mjs') ? 'text/javascript' : p.endsWith('.css') ? 'text/css' : 'text/html' }); fs.createReadStream(p).pipe(s); }).listen(0);
-const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu'] });
+const b = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const pg = await b.newPage(); await pg.setViewport({ width: 1440, height: 900 });
 const errs = []; pg.on('pageerror', e => errs.push(e.message));
 await pg.goto(`http://localhost:${server.address().port}/physics/kinematics/`, { waitUntil: 'networkidle0' });

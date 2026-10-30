@@ -2,8 +2,9 @@
 // for proofreading numbers as the reader sees them. Needs the static server on :8137.
 import fs from 'fs';
 import puppeteer from 'puppeteer-core';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 const [c, out] = process.argv.slice(2);
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new' });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });
 const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
 await page.goto(`http://127.0.0.1:8137/${c}/`, { waitUntil: 'networkidle0' }); await page.waitForFunction('window.__atlas');
 const n = await page.evaluate(() => document.querySelectorAll('#dots button').length);

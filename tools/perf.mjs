@@ -1,9 +1,10 @@
 // node tools/perf.mjs [chapter ...] — frame time, script and layout cost per second of each chapter.
 import puppeteer from 'puppeteer-core';
 import { chapters as allChapters } from './chapters.mjs';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 const chapters = process.argv.length > 2 ? process.argv.slice(2) : await allChapters();
 const W = +(process.env.W || 1440), H = +(process.env.H || 900);
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage();
 await page.setViewport({ width: W, height: H, deviceScaleFactor: +(process.env.DPR || 2) });
 const cdp = await page.createCDPSession(); await cdp.send('Performance.enable');

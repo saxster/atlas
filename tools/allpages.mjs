@@ -1,8 +1,9 @@
 // node tools/allpages.mjs — every page of every chapter by deep link: practice present, no console errors.
 import puppeteer from 'puppeteer-core';
 import { chapters as allChapters } from './chapters.mjs';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 const chapters = process.argv.length > 2 ? process.argv.slice(2) : await allChapters();
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
 let errors = []; page.on('pageerror', e => errors.push(e.stack.split('\n').slice(0, 4).join(' <- '))); page.on('console', m => { if (m.type() === 'error' && !m.location().url?.includes('/_vercel/insights/')) errors.push(m.text()); });
 let bad = 0, qs = 0;

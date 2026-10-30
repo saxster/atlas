@@ -3,9 +3,10 @@
 // the top bar fitting phones from 360 px, ?render determinism and ?embed. Exit 1 on any failure.
 import puppeteer from 'puppeteer-core';
 import { chapters as allChapters } from './chapters.mjs';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 
 const c = process.argv[2] || 'physics/newton', base = 'http://127.0.0.1:8137';
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 900 });
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 const wait = ms => new Promise(r => setTimeout(r, ms));

@@ -1,7 +1,8 @@
 // node tools/taptest.mjs <chapter> <page> — on a phone viewport, a tap on the figure opens a breakdown; a swipe turns the page.
 import puppeteer from 'puppeteer-core';
+import { CHROME, GL_ARGS } from './chrome.mjs';
 const [c, pg] = process.argv.slice(2);
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });
 const page = await browser.newPage();
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 await page.goto(`http://127.0.0.1:8137/${c}/#${pg}`, { waitUntil: 'networkidle0' });
