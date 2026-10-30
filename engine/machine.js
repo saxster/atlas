@@ -22,8 +22,6 @@
 import { createStage, smooth } from './stage.js';
 
 const $ = id => document.getElementById(id);
-const touch = matchMedia('(pointer: coarse)').matches;
-const narrowQ = matchMedia('(max-width: 900px)');
 const MODE_KEY = 'atlas:machine-mode';
 const GAP = 0.7, FIRST = 0.9, END = 1.8;          // ?render tour: seconds before the first step, between steps, at the end
 
@@ -37,6 +35,8 @@ export function speedLabel(realSeconds, playSeconds) {
 }
 
 export function startMachine(figure) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const narrowQ = matchMedia('(max-width: 900px)');
   const { STEPS } = figure, N = STEPS.length;
   const PAGES = [{ fig: figure.title, ...figure.intro, look: figure.intro.look || {} }, ...STEPS.map(s => ({ fig: s.fig || s.label, ...s, look: s.look || {} }))];
   const T0 = []; { let t = 0; for (const s of STEPS) { T0.push(t); t += s.run; } }

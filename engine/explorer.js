@@ -17,11 +17,11 @@ import { createStage } from './stage.js';
 import { speedLabel } from './machine.js';
 
 const $ = id => document.getElementById(id);
-const touch = matchMedia('(pointer: coarse)').matches;
-const narrowQ = matchMedia('(max-width: 900px)');
 const END = 1.5;
 
 export function startExplorer(figure) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const narrowQ = matchMedia('(max-width: 900px)');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
   if (RENDER) document.documentElement.classList.add('render');

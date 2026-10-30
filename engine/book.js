@@ -6,11 +6,6 @@
 import { createStage, smooth, ease } from './stage.js';
 
 const $ = id => document.getElementById(id);
-const touch = matchMedia('(pointer: coarse)').matches;
-const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or press Esc to close';
-const DEFAULT_HINT = touch ? 'Drag to turn · tap a part' : 'Drag to turn · shift-drag to pan · click to break it down';
-// this chapter as cross-references name it, subject and directory: physics/kinematics (pages are #3 after it)
-const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').slice(-2).join('/');
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 // chapter: { no, subject, PAGES, PLATES, buildWorld(E), lookKeys, state(clock, reduced), readout(state),
@@ -24,6 +19,11 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&
 // (adapters/molecule.js, loaded only when asked). narrowZoom?: camera distance factor on phones. A page may list parts: ['ball', 'vArrow'], the things on it that
 // open a breakdown; without a list, the page's lit thing is its part.
 export function startBook(chapter) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or press Esc to close';
+  const DEFAULT_HINT = touch ? 'Drag to turn · tap a part' : 'Drag to turn · shift-drag to pan · click to break it down';
+  // this chapter as cross-references name it, subject and directory: physics/kinematics (pages are #3 after it)
+  const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').slice(-2).join('/');
   const { PAGES, PLATES } = chapter;
   const N = PAGES.length;
   // the ?render tour: each page holds for its dwell, then the next turns in over TURN seconds

@@ -64,13 +64,18 @@ export const SUBJECT = {
 };
 `);
 }
+// the figures are ES modules: in a project whose package.json doesn't say so, the subject's folder does
+const nearestPkg = d => fs.existsSync(path.join(d, 'package.json')) ? path.join(d, 'package.json') : path.dirname(d) === d ? null : nearestPkg(path.dirname(d));
+const esm = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')).type === 'module'; } catch { return false; } };
+const near = nearestPkg(path.join(base, subject));
+if (!near || !esm(near)) fs.writeFileSync(path.join(base, subject, 'package.json'), '{ "type": "module" }\n');
 const m = fs.readFileSync(manifest, 'utf8'), re = new RegExp(`(${list}:\\s*\\[)([^\\]]*)\\]`);
 if (!re.test(m)) fail(`${path.relative(cwd, manifest)} has no ${list}: [...] list; add '${id}' to it by hand`);
 fs.writeFileSync(manifest, m.replace(re, (all, open, items) => `${open}${items.trim() ? `${items.trim().replace(/,$/, '')}, ` : ''}'${id}']`));
 await import(pathToFileURL(manifest).href);   // the manifest must still parse
 
 const rel = path.relative(cwd, dest);
-console.log(`Made ${rel}/ (a ${grammar}, from examples/minimal/${grammar}) and added '${id}' to ${path.relative(cwd, manifest)}.
+console.log(`Made ${rel}/ (${grammar === 'explorer' ? 'an' : 'a'} ${grammar}, from examples/minimal/${grammar}) and added '${id}' to ${path.relative(cwd, manifest)}.
 Next:
   1. Write the model: ${rel}/model.js, and prove it a second way in ${rel}/checks.mjs (node ${rel}/checks.mjs)
   2. Draw it: ${rel}/world.js, from the building blocks in @saxster/atlas/prims.js

@@ -57,13 +57,17 @@ coordinates.
 
 | Block | Draws | Returns, besides `object` and `labels` |
 |---|---|---|
-| `axes(parent, { x, y, z?, size?, at?, ticks?, names?, grid? })` | axes with ticks and names | `to(x, y, z)`: a data point as a world point |
+| `axes(parent, { x, y, z?, size?, at?, ticks?, names?, grid? })` | axes with ticks and names; with a `z` range, z is up | `to(x, y, z)`: a data point as a world point |
 | `plot(parent, f, { axes, x?, samples?, color? })` | y = f(x) | `update(f)` |
 | `surface(parent, f, { axes, x?, y?, n?, pal? })` | z = f(x, y), shaded paper | `update(f)` |
 | `curve(parent, r, { t, samples?, radius?, axes?, color? })` | a tube along r(t) → [x, y, z] | `update(r)` |
-| `vector(parent, from, to, { color?, label?, axes? })` | a solid arrow | `set(from, to)` |
+| `vector(parent, from, to, { color?, label?, axes?, side?, gap? })` | a solid arrow; `side` and `gap` place its label | `set(from, to, side?)` |
 | `particles(parent, count, { radius?, color?, axes? })` | one instanced set of balls | `set(i, [x, y, z])`, `show(n)` |
-| `molecule(parent, xyz, { scale?, names? })` | atoms and bonds from XYZ text (ångström) | `atoms`, `bonds` |
+| `molecule(parent, xyz, { scale?, names? })` | atoms and bonds from XYZ text (ångström); bonds from covalent radii | `atoms`, `bonds` (and `parseXYZ(text)`) |
+
+`update` and `set` rewrite geometry in place, so they can run every frame. Colours are `'hi'` (ink), `'grey'`,
+any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the comment at the top of `engine/prims.js`;
+`examples/minimal/` uses every block.
 
 Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `lines`, `arrow`, `liveTube`,
 `shadeMat`, `PALETTE`) for shapes the blocks don't cover.
