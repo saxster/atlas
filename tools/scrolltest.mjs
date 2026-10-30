@@ -1,6 +1,6 @@
 // open a page whose left text overflows, scroll the left page to the bottom, screenshot it
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import puppeteer from 'puppeteer-core';
-import { CHROME, GL_ARGS } from './chrome.mjs';
+import { CHROME, GL_ARGS } from '../cli/chrome.mjs';
 import { key } from './chapters.mjs';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const [chArg, pg, out] = process.argv.slice(2), ch = key(chArg);

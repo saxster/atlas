@@ -3,7 +3,7 @@
 // the top bar fitting phones from 360 px, ?render determinism and ?embed. Exit 1 on any failure.
 import puppeteer from 'puppeteer-core';
 import { chapters as allChapters, key } from './chapters.mjs';
-import { CHROME, GL_ARGS } from './chrome.mjs';
+import { CHROME, GL_ARGS } from '../cli/chrome.mjs';
 
 const c = key(process.argv[2] || 'physics/newton'), base = 'http://127.0.0.1:8137';
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });

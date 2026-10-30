@@ -18,6 +18,12 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
 - Examples import the library by its package name (`@saxster/atlas/stage.js`), never by relative path, so they read
   like user code: node resolves it by package self-reference, the browser by the importmap in each index.html.
 - `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/`: keep those three working and small.
+- `cli/` is shipped: the browser harness (`render.mjs`), stills, jumps, labels, record and score as functions over the
+  current folder, behind `bin/atlas.mjs` (`atlas check | stills | critic | record`). `tools/` wraps them for the
+  atlas's own examples (all, or `physics/newton`-style names). Run tools from the repo root: they serve the current
+  folder.
+- The `atlas` skill (`~/.agents/skills/atlas/SKILL.md`) is how Claude in another repo learns this library; keep it
+  in step with `docs/API.md` and the `atlas` command.
 - A chapter is five files: model, checks, world, pages, practice, plus `chapter.js` (exports `CHAPTER`: pages,
   world, clock, readout; importable alone, so a textbook can embed the figure), `main.js` (`startBook(CHAPTER)`)
   and `index.html`. The figure is `engine/stage.js`; `engine/book.js` is the book around it.
@@ -37,7 +43,7 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   parts as keyboard buttons, Esc focus, top bar fits 360 px, render determinism, embed; then the machine, explorer
   and kym-adapter tests)
 
-Browser tools need Chrome (`tools/chrome.mjs`: set `CHROME` if it is elsewhere; `GL=swiftshader` renders in software, as
+Browser tools need Chrome (`cli/chrome.mjs`: set `CHROME` if it is elsewhere; `GL=swiftshader` renders in software, as
 CI's Linux runners do). CI (`.github/workflows/check.yml`) runs SMOKE and `npm run test:browser` on every push. Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor
 screenshots for visual comparison; the scene animates, so compare by eye, not pixel diff.
@@ -80,5 +86,5 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
 - `node tools/record.mjs <subject/id> [--size 1920x1080] [--fps 60] [--silent]`: seeks the `?render` tour frame by
   frame into H.264; fails unless the frame count is round(DURATION × fps). Writes a contact sheet (a frame per 3 s)
   and a timeline (`starts`, `events`) for the score.
-- `node tools/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
+- `node cli/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
   page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, then measured (PASS/FAIL).

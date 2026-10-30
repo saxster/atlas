@@ -1,4 +1,4 @@
-// node tools/score.mjs <timeline.json> [<silent.mp4> <out.mp4>] — a soundtrack made by code, timed to the figure.
+// node cli/score.mjs <timeline.json> [<silent.mp4> <out.mp4>] — a soundtrack made by code, timed to the figure.
 // A quiet lo-fi bed (four warm chords, a soft kick and brushed hats, a little vinyl hiss), a bell at every page turn
 // or step start, and a soft pluck at each designed event (a coin landing, a column growing), pitched from the chord
 // underneath. Seeded, so the same timeline gives the same sound. Then ffmpeg's loudnorm, two passes, to −14 LUFS

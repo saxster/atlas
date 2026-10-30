@@ -3,7 +3,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { CHROME, GL_ARGS } from './chrome.mjs';
+import { CHROME, GL_ARGS } from '../cli/chrome.mjs';
 import { key } from './chapters.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');

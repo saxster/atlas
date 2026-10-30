@@ -4,7 +4,7 @@
 // but leaves the physics where it stopped; closing removes it. Screenshots of each theme go to out-dir. Exit 1 on failure.
 import fs from 'node:fs';
 import path from 'node:path';
-import { serve, launch } from './render.mjs';
+import { serve, launch } from '../cli/render.mjs';
 import { key } from './chapters.mjs';
 
 const [outArg, chArg = 'physics/oscillations', pg = '8'] = process.argv.slice(2), chapter = key(chArg);

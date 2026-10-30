@@ -2,7 +2,7 @@
 // the sliders wait for a prediction; a run fills the chips and then reveals the answer with its reason; a slider
 // resets the run (and rebuilds the board where it must) without errors; the same seed gives the same pile;
 // ?render frames are the same for the same t. Exit 1 on any failure.
-import { serve, launch } from './render.mjs';
+import { serve, launch } from '../cli/render.mjs';
 import { key } from './chapters.mjs';
 
 const fig = key(process.argv[2] || 'statistics/galton');

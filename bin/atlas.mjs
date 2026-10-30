@@ -1,82 +1,40 @@
 #!/usr/bin/env node
-// atlas new <subject>/<id> [--grammar book|machine|explorer]
-// Starts a figure by copying the matching minimal example (examples/minimal/<grammar>/), so the starting point is a
-// working, checked figure, and adds it to <subject>/subject.js (made if missing). Inside the atlas repo the figure
-// goes in examples/<subject>/<id>/; anywhere else, in ./<subject>/<id>/ with its links pointed at the installed
-// package (node_modules/@saxster/atlas).
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+// atlas: start a figure, check its model, and look at it, from any repo that has @saxster/atlas installed.
+// Figures are folders relative to the current one (biology/heart). The browser commands need Chrome (CHROME=… if it
+// isn't at the usual place); record also needs ffmpeg.
+const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer]   start a figure from a working example
+atlas check [dir]                                          run every checks.mjs under dir (default: here)
+atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
+atlas critic <figure…>                                     frames that jump, labels that overlap or hide
+atlas record <figure> [--size 1920x1080] [--fps 60] [--silent] [--out videos]   an MP4 with a soundtrack`;
 
-const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const GRAMMARS = { book: 'chapters', machine: 'figures', explorer: 'figures' };
-const [cmd, target, ...rest] = process.argv.slice(2);
-const opt = (k, d) => { const i = rest.indexOf(k); return i < 0 ? d : rest[i + 1]; };
-const fail = msg => { console.error(msg); process.exit(1); };
+const [cmd, ...args] = process.argv.slice(2);
+const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args.splice(i, 2)[1]; };
+const flag = k => { const i = args.indexOf(k); return i >= 0 && args.splice(i, 1).length > 0; };
+const figures = () => args.map(a => a.replace(/\/$/, ''));
 
-if (cmd !== 'new' || !/^[a-z][\w-]*\/[a-z][\w-]*$/.test(target || '')) {
-  console.log('usage: atlas new <subject>/<id> [--grammar book|machine|explorer]\n  e.g. atlas new biology/heart --grammar machine');
-  process.exit(cmd ? 1 : 0);
-}
-const grammar = opt('--grammar', 'book');
-if (!GRAMMARS[grammar]) fail(`--grammar must be one of ${Object.keys(GRAMMARS).join(', ')}`);
-const [subject, id] = target.split('/');
-
-const cwd = process.cwd();
-const ownPkg = f => { try { return JSON.parse(fs.readFileSync(path.join(f, 'package.json'), 'utf8')).name === '@saxster/atlas'; } catch { return false; } };
-const inRepo = ownPkg(cwd);
-const pkg = inRepo ? cwd : path.join(cwd, 'node_modules', '@saxster', 'atlas');
-if (!ownPkg(pkg)) fail('Install the library first, so the figure can link to it:\n  npm install github:saxster/atlas three');
-const base = inRepo ? path.join(cwd, 'examples') : cwd;
-const src = path.join(HERE, 'examples', 'minimal', grammar), dest = path.join(base, subject, id);
-if (!fs.existsSync(src)) fail(`no template at ${src}`);
-if (fs.existsSync(dest)) fail(`${path.relative(cwd, dest)} already exists`);
-
-// copy, re-pointing every relative link that leaves the template folder at the same file in the installed package
-const LINK = /((?:href|src)=")(\.{1,2}\/[^"]*)(")|("@saxster\/atlas\/(?:adapters\/)?":\s*")(\.{1,2}\/[^"]*)(")/g;
-const relink = (text, from) => text.replace(LINK, (m, a1, p1, z1, a2, p2, z2) => {
-  const [pre, link, post] = a1 ? [a1, p1, z1] : [a2, p2, z2];
-  const abs = path.resolve(path.dirname(path.join(src, from)), link);
-  if (abs.startsWith(src + path.sep) || abs === src || abs.startsWith(path.join(HERE, 'examples', 'minimal') + path.sep)) return m;
-  let r = path.relative(path.dirname(path.join(dest, from)), path.join(pkg, path.relative(HERE, abs)));
-  if (link.endsWith('/') && !r.endsWith('/')) r += '/';
-  return pre + (r.startsWith('.') ? r : './' + r) + post;
-});
-const copy = rel => {
-  const s = path.join(src, rel), d = path.join(dest, rel);
-  if (fs.statSync(s).isDirectory()) { fs.mkdirSync(d, { recursive: true }); for (const f of fs.readdirSync(s)) copy(path.join(rel, f)); return; }
-  fs.writeFileSync(d, rel.endsWith('.html') ? relink(fs.readFileSync(s, 'utf8'), rel) : fs.readFileSync(s));
+const COMMANDS = {
+  async new() { const grammar = opt('--grammar', 'book'); await (await import('../cli/new.mjs')).create(args[0], { grammar }); return 0; },
+  async check() { return (await import('../cli/check.mjs')).check(args[0] || '.'); },
+  async stills() { const [out, ...rest] = figures(); if (!rest.length) throw usage(); return (await import('../cli/stills.mjs')).stills(out, rest); },
+  async critic() {
+    if (!args.length) throw usage();
+    const j = await (await import('../cli/jumps.mjs')).jumps(figures());
+    const l = await (await import('../cli/labels.mjs')).labels(figures());
+    return j + l;
+  },
+  async record() {
+    const o = { size: opt('--size', '1920x1080'), fps: +opt('--fps', 60), out: opt('--out', 'videos'), silent: flag('--silent') };
+    if (!args[0]) throw usage();
+    return (await (await import('../cli/record.mjs')).record(figures()[0], o)) ? 0 : 1;
+  },
 };
-copy('');
+const usage = () => Object.assign(new Error(USAGE), { usage: true });
 
-// the subject's manifest: made if missing, the new id added to its chapters (books) or figures
-const manifest = path.join(base, subject, 'subject.js'), list = GRAMMARS[grammar];
-if (!fs.existsSync(manifest)) {
-  const name = subject[0].toUpperCase() + subject.slice(1);
-  fs.writeFileSync(manifest, `// The ${name} atlas: its chapters (books) and figures (machines and explorers), in order.
-export const SUBJECT = {
-  id: '${subject}',
-  name: 'Atlas of ${name}',
-  chapters: [],
-  figures: [],
-  links: [],
-  xrefs: [],
-};
-`);
+if (!COMMANDS[cmd]) { console.log(USAGE); process.exit(cmd && cmd !== 'help' && cmd !== '--help' ? 1 : 0); }
+try { process.exit(await COMMANDS[cmd]() ? 1 : 0); }
+catch (e) {
+  if (e.usage) { console.error(e.message); process.exit(2); }
+  if (e.code === 'ERR_MODULE_NOT_FOUND' && /puppeteer/.test(e.message)) { console.error('The browser commands need puppeteer-core: npm install -D puppeteer-core'); process.exit(1); }
+  throw e;
 }
-// the figures are ES modules: in a project whose package.json doesn't say so, the subject's folder does
-const nearestPkg = d => fs.existsSync(path.join(d, 'package.json')) ? path.join(d, 'package.json') : path.dirname(d) === d ? null : nearestPkg(path.dirname(d));
-const esm = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')).type === 'module'; } catch { return false; } };
-const near = nearestPkg(path.join(base, subject));
-if (!near || !esm(near)) fs.writeFileSync(path.join(base, subject, 'package.json'), '{ "type": "module" }\n');
-const m = fs.readFileSync(manifest, 'utf8'), re = new RegExp(`(${list}:\\s*\\[)([^\\]]*)\\]`);
-if (!re.test(m)) fail(`${path.relative(cwd, manifest)} has no ${list}: [...] list; add '${id}' to it by hand`);
-fs.writeFileSync(manifest, m.replace(re, (all, open, items) => `${open}${items.trim() ? `${items.trim().replace(/,$/, '')}, ` : ''}'${id}']`));
-await import(pathToFileURL(manifest).href);   // the manifest must still parse
-
-const rel = path.relative(cwd, dest);
-console.log(`Made ${rel}/ (${grammar === 'explorer' ? 'an' : 'a'} ${grammar}, from examples/minimal/${grammar}) and added '${id}' to ${path.relative(cwd, manifest)}.
-Next:
-  1. Write the model: ${rel}/model.js, and prove it a second way in ${rel}/checks.mjs (node ${rel}/checks.mjs)
-  2. Draw it: ${rel}/world.js, from the building blocks in @saxster/atlas/prims.js
-  3. Serve this folder (python3 -m http.server 8137) and open http://localhost:8137/${rel.split(path.sep).join('/')}/`);

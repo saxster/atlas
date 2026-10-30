@@ -2,7 +2,7 @@
 // for proofreading numbers as the reader sees them. Needs the static server on :8137.
 import fs from 'fs';
 import puppeteer from 'puppeteer-core';
-import { CHROME, GL_ARGS } from './chrome.mjs';
+import { CHROME, GL_ARGS } from '../cli/chrome.mjs';
 import { key } from './chapters.mjs';
 const [cArg, out] = process.argv.slice(2), c = key(cArg);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });

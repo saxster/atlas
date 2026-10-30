@@ -2,7 +2,7 @@
 // waits for each press and only the next step is live; chips stay "–" until a step earns them; a step plays, shows
 // its speed, and finishes; Space runs the next step; Start over resets; Auto plays on by itself, loops, and is
 // remembered on the next visit; ?render frames are the same for the same t. Exit 1 on any failure.
-import { serve, launch } from './render.mjs';
+import { serve, launch } from '../cli/render.mjs';
 import { key } from './chapters.mjs';
 
 const fig = key(process.argv[2] || 'economics/compound');

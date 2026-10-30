@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ROOT, subjects, key, EXAMPLES } from './chapters.mjs';
-import { serve, launch, open } from './render.mjs';
+import { serve, launch, open } from '../cli/render.mjs';
 
 const only = process.argv.slice(2).map(key);
 const jobs = (await subjects()).filter(s => s.contents !== false).flatMap(s =>

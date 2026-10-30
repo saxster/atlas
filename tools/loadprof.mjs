@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer-core';
-import { CHROME, GL_ARGS } from './chrome.mjs';
+import { CHROME, GL_ARGS } from '../cli/chrome.mjs';
 import { key } from './chapters.mjs';
 const c = key(process.argv[2]);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: GL_ARGS });

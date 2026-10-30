@@ -1,14 +1,15 @@
-// Shared harness for tools that draw frames by time: serves the site itself, opens a chapter in ?render mode and
-// gives seek(t) and the page tour. open(chapter, w, h) → { page, seek, shot, duration, pages, mid(i), close }.
+// The browser harness every check uses: serves a folder (the current one by default), opens a figure in ?render mode
+// and gives seek(t) and its tour. open(browser, base, figure, w, h) → { page, errors, seek, shot, duration, pages, starts, mid(i) }.
+// figure: the figure's folder, relative to the served one ('biology/heart', 'examples/physics/newton').
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { ROOT } from './chapters.mjs';
 import { CHROME, GL_ARGS } from './chrome.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml' };
-export function serve() {
+export function serve(root = process.cwd()) {
+  const ROOT = path.resolve(root);
   const server = http.createServer((req, res) => {
     let p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
     if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');

@@ -90,7 +90,21 @@ model seconds shown in `play` seconds on screen, with a speed badge. `chips` fil
 `{ q, choices, answer(params), why(params) }`: the model works out the answer, which shows after the run. A control
 is `{ key, label, min, max, step, fmt?, rebuild? }`.
 
-All three draw through `createStage` (`stage.js`), which you can also mount alone in any element.
+All three draw through `createStage` (`stage.js`).
+
+## Just the figure, in any page
+
+`mountFigure(el, CHAPTER, { page = 0, height = 400, playing = true, theme })` (`mount.js`) puts one page's 3D figure
+in any element, with its own frame loop: hover, click to take a part apart, drag to turn. It stops drawing while
+scrolled out of view and stands still for readers who ask for reduced motion. It returns
+`{ stage, play(on), destroy() }`. `CHAPTER` is anything with `PAGES`, `buildWorld`, `state` and `lookKeys`, such as a
+book's `chapter.js`.
+
+```js
+import { mountFigure } from '@saxster/atlas';
+import { CHAPTER } from './biology/cell/chapter.js';
+mountFigure(document.querySelector('#cell'), CHAPTER, { page: 2, height: 420 });
+```
 
 ## Modes, on any figure's URL
 
@@ -111,6 +125,20 @@ All three draw through `createStage` (`stage.js`), which you can also mount alon
 Kym textbook `:::live` widget. It follows the book's light, sepia or dark theme and stays still until asked. In the
 atlas repo, `node tools/vendor.mjs <book>/source/live/atlas <subject/chapter>` copies the figure and the engine files
 it needs into the book.
+
+## The `atlas` command
+
+Run from the repo that holds the figures; a figure is its folder, relative to here.
+
+| Command | Does |
+|---|---|
+| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer` | copies a working minimal example to start from |
+| `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
+| `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
+| `npx atlas critic <figure…>` | frames that change far more than their neighbours, and labels that overlap or hide |
+| `npx atlas record <figure> [--size 1920x1080] [--fps 60] [--silent]` | an MP4 drawn frame by frame, with a soundtrack at −14 LUFS (needs ffmpeg) |
+
+The browser commands need Chrome; set `CHROME` if it isn't at the usual place.
 
 ## Tools in this repo
 
