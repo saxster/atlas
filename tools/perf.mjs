@@ -1,6 +1,7 @@
 // node tools/perf.mjs [chapter ...] — frame time, script and layout cost per second of each chapter.
 import puppeteer from 'puppeteer-core';
-const chapters = process.argv.slice(2).length ? process.argv.slice(2) : ['kinematics','newton','circular','energy','momentum','oscillations','rotation','fluids','electrostatics','gauss','potential','capacitors','circuits','magnetism','induction'];
+import { chapters as allChapters } from './chapters.mjs';
+const chapters = process.argv.length > 2 ? process.argv.slice(2) : await allChapters();
 const W = +(process.env.W || 1440), H = +(process.env.H || 900);
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage();

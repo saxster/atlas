@@ -1,4 +1,9 @@
-# Atlas of Physics
+# Atlas
+
+One figure engine and the subject atlases built on it, seeded from Atlas of Physics (below). Physics lives in
+`physics/` (`physics/subject.js` lists its chapters); new subjects are new top-level directories. See CLAUDE.md.
+
+## Atlas of Physics
 
 An interactive textbook. Each chapter is one simple motion drawn in 3D like a textbook diagram
 (paper solids, ink edges, one lit thing). No apparatus: only the

@@ -21,7 +21,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if ((m.type() === 'error' || m.type() === 'warning') && !m.location().url?.includes('/_vercel/insights/')) errors.push(m.text()); });
 await page.setViewport({ width: W, height: H, deviceScaleFactor: 2 });
-await page.goto(`http://localhost:${server.address().port}/${process.env.CHAPTER || "kinematics"}/`, { waitUntil: 'networkidle0' });
+await page.goto(`http://localhost:${server.address().port}/${process.env.CHAPTER || "physics/kinematics"}/`, { waitUntil: 'networkidle0' });
 await page.waitForFunction('window.__atlas', { timeout: 30000 }).catch(() => { console.log('page never started:\n' + errors.join('\n')); process.exit(1); });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 await wait(800);
@@ -54,7 +54,7 @@ if (!process.env.STEPS) {
   await page.screenshot({ path: path.join(out, 'flip.png') });
 }
 // open parts: PARTS=key or key:page (each opened on its own page; PARTPAGE is the default page)
-const partList = process.env.PARTS || (process.env.STEPS ? '' : (process.env.CHAPTER === 'newton' ? 'rest,tension,car,incline' : 'vArrow,boardV,projV,staff'));
+const partList = process.env.PARTS || (process.env.STEPS ? '' : (process.env.CHAPTER === 'physics/newton' ? 'rest,tension,car,incline' : 'vArrow,boardV,projV,staff'));
 for (const entry of partList.split(',').filter(Boolean)) {
   const [k, pg] = entry.split(':');
   await page.evaluate(p => scrollTo(0, p * innerHeight), pg !== undefined ? +pg : (+process.env.PARTPAGE || 0)); await wait(1200);

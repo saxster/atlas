@@ -6,7 +6,7 @@ const server = http.createServer((q, s) => { let p = path.join(ROOT, decodeURICo
 const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu'] });
 const pg = await b.newPage(); await pg.setViewport({ width: 1440, height: 900 });
 const errs = []; pg.on('pageerror', e => errs.push(e.message));
-await pg.goto(`http://localhost:${server.address().port}/kinematics/`, { waitUntil: 'networkidle0' });
+await pg.goto(`http://localhost:${server.address().port}/physics/kinematics/`, { waitUntil: 'networkidle0' });
 await pg.waitForFunction('window.__atlas'); await new Promise(r => setTimeout(r, 1000));
 // where is the ball on screen right now? aim 15 px to its side
 const pos = await pg.evaluate(() => { const E = window.__atlas.E, c = E.renderer.domElement.getBoundingClientRect(); const ball = E.ASM.ball; const v = ball.getWorldPosition(new E.THREE.Vector3()).project(E.camera); return { x: c.left + (v.x * .5 + .5) * c.width + 15, y: c.top + (-v.y * .5 + .5) * c.height }; });

@@ -1,9 +1,10 @@
 {
-  "name": "atlas-of-physics",
+  "name": "atlas",
   "version": "1.0.0",
-  "description": "An interactive 3D textbook for AP Physics 1 and AP Physics C",
+  "description": "One figure engine and the subject atlases built on it",
   "scripts": {
-    "check": "for c in kinematics newton circular energy momentum oscillations rotation fluids electrostatics gauss potential capacitors circuits magnetism induction; do node $c/checks.mjs > /dev/null || { echo FAIL $c; exit 1; }; done; node equations/check.mjs"
+    "check": "node tools/check.mjs",
+    "test:browser": "node tools/allpages.mjs"
   },
   "keywords": [],
   "author": "",

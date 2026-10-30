@@ -11,12 +11,13 @@ const lerp = (a, b, u) => a + (b - a) * u;
 const touch = matchMedia('(pointer: coarse)').matches;
 const CLOSE_HINT = touch ? 'Tap empty space to close' : 'Click empty space or press Esc to close';
 const DEFAULT_HINT = touch ? 'Drag sideways to turn · tap to break it down' : 'Drag to turn · shift-drag to pan · click to break it down';
-// this chapter's directory, as cross-references and deep links name it: kinematics/#3
-const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').pop();
+// this chapter as cross-references name it, subject and directory: physics/kinematics (pages are #3 after it)
+const DIR = location.pathname.split('/').filter(s => s && s !== 'index.html').slice(-2).join('/');
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-// chapter: { no, PAGES, PLATES, buildWorld(E), lookKeys, state(clock, reduced), readout(state),
+// chapter: { no, subject, PAGES, PLATES, buildWorld(E), lookKeys, state(clock, reduced), readout(state),
 //            forceLook?(selected, look), onFrame?(state, sheetEls), clock0? }
+// subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source }
 export function startBook(chapter) {
   const { PAGES, PLATES } = chapter;
   const N = PAGES.length;
@@ -47,8 +48,8 @@ export function startBook(chapter) {
     const here = `${DIR}/${i}`, links = XREFS.flatMap(([a, al, b, bl, note]) => a === here ? [[b, bl, note]] : b === here ? [[a, al, note]] : []);
     if (!links.length) return '';
     return `<aside class="xref"><div class="kicker">Compare</div>${links.map(([to, label, note]) => {
-      const [d, k] = to.split('/');
-      return `<p><a href="${d === DIR ? '' : `../${d}/`}#${k}">${label} →</a> ${note}</p>`; }).join('')}</aside>`;
+      const d = to.slice(0, to.lastIndexOf('/')), k = to.slice(to.lastIndexOf('/') + 1);
+      return `<p><a href="${d === DIR ? '' : `../../${d}/`}#${k}">${label} →</a> ${note}</p>`; }).join('')}</aside>`;
   };
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
@@ -89,7 +90,10 @@ export function startBook(chapter) {
   history.scrollRestoration = 'manual';
   addEventListener('hashchange', () => { const k = fromHash(); if (k !== null) goto(k); });
   // a compact pager for small screens, where a row of dots would not fit
-  $('dots').insertAdjacentHTML('afterend', '<span class="pager"><button type="button" aria-label="Previous page">‹</button><span id="pagenum"></span><button type="button" aria-label="Next page">›</button></span><a class="eqlink" href="../equations/">Equations</a><a class="gh" href="https://github.com/nathanliow/atlas-of-physics" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>');
+  const { links: barLinks = [], source } = chapter.subject || {};
+  $('dots').insertAdjacentHTML('afterend', '<span class="pager"><button type="button" aria-label="Previous page">‹</button><span id="pagenum"></span><button type="button" aria-label="Next page">›</button></span>'
+    + barLinks.map(l => `<a class="${l.cls || ''}" href="${l.href}">${l.label}</a>`).join('')
+    + (source ? `<a class="gh" href="${source}" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>` : ''));
   const [prevB, nextB] = document.querySelectorAll('.pager button');
   prevB.onclick = () => goto(Math.round(scrollY / pageH) - 1); nextB.onclick = () => goto(Math.round(scrollY / pageH) + 1);
   PAGES.forEach((p, i) => {
