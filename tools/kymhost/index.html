@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" data-theme="sepia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kym host · adapter test</title>
+<link rel="icon" href="data:,">
+<!-- A stand-in for a kym textbook page: its theme tokens (kym_physics source/book.css, app/a_toolbar.css) and the
+     slice of live/core.js the adapter uses. tools/adaptertest.mjs drives it; open it by hand to look. -->
+<style>
+  :root { --paper: #f6f4ec; --sheet: #fbfaf5; --ink: #1d332d; --muted: #5d6c66; --proton: #a94730; --neutron: #936022; --electron: #356d83; --green: #2e604a; }
+  :root[data-theme="sepia"] { --paper: #f2e8d5; --sheet: #f8f0e0; --ink: #3a2e22; --muted: #7a6953; --proton: #a3452c; --neutron: #87581b; --electron: #3c687a; --green: #456446; }
+  :root[data-theme="dark"] { --paper: #141c19; --sheet: #18211e; --ink: #e6e3d6; --muted: #9eaaa4; --proton: #e0896f; --neutron: #d4a35f; --electron: #78b3cb; --green: #7cbf9c; }
+  body { background: var(--paper); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 24px; }
+  figure { max-width: 760px; margin: 0 auto; background: var(--sheet); padding: 16px; border-radius: 8px; }
+  .live-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .live-ctl { font: inherit; padding: 4px 10px; border: 1px solid var(--muted); background: none; color: var(--ink); border-radius: 999px; }
+  .live-readout { flex-basis: 100%; margin: 6px 0 0; font: 13px/1.5 ui-monospace, monospace; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/" } }
+</script>
+</head>
+<body>
+  <figure id="fig"><div class="live-stage" id="stage"></div><div class="live-controls" id="controls"></div></figure>
+  <script type="module" src="host.js"></script>
+</body>
+</html>

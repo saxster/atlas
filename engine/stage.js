@@ -3,6 +3,7 @@
 // drag turns the camera, shift-drag pans. The book (book.js) puts pages, text and controls around it; a textbook's
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
 import { createEngine } from './render.js';
+import { themeScene } from './parts.js';
 
 export const clamp01 = x => Math.min(Math.max(x, 0), 1);
 export const smooth = (a, b, x) => { const u = clamp01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
@@ -17,6 +18,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   const N = PAGES.length;
   const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme });
   const W = chapter.buildWorld(E);
+  themeScene(E.scene, E.theme);                 // a host theme: the chapter's greys become this paper's ink
   const hooks = { onHover() {}, onSelect() {}, onPointerDown() {} };
   const off = [];                                // listeners to remove on destroy
   const on = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); off.push(() => el.removeEventListener(ev, fn, opt)); };

@@ -72,6 +72,30 @@ export function applyTheme(theme) {
   });
   return { sheet: '#' + sheet.getHexString(), ink: '#' + ink.getHexString(), dark, inks: [0.18, 0.32, 0.5, 0.82, 1].map(u => mix(sheet, ink, u)) };
 }
+// Chapters draw thin lines and outlines in greys chosen for white paper ('#e6e6e2' for a grid). Under a host theme a
+// grey means "this much ink": its distance from the atlas's paper toward black becomes the same distance from the
+// theme's sheet toward its ink, so a faint grid stays faint on dark paper. Coloured lines keep their hue.
+const srgb = c => { const h = c.getHexString(); return [0, 2, 4].map(k => parseInt(h.slice(k, k + 2), 16) / 255); };
+const ATLAS_PAPER = srgb(new THREE.Color('#fbfbfa'));
+export function themeGrey(color, th) {
+  const c = color.clone(), hsl = c.getHSL({}, THREE.SRGBColorSpace);
+  if (!th || hsl.s > 0.18) return c;
+  // in sRGB, where the chapter picked its grey: how far from the atlas's paper toward black
+  const v = srgb(c), t = Math.min(Math.max(1 - (v[0] + v[1] + v[2]) / (ATLAS_PAPER[0] + ATLAS_PAPER[1] + ATLAS_PAPER[2]), 0), 1);
+  const a = srgb(new THREE.Color(th.sheet)), b = srgb(new THREE.Color(th.ink));
+  return new THREE.Color().setRGB(...a.map((x, k) => x + (b[k] - x) * t), THREE.SRGBColorSpace);
+}
+// every unlit line, point and flat material in the scene, re-inked for the theme (run once after the world is built)
+export function themeScene(scene, th) {
+  if (!th) return;
+  const done = new Set();
+  scene.traverse(o => {
+    const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    for (const m of ms) if (!done.has(m) && m.color && !m.uniforms && (m.isLineBasicMaterial || m.isLineDashedMaterial || m.isPointsMaterial || m.isMeshBasicMaterial || m.isSpriteMaterial)) {
+      done.add(m); m.color.copy(themeGrey(m.color, th));
+    }
+  });
+}
 const cache = new Map();
 export function shadeMat(pal = 'paper', { opacity = 1 } = {}) {
   const key = pal + opacity;
