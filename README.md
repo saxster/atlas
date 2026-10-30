@@ -1,69 +1,59 @@
 # Atlas
 
-One figure engine and the subject atlases built on it. Each idea is one working figure: a pure model you can
-check, drawn in 3D like a textbook diagram (paper solids, ink edges, one lit thing). The same figures embed in the
-Kym story-first textbooks, record as videos, and are listed in a cross-subject concept index.
+A JavaScript library for teaching figures in any subject. You write a model of the idea and say what to draw. Atlas
+draws it in 3D, in paper and ink, and gives the reader a way to work it: turning pages, pressing steps, or running an
+experiment with sliders.
 
-Seeded from [Atlas of Physics](https://github.com/nathanliow/atlas-of-physics) by Nathan Liow (MIT), whose fifteen
-AP Physics chapters live on in `physics/`.
-
-## What is here
-
-| Subject | Figures | Grammar |
-|---|---|---|
-| `physics/` | 15 chapters, AP Physics 1 and C | book |
-| `maths/` | the unit circle: sine and cosine as shadows | book |
-| `chemistry/` | the shapes of molecules (VSEPR), with the measured molecules in 3Dmol | book |
-| `statistics/` | the Galton board: 500 balls make a bell | explorer |
-| `economics/` | ₹1,000 a month at 8 %: compound interest | machine |
-| `concepts/` | 28 ideas in 5 threads that cross subjects (exponentials, circles and waves, the bell curve …) | index |
-
-Three ways for a reader to work a figure:
-
-- **Book** (`engine/book.js`). The reader scrolls to turn the page and the camera moves. Hovering lights a part;
-  clicking it breaks it down. Each page carries practice questions.
-- **Machine** (`engine/machine.js`). Numbered steps, and only the next one can be pressed. Manual or Auto, and
-  the choice is remembered. A speed badge shows how fast the figure runs against real time, and readouts fill in
-  as each step earns them.
-- **Explorer** (`engine/explorer.js`). The reader predicts first, then runs the experiment with sliders and a
-  seeded run. The model works out the answer and shows it after the run.
-
-All three share `engine/stage.js`: the world, the camera, hover and click, labels, and a deterministic clock. Under
-`?render`, `window.seek(t)` draws any moment, the same every time. Stills, tests, videos and reduced motion all
-come from that.
-
-## Run it
+Live examples: https://saxster.github.io/atlas/
 
 ```
-python3 -m http.server 8137        # any static server; three.js loads from jsDelivr
-open http://localhost:8137/
+npm install github:saxster/atlas three
+npx atlas new biology/heart --grammar machine
 ```
 
-Keys: ← → turn pages, Esc puts a part back. Deep links: `physics/newton/#4`.
+`atlas new` writes a working figure to start from: a model, its checks, the scene, and a page.
 
-## Check it
+## How a figure is made
+
+1. **Model.** `model.js` holds the idea as plain functions, with no drawing in it. Every number the reader sees comes
+   from here.
+2. **Checks.** `checks.mjs` proves the model a second, independent way: a derivative against the closed form, an
+   rk4 integration against the formula, a seeded run against its expected spread. Run it with `node`.
+3. **Scene.** `world.js` draws the model's state from building blocks: `axes`, `plot`, `surface`, `curve`,
+   `vector`, `particles`, `molecule`.
+4. **Grammar.** Choose how the reader works it:
+   - **Book.** Scrolling turns pages and moves the camera; clicking a part breaks it down.
+   - **Machine.** Numbered steps, one live at a time, Manual or Auto.
+   - **Explorer.** The reader predicts first, then drags sliders and runs it.
+
+The three minimal examples in `examples/minimal/` are each about 50 to 70 lines of scene and figure code. Every
+example figure also works under `?render`, where `window.seek(t)` draws any moment the same way every time. That is
+what the stills, tests and videos use.
+
+## What's in the repo
+
+| Path | What |
+|---|---|
+| `engine/` | the library: stage, three grammars, building blocks, charts, model checks, seeded randomness |
+| `adapters/` | `kym-live.js` (mount a figure in a Kym textbook), `molecule.js` (3Dmol, loaded on demand) |
+| `bin/atlas.mjs` | `atlas new` |
+| `examples/` | about 20 figures in physics, maths, chemistry, statistics and economics, plus a concept index |
+| `tools/` | checks, browser tests, stills, jump and label critics, video recording, vendoring into textbooks |
+| `docs/API.md` | the reference |
+
+## Working on the library
 
 ```
-npm install                        # puppeteer-core; the browser tools need Chrome (CHROME=… if not the macOS default)
-npm run check                      # every model's checks, the link checks, generated pages current
-npm run test:browser               # with the server above: every page, controls, machine, explorer, textbook adapter
-node tools/stills.mjs shots        # a still of every page at desktop and phone sizes
-node tools/jumps.mjs               # frames that change far more than their neighbours
-node tools/labels.mjs              # labels that overlap, or hide behind a solid
-node tools/record.mjs maths/unit-circle   # a 1080p60 MP4 with a soundtrack at −14 LUFS (needs ffmpeg)
+npm install
+npm run check                       # every model's checks, links, generated pages
+python3 -m http.server 8137 &       # any static server
+npm run test:browser                # the grammars driven in Chrome
 ```
 
-`CLAUDE.md` has the rules for adding a subject, chapter or figure, and every tool.
-
-## In the textbooks
-
-`tools/vendor.mjs <book>/source/live/atlas <subject/chapter>` copies a figure and the engine files it needs into a
-book. The book's `:::live` widget mounts it through `adapters/kym-live.js`, in the book's light, sepia or dark
-theme, offline.
+`CLAUDE.md` has the rules and every tool.
 
 ## Licences
 
-Code is MIT (`LICENSE`; Atlas of Physics © 2026 Nathan Liow). 3Dmol.js (BSD-3-Clause) loads from jsDelivr only
-when a reader asks for a measured molecule. Molecular geometries are NIST CCCBDB experimental values.
-AP® is a trademark of the College Board, which does not endorse this site. The physics equation sheets follow the
-published AP Physics equation tables.
+The code is MIT (`LICENSE`). It started from [Atlas of Physics](https://github.com/nathanliow/atlas-of-physics) by
+Nathan Liow (MIT), whose chapters are in `examples/physics/`. 3Dmol.js (BSD-3-Clause) loads from jsDelivr only when a
+reader asks for a measured molecule. AP® is a trademark of the College Board, which does not endorse this site.

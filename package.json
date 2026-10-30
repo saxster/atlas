@@ -19,6 +19,7 @@
     "adapters",
     "bin",
     "docs",
+    "examples/minimal",
     "LICENSE",
     "README.md"
   ],
