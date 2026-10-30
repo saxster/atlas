@@ -273,7 +273,7 @@
   .eq { overflow-x: auto; }
   .pager button { height: 44px; }
   /* no hover on a phone: say what the figure does, under its number */
-  .corner.bl { display: block; top: 32px; bottom: auto; left: 14px; font-size: 11px; line-height: 1.4; white-space: nowrap; }   /* one short line, clear of the scene */
+  .corner.bl { display: block; top: 32px; bottom: auto; left: 14px; font-size: 11px; line-height: 1.4; white-space: nowrap; max-width: calc(100% - 28px); overflow: hidden; text-overflow: ellipsis; }   /* one line, clear of the scene */
   .corner.tr { max-width: 55%; }
   .lbl.vec { font-size: 19px; }
 }
