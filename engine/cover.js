@@ -5,6 +5,8 @@
 // On both pages, a classic script in <head>, so it is listening before the first frame.
 (() => {
   const html = document.documentElement, $ = id => document.getElementById(id);
+  // a recorded (?render) or embedded (?embed) figure has no book to open: drop any page transition at once
+  if (/[?&](render|embed)\b/.test(location.search)) { addEventListener('pagereveal', e => e.viewTransition?.skipTransition()); return; }
   const wide = () => !matchMedia('(max-width: 900px), (max-height: 520px), (prefers-reduced-motion: reduce)').matches;
   const path = url => new URL(url, location).pathname;
   const T = { duration: 900, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' }, P = 'perspective(2600px)';

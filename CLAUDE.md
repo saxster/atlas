@@ -28,3 +28,18 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
 Browser tools need Chrome (set `CHROME` if not at the macOS default). Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor
 screenshots for visual comparison; the scene animates, so compare by eye, not pixel diff.
+
+## Modes (any chapter URL)
+- `?render`: no clock of its own. `window.seek(t)` draws the page tour at time t (each page dwells `tourDwell`
+  s, default 4, then turns over 1.4 s); `window.DURATION` is the tour's length. Every frame is a pure function of t,
+  so the figure (`#right`) is pixel-identical for the same t in any order. Take one throwaway frame after load;
+  the top bar's page dots can re-rasterise a few pixels differently, so compare the figure, not the whole page.
+- `?embed&page=i`: only the figure, held on page i, calm (still until asked) unless `&auto`.
+- `?calm`: still until the reader scrolls, taps, presses a key or Play.
+
+## Critic tools (serve themselves; no server needed)
+- `node tools/stills.mjs <out> [chapters]`: a still mid-dwell of every page, at 1440×900 and 390×844.
+- `node tools/jumps.mjs [chapters] [--frames dir]`: draws the tour at 0.1 s steps and flags any frame that
+  changes more than 3× its nearest neighbours' pixels. Scene loop restarts and forces switching off are flagged
+  too; they are designed, so read the frames (`--frames`) before "fixing" one.
+- `node tools/labels.mjs [chapters]`: labels overlapping each other, or anchored behind a solid.

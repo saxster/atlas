@@ -325,3 +325,12 @@
 @media (max-width: 1240px) and (min-width: 901px) { .corner.bl { display: none; } }
 /* fingers: each swipe lands on a whole page */
 @media (pointer: coarse) { html { scroll-snap-type: y mandatory; } .scroll-space > div { scroll-snap-align: start; } }
+/* ?render: frames are drawn by window.seek(t), so nothing may move on the wall clock */
+html.render *, html.render *::before, html.render *::after { transition: none !important; animation: none !important; }
+html.render .scroll-cue { display: none; }
+/* ?embed&page=i: only the figure, filling the frame it is placed in */
+html.embed .topbar, html.embed .page.left, html.embed .leaf, html.embed .spine, html.embed .scroll-cue, html.embed .scroll-space { display: none; }
+html.embed, html.embed body { overflow: hidden; background: var(--card); }
+html.embed .book { position: fixed; inset: 0; transform: none; width: 100vw; height: 100vh; height: 100dvh; display: block; perspective: none; }
+html.embed .page.right { position: absolute; inset: 0; border-radius: 0; box-shadow: none; }
+html.embed .playbtn-embed { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2; }

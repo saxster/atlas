@@ -22,13 +22,28 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&
 // subject: the subject's manifest (<subject>/subject.js): { links: [{ label, href, cls }], source, calm? }
 // calm (chapter or subject): the figure is still until the reader scrolls, taps, presses a key or presses Play.
 // still?(): true when the reader's own settings ask for no motion (a book's Still mode); counts as reduced motion.
+// tourDwell?: seconds each page holds in the ?render tour (default 4); a page may set its own dwell.
 // narrowZoom?: camera distance factor on phones. A page may list parts: ['ball', 'vArrow'], the things on it that
 // open a breakdown; without a list, the page's lit thing is its part.
 export function startBook(chapter) {
   const { PAGES, PLATES } = chapter;
   const N = PAGES.length;
+  // the ?render tour: each page holds for its dwell, then the next turns in over TURN seconds
+  const TURN = 1.4, dwell = i => PAGES[i].dwell ?? chapter.tourDwell ?? 4;
+  const TOUR = PAGES.map((_, i) => dwell(i) + (i < N - 1 ? TURN : 0)), DURATION = TOUR.reduce((a, b) => a + b, 0);
+  function tourAt(t) {                           // page position s at tour time t
+    let i = 0;
+    for (; i < N - 1 && t >= TOUR[i]; i++) t -= TOUR[i];
+    return i + (t <= dwell(i) ? 0 : ease((t - dwell(i)) / TURN));
+  }
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches || !!chapter.still?.();
-  const calm = chapter.calm ?? chapter.subject?.calm ?? new URLSearchParams(location.search).has('calm');
+  const Q = new URLSearchParams(location.search);
+  // ?embed&page=i: only the figure, held on page i (an iframe or a book's widget). Calm unless &auto.
+  // ?render: no clock of its own; window.seek(t) draws the page tour at time t, so any frame can be drawn in any order
+  const EMBED = Q.has('embed'), RENDER = Q.has('render');
+  const calm = !RENDER && (chapter.calm ?? chapter.subject?.calm ?? (Q.has('calm') || (EMBED && !Q.has('auto'))));
+  if (EMBED) document.documentElement.classList.add('embed');
+  if (RENDER) document.documentElement.classList.add('render');
   const narrowQ = matchMedia('(max-width: 900px), (max-height: 520px)'), narrow = () => narrowQ.matches;
   // one page of scroll; held steady while a phone's toolbar slides in and out (only a width change resizes it)
   let pageH = innerHeight, lastW = innerWidth;
@@ -115,6 +130,7 @@ export function startBook(chapter) {
   // Play / Pause. Calm chapters start still: the reader's scrolling, a key, a tap or Play starts them; a deep link doesn't
   let started = !calm, userPaused = false;
   const playB = $('play');
+  if (EMBED && playB) { playB.classList.add('playbtn-embed'); $('gl').parentElement.appendChild(playB); }   // no top bar in an embed
   const syncPlay = () => {
     if (!playB) return;
     const on = started && !userPaused, word = on ? 'Pause' : 'Play';
@@ -282,12 +298,15 @@ export function startBook(chapter) {
   }
   let timeRate = 1, last = performance.now(), clock = chapter.clock0 || 0, orbitPage = 0, orbitHome = false;
   const lookAt = new E.THREE.Vector3();
+  const EMBED_PAGE = Math.min(Math.max(+Q.get('page') || 0, 0), N - 1);
+  let tourT = 0;
   function frame(now) {
-    const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;   // a frame stamp can predate setup
-    const s = Math.min(Math.max(scrollY / pageH, 0), N - 1);
+    const dt = RENDER ? 1 / 60 : Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;   // a frame stamp can predate setup
+    const s = RENDER ? tourAt(tourT) : EMBED ? EMBED_PAGE : Math.min(Math.max(scrollY / pageH, 0), N - 1);
     const i = Math.min(Math.floor(s), N - 1), f = s - i, j = Math.min(i + 1, N - 1);
     if (selected && Math.abs(scrollY - selectScroll) > pageH * 0.25) select(null);
-    adapt(now - last0); last0 = now;
+    if (!RENDER) adapt(now - last0);
+    last0 = now;
 
     // text: the leaf turns over the second half of each page's scroll
     const flip = narrow() || i === j ? 0 : smooth(0.5, 1, f);
@@ -329,7 +348,8 @@ export function startBook(chapter) {
     // physics: time pauses while something is open, so it can be read
     // time eases to a stop while something is pointed at or open, so moving things can be caught and read
     timeRate = selected || hovered || !started || userPaused ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
-    if (!reduced) clock += dt * timeRate;
+    if (RENDER) clock = (chapter.clock0 || 0) + tourT;
+    else if (!reduced) clock += dt * timeRate;
     paused.classList.toggle('on', !reduced && started && !userPaused && !!(selected || hovered));
     const state = chapter.state(clock, reduced);
     const LA = PAGES[i].look, LB = PAGES[j].look, look = {};
@@ -345,11 +365,31 @@ export function startBook(chapter) {
     hoverAt(false);
     E.render();
     placeLabels(rect.width, rect.height);
-    requestAnimationFrame(frame);
+    if (!RENDER) requestAnimationFrame(frame);
   }
   relight();
   { const k = fromHash(); if (k !== null) goto(k, true); }
   // the first frame drawn: the book can open now (cover.js)
-  document.fonts.ready.then(() => requestAnimationFrame(t => { frame(t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, select, goto, N, get started() { return started; }, get clock() { return clock; } };
+  document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
+  // for tools/labels.mjs: every label on screen, its box, and whether a solid stands between it and the camera
+  const ray = new E.THREE.Raycaster(), anchorV = new E.THREE.Vector3();
+  function labelReport() {
+    const solids = []; E.scene.traverse(o => { if (o.isMesh && o.visible && o.userData.part !== undefined && o.material.depthTest !== false && !o.material.transparent) solids.push(o); });   // arrows draw over solids and glass shows through: neither hides a label
+    const box = $('gl').getBoundingClientRect();
+    // a vector's label rides its arrow, which is drawn over the solids as in a free-body diagram: never hidden
+    return labels.filter(L => +L.el.style.opacity > 0).map(L => {
+      const p = L.at(), r = L.el.getBoundingClientRect();
+      anchorV.copy(p); const d = E.camera.position.distanceTo(anchorV);
+      ray.set(E.camera.position, anchorV.clone().sub(E.camera.position).normalize()); ray.far = d * 0.97;
+      const hit = ray.intersectObjects(solids, false).find(h => { for (let o = h.object; o; o = o.parent) if (!o.visible) return false; return true; });
+      return { text: L.el.textContent, box: [r.left - box.left, r.top - box.top, r.width, r.height], hiddenBy: hit && !L.el.classList.contains('vec') ? (hit.object.userData.part || 'a solid') : null };
+    });
+  }
+  window.__atlas = { E, select, goto, N, labelReport, get started() { return started; }, get clock() { return clock; } };
+  if (RENDER) {
+    // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
+    window.DURATION = DURATION;
+    window.__atlas.tour = { dwells: PAGES.map((_, i) => dwell(i)), turn: TURN };
+    window.seek = t => { tourT = Math.min(Math.max(t, 0), DURATION); frame(tourT * 1000); return tourT; };
+  }
 }

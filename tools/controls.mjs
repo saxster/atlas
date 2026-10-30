@@ -1,6 +1,6 @@
 // node tools/controls.mjs [subject/chapter] — the book's controls in a browser (needs the static server on :8137):
 // Play/Pause, calm mode (?calm: still until asked), a page's parts as keyboard buttons, Esc returning focus, and
-// the top bar fitting phones from 360 px. Exit 1 on any failure.
+// the top bar fitting phones from 360 px, ?render determinism and ?embed. Exit 1 on any failure.
 import puppeteer from 'puppeteer-core';
 import { chapters as allChapters } from './chapters.mjs';
 
@@ -36,6 +36,20 @@ if (page >= 0) {
   await p.keyboard.press('Escape'); await wait(300);
   check('Esc closes it and focus returns to the part', await p.evaluate(k => document.getElementById('plate').hidden && document.activeElement.dataset.part === k, key));
 }
+
+// ?render: seek(t) is a pure function of t, so the same t gives the same pixels in any order
+await open(`/${c}/?render`); await p.evaluate(() => seek(0)); await p.screenshot();
+// the figure (canvas, labels, readout): the top bar's dots re-rasterise a few pixels differently after a repaint
+const at = async t => { await p.evaluate(t => seek(t), t); return (await p.$('#right')).screenshot({ encoding: 'base64' }); };
+const f1 = await at(3.2), f2 = await at(20), f3 = await at(1), f4 = await at(3.2);
+check('render: seek(3.2) identical twice, out of order', f1 === f4 && f1 !== f2 && f2 !== f3);
+check('render: DURATION covers every page', await p.evaluate(() => DURATION > __atlas.N * 4));
+
+// ?embed&page=i: only the figure, held on that page, still until asked
+await open(`/${c}/?embed&page=2`); await wait(500);
+const e0 = await clock(); await wait(600);
+check('embed: figure only, page held, calm', await p.evaluate(() => getComputedStyle(document.querySelector('.page.left')).display === 'none' && getComputedStyle(document.querySelector('.topbar')).display === 'none') &&
+  await p.$eval('#pagenum', e => e.textContent.startsWith('3 /')) && e0 === await clock() && !!await p.$('.figure #play'));
 
 // the top bar fits phones, for every chapter at the narrowest width
 const narrow = [];
