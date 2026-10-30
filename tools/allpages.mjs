@@ -14,7 +14,8 @@ for (const c of chapters) {
   for (let i = 0; i < n; i++) {
     await page.evaluate(i => { location.hash = '#' + i; }, i);
     await page.waitForFunction(i => document.getElementById('pagenum').textContent.startsWith(i + 1 + ' /'), { timeout: 8000 }, i).catch(() => missing.push('nav' + i));
-    await new Promise(r => setTimeout(r, 120));
+    // the page's text is laid out after it turns; a slow (software-rendered) browser can take a while
+    await page.waitForFunction(() => document.querySelectorAll('#sheet .practice .q').length > 0, { timeout: 8000 }).catch(() => {});
     const k = await page.evaluate(() => document.querySelectorAll('#sheet .practice .q').length); qs += k;
     if (!k) missing.push(i);
   }
@@ -22,3 +23,4 @@ for (const c of chapters) {
   console.log(c.padEnd(15), n, 'pages', missing.length ? 'MISSING ' + missing : 'practice on all', errors.length ? 'ERRORS ' + errors.join(' | ') : 'no errors');
 }
 console.log('questions', qs, bad ? 'PROBLEMS ' + bad : 'all ok'); await browser.close();
+process.exit(bad ? 1 : 0);

@@ -10,6 +10,8 @@ const p = await browser.newPage(); await p.setViewport({ width: 1440, height: 90
 const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 const rows = [], check = (name, ok, info = '') => rows.push([ok ? 'PASS' : 'FAIL', name, info]);
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// long waits for a step to finish: steps play in model time and a frame advances it by at most 1/20 s, so on a
+// software renderer (CI) a 7 s step can take minutes of wall time
 const st = () => p.evaluate(() => window.__atlas.state);
 const live = () => p.$$eval('#steps .step', bs => bs.map(b => !b.disabled));
 const open = async (q = '') => { await p.goto(`${base}/${fig}/${q}`, { waitUntil: 'networkidle0' }); await p.waitForFunction('window.__atlas'); await wait(400); };
@@ -23,11 +25,11 @@ await p.click('#steps .step[data-k="1"]'); await wait(300);
 check('pressing a step plays it, every button waits', (await st()).k === 1 && (await live()).every(x => !x));
 check('a step faster than life shows its speed', await p.$eval('#speed', e => !e.hidden && e.textContent.length > 0), await p.$eval('#speed', e => e.textContent));
 check('chips earned by step 1 fill in', await p.$eval('#chips .chip .v', v => v.textContent !== '–'));
-await p.waitForFunction(() => window.__atlas.state.k === 0, { timeout: 30000 });
+await p.waitForFunction(() => window.__atlas.state.k === 0, { timeout: 180000 });
 check('when it ends, the next step is live and pulses', (await st()).done === 1 && (await live())[1] === true && await p.$eval('#steps .step[data-k="2"]', b => b.classList.contains('next')));
 await p.focus('body'); await p.keyboard.press('Space'); await wait(200);
 check('Space runs the next step', (await st()).k === 2);
-await p.waitForFunction(() => window.__atlas.state.k === 0, { timeout: 30000 });
+await p.waitForFunction(() => window.__atlas.state.k === 0, { timeout: 180000 });
 await p.click('#again');
 // the buttons follow on the next drawn frame, which on a software renderer (CI) can take longer than a fixed wait
 await p.waitForFunction(() => !document.querySelector('#steps .step[data-k="1"]').disabled, { timeout: 5000 }).catch(() => {});
