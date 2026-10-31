@@ -98,7 +98,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   on(canvas, 'contextmenu', e => e.preventDefault());
   on(canvas, 'pointerdown', e => {
     hooks.onPointerDown();
-    drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2, moved: false };
+    drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2, scrub: e.altKey, moved: false };
     canvas.setPointerCapture(e.pointerId);
   });
   on(canvas, 'pointerup', e => {
@@ -117,7 +117,11 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       drag.moved = true; drag.x = e.clientX; drag.y = e.clientY;
       canvas.classList.add('dragging');
-      if (drag.pan) {
+      if (drag.scrub) {
+        clock = Math.max(0, clock + dx * 0.025);
+        scrubbed = clock;
+        timeRate = 0;
+      } else if (drag.pan) {
         // world units per screen pixel at the target's depth, so the scene follows the cursor
         const cam = E.camera, k = 2 * Math.tan(E.THREE.MathUtils.degToRad(cam.fov / 2)) * cam.position.distanceTo(lookAt) / rect.height;
         const right = new E.THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), up = new E.THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
@@ -146,7 +150,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   // ---------- one frame ----------
   // s: the page position; litPage: whose lit thing is lit (the page whose text shows); running: time may advance
   // (false while paused or still); clockAt: set the clock outright (a recorded tour) instead of advancing it.
-  let clock = chapter.clock0 || 0, focusAmt = 0, lastFocus = null, orbitPage = 0, orbitHome = false;
+  let clock = chapter.clock0 || 0, scrubbed = null, lastClockAt, focusAmt = 0, lastFocus = null, orbitPage = 0, orbitHome = false;
   // blend: 'turn' eases each page's camera and look in over the second part of the scroll (a book's page turn);
   // 'linear' follows s as it is, for a caller that already eases s (a machine's step).
   function step({ now, dt, s, litPage = Math.round(s), running = true, narrow = false, narrowZoom = 1, clockAt, blend = 'turn' }) {
@@ -179,10 +183,12 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     lookAt.fromArray(cam.target);
     E.placeCamera(cam);
 
-    // time eases to a stop while something is pointed at or open, so moving things can be caught and read
-    timeRate = selected || hovered || !running ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
-    if (clockAt !== undefined) clock = clockAt;
-    else if (!reduced) clock += dt * timeRate;
+    // time eases to a stop while something is pointed at, open, or being scrubbed, so moving things can be caught and read
+    timeRate = selected || hovered || !running || drag?.scrub ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
+    if (clockAt !== undefined) {
+      if (clockAt !== lastClockAt) { lastClockAt = clockAt; if (!drag?.scrub) scrubbed = null; }
+      clock = scrubbed ?? clockAt;
+    } else if (!reduced) clock += dt * timeRate;
     const state = chapter.state(clock, reduced);
     const LA = PAGES[i].look, LB = PAGES[j].look, look = {};
     for (const key of chapter.lookKeys) look[key] = lerp(LA[key] || 0, LB[key] || 0, u);

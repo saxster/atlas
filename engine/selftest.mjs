@@ -4,7 +4,7 @@ import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, ch
 import { rng } from './rng.js';
 import { scale, samples } from './chart.js';
 import * as THREE from 'three';
-import { axes, plot, surface, particles, molecule } from './prims.js';
+import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule } from './prims.js';
 
 const C = checks();
 C.check('deriv of sin is cos', [0.3, 1.1, 2.5].every(x => near(deriv(Math.sin, x), Math.cos(x), 1e-8)));
@@ -42,7 +42,9 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const err = g => Math.max(...Array.from({ length: n + 1 }, (_, i) => { const x = -2 + 4 * i / n; return centre(i).distanceTo(A.to(x, g(x))); }));
   C.check('plot: the tube runs through (x, f(x)) mapped by to()', err(f) < 1e-5, err(f).toExponential(1));
   const before = pos.array; p.update(Math.sin);
-  C.check('plot.update redraws in place: the same buffer, the new curve', p.object.geometry.attributes.position.array === before && err(Math.sin) < 1e-5); }
+  C.check('plot.update redraws in place: the same buffer, the new curve', p.object.geometry.attributes.position.array === before && err(Math.sin) < 1e-5);
+  p.update(Math.sin, { x: [0, 1] });
+  C.check('plot.update accepts { x: [a, b] } for partial-domain drawing', centre(0).distanceTo(A.to(0, 0)) < 1e-5 && centre(n).distanceTo(A.to(1, Math.sin(1))) < 1e-5); }
 { const A = axes(new THREE.Group(), { x: [-1, 1], y: [-1, 1], z: [-1, 1] });
   for (const n of [10, 40]) { const s = surface(new THREE.Group(), (x, y) => x * y, { axes: A, n });
     C.check(`surface: (n+1)² vertices for n = ${n}`, s.object.geometry.attributes.position.count === (n + 1) ** 2); }
@@ -60,4 +62,32 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   P.set(3, [1, 2, 3]); const m = new THREE.Matrix4(); P.object.getMatrixAt(3, m);
   C.check('particles.show(n) sets the instance count (clamped to the pool)', a === 17 && b === 0 && P.object.count === 50, `${a}, ${b}, ${P.object.count}`);
   C.check('particles.set places one instance', new THREE.Vector3().setFromMatrixPosition(m).distanceTo(new THREE.Vector3(1, 2, 3)) < 1e-12); }
+{ const A = axes(new THREE.Group(), { x: [0, 4], y: [-4, 8], size: [4, 4] });
+  const ar = area(new THREE.Group(), x => 2 * x, { axes: A, x: [0, 4], bars: 4, samples: 16 });
+  const pos = ar.object.geometry.attributes.position, outline = ar.object.children[0];
+  const top0 = pos.getY(1), top3 = pos.getY(12 + 1);
+  C.check('area: Riemann bars sit at midpoint heights and show their outline', near(top0, A.to(0, 1).y, 1e-6) && near(top3, A.to(3, 7).y, 1e-6) && outline.visible);
+  ar.update(x => x * x / 2, { x: [0, 2], bars: 0 });
+  C.check('area.update: smooth mode hides the bar outline and redraws in place', !outline.visible && near(pos.getX(4 * 16 - 1), A.to(2, 2).x, 1e-6) && near(pos.getY(4 * 16 - 1), A.to(2, 2).y, 1e-6));
+  ar.update(x => -2, { x: [0, 4], y0: 0, bars: 0 });
+  const nz = ar.object.geometry.attributes.normal;
+  C.check('area: negative regions (f(x) < y0) wind +z normals and use DoubleSide', nz.getZ(0) > 0.999 && ar.object.material.side === THREE.DoubleSide); }
+{ const A = axes(new THREE.Group(), { x: [-2, 2], y: [-2, 2], size: [4, 4] });
+  const F = field(new THREE.Group(), (x, y) => [-y, x], { axes: A, n: [4, 3], scale: 0.5 });
+  C.check('field: nx × ny arrows placed inside the axes', F.arrows.length === 12 && F.arrows.every(a => a.visible));
+  F.update(() => [0, 0]);
+  C.check('field.update: zero vectors hide cleanly', F.arrows.every(a => !a.visible));
+  const sl = streamline(new THREE.Group(), (x, y) => [1, 2 * x], { axes: A, from: [0, 0], dt: 0.02, steps: 50 });
+  const slPos = sl.object.geometry.attributes.position, ring = 9;
+  const endCentre = new THREE.Vector3(); for (let j = 0; j < 8; j++) endCentre.add(new THREE.Vector3().fromBufferAttribute(slPos, 50 * ring + j)); endCentre.divideScalar(8);
+  C.check('streamline: RK4 trajectory of (1, 2x) from (0, 0) lands at (1, 1) and exposes points', endCentre.distanceTo(A.to(1, 1)) < 1e-4 && sl.points.length === 51);
+  const lat = lattice(new THREE.Group(), (u, v) => [2 * u, 3 * v], { axes: A, x: [0, 1], y: [0, 1], n: [2, 2], samples: 4 });
+  const latPos = lat.object.geometry.attributes.position;
+  lat.update((u, v) => [u + v, v]);
+  C.check('lattice: builds (nx+1 + ny+1) × samples segments with n alias and updates in place', latPos.count === 6 * 4 * 2 && near(latPos.getX(latPos.count - 1), A.to(2, 1).x, 1e-6));
+  const bl1 = blob(new THREE.Group(), { radius: 0.92, lobes: 7, amp: 0.2, cleft: 0.25, seed: 5, pal: 'blue' });
+  const bl2 = blob(new THREE.Group(), { r: 0.92, bumps: 7, amp: 0.2, cleft: 0.25, seed: 5, color: 'blue' });
+  const yBefore = bl1.mesh.geometry.attributes.position.getY(0);
+  bl1.update({ radius: 1.4 });
+  C.check('blob: deterministic globular mesh with radius/lobes/pal aliases and update()', yBefore === bl2.object.geometry.attributes.position.getY(0) && yBefore > 0.5 && bl1.mesh.geometry.attributes.position.getY(0) > yBefore); }
 C.report();

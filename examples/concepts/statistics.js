@@ -6,5 +6,5 @@ export const CONCEPTS = [
   { id: 'clt', name: 'Sums of many small chances are bell-shaped', formula: 'the central limit theorem',
     shownIn: ['statistics/galton'] },
   { id: 'measurement-error', name: 'Measurement error', formula: 'repeated readings spread as a normal curve about the true value',
-    shownIn: [] },
+    shownIn: ['statistics/error'] },
 ];

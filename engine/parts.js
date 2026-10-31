@@ -156,6 +156,19 @@ export function setArrow(a, from, vec, opacity = 1) {
   tip.scale.set(1, hl / head, 1); tip.position.y = sl + hl / 2;
 }
 
+// a cylindrical strut/segment stretched between two points a and b via rod.set(a, b)
+export function rod(parent, { r = 0.026, pal = 'ink', tone = 'hi', ex = [0, 0, 0], name } = {}) {
+  const m = part(parent, cyl(r, 1, 14).translate(0, 0.5, 0), { pal, tone, ex, name });
+  m.set = (a, b) => {
+    const len = a.distanceTo(b);
+    m.visible = len > 0.006;
+    if (!m.visible) return;
+    m.position.copy(a); m.userData.home.copy(a); m.scale.set(1, len, 1);
+    m.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize());
+  };
+  return m;
+}
+
 // a tube whose path changes every frame: built once, then its vertices are rewritten in place
 // (rebuilding a TubeGeometry per frame cost more than the rest of the frame). geo.update(pts)
 // takes n + 1 points; the cross-section is carried along by parallel transport.

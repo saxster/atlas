@@ -27,7 +27,7 @@
   "scripts": {
     "check": "node tools/check.mjs",
     "test:browser": "node tools/allpages.mjs && node tools/controls.mjs && node tools/machinetest.mjs && node tools/explorertest.mjs && node tools/adaptertest.mjs",
-    "site": "node tools/site.mjs && node concepts/build.mjs"
+    "site": "node tools/site.mjs && node examples/concepts/build.mjs"
   },
   "dependencies": {
     "puppeteer-core": "^25.16.0"

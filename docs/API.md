@@ -58,16 +58,21 @@ coordinates.
 | Block | Draws | Returns, besides `object` and `labels` |
 |---|---|---|
 | `axes(parent, { x, y, z?, size?, at?, ticks?, names?, grid? })` | axes with ticks and names; with a `z` range, z is up | `to(x, y, z)`: a data point as a world point |
-| `plot(parent, f, { axes, x?, samples?, color? })` | y = f(x) | `update(f)` |
+| `plot(parent, f, { axes, x?, samples?, color? })` | y = f(x) | `update(f, { x? })` |
+| `area(parent, f, { axes, x?, y0?, bars?, rule?, pal?, opacity? })` | shaded region or `bars` Riemann rectangles between `y0` and `f(x)` | `update(f, { x?, y0?, bars?, rule? })` |
 | `surface(parent, f, { axes, x?, y?, n?, pal? })` | z = f(x, y), shaded paper | `update(f)` |
 | `curve(parent, r, { t, samples?, radius?, axes?, color? })` | a tube along r(t) → [x, y, z] | `update(r)` |
 | `vector(parent, from, to, { color?, label?, axes?, side?, gap? })` | a solid arrow; `side` and `gap` place its label | `set(from, to, side?)` |
+| `field(parent, fn, { axes, x?, y?, z?, n?, scale?, color? })` | a 2D or 3D grid of arrows for fn(x, y, z) → [vx, vy, vz?] | `arrows`, `update(fn, scale?)` |
+| `streamline(parent, fn, { axes, from, dt?, steps?, radius?, color? })` | RK4 trajectory tube of x′ = fn(x, y, z, t) from `from` | `points`, `update(fn, from?)` |
+| `lattice(parent, map, { axes, x?, y?, n?, samples?, color?, opacity? })` | deformed coordinate grid under map(x, y) → [u, v, w?] | `update(map)` |
+| `blob(parent, { radius?, lobes?, cleft?, seed?, rings?, segs?, pal? })` | seeded coarse-grained globular shape with optional active-site cleft | `mesh`, `update(spec)` |
 | `particles(parent, count, { radius?, color?, axes? })` | one instanced set of balls | `set(i, [x, y, z])`, `show(n)` |
 | `molecule(parent, xyz, { scale?, names? })` | atoms and bonds from XYZ text (ångström); bonds from covalent radii | `atoms`, `bonds` (and `parseXYZ(text)`) |
 
 `update` and `set` rewrite geometry in place, so they can run every frame. Colours are `'hi'` (ink), `'grey'`,
 any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the comment at the top of `engine/prims.js`;
-`examples/minimal/` uses every block.
+`engine/selftest.mjs` tests every block, and `examples/minimal/` shows the core patterns.
 
 Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `lines`, `arrow`, `liveTube`,
 `shadeMat`, `PALETTE`) for shapes the blocks don't cover.

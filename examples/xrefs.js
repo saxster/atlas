@@ -34,4 +34,8 @@ export const XREFS = [
   ['maths/unit-circle/7', '1.7 Beyond 90°', 'physics/oscillations/8', '6.8 The SHM equation', 'The phase φ is where the point starts on its circle; the signs of <i>x</i> and <i>v</i> follow its quadrant.'],
   ['chemistry/vsepr/0', 'Ch. 1 The shapes of molecules', 'physics/electrostatics/2', '9.2 Coulomb’s law', 'Like charges repel: each electron pair pushes on the others, so they spread out round the atom.'],
   ['chemistry/vsepr/5', '1.5 Why lone pairs push harder', 'physics/potential/1', '11.1 Assembling charges', 'The toy model is the energy of assembled charges, Σ<i>kq</i><sub>i</sub><i>q</i><sub>j</sub>/<i>r</i>, at its lowest on a sphere.'],
+  ['maths/calculus/0', 'Ch. 2 Slope of a curve', 'physics/kinematics/9', '1.9 Slope is velocity', 'Velocity <i>v</i> = <i>dx</i>/<i>dt</i> is the tangent slope of the position graph, found by letting Δ<i>t</i> → 0.'],
+  ['maths/calculus/3', '2.3 Area by rectangles', 'physics/energy/5', '4.5 Spring potential energy', 'Stretching a spring adds thin strips of work <i>kx</i> d<i>x</i>; their total area under <i>F</i> = <i>kx</i> is ½<i>kx</i>².'],
+  ['maths/calculus/4', '2.4 The Fundamental Theorem', 'physics/kinematics/10', '1.10 Area is displacement', 'Integrating velocity ∫ <i>v</i>(<i>t</i>) <i>dt</i> reconstructs the change in position <i>x</i>(<i>t</i>) − <i>x</i>(0).'],
+  ['maths/linear-algebra/2', '3.2 The determinant is area', 'physics/gauss/0', 'Ch. 10 Electric flux', 'Just as det <i>A</i> = <i>ad</i> − <i>bc</i> measures the signed area of a parallelogram, the cross product |<b>a</b> × <b>b</b>| gives the surface element <i>dA</i> for flux.'],
 ];

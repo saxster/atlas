@@ -19,8 +19,8 @@ npx atlas new biology/heart --grammar machine
    from here.
 2. **Checks.** `checks.mjs` proves the model a second, independent way: a derivative against the closed form, an
    rk4 integration against the formula, a seeded run against its expected spread. Run it with `node`.
-3. **Scene.** `world.js` draws the model's state from building blocks: `axes`, `plot`, `surface`, `curve`,
-   `vector`, `particles`, `molecule`.
+3. **Scene.** `world.js` draws the model's state from building blocks: `axes`, `plot`, `area`, `surface`, `curve`,
+   `vector`, `field`, `streamline`, `lattice`, `blob`, `particles`, `molecule`.
 4. **Grammar.** Choose how the reader works it:
    - **Book.** Scrolling turns pages and moves the camera; clicking a part breaks it down.
    - **Machine.** Numbered steps, one live at a time, Manual or Auto.
@@ -37,7 +37,7 @@ what the stills, tests and videos use.
 | `engine/` | the library: stage, three grammars, building blocks, charts, model checks, seeded randomness |
 | `adapters/` | `kym-live.js` (mount a figure in a Kym textbook), `molecule.js` (3Dmol, loaded on demand) |
 | `bin/atlas.mjs` | `atlas new` |
-| `examples/` | about 20 figures in physics, maths, chemistry, statistics and economics, plus a concept index |
+| `examples/` | 27 figures in physics, maths, biology, chemistry, statistics and economics, plus a concept index |
 | `tools/` | checks, browser tests, stills, jump and label critics, video recording, vendoring into textbooks |
 | `docs/API.md` | the reference |
 

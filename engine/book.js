@@ -271,6 +271,7 @@ export function startBook(chapter) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;
     window.__atlas.tour = { dwells: PAGES.map((_, i) => dwell(i)), turn: TURN };
+    window.__atlas.events = chapter.events || [];
     window.seek = t => { tourT = Math.min(Math.max(t, 0), DURATION); frame(tourT * 1000); return tourT; };
   }
 }

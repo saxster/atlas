@@ -11,11 +11,19 @@
 //   → { object, labels, to(x, y, z = 0, out?) → Vector3, x, y, z }
 //   Without a z range the plane is upright: data y is up, z is a world offset toward the viewer. With one, z is up
 //   and data y runs into the page (right-handed), the usual picture of z = f(x, y).
-// plot(parent, f, { axes, x?, samples = 200, color = 'hi', width = 0.04 }) → { object, labels, update(f) }   y = f(x)
+// plot(parent, f, { axes, x?, samples = 200, color = 'hi', width = 0.04 }) → { object, labels, update(f, { x? }?) }   y = f(x)
+// area(parent, f, { axes, x?, y0 = 0, bars = 0, rule = 'mid', samples = 120, pal = 'blue', opacity = 0.26 })
+//   → { object, labels, update(f, { x?, y0?, bars?, rule? }) }   shaded region or n Riemann bars between y0 and f(x)
 // surface(parent, f, { axes, x?, y?, n = 40, pal = 'paper' }) → { object, labels, update(f) }               z = f(x, y)
 // curve(parent, r, { t: [a, b], samples = 200, radius = 0.02, axes?, color = 'hi' }) → { object, labels, update(r) }
 // vector(parent, from, to, { color = 'red', label?, axes?, side = 1, gap = 0.22 }) → { object, labels, set(from, to, side?) }
 //   the label stands gap world units off the arrow's middle
+// field(parent, fn, { axes, x?, y?, z?, n = [7, 5], scale = 0.35, color = 'blue' }) → { object, labels, arrows, update(fn, scale?) }
+// streamline(parent, fn, { axes, from = [0, 0, 0], dt = 0.04, steps = 80, radius = 0.018, color = 'blue' })
+//   → { object, labels, points, update(fn, from?) }
+// lattice(parent, fn, { axes, x?, y?, n = [6, 6], samples = 36, color = '#8a8a8f', opacity = 0.72 }) → { object, labels, update(fn) }
+// blob(parent, { radius = 0.5, lobes = 14, amp = 0.14, cleft = 0, seed = 1, rings = 24, segs = 36, pal = 'green', tone = 'mid', pos })
+//   → { object, mesh, labels, update(spec) }
 // particles(parent, count, { radius = 0.05, color = 'red', axes? }) → { object, labels, set(i, p), show(n) }
 // molecule(parent, xyz, { scale = 1, names = true }) → { object, labels, atoms: [{ elem, pos }], bonds: [[i, j]] }
 //   xyz: XYZ text in ångström; atoms are centred on their centroid, pos as given in the text. Bonds join atoms closer
@@ -24,6 +32,7 @@
 // update/set rewrite geometry in place, so they can run every frame.
 import * as THREE from 'three';
 import { part, arrow, setArrow, lines, liveTube, shadeMat, PALETTE, TONE, V } from './parts.js';
+import { rng } from './rng.js';
 
 const EXTRA = { ochre: '#c8962e', green: '#3f8a63' };
 // a colour as a palette name, made on first use for '#hex', 'ochre' and 'green' (a theme may have replaced PALETTE since)
@@ -100,8 +109,60 @@ function tube(parent, n, radius, color, name) {
 }
 
 export function plot(parent, f, { axes, x, samples = 200, color = 'hi', width = 0.04, name = 'Plot' } = {}) {
-  const [a, b] = x || axes.x, to = toOf(axes), { mesh, pts } = tube(parent, samples, width / 2, color, name);
-  const update = g => { for (let i = 0; i <= samples; i++) { const u = a + (b - a) * i / samples; to(u, g(u), 0, pts[i]); } mesh.geometry.update(pts); };
+  let curX = x || axes.x, curF = f;
+  const to = toOf(axes), { mesh, pts } = tube(parent, samples, width / 2, color, name);
+  const update = (g = curF, opts = {}) => {
+    curF = g; if (opts.x) curX = opts.x;
+    const [a, b] = curX;
+    for (let i = 0; i <= samples; i++) { const u = a + (b - a) * i / samples; to(u, curF(u), 0, pts[i]); }
+    mesh.geometry.update(pts);
+  };
+  update(f);
+  return { object: mesh, labels: [], update };
+}
+
+export function area(parent, f, { axes, x, y0 = 0, bars = 0, rule = 'mid', samples = 120, pal = 'blue', opacity = 0.26, name = 'Area' } = {}) {
+  const to = toOf(axes), max = Math.max(samples, bars || 0), idx = [];
+  for (let i = 0; i < max; i++) { const q = 4 * i; idx.push(q, q + 2, q + 1, q + 2, q + 3, q + 1); }
+  const geo = new THREE.BufferGeometry(), pos = new Float32Array(max * 12);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(idx);
+  const mat = shadeMat(palOf(pal), { opacity });
+  mat.side = THREE.DoubleSide;
+  const mesh = part(parent, geo, { pal: palOf(pal), tone: 'lo', name, mat });
+  mesh.userData.noEdge = true; mesh.frustumCulled = false; mesh.renderOrder = 1;
+  const lpos = new Float32Array(max * 24), lgeo = new THREE.BufferGeometry();
+  lgeo.setAttribute('position', new THREE.BufferAttribute(lpos, 3));
+  const outline = new THREE.LineSegments(lgeo, new THREE.LineBasicMaterial({ color: '#6e6e74' }));
+  outline.userData = { noEdge: true }; outline.frustumCulled = false; mesh.add(outline);
+  let curF = f, curX = x || axes.x, curY0 = y0, curBars = bars, curRule = rule;
+  const p0 = V(), p1 = V(), p2 = V(), p3 = V();
+  const update = (g = curF, opts = {}) => {
+    curF = g; if (opts.x) curX = opts.x; if (opts.y0 !== undefined) curY0 = opts.y0;
+    if (opts.bars !== undefined) curBars = opts.bars; if (opts.rule) curRule = opts.rule;
+    const [a, b] = curX, base = typeof curY0 === 'function' ? curY0 : () => curY0;
+    const n = curBars > 0 ? Math.min(curBars, max) : max, z = -0.006, zl = 0.004;
+    for (let i = 0; i < max; i++) {
+      const u0 = i < n ? a + (b - a) * i / n : b, u1 = i < n ? a + (b - a) * (i + 1) / n : b;
+      const us = curRule === 'left' ? u0 : curRule === 'right' ? u1 : (u0 + u1) / 2;
+      const yl = curBars > 0 ? curF(us) : curF(u0), yr = curBars > 0 ? yl : curF(u1);
+      const bl = base(u0), br = curBars > 0 ? base(us) : base(u1);
+      // order lower/upper y so quad faces always wind counter-clockwise (+z normal) whether f >= y0 or f < y0
+      const flip = (yl - bl) + (yr - br) < 0;
+      const y0L = flip ? yl : bl, y1L = flip ? bl : yl;
+      const y0R = flip ? yr : br, y1R = flip ? br : yr;
+      to(u0, y0L, z, p0).toArray(pos, 12 * i); to(u0, y1L, z, p1).toArray(pos, 12 * i + 3);
+      to(u1, y0R, z, p2).toArray(pos, 12 * i + 6); to(u1, y1R, z, p3).toArray(pos, 12 * i + 9);
+      if (curBars > 0 && i < n) {
+        to(u0, y0L, zl, p0); to(u0, y1L, zl, p1); to(u1, y0R, zl, p2); to(u1, y1R, zl, p3);
+        const o = 24 * i;
+        p0.toArray(lpos, o); p1.toArray(lpos, o + 3); p1.toArray(lpos, o + 6); p3.toArray(lpos, o + 9);
+        p3.toArray(lpos, o + 12); p2.toArray(lpos, o + 15); p2.toArray(lpos, o + 18); p0.toArray(lpos, o + 21);
+      } else lpos.fill(0, 24 * i, 24 * (i + 1));
+    }
+    outline.visible = curBars > 0;
+    if (curBars > 0) lgeo.attributes.position.needsUpdate = true;
+    geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); geo.computeBoundingBox();
+  };
   update(f);
   return { object: mesh, labels: [], update };
 }
@@ -141,6 +202,144 @@ export function vector(parent, from, to, { color = 'red', label, axes, side = 1,
   const at = () => { off.set(D.y, -D.x, 0); if (off.lengthSq() < 1e-6 * D.lengthSq() + 1e-12) off.set(0, 1, 0); return A.clone().lerp(B, 0.5).addScaledVector(off.normalize(), gap * side); };
   const cls = ['red', 'blue', 'grey'].includes(color) ? `vec ${color}` : 'vec';
   return { object, labels: label ? [pin(cls, label, object, at)] : [], set };
+}
+
+export function field(parent, fn, { axes, x, y, z, n = [7, 5], scale = 0.35, color = 'blue', name = 'Field' } = {}) {
+  const map = toOf(axes), [x0, x1] = x || axes.x, [y0, y1] = y || axes.y, [z0, z1] = z || axes?.z || [0, 0];
+  const [nx, ny, nz = 1] = Array.isArray(n) ? n : [n, n, 1], pal = palOf(color);
+  const object = new THREE.Group(); object.name = name; parent.add(object);
+  const grid = [], arrows = [], A = V(), B = V(), D = V();
+  const step = (lo, hi, count, i) => count <= 1 ? (lo + hi) / 2 : lo + (hi - lo) * (i + 0.5) / count;
+  for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    grid.push([step(x0, x1, nx, i), step(y0, y1, ny, j), step(z0, z1, nz, k)]);
+    arrows.push(arrow(object, pal, { r: 0.022, head: 0.11, headR: 0.06, name }));
+  }
+  let curFn = fn, curScale = scale;
+  const update = (g = curFn, s = curScale) => {
+    curFn = g; curScale = s;
+    for (let i = 0; i < grid.length; i++) {
+      const [px, py, pz] = grid[i], [vx = 0, vy = 0, vz = 0] = curFn(px, py, pz);
+      map(px, py, pz, A); map(px + vx * s, py + vy * s, pz + vz * s, B);
+      setArrow(arrows[i], A, D.subVectors(B, A));
+    }
+  };
+  update(fn, scale);
+  return { object, labels: [], arrows, update };
+}
+
+export function streamline(parent, fn, startOrOpts = [0, 0, 0], maybeOpts = {}) {
+  const isSpec = !Array.isArray(startOrOpts) && !startOrOpts?.isVector3;
+  const opts = isSpec ? startOrOpts : maybeOpts;
+  const { axes, from = [0, 0, 0], dt = 0.04, steps = 80, radius = 0.018, color = 'blue', name = 'Streamline' } = opts;
+  const start = isSpec ? from : startOrOpts;
+  const to = toOf(axes), { mesh, pts } = tube(parent, steps, radius, color, name);
+  let curFn = fn, curStart = start;
+  const step3 = (g, x, y, z, t) => { const [vx = 0, vy = 0, vz = 0] = g(x, y, z, t); return [vx, vy, vz]; };
+  const update = (g = curFn, s = curStart) => {
+    curFn = g; curStart = s;
+    let [x, y, z = 0] = s.isVector3 ? [s.x, s.y, s.z] : s;
+    for (let i = 0; i <= steps; i++) {
+      const t = i * dt;
+      to(x, y, z, pts[i]);
+      if (i === steps) break;
+      const [k1x, k1y, k1z] = step3(g, x, y, z, t);
+      const [k2x, k2y, k2z] = step3(g, x + 0.5 * dt * k1x, y + 0.5 * dt * k1y, z + 0.5 * dt * k1z, t + 0.5 * dt);
+      const [k3x, k3y, k3z] = step3(g, x + 0.5 * dt * k2x, y + 0.5 * dt * k2y, z + 0.5 * dt * k2z, t + 0.5 * dt);
+      const [k4x, k4y, k4z] = step3(g, x + dt * k3x, y + dt * k3y, z + dt * k3z, t + dt);
+      x += (dt / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+      y += (dt / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
+      z += (dt / 6) * (k1z + 2 * k2z + 2 * k3z + k4z);
+    }
+    mesh.geometry.update(pts);
+  };
+  update(fn, start);
+  return { object: mesh, labels: [], points: pts, update };
+}
+
+export function lattice(parent, fn = (u, v) => [u, v], { axes, x, y, n, divisions, samples = 36, color = '#8a8a8f', opacity = 0.72, name = 'Lattice' } = {}) {
+  const to = toOf(axes), [x0, x1] = x || axes.x, [y0, y1] = y || axes.y;
+  const div = n ?? divisions ?? [6, 6];
+  const [nx, ny] = Array.isArray(div) ? div : [div, div];
+  const nSeg = ((nx + 1) + (ny + 1)) * samples;
+  const pos = new Float32Array(nSeg * 6), geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const object = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity }));
+  object.userData = { noEdge: true }; object.frustumCulled = false; object.name = name; parent.add(object);
+  let curFn = fn;
+  const pA = V(), pB = V();
+  const mapPt = (g, u, v, out) => { const [X, Y, Z = 0] = g(u, v); return to(X, Y, Z, out); };
+  const update = (g = curFn) => {
+    curFn = g;
+    let k = 0;
+    for (let i = 0; i <= nx; i++) {
+      const u = x0 + (x1 - x0) * i / nx;
+      for (let s = 0; s < samples; s++) {
+        const v0 = y0 + (y1 - y0) * s / samples, v1 = y0 + (y1 - y0) * (s + 1) / samples;
+        mapPt(g, u, v0, pA).toArray(pos, k); mapPt(g, u, v1, pB).toArray(pos, k + 3); k += 6;
+      }
+    }
+    for (let j = 0; j <= ny; j++) {
+      const v = y0 + (y1 - y0) * j / ny;
+      for (let s = 0; s < samples; s++) {
+        const u0 = x0 + (x1 - x0) * s / samples, u1 = x0 + (x1 - x0) * (s + 1) / samples;
+        mapPt(g, u0, v, pA).toArray(pos, k); mapPt(g, u1, v, pB).toArray(pos, k + 3); k += 6;
+      }
+    }
+    geo.attributes.position.needsUpdate = true; geo.computeBoundingSphere(); geo.computeBoundingBox();
+  };
+  update(fn);
+  return { object, labels: [], update };
+}
+
+export function blob(parent, spec = {}) {
+  const {
+    radius, r = 0.5, lobes, bumps = 14, amp = 0.14, cleft = 0, seed = 1,
+    rings = 24, segs = 36, pal, color = 'green', tone = 'mid', pos = [0, 0, 0], ex = [0, 0, 0], name = 'Blob',
+  } = spec;
+  const baseGeo = new THREE.SphereGeometry(1, segs, rings);
+  const basePos = Float32Array.from(baseGeo.attributes.position.array);
+  const geo = baseGeo.clone();
+  const attr = geo.attributes.position;
+
+  let cur = {
+    rad: radius ?? r,
+    nLobes: lobes ?? bumps,
+    amp,
+    cleft,
+    seed,
+  };
+
+  function update(next = {}) {
+    if (next.radius !== undefined || next.r !== undefined) cur.rad = next.radius ?? next.r;
+    if (next.lobes !== undefined || next.bumps !== undefined) cur.nLobes = next.lobes ?? next.bumps;
+    if (next.amp !== undefined) cur.amp = next.amp;
+    if (next.cleft !== undefined) cur.cleft = next.cleft;
+    if (next.seed !== undefined) cur.seed = next.seed;
+    const rand = rng(cur.seed);
+    const dirs = Array.from({ length: cur.nLobes }, () => {
+      const z = rand.next() * 2 - 1, a = rand.next() * Math.PI * 2, w = Math.sqrt(Math.max(0, 1 - z * z));
+      return { x: w * Math.cos(a), y: w * Math.sin(a), z, s: (rand.next() - 0.35) * cur.amp };
+    });
+    for (let i = 0; i < attr.count; i++) {
+      const nx = basePos[3 * i], ny = basePos[3 * i + 1], nz = basePos[3 * i + 2];
+      let scale = 1;
+      for (const d of dirs) {
+        const dot = nx * d.x + ny * d.y + nz * d.z;
+        if (dot > 0) scale += d.s * dot * dot * dot;
+      }
+      // optional binding cleft along +x (for active-site pockets)
+      if (cur.cleft > 0 && nx > 0.35 && Math.abs(ny) < 0.45) {
+        const pocket = ((nx - 0.35) / 0.65) * (1 - (ny / 0.45) ** 2);
+        scale -= cur.cleft * Math.max(0, pocket);
+      }
+      attr.setXYZ(i, nx * cur.rad * scale, ny * cur.rad * scale, nz * cur.rad * scale);
+    }
+    attr.needsUpdate = true;
+    geo.computeVertexNormals(); geo.computeBoundingSphere(); geo.computeBoundingBox();
+  }
+  update();
+  const object = part(parent, geo, { pal: palOf(pal ?? color), tone, pos, ex, name });
+  return { object, mesh: object, labels: [], update };
 }
 
 export function particles(parent, count, { radius = 0.05, color = 'red', axes, name = 'Particles' } = {}) {
