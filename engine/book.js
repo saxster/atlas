@@ -82,31 +82,76 @@ export function startBook(chapter) {
     return `<div class="kicker parts-k">Take the figure apart</div><ul class="parts">${ks.map(k => { const u = E.ASM[k].userData;
       return `<li><button type="button" data-part="${k}">${PLATES[k].title || u.title || k}<span>${PLATES[k].sub || u.sub || ''}</span></button></li>`; }).join('')}</ul>`;
   };
-  // a page with a measured structure offers it: the real molecule, beside the drawn model
+  // a page with a measured structure or 3D specimen offers it beside the drawn model
   const moleculeHtml = i => PAGES[i].molecule ? `<button type="button" class="molbtn" data-molecule="${i}">See the real molecule <span>measured bond lengths and angles, in 3D</span></button>` : '';
+  const specimenHtml = i => {
+    const sp = PAGES[i].specimen;
+    if (!sp) return '';
+    const label = sp.label || 'See the real specimen';
+    const sub = sp.sub || 'inspected 3D mesh, drag to turn';
+    return `<button type="button" class="molbtn specbtn" data-specimen="${i}">${label} <span>${sub}</span></button>`;
+  };
   let mol = null;
-  async function openMolecule(i, from) {
+  async function openOverlayPanel(from, { kicker, cls = '', loadingText, errorText, mount }) {
     closeMolecule();
-    const panel = document.createElement('div'); panel.className = 'molpanel';
-    panel.innerHTML = `<div class="molhead"><span class="kicker">The real molecule</span><button type="button" class="close">Close</button></div><div class="molview"><p class="molnote">Loading the molecule viewer…</p></div>`;
+    const panel = document.createElement('div');
+    panel.className = `molpanel ${cls}`.trim();
+    panel.innerHTML = `<div class="molhead"><span class="kicker">${kicker}</span><button type="button" class="close">Close</button></div><div class="molview"><p class="molnote">${loadingText}</p></div>`;
     $('gl').parentElement.appendChild(panel);
-    panel.querySelector('.close').onclick = closeMolecule;
+    panel.querySelector('.close').onclick = () => closeMolecule(true);
     panel.querySelector('.close').focus();
-    const xyz = typeof PAGES[i].molecule === 'function' ? PAGES[i].molecule() : PAGES[i].molecule;
     const mine = mol = { panel, from };   // closed (or replaced) while loading: what loads is dropped
     try {
-      const { showMolecule } = await import('../adapters/molecule.js');
-      const el = panel.querySelector('.molview'); el.innerHTML = '';
-      const view = await showMolecule(el, xyz, { background: getComputedStyle(panel).backgroundColor });
+      const el = panel.querySelector('.molview');
+      const { view, footer } = await mount(el, getComputedStyle(panel).backgroundColor);
       if (mol !== mine) return view.destroy();
       mine.view = view;
-      panel.insertAdjacentHTML('beforeend', `<p class="molsrc">Drag to turn · ${view.source || ''}</p>`);
-    } catch (e) { if (mol === mine) panel.querySelector('.molview').innerHTML = '<p class="molnote">The molecule viewer needs the internet, and it could not be reached. The drawn model shows the same angles.</p>'; }
+      panel.insertAdjacentHTML('beforeend', `<p class="molsrc">${footer}</p>`);
+    } catch (e) {
+      if (mol === mine) panel.querySelector('.molview').innerHTML = `<p class="molnote">${errorText}</p>`;
+    }
   }
-  function closeMolecule() { if (!mol) return; mol.view?.destroy(); mol.panel.remove(); mol = null; }
+  async function openMolecule(i, from) {
+    const xyz = typeof PAGES[i].molecule === 'function' ? PAGES[i].molecule() : PAGES[i].molecule;
+    return openOverlayPanel(from, {
+      kicker: 'The real molecule',
+      loadingText: 'Loading the molecule viewer…',
+      errorText: 'The molecule viewer needs the internet, and it could not be reached. The drawn model shows the same angles.',
+      async mount(el, background) {
+        const { showMolecule } = await import('../adapters/molecule.js');
+        el.innerHTML = '';
+        const view = await showMolecule(el, xyz, { background });
+        return { view, footer: `Drag to turn · ${view.source || ''}` };
+      },
+    });
+  }
+  async function openSpecimen(i, from) {
+    const spec = PAGES[i].specimen;
+    return openOverlayPanel(from, {
+      kicker: spec?.kicker || 'The real specimen',
+      cls: 'specpanel',
+      loadingText: 'Loading the 3D specimen…',
+      errorText: 'The 3D specimen could not be loaded. The drawn figure shows the same structure.',
+      async mount(el, background) {
+        const { showSpecimen } = await import('../adapters/specimen.js');
+        el.innerHTML = '';
+        const view = await showSpecimen(el, spec, { background });
+        const badge = view.audit?.pass ? `${view.audit.tris.toLocaleString()} tris · audit pass` : `${view.audit?.errors?.[0] || 'mesh warning'}`;
+        return { view, footer: `Drag to turn · ${view.source ? `${view.source} · ` : ''}${badge}` };
+      },
+    });
+  }
+  function closeMolecule(restoreFocus = false) {
+    if (!mol) return;
+    const back = mol.from;
+    mol.view?.destroy();
+    mol.panel.remove();
+    mol = null;
+    if (restoreFocus) back?.focus();
+  }
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${moleculeHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
+  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice, check a numeric answer, or check a dragged 3D target position
   const markRight = (q, item) => {
     q.classList.add('done');
@@ -136,6 +181,7 @@ export function startBook(chapter) {
     if (b?.dataset.turn) return goto(+b.dataset.turn);
     if (b?.dataset.part) { begin(); return select(b.dataset.part, b); }
     if (b?.dataset.molecule) return openMolecule(+b.dataset.molecule, b);
+    if (b?.dataset.specimen) return openSpecimen(+b.dataset.specimen, b);
     if (!q) return;
     const item = PRACTICE[shown][+q.dataset.q];
     if (b.classList.contains('numcheck')) return checkNumeric(q, item);
@@ -234,7 +280,7 @@ export function startBook(chapter) {
   // from: the button that asked (a part button), so focus can go back to it when the breakdown closes
   function select(k, from) { pendingFrom = from || null; S.select(k); }
   addEventListener('keydown', e => {
-    if (e.key === 'Escape' && mol) { const back = mol.from; closeMolecule(); back?.focus(); return; }
+    if (e.key === 'Escape' && mol) { closeMolecule(true); return; }
     if (e.key === 'Escape' && S.selected) { const back = returnFocus; select(null); back?.focus(); }
     if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) begin();
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goto(Math.round(scrollY / pageH) + 1); }
@@ -307,7 +353,7 @@ export function startBook(chapter) {
   if (!EMBED) mountShareButton(playB || document.querySelector('.pager'), shareUrl, 'playbtn sharebtn');
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, get started() { return started; }, get clock() { return S.clock; } };
+  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, get started() { return started; }, get clock() { return S.clock; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;

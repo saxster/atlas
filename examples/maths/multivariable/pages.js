@@ -66,6 +66,28 @@ export const PAGES = [
     lit: 'saddleSurf',
     parts: ['saddleSurf'],
     look: {},
+    specimen: {
+      label: 'See the real specimen',
+      sub: '3D hyperbolic paraboloid saddle mesh, drag to turn',
+      source: 'Hyperbolic paraboloid z = ½(x² − y²)',
+      build: THREE => {
+        const g = new THREE.Group();
+        const segs = 32, geo = new THREE.PlaneGeometry(2.4, 2.4, segs, segs);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i), y = pos.getY(i);
+          pos.setXYZ(i, x, 0.35 * (x * x - y * y), y);
+        }
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(
+          geo,
+          new THREE.MeshStandardMaterial({ color: 0x3b6ea8, roughness: 0.38, metalness: 0.05, side: THREE.DoubleSide }),
+        );
+        mesh.name = 'saddle_specimen';
+        g.add(mesh);
+        return g;
+      },
+    },
     body: `
       <p class="lede">At a peak, valley, or mountain pass, the tangent plane is horizontal: ∇<i>f</i> = (0, 0). To tell them apart, look at the 2×2 <b>Hessian matrix</b> of second derivatives and its determinant:</p>
       <div class="eq"><i>D</i> = det(<i>H</i>) = <i>f<sub>xx</sub></i> <i>f<sub>yy</sub></i> − (<i>f<sub>xy</sub></i>)²</div>

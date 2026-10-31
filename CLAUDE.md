@@ -3,7 +3,7 @@
 `@saxster/atlas`: a library for teaching figures in any subject (three.js paper-and-ink renderer, building
 blocks, book / machine / explorer grammars), with example atlases built on it in `examples/`. Figures also embed in
 the kym textbooks through their `:::live` widget pipeline. Public; the site is https://saxster.github.io/atlas/.
-Plan and decisions: `~/.claude/plans/we-want-to-hugely-dazzling-hellman.md`.
+Architectural rationale and invariants: `docs/decisions.md`.
 
 Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes: `upstream` = nathanliow,
 `fork` = saxster/atlas-of-physics.
@@ -62,6 +62,9 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   changes more than 3× its nearest neighbours' pixels. Scene loop restarts and forces switching off are flagged
   too; they are designed, so read the frames (`--frames`) before "fixing" one.
 - `node tools/labels.mjs [chapters]`: labels overlapping each other, or anchored behind a solid.
+- `node tools/scene.mjs [chapters] [--intersections]`: camera framing clipping/empty-frame checks, active-subject
+  occlusion along the camera ray, and optional pairwise 3D mesh intersections (`sceneReport`).
+- `node tools/style.mjs`: checks `CLAUDE.md` (<32 KiB) and `SKILL.md` (<2,500 words) context budgets and verifies all referenced repo paths.
 
 ## Generated pages (`npm run site` writes them; `npm run check` fails when one is stale)
 - `tools/site.mjs`: the examples' shelf (`examples/index.html`) and each subject's contents page, from `subject.js` (`cards`, `hero`, `tagline`,
@@ -76,16 +79,16 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
 - `frameAspect` (chapter, figure, or one page or step): the canvas aspect the cameras were framed for (default 1.25); a narrower canvas
   pulls back. `narrowZoom`: extra distance on phones.
 - A book page's `molecule` (XYZ text, ångström) adds "See the real molecule": `adapters/molecule.js` loads 3Dmol.js
-  2.5.5 (BSD-3) from jsDelivr only when tapped, and says so when offline.
+  2.5.5 (BSD-3) from jsDelivr only when tapped, and says so when offline. A book page's `specimen` (`.glb`/`.gltf` URL, Three.js builder, or `{ src, build, source }`) adds "See the real specimen": `adapters/specimen.js` audits the mesh with `engine/mesh-audit.js` (`auditDeliverable`) and opens an interactive 3-point-lit turntable viewer.
 - Grammars: `engine/book.js` (scroll-book), `engine/machine.js` (steps, Manual/Auto, optional `cuts: ['solid', 'xray', 'section']`), `engine/explorer.js`
   (predict, sliders, seeded run), `engine/sandbox.js` (presets, matrix, palette, draggable 3D items, optional `cuts`). Each page's `<main>` class and markup follow the pilots
-  (`economics/compound`, `statistics/galton`, `examples/minimal/teardown`).
-- Kinematics & mechanical CAD: `engine/kinematics.js` (`circleIntersect`, `sliderCrank`, `fourBar`, `gearRatio`, `rackPinion`, `differential`, `createSolver`, `twoLinkIK`, `fabrik`, `jacobianIK`), `engine/parts.js` (`gear`, `rack`, `spring`), `engine/prims.js` (`linkage`), and `leader: true` callout labels in `engine/stage.js`.
+  (`examples/economics/compound`, `examples/statistics/galton`, `examples/minimal/teardown`).
+- Kinematics, procedural motion & mechanical CAD: `engine/kinematics.js` (`circleIntersect`, `sliderCrank`, `fourBar`, `gearRatio`, `rackPinion`, `differential`, `createSolver`, `twoLinkIK`, `fabrik`, `jacobianIK`), `engine/motion.js` (`phase`, `win`, `warpTime`, `spring`, `settleShake`, `squashStretch`, `eases`, `loopNoise`, `hash`, `rand`, `rrange`), `engine/parts.js` (`gear`, `rack`, `spring`), `engine/prims.js` (`linkage`), and `leader: true` callout labels in `engine/stage.js`.
 - Textbook embeds: `adapters/kym-live.js` (`mountAtlas`), copied into a book by `tools/vendor.mjs`.
 
 ## Video (needs ffmpeg; output in `videos/`, ignored)
-- `node tools/record.mjs <subject/id> [--size 1920x1080] [--fps 60] [--silent]`: seeks the `?render` tour frame by
-  frame into H.264; fails unless the frame count is round(DURATION × fps). Writes a contact sheet (`<name>.sheet.jpg`),
+- `node tools/record.mjs <subject/id> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent]`: seeks the `?render` tour frame by
+  frame into H.264 with explicit BT.709 color tags (`bt709/bt709/bt709`) and optional sub-frame shutter motion blur (`--samples`); runs `qaVideo` (frame count, BT.709 tags, photosensitivity `<= 3` flips/s, and `--loop` seam continuity). Writes a contact sheet (`<name>.sheet.jpg`),
   settled beat sheet (`<name>.beats.jpg`), and a timeline (`starts`, `events`) for the score.
 - `node cli/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
-  page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, measured (PASS/FAIL), plus `<name>.wave.png` with beat markers.
+  page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, measured (PASS/FAIL), A/V impulse cross-correlation sync check (`±40 ms`), plus `<name>.wave.png` with beat markers.

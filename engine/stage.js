@@ -4,11 +4,17 @@
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
 import { createEngine } from './render.js';
 import { themeScene } from './parts.js';
+import {
+  TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
+  phase, win, warpTime, spring, settleShake, squashStretch, eases,
+  hash, rand, rrange, loopNoise,
+} from './motion.js';
 
-export const clamp01 = x => Math.min(Math.max(x, 0), 1);
-export const smooth = (a, b, x) => { const u = clamp01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
-export const ease = u => (u = clamp01(u), u < 0.5 ? 4 * u ** 3 : 1 - (-2 * u + 2) ** 3 / 2);
-export const lerp = (a, b, u) => a + (b - a) * u;
+export {
+  TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
+  phase, win, warpTime, spring, settleShake, squashStretch, eases,
+  hash, rand, rrange, loopNoise,
+};
 
 export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syncUrl = null) {
   if (!anchorEl) return null;
@@ -488,6 +494,146 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     });
   }
 
+  // for cli/scene.mjs: framing of the active lit assembly (or scene), occlusion of the lit assembly by opaque solids,
+  // and optional 3D bounding-box interpenetration between assemblies.
+  function sceneReport({ margin = 0.02, checkIntersections = false, intersectionTol = 0.025 } = {}) {
+    E.scene.updateMatrixWorld(true);
+    const shown = o => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+    const w = rect.width || canvas.clientWidth || 1, h = rect.height || canvas.clientHeight || 1;
+    const litGroup = pageLit && E.ASM[pageLit] && shown(E.ASM[pageLit]) ? E.ASM[pageLit] : null;
+    const litMeshes = [];
+    if (litGroup) litGroup.traverse(o => { if (o.isMesh && shown(o) && o.userData.part !== undefined) litMeshes.push(o); });
+    const allMeshes = [];
+    E.scene.traverse(o => { if (o.isMesh && shown(o)) allMeshes.push(o); });
+    const targetMeshes = litMeshes.length ? litMeshes : allMeshes;
+
+    const subjectBox = new E.THREE.Box3();
+    for (const m of targetMeshes) subjectBox.expandByObject(m);
+
+    let framing = { subject: litMeshes.length ? pageLit : 'scene', inFrame: true, center: [0.5, 0.5], empty: subjectBox.isEmpty() };
+    if (!subjectBox.isEmpty()) {
+      const center3 = subjectBox.getCenter(new E.THREE.Vector3());
+      const [cx, cy, cFront] = E.toScreen(center3, w, h);
+      const cu = cx / w, cv = cy / h;
+      let uMin = Infinity, vMin = Infinity, uMax = -Infinity, vMax = -Infinity, anyFront = false;
+      const corner = new E.THREE.Vector3();
+      for (let i = 0; i < 8; i++) {
+        corner.set(
+          i & 1 ? subjectBox.max.x : subjectBox.min.x,
+          i & 2 ? subjectBox.max.y : subjectBox.min.y,
+          i & 4 ? subjectBox.max.z : subjectBox.min.z,
+        );
+        const [sx, sy, front] = E.toScreen(corner, w, h);
+        if (front) {
+          anyFront = true;
+          uMin = Math.min(uMin, sx / w); uMax = Math.max(uMax, sx / w);
+          vMin = Math.min(vMin, sy / h); vMax = Math.max(vMax, sy / h);
+        }
+      }
+      const centerIn = cFront && cu >= margin && cu <= 1 - margin && cv >= margin && cv <= 1 - margin;
+      const boxOverlaps = anyFront && uMax >= margin + 0.04 && uMin <= 1 - margin - 0.04 && vMax >= margin + 0.04 && vMin <= 1 - margin - 0.04;
+      framing = {
+        subject: litMeshes.length ? pageLit : 'scene',
+        inFrame: centerIn || boxOverlaps,
+        centerInFrame: centerIn,
+        center: [+cu.toFixed(3), +cv.toFixed(3)],
+        bounds: anyFront ? [+uMin.toFixed(3), +vMin.toFixed(3), +uMax.toFixed(3), +vMax.toFixed(3)] : null,
+      };
+    }
+
+    // Occlusion: when a page highlights a specific assembly (pageLit), verify it is not 100% hidden behind
+    // an opaque, unclipped solid from another assembly.
+    let occlusion = { subject: litMeshes.length ? pageLit : null, blocked: false, occludedBy: null };
+    if (litMeshes.length) {
+      const ownSet = new Set(litMeshes);
+      const otherSolids = [];
+      E.scene.traverse(o => {
+        if (!o.isMesh || !shown(o) || ownSet.has(o) || o.userData.part === undefined) return;
+        const mat = o.material;
+        if (!mat || mat.transparent || mat.depthTest === false || mat.clipping) return;
+        const op = mat.uniforms?.uOpacity ? mat.uniforms.uOpacity.value : (mat.opacity ?? 1);
+        if (op <= 0.5) return;
+        otherSolids.push(o);
+      });
+      if (otherSolids.length) {
+        const samples = [subjectBox.getCenter(new E.THREE.Vector3())];
+        const topPt = subjectBox.getCenter(new E.THREE.Vector3());
+        topPt.y = lerp(subjectBox.min.y, subjectBox.max.y, 0.88);
+        samples.push(topPt);
+        for (const m of litMeshes.slice(0, 6)) {
+          const mb = new E.THREE.Box3().setFromObject(m);
+          if (!mb.isEmpty()) samples.push(mb.getCenter(new E.THREE.Vector3()));
+        }
+        let blockedCount = 0, firstBlocker = null;
+        for (const pt of samples) {
+          const d = E.camera.position.distanceTo(pt);
+          if (d < 1e-4) continue;
+          ray.set(E.camera.position, pt.clone().sub(E.camera.position).normalize());
+          ray.far = d * 0.96;
+          const hit = ray.intersectObjects(otherSolids, false)[0];
+          if (hit) {
+            blockedCount++;
+            if (!firstBlocker) {
+              let p = hit.object;
+              while (p && !p.userData?.asm) p = p.parent;
+              firstBlocker = p?.userData?.asm || hit.object.userData.part || 'a solid';
+            }
+          }
+        }
+        if (blockedCount === samples.length && samples.length > 0) {
+          occlusion = { subject: pageLit, blocked: true, occludedBy: firstBlocker };
+        }
+      }
+    }
+
+    // Optional interpenetration audit between distinct assemblies (skips cutaway housings/xray shells and plot/curve tubes that cross at axes)
+    const intersections = [];
+    const wantInter = checkIntersections || Object.values(E.ASM).some(g => g.userData?.auditIntersections);
+    if (wantInter) {
+      const onlyOptIn = !checkIntersections && Object.values(E.ASM).some(g => g.userData?.auditIntersections);
+      const cutSet = new Set([...(chapter.xrayKeys || []), ...(chapter.cutKeys || [])]);
+      const isSolidPart = o => {
+        if (!o.isMesh || !shown(o) || o.userData.part === undefined) return false;
+        const mat = o.material;
+        if (!mat || mat.transparent || mat.depthTest === false || mat.clipping) return false;
+        const op = mat.uniforms?.uOpacity ? mat.uniforms.uOpacity.value : (mat.opacity ?? 1);
+        return op > 0.5 && o.geometry?.type !== 'TubeGeometry' && !o.isInstancedMesh;
+      };
+      const entries = [];
+      for (const [k, g] of Object.entries(E.ASM)) {
+        if (!shown(g) || cutSet.has(k) || g.userData?.xray || g.userData?.housing || g.userData?.noPick) continue;
+        if (onlyOptIn && !g.userData?.auditIntersections) continue;
+        const boxes = [];
+        g.traverse(o => {
+          if (isSolidPart(o)) {
+            const mb = new E.THREE.Box3().setFromObject(o);
+            if (!mb.isEmpty()) boxes.push(mb);
+          }
+        });
+        if (boxes.length) entries.push([k, boxes]);
+      }
+      for (let i = 0; i < entries.length; i++) {
+        for (let j = i + 1; j < entries.length; j++) {
+          const [ka, boxesA] = entries[i], [kb, boxesB] = entries[j];
+          let maxMinO = 0;
+          for (const ba of boxesA) {
+            for (const bb of boxesB) {
+              if (ba.containsBox(bb) || bb.containsBox(ba)) continue;
+              const ox = Math.min(ba.max.x, bb.max.x) - Math.max(ba.min.x, bb.min.x);
+              const oy = Math.min(ba.max.y, bb.max.y) - Math.max(ba.min.y, bb.min.y);
+              const oz = Math.min(ba.max.z, bb.max.z) - Math.max(ba.min.z, bb.min.z);
+              const minO = Math.min(ox, oy, oz);
+              if (minO > maxMinO) maxMinO = minO;
+            }
+          }
+          if (maxMinO > intersectionTol) intersections.push({ pair: [ka, kb], overlap: +maxMinO.toFixed(4) });
+        }
+      }
+    }
+
+    return { framing, occlusion, intersections };
+  }
+
   function destroy() {
     for (const f of off) f();
     ro.disconnect();
@@ -497,7 +643,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   }
 
   return {
-    E, W, N, hooks, step, select, relight, labelReport, destroy, fit, draggable,
+    E, W, N, hooks, step, select, relight, labelReport, sceneReport, destroy, fit, draggable,
     get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
     get lastLook() { return lastLook; },
     get selected() { return selected; }, get hovered() { return hovered; }, get dragging() { return !!drag; },

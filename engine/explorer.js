@@ -111,7 +111,7 @@ export function startExplorer(figure) {
       pl.innerHTML = `<button type="button" class="close">Close</button><div class="kicker">Closer</div><h2>${ud.title}</h2><p class="sub">${ud.sub || ''}</p><p>${figure.PLATES[key].text}</p>`;
       pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
     };
-    if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport });
+    if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport, sceneReport: S.sceneReport });
   }
   build();
 
@@ -134,7 +134,7 @@ export function startExplorer(figure) {
     if (!RENDER) requestAnimationFrame(frame);
   }
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, 0); else frame(t); }));
-  window.__atlas = { E: S.E, S, N: 1, labelReport: S.labelReport, params, reset, shareUrl,
+  window.__atlas = { E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, params, reset, shareUrl,
     get state() { return { clock, running, predicted, ran }; }, get clock() { return S.clock; } };
   if (RENDER) {
     const D = duration() + END;

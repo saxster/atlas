@@ -86,6 +86,35 @@ ev.forEach((t, k) => {
 // fade in and out
 for (let i = 0; i < N; i++) { const t = i / SR, g = Math.min(1, t / 1.0) * Math.min(1, Math.max(0, (T.duration - t) / 2.0)); L[i] *= g; Rt[i] *= g; }
 
+// ---------- A/V impulse cross-correlation sync check ----------
+const BIN_MS = 10, BIN_SAMPLES = Math.round(SR * (BIN_MS / 1000)), NBINS = Math.ceil(N / BIN_SAMPLES);
+const envBins = new Float64Array(NBINS);
+for (let i = 0; i < N; i++) {
+  envBins[Math.floor(i / BIN_SAMPLES)] += 0.5 * (L[i] * L[i] + Rt[i] * Rt[i]);
+}
+const onsetBins = new Float64Array(NBINS);
+for (let b = 1; b < NBINS; b++) onsetBins[b] = Math.max(0, envBins[b] - envBins[b - 1]);
+const expectedBeats = [...(T.starts || []).map(t => ({ t, w: 1.0 })), ...ev.map(t => ({ t, w: 0.6 }))].filter(b => b.t >= 0.2 && b.t <= T.duration - 0.5);
+let bestLagMs = 20, syncOk = true;
+if (expectedBeats.length > 0) {
+  let bestScore = -Infinity;
+  for (let lagBins = -10; lagBins <= 10; lagBins++) {
+    let score = 0;
+    for (const beat of expectedBeats) {
+      const idx = Math.round((beat.t * 1000) / BIN_MS) + lagBins;
+      for (let d = 0; d <= 2; d++) {
+        if (idx + d >= 0 && idx + d < NBINS) score += beat.w * onsetBins[idx + d] * (1 - d * 0.25);
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestLagMs = lagBins * BIN_MS;
+    }
+  }
+  syncOk = bestLagMs >= 0 && bestLagMs <= 30;
+}
+console.log(syncOk ? 'PASS' : 'FAIL', `av-sync impulse offset ${bestLagMs >= 0 ? '+' : ''}${bestLagMs} ms (target 0..+30 ms across ${expectedBeats.length} cues)`);
+
 // ---------- write, normalise, measure ----------
 const raw = timelineFile.replace(/\.timeline\.json$/, '') + '.raw.wav', wav = timelineFile.replace(/\.timeline\.json$/, '') + '.wav';
 const buf = Buffer.alloc(44 + N * 4);
@@ -105,8 +134,8 @@ fs.unlinkSync(raw);
 // measure what came out
 const p3 = execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${wav}" -af ebur128=peak=true -f null - 2>&1`]).toString();
 const I = +p3.match(/Integrated loudness:\s+I:\s+(-?[\d.]+)/)[1], TP = +p3.match(/True peak:\s+Peak:\s+(-?[\d.]+)/)[1];
-const ok = Math.abs(I + 14) <= 1 && TP <= -0.9;
-console.log(ok ? 'PASS' : 'FAIL', `loudness ${I} LUFS (target −14 ±1), true peak ${TP} dBTP (limit −1)`);
+const ok = Math.abs(I + 14) <= 1 && TP <= -0.9 && syncOk;
+console.log((Math.abs(I + 14) <= 1 && TP <= -0.9) ? 'PASS' : 'FAIL', `loudness ${I} LUFS (target −14 ±1), true peak ${TP} dBTP (limit −1)`);
 
 // waveform PNG with beat markers (page/step starts in red, designed events in amber) for visual sync check
 const wavePng = timelineFile.replace(/\.timeline\.json$/, '') + '.wave.png';

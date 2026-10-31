@@ -208,7 +208,7 @@ export function startMachine(figure) {
   if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
-  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
+  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, sceneReport: S.sceneReport, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
     get state() { return { done, k, u, mode, cut: cutBar?.mode || 'solid' }; }, get clock() { return S.clock; } };
   if (RENDER) {
     window.DURATION = DURATION;

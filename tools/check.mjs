@@ -22,5 +22,8 @@ if (!only.length) for (const s of await subjects()) {
   const eq = path.join(ROOT, 'examples', s.id, 'equations', 'check.mjs');
   if (fs.existsSync(eq)) execFileSync(process.execPath, [eq], { cwd: ROOT, stdio: 'inherit' });
 }
-// the generated pages: the concept index (every link, every xref) and the contents pages must match their sources
-if (!only.length) for (const f of ['examples/concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
+// the generated pages: the concept index (every link, every xref), the contents pages, and doc/skill style budgets must pass
+if (!only.length) {
+  for (const f of ['examples/concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
+  execFileSync(process.execPath, [path.join(ROOT, 'tools', 'style.mjs')], { cwd: ROOT, stdio: 'inherit' });
+}

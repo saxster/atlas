@@ -54,6 +54,22 @@ const e0 = await clock(); await wait(600);
 check('embed: figure only, page held, calm', await p.evaluate(() => getComputedStyle(document.querySelector('.page.left')).display === 'none' && getComputedStyle(document.querySelector('.topbar')).display === 'none') &&
   await p.$eval('#pagenum', e => e.textContent.startsWith('3 /')) && e0 === await clock() && !!await p.$('.figure #play'));
 
+// sceneReport & "See the real specimen" viewer on examples/maths/multivariable
+await p.setViewport({ width: 1440, height: 900 });
+await open('/examples/maths/multivariable/#3'); await wait(400);
+const sr = await p.evaluate(() => window.__atlas.sceneReport({ checkIntersections: true }));
+check('sceneReport: framing, occlusion, and intersections report cleanly', sr && sr.framing.inFrame && !sr.occlusion.blocked && Array.isArray(sr.intersections));
+const specBtn = await p.$('#sheet .specbtn');
+check('specimen: page with specimen renders "See the real specimen" button', !!specBtn);
+if (specBtn) {
+  await specBtn.click();
+  await p.waitForFunction(() => !!document.querySelector('.specpanel .molview canvas'), { timeout: 10000 });
+  await wait(300);
+  check('specimen: clicking button mounts audited 3D specimen canvas in panel', await p.evaluate(() => !!document.querySelector('.specpanel .molview canvas') && document.querySelector('.specpanel .molsrc')?.textContent.includes('audit pass')));
+  await p.click('.specpanel .close'); await wait(250);
+  check('specimen: Close button closes panel, disposes viewer, and restores focus to .specbtn', await p.evaluate(() => !document.querySelector('.specpanel') && document.activeElement?.classList.contains('specbtn')));
+}
+
 // the top bar fits phones, for every chapter at the narrowest width
 const narrow = [];
 for (const ch of await allChapters()) for (const w of [360, 390]) {

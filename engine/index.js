@@ -1,6 +1,12 @@
 // @saxster/atlas: everything a figure needs, from one import. Each module is also importable on its own
 // ('@saxster/atlas/stage.js', '@saxster/atlas/prims.js' …), which is what the examples do.
-export { createStage, draggable, clamp01, smooth, ease, lerp } from './stage.js';
+export {
+  createStage, draggable,
+  TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
+  phase, win, warpTime, spring, settleShake, squashStretch, eases,
+  hash, rand, rrange, loopNoise,
+} from './stage.js';
+export { auditDeliverable } from './mesh-audit.js';
 export { mountFigure } from './mount.js';
 export { startBook } from './book.js';
 export { startMachine, speedLabel } from './machine.js';

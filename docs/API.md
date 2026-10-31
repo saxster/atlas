@@ -87,6 +87,20 @@ Pure forward and inverse kinematics for mechanical figures (`@saxster/atlas/kine
 - **Declarative constraint solver:** `createSolver(defs, { iterations?, tol? })` topologically sorts sequential chains (`revolute`, `prismatic`, `gear`, `rackPinion`, `sliderCrank`, `circleIntersect`, `fourBar`, `differential`) for single-pass exact evaluation and relaxes closed loops (`distance` or custom `{ solve, residual }`).
 - **Inverse kinematics:** `twoLinkIK(base, target, L1, L2, elbow)`, `fabrik(joints, lengths, target, opts?)` (2D/3D serial chain solver), and `jacobianIK({ angles, fk, target, method: 'dls' | 'transpose', limits?, step?, damping? })`.
 
+## Stateless Procedural Motion (`motion.js`)
+
+Pure functions of time `t` (`@saxster/atlas/motion.js`, also re-exported by `@saxster/atlas/stage.js` and `@saxster/atlas`) so `?render` seeking (`window.seek(t)`) is order-independent with zero per-frame accumulator drift:
+
+- **Core scalars:** `TAU`, `clamp01(x)`, `clamp(x, a = 0, b = 1)`, `lerp(a, b, u)`, `fract(x)`, `mod(x, m)`, `smooth(a, b, x)` (and alias `smoothstep(a, b, x)`), `ease(u)`.
+- **Time windows & seamless loops:** `phase(t, period = 1, offset = 0)` (normalised `0..1` cycle phase), `win(p, a, b, fn = null)` (clamped `0..1` sub-window over `[a, b]`, optionally shaped by `fn`), `warpTime(t, period = 12, amp = 0.15)` (periodic speed modulation where `warpTime(t + period) === warpTime(t) + period`).
+- **Closed-loop springs & secondary motion:** `spring(u, zeta = 0.35, freq = 3.2)` (underdamped harmonic response pinned at `spring(0) === 0` and smoothly blended to `spring(1) === 1`), `settleShake(tau, freq = 6, decay = 0.25, end = 1)`, `squashStretch(sy, power = 0.75)` (`[sx, sy, sz]` volume-preserving scale around `sy = 1`).
+- **Easings & seamless loop noise:** `eases` (28 standard easings: `linear`, `in/out/inOut` `Sine`/`Quad`/`Cubic`/`Quart`/`Quint`/`Expo`/`Circ`/`Back`, `outElastic`, `outBounce`, `spring`), `loopNoise(t, seed = 0, period = 12, octaves = 2)` (periodic multi-octave harmonic noise on a circle where `loopNoise(t + period, seed, period, octaves) === loopNoise(t, seed, period, octaves)`), `hash(n)`, `rand(i, salt = 0)`, `rrange(i, a, b, salt = 0)`.
+
+## 3D Mesh Audit & Specimen Viewer (`mesh-audit.js`, `adapters/specimen.js`)
+
+- `auditDeliverable(root, { maxTris = 50000, requireUV = false, checkScale = true, clampNonMetal = false })` (`@saxster/atlas/mesh-audit.js`): traverses a Three.js `Object3D` hierarchy and checks triangle budget, non-empty geometries, finite coordinates, normal presence, negative-scale inside-out winding (`matrixWorld.determinant() < 0`), UV presence on textured meshes, and optionally clamps dielectric `metalness`.
+- `showSpecimen(el, spec, { background })` (`@saxster/atlas/adapters/specimen.js`): mounts an on-demand 3-point-lit turntable viewer for a `.glb`/`.gltf` URL or Three.js builder function and audits it with `auditDeliverable`. Book pages with `specimen: { src | build | object, source }` get a "See the real specimen" button automatically.
+
 ## Four grammars
 
 Each takes one description object and owns the page around the figure. The full field list is in the comment at the
@@ -94,7 +108,7 @@ top of each file.
 
 **Book** (`startBook(chapter)`, `book.js`). The reader scrolls; each page has a camera, a lit part and text, and a
 click breaks a part down. `chapter` is `{ no, subject, PAGES, PLATES, buildWorld, lookKeys, state, readout }`. A page
-is `{ kicker, title, sub, body, cam, lit, look, fig, alt, parts?, molecule? }`. Practice questions come from
+is `{ kicker, title, sub, body, cam, lit, look, fig, alt, parts?, molecule?, specimen? }`. Practice questions come from
 `practice.js` and support 4-choice (`choices`), numeric entry (`numeric: { answer, tol }`), and 3D drag-position verification (`target: { label, hint, check(state, E) }`).
 
 **Machine** (`startMachine(figure)`, `machine.js`). Numbered steps, only the next one live. Manual by default, Auto
@@ -153,13 +167,13 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 | `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown` | copies a working minimal example to start from |
 | `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
-| `npx atlas critic <figure…>` | frames that change far more than their neighbours, and labels that overlap or hide |
-| `npx atlas record <figure> [--size 1920x1080] [--fps 60] [--silent]` | an MP4 drawn frame by frame, with a soundtrack at −14 LUFS (needs ffmpeg) |
+| `npx atlas critic <figure…> [--intersections]` | frames that jump, labels that overlap or hide, and 3D framing/occlusion/mesh clashes |
+| `npx atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent]` | an MP4 drawn frame by frame (BT.709, QA-gated) with a soundtrack at −14 LUFS (needs ffmpeg) |
 
 The browser commands need Chrome; set `CHROME` if it isn't at the usual place.
 
 ## Tools in this repo
 
-`npm run check` runs every model's checks and the link checks. `npm run test:browser` drives the grammars in Chrome.
-`tools/stills.mjs`, `tools/jumps.mjs` and `tools/labels.mjs` are the visual critics. `tools/record.mjs` makes a
-1080p60 MP4 with a soundtrack. `CLAUDE.md` describes each.
+`npm run check` runs every model's checks, the link checks, and `tools/style.mjs`. `npm run test:browser` drives the grammars in Chrome.
+`tools/stills.mjs`, `tools/jumps.mjs`, `tools/labels.mjs` and `tools/scene.mjs` are the visual and geometric critics. `tools/record.mjs` makes a
+1080p60 MP4 with a soundtrack. `CLAUDE.md` and `docs/decisions.md` describe each.

@@ -215,7 +215,7 @@ export function startSandbox(figure) {
       pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
     };
     if (cutBar?.overridden) cutBar.apply(cutBar.mode, true);
-    if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport });
+    if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport, sceneReport: S.sceneReport });
   }
   build();
 
@@ -237,7 +237,7 @@ export function startSandbox(figure) {
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, 0); else frame(t); }));
 
   window.__atlas = {
-    E: S.E, S, N: 1, labelReport: S.labelReport, params, get items() { return items; },
+    E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, params, get items() { return items; },
     reset, shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
     get state() { return { clock, params: { ...params }, items: clone(items), activePreset, cut: cutBar?.mode || 'solid' }; },
     get clock() { return S.clock; },

@@ -9,6 +9,8 @@ import { part, box, gearGeo, gear, rack, spring, TONE } from './parts.js';
 import { createAssemblyController } from './render.js';
 import { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
 import { draggable } from './stage.js';
+import { TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease, phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases, hash, rand as motionRand, rrange, loopNoise } from './motion.js';
+import { auditDeliverable } from './mesh-audit.js';
 
 const C = checks();
 C.check('deriv of sin is cos', [0.3, 1.1, 2.5].every(x => near(deriv(Math.sin, x), Math.cos(x), 1e-8)));
@@ -279,5 +281,46 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const snapOk = mHousing.position.y === 0 && mCore.position.x === 0;
   C.check('setCutaway, setXray, setIsolate & setExplode: synchronize clipping planes, DoubleSide, translucent ghosting, isolation dimming, and spring explode',
     cutOk && cutClearOk && xrayOk && isoOk && exOk && snapOk);
+}
+{ // Stateless procedural motion toolkit (engine/motion.js)
+  const sp0 = motionSpring(0), sp1 = motionSpring(1), spPeak = Math.max(...Array.from({ length: 40 }, (_, i) => motionSpring(i / 40, 0.35, 3.2)));
+  const easeKeys = Object.keys(eases);
+  const eBoundaries = Object.entries(eases).every(([, fn]) => near(fn(0), 0, 1e-6) && near(fn(1), 1, 1e-6));
+  const wtPeriod = 6.0;
+  const wtCycleOk = [0.4, 1.7, 3.3, 5.2].every(t => near(warpTime(t + wtPeriod, wtPeriod, 0.25) - warpTime(t, wtPeriod, 0.25), wtPeriod, 1e-12));
+  const wtMonoOk = Array.from({ length: 60 }, (_, i) => warpTime((i + 1) * 0.1, wtPeriod, 0.4) > warpTime(i * 0.1, wtPeriod, 0.4)).every(Boolean);
+  const lnPeriod = 4.0;
+  const lnPeriodic = [0, 0.37, 1.42, 2.89, 3.99].every(t => near(loopNoise(t, 11, lnPeriod, 3), loopNoise(t + lnPeriod, 11, lnPeriod, 3), 1e-12));
+  const lnVaries = Math.abs(loopNoise(0.2, 11, lnPeriod) - loopNoise(1.7, 11, lnPeriod)) > 1e-3;
+  const [sx, sy, sz] = squashStretch(1.5, 0.75);
+  const shake0 = settleShake(0), shakeMid = Math.abs(settleShake(0.04, 6, 0.25, 1)), shakeEnd = settleShake(1);
+  C.check('motion.js: spring & all 28 eases pin (0→0, 1→1) with physical overshoot, warpTime & loopNoise are exact-period seamless, and squashStretch/settleShake behave cleanly',
+    easeKeys.length === 28 && sp0 === 0 && sp1 === 1 && spPeak > 1.02 && eBoundaries && wtCycleOk && wtMonoOk && lnPeriodic && lnVaries
+    && sy > 1 && sx < 1 && sz === sx && shake0 === 0 && shakeMid > 0.05 && shakeEnd === 0
+    && near(TAU, Math.PI * 2, 1e-12) && clamp01(-2) === 0 && clamp01(2) === 1 && clamp(5, 1, 3) === 3
+    && near(lerp(2, 6, 0.25), 3, 1e-12) && near(fract(-0.25), 0.75, 1e-12) && near(mod(-1, 4), 3, 1e-12)
+    && smooth(0, 1, 0.5) === 0.5 && smoothstep(2, 4, 3) === 0.5 && ease(0.5) === 0.5
+    && near(phase(1.5, 6), 0.25, 1e-12) && win(0.5, 0, 1) === 0.5 && near(win(0.25, 0, 1, u => u * u), 0.0625, 1e-12)
+    && hash(42) === hash(42) && motionRand(7) >= 0 && motionRand(7) < 1 && rrange(7, 10, 20) >= 10 && rrange(7, 10, 20) <= 20);
+}
+{ // 3D Deliverable Mesh Audit (engine/mesh-audit.js)
+  const cleanRoot = new THREE.Group();
+  const cleanMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xcc4422, metalness: 0 }));
+  cleanRoot.add(cleanMesh);
+  const repClean = auditDeliverable(cleanRoot, { maxTris: 100, requireUV: true });
+
+  const badRoot = new THREE.Group();
+  const flipped = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ map: new THREE.Texture(), metalness: 0.35 }));
+  flipped.geometry.deleteAttribute('uv');
+  flipped.scale.set(-1, 1, 1);
+  badRoot.add(flipped);
+  const repBad = auditDeliverable(badRoot, { maxTris: 4, clampNonMetal: true });
+
+  C.check('auditDeliverable: passes clean meshes and catches triangle budget, negative-scale winding, missing UVs, and clamps partial metalness',
+    repClean.pass && repClean.meshes === 1 && repClean.tris === 12
+    && !repBad.pass && repBad.errors.some(s => s.includes('exceeds budget'))
+    && repBad.errors.some(s => s.includes('negative scale'))
+    && repBad.errors.some(s => s.includes('missing UV'))
+    && flipped.material.metalness === 0.05);
 }
 C.report();

@@ -5,8 +5,8 @@
 const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown]   start a figure from a working example
 atlas check [dir]                                          run every checks.mjs under dir (default: here)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
-atlas critic <figure…>                                     frames that jump, labels that overlap or hide
-atlas record <figure> [--size 1920x1080] [--fps 60] [--silent] [--out videos]   an MP4 with a soundtrack`;
+atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh clashes
+atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack`;
 
 const [cmd, ...args] = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args.splice(i, 2)[1]; };
@@ -18,13 +18,24 @@ const COMMANDS = {
   async check() { return (await import('../cli/check.mjs')).check(args[0] || '.'); },
   async stills() { const [out, ...rest] = figures(); if (!rest.length) throw usage(); return (await import('../cli/stills.mjs')).stills(out, rest); },
   async critic() {
+    const intersections = flag('--intersections');
     if (!args.length) throw usage();
-    const j = await (await import('../cli/jumps.mjs')).jumps(figures());
-    const l = await (await import('../cli/labels.mjs')).labels(figures());
-    return j + l;
+    const list = figures();
+    const j = await (await import('../cli/jumps.mjs')).jumps(list);
+    const l = await (await import('../cli/labels.mjs')).labels(list);
+    const s = await (await import('../cli/scene.mjs')).scene(list, { intersections });
+    return j + l + s;
   },
   async record() {
-    const o = { size: opt('--size', '1920x1080'), fps: +opt('--fps', 60), out: opt('--out', 'videos'), silent: flag('--silent') };
+    const o = {
+      size: opt('--size', '1920x1080'),
+      fps: +opt('--fps', 60),
+      samples: +opt('--samples', 1),
+      shutter: +opt('--shutter', 0.5),
+      loop: flag('--loop'),
+      out: opt('--out', 'videos'),
+      silent: flag('--silent'),
+    };
     if (!args[0]) throw usage();
     return (await (await import('../cli/record.mjs')).record(figures()[0], o)) ? 0 : 1;
   },
