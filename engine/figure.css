@@ -86,6 +86,23 @@
 .chart .ax { font: 11px var(--mono); fill: var(--muted); } .chart .lab { font: 12px var(--mono); fill: var(--hi); }
 .chart .zero { stroke: var(--faint); }
 
+/* sandbox: presets, 2x2 matrix bracket editor, constructive piece palette */
+.presets, .matrix-box, .palette { display: grid; gap: 8px; }
+.preset-row, .pal-add { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset, .pal-btn { border: 1px solid var(--faint); background: var(--card); color: var(--strong); border-radius: 999px; padding: 6px 12px; font: 500 12px var(--mono); cursor: pointer; }
+.preset:hover, .pal-btn:hover:not(:disabled) { border-color: var(--mid); }
+.preset[aria-pressed="true"] { background: var(--hi); color: var(--card); border-color: var(--hi); }
+.pal-btn:disabled { opacity: 0.45; cursor: default; }
+.pal-items { list-style: none; padding: 0; margin: 2px 0 0; display: grid; gap: 4px; }
+.pal-items li { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--faint); font: 12px var(--mono); color: var(--text); }
+.pal-items li button { border: 0; background: none; color: var(--muted); font: 600 15px/1 var(--mono); cursor: pointer; padding: 0 4px; }
+.pal-items li button:hover { color: var(--red); }
+.mat-bracket { display: inline-flex; align-items: stretch; padding: 6px 10px; border-left: 2px solid var(--strong); border-right: 2px solid var(--strong); border-radius: 6px; background: var(--card); box-shadow: var(--lift); }
+.mat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.mat-cell { display: flex; align-items: center; gap: 6px; font: italic 14px var(--serif); color: var(--muted); }
+.mat-cell input { width: 68px; padding: 5px 7px; border: 1px solid var(--faint); border-radius: 6px; background: var(--bg); font: 500 13px var(--mono); color: var(--strong); }
+.sharebtn { margin-top: -6px; }
+
 /* phones: the controls come first, the steps as a row of pills */
 @media (max-width: 900px) {
   .figpage { grid-template-columns: 1fr; padding: 0 12px 36px; gap: 14px; }
@@ -100,13 +117,22 @@
   .corner.tr { font-size: 15px; }
   .bigidea { font-size: 18px; }
 }
-/* an explorer on a phone: the question, then the figure (look before predicting), then predict, sliders and Run */
+/* an explorer or sandbox on a phone: the question, then the figure, then controls */
 @media (max-width: 900px) {
-  .figpage.explorer .side, .figpage.explorer .figwrap { display: contents; }
-  .figpage.explorer .question { order: 0; } .figpage.explorer .figure { order: 1; }
-  .figpage.explorer .predict { order: 2; } .figpage.explorer .controls { order: 3; }
-  .figpage.explorer .run { order: 4; } .figpage.explorer .again { order: 5; } .figpage.explorer .why { order: 5; }
-  .figpage.explorer .chips { order: 6; } .figpage.explorer .chart { order: 7; }
-  .figpage.explorer .bigidea { order: 8; } .figpage.explorer .plate { order: 9; }
+  .figpage.explorer .side, .figpage.explorer .figwrap,
+  .figpage.sandbox .side, .figpage.sandbox .figwrap { display: contents; }
+  .figpage.explorer .question, .figpage.sandbox .question { order: 0; }
+  .figpage.explorer .figure, .figpage.sandbox .figure { order: 1; }
+  .figpage.explorer .predict, .figpage.sandbox .presets { order: 2; }
+  .figpage.sandbox .matrix-box { order: 3; }
+  .figpage.sandbox .palette { order: 4; }
+  .figpage.explorer .controls, .figpage.sandbox .controls { order: 5; }
+  .figpage.explorer .run { order: 6; }
+  .figpage.explorer .again, .figpage.sandbox .again { order: 7; }
+  .figpage.explorer .why { order: 7; }
+  .figpage.explorer .chips, .figpage.sandbox .chips { order: 8; }
+  .figpage.explorer .chart, .figpage.sandbox .chart { order: 9; }
+  .figpage.explorer .bigidea, .figpage.sandbox .bigidea { order: 10; }
+  .figpage.explorer .plate, .figpage.sandbox .plate { order: 11; }
 }
 html.render *, html.render *::before, html.render *::after { transition: none !important; animation: none !important; }

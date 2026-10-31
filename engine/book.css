@@ -199,6 +199,18 @@
 .practice .why { margin-top: 10px; padding: 10px 0 2px 16px; border-left: 1px solid var(--mid); font-size: 15px; }
 .practice .why p { margin: 0 0 8px; }
 .practice .why .eq { font-size: 20px; }
+.numrow, .targetrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 6px; }
+.numin { width: 130px; padding: 7px 10px; border: 1px solid var(--faint); border-radius: 8px; background: var(--card); font: 500 13px var(--mono); color: var(--strong); }
+.numin.right { border-color: #2f8f5b; background: #eef7f1; }
+.numin.wrong { border-color: var(--red); background: #fcefef; }
+.numunit { font: 12px var(--mono); color: var(--muted); }
+.numcheck, .targetcheck { border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer; font: 500 12px var(--mono); letter-spacing: .04em; padding: 7px 12px; border-radius: 999px; }
+.numcheck:hover, .targetcheck:hover { border-color: var(--mid); }
+.targetcheck.right { border-color: #2f8f5b; background: #eef7f1; color: #2f8f5b; }
+.targetcheck.wrong { border-color: var(--red); background: #fcefef; color: var(--red); }
+.numstatus, .targetstatus { font: 12px var(--mono); color: var(--muted); }
+.numstatus.right, .targetstatus.right { color: #2f8f5b; font-weight: 500; }
+.numstatus.wrong, .targetstatus.wrong { color: var(--red); }
 
 /* ---- small screens: on to the next page from the end of this one ---- */
 .turn { display: none; }
@@ -224,6 +236,9 @@
 .playbtn:hover { border-color: var(--mid); }
 .playbtn[aria-pressed="false"] { background: var(--hi); color: var(--card); border-color: var(--hi); }
 .playbtn .icon { display: none; }
+.topbar .sharebtn { background: var(--card); color: var(--muted); border-color: var(--faint); }
+.topbar .sharebtn:hover { color: var(--strong); border-color: var(--mid); }
+@media (max-width: 900px) { .topbar .sharebtn { display: none; } }
 /* a page's parts as buttons: the keyboard's way into a breakdown (book.js partsHtml) */
 .parts-k { margin-top: 22px; }
 .parts { list-style: none; padding: 0; margin: 10px 0 18px; display: grid; gap: 2px; max-width: 440px; }

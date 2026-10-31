@@ -5,6 +5,7 @@
 // <subject>/img/<id>.jpg (node tools/cards.mjs draws them). cover: the id whose picture stands for the subject on the shelf.
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { EXAMPLES, subjects } from './chapters.mjs';
 
 const CHECK = process.argv.includes('--check');
@@ -18,6 +19,7 @@ const SHELF = [
   ['biology', 'Biology', 'cells, molecules, living machines'],
 ];
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const strip = s => String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 const head = (title, up, extra = '') => `<!doctype html>
 <html lang="en">
 <head>
@@ -30,6 +32,7 @@ const head = (title, up, extra = '') => `<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${up}engine/atlas.css">
 <link rel="stylesheet" href="${up}engine/shelf.css">
+<script type="module" src="${up}engine/search.js"></script>
 ${extra}</head>
 `;
 const GENERATED = '<!-- written by tools/site.mjs from the subject.js manifests: edit those, then run it -->\n';
@@ -91,8 +94,66 @@ ${body}
 `;
 }
 
+async function searchIndexJs(all) {
+  const entries = [];
+  for (const s of all) {
+    if (s.id === 'minimal') continue;
+    const subjName = s.name.replace(/^Atlas of /, '');
+    for (const c of s.chapters || []) {
+      const card = s.cards?.[c] || {};
+      entries.push({ kind: 'chapter', subject: subjName, title: card.title || c, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${c}/` });
+      const pFile = path.join(EXAMPLES, s.id, c, 'pages.js');
+      if (fs.existsSync(pFile)) {
+        const src = fs.readFileSync(pFile, 'utf8');
+        [...src.matchAll(/kicker:\s*'([^']*)',\s*title:\s*'([^']*)'/g)].forEach(([, k, t], i) => {
+          entries.push({ kind: 'page', subject: subjName, title: t, sub: `${card.title || c} · ${k}`, href: `${s.id}/${c}/#${i}` });
+        });
+      }
+      const qFile = path.join(EXAMPLES, s.id, c, 'practice.js');
+      if (fs.existsSync(qFile)) {
+        try {
+          const { PRACTICE } = await import(pathToFileURL(qFile).href);
+          for (const [pg, qs] of Object.entries(PRACTICE || {})) {
+            for (const q of qs) {
+              const qText = strip(q.q || '');
+              if (qText) entries.push({ kind: 'practice', subject: subjName, title: qText.slice(0, 110), sub: `${card.title || c} · p.${+pg + 1}`, text: qText, href: `${s.id}/${c}/#${pg}` });
+            }
+          }
+        } catch {}
+      }
+    }
+    for (const f of s.figures || []) {
+      const card = s.cards?.[f] || {};
+      entries.push({ kind: card.grammar || 'figure', subject: subjName, title: card.title || f, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${f}/` });
+    }
+  }
+  const cDir = path.join(EXAMPLES, 'concepts');
+  if (fs.existsSync(cDir)) {
+    const files = fs.readdirSync(cDir).filter(f => f.endsWith('.js') && f !== 'threads.js').sort();
+    for (const file of files) {
+      const subjId = file.slice(0, -3);
+      const subjName = subjId === 'maths' ? 'Mathematics' : subjId[0].toUpperCase() + subjId.slice(1);
+      const { CONCEPTS } = await import(pathToFileURL(path.join(cDir, file)).href);
+      for (const c of CONCEPTS) {
+        const firstRef = c.shownIn?.[0];
+        let href = `concepts/#${c.id}`;
+        if (firstRef) {
+          const parts = firstRef.split('/');
+          href = parts.length === 3 ? `${parts[0]}/${parts[1]}/#${parts[2]}` : `${parts[0]}/${parts[1]}/`;
+        }
+        entries.push({ kind: 'concept', subject: subjName, title: c.name, formula: strip(c.formula || ''), formulaHtml: c.formula || '', href });
+      }
+    }
+  }
+  return `// written by tools/site.mjs — do not edit by hand\nexport const SEARCH_INDEX = ${JSON.stringify(entries, null, 2)};\n`;
+}
+
 const all = await subjects();
-const pages = [['index.html', rootPage(all)], ...all.filter(s => s.contents !== false).map(s => [`${s.id}/index.html`, subjectPage(s)])];
+const pages = [
+  ['index.html', rootPage(all)],
+  ...all.filter(s => s.contents !== false).map(s => [`${s.id}/index.html`, subjectPage(s)]),
+  ['search-index.js', await searchIndexJs(all)],
+];
 let stale = 0;
 for (const [file, html] of pages) {
   const p = path.join(EXAMPLES, file), now = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';

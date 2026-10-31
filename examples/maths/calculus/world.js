@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { PALETTE, part, box, rod, lines, V } from '@saxster/atlas/parts.js';
 import { axes, plot, area } from '@saxster/atlas/prims.js';
+import { draggable } from '@saxster/atlas/stage.js';
 import * as M from './model.js';
 
 export const STATIONS = { secant: 0, deriv: 8.5, turning: 17, riemann: 25.5, ftc: 34, accum: 42.5 };
@@ -44,6 +45,12 @@ export function buildWorld(E) {
   }
 
   let clockT = 2.2;
+  const drag = { h: null, x1: null, x2: null, x4: null, x5: null };
+  const hNow = (t = clockT) => drag.h ?? M.hAt(t);
+  const x1Now = (t = clockT) => drag.x1 ?? M.xSweep(t);
+  const x2Now = (t = clockT) => drag.x2 ?? M.xCubic(t);
+  const x4Now = (t = clockT) => drag.x4 ?? M.xSweep(t);
+  const x5Now = (t = clockT) => drag.x5 ?? M.xSweep(t);
   const updaters = [];
 
   // ==================== 0 · SECANT TO TANGENT ====================
@@ -65,17 +72,27 @@ export function buildWorld(E) {
     const pDot = dot(g, 0.08, 'blue', 'Point P(1, 0.5)', 'hi', [0, 0, 0.5]);
     const qDot = dot(g, 0.08, 'red', 'Point Q(1 + h, f(1 + h))', 'hi', [0, 0, 0.5]);
 
+    draggable(qDot, {
+      axes: ax,
+      constrain: ([x]) => {
+        const xQ = Math.min(2.85, Math.max(M.A0 + 0.02, x));
+        return [xQ, M.f(xQ), 0.04];
+      },
+      onDrag: ([xQ]) => { drag.h = xQ - M.A0; },
+      onReset: () => { drag.h = null; },
+    });
+
     label('vec blue', '<i>P</i> (1, ½)', () => {
       const p = ax.to(M.A0, M.f(M.A0));
       return worldPt(p.x - 0.35, p.y + 0.14);
     });
-    label('vec red', () => `<i>Q</i> · slope ${fmt(M.secantSlope(M.A0, M.hAt(clockT)))}`, () => {
-      const xQ = M.A0 + M.hAt(clockT), p = ax.to(xQ, M.f(xQ));
+    label('vec red', () => `<i>Q</i> · slope ${fmt(M.secantSlope(M.A0, hNow()))}`, () => {
+      const xQ = M.A0 + hNow(), p = ax.to(xQ, M.f(xQ));
       return worldPt(p.x + 1.65, p.y - 0.15);
     });
 
     updaters.push(t => {
-      const h = M.hAt(t), xP = M.A0, yP = M.f(xP), xQ = xP + h, yQ = M.f(xQ);
+      const h = hNow(t), xP = M.A0, yP = M.f(xP), xQ = xP + h, yQ = M.f(xQ);
       const pP = ax.to(xP, yP, 0.04), pQ = ax.to(xQ, yQ, 0.04), pC = ax.to(xQ, yP, 0.04);
       setPos(pDot, pP);
       setPos(qDot, pQ);
@@ -100,6 +117,16 @@ export function buildWorld(E) {
     const pDot = dot(g, 0.08, 'red', 'Point (x, f(x))', 'hi', [0, 0, 0.5]);
     const dDot = dot(g, 0.075, 'blue', 'Slope point (x, f′(x))', 'hi', [0, 0, 0.5]);
 
+    draggable(pDot, {
+      axes: ax,
+      constrain: ([x]) => {
+        const xc = Math.min(2.85, Math.max(0.2, x));
+        return [xc, M.f(xc), 0.04];
+      },
+      onDrag: ([xc]) => { drag.x1 = xc; },
+      onReset: () => { drag.x1 = null; },
+    });
+
     label('board', '<i>f</i>(<i>x</i>) = ½<i>x</i>²', () => {
       const p = ax.to(2.65, M.f(2.65)); return worldPt(p.x - 0.55, p.y + 0.28);
     });
@@ -107,14 +134,14 @@ export function buildWorld(E) {
       const p = ax.to(2.65, M.df(2.65)); return worldPt(p.x - 0.35, p.y - 0.32);
     });
     label('vec red', () => {
-      const x = M.xSweep(clockT); return `slope = ${fmt(M.df(x))}`;
+      const x = x1Now(); return `slope = ${fmt(M.df(x))}`;
     }, () => {
-      const x = M.xSweep(clockT), p = ax.to(x, M.f(x));
+      const x = x1Now(), p = ax.to(x, M.f(x));
       return worldPt(p.x - 0.55, p.y + 0.38);
     });
 
     updaters.push(t => {
-      const x = M.xSweep(t), y = M.f(x), m = M.df(x);
+      const x = x1Now(t), y = M.f(x), m = M.df(x);
       setPos(pDot, ax.to(x, y, 0.04));
       setPos(dDot, ax.to(x, m, 0.04));
       const dx = 0.5;
@@ -143,12 +170,22 @@ export function buildWorld(E) {
     const moveDot = dot(g, 0.075, 'ink', 'Gliding point', 'hi', [0, 0, 0.5]);
     const moveTan = rod(g, { r: 0.026, pal: 'red', name: 'Tangent line', ex: [0, 0.2, 0.4] });
 
+    draggable(moveDot, {
+      axes: ax,
+      constrain: ([x]) => {
+        const xc = Math.min(2.8, Math.max(-0.2, x));
+        return [xc, M.g(xc), 0.05];
+      },
+      onDrag: ([xc]) => { drag.x2 = xc; },
+      onReset: () => { drag.x2 = null; },
+    });
+
     label('vec red', 'max (0, 2)', () => { const p = ax.to(0, M.g(0)); return worldPt(p.x + 0.55, p.y + 0.26); });
     label('board', 'min (2, ⅔)', () => { const p = ax.to(2, M.g(2)); return worldPt(p.x + 0.65, p.y + 0.26); });
     label('vec blue', '<i>g</i>′(<i>x</i>) = <i>x</i>² − 2<i>x</i>', () => { const p = ax.to(1.0, -1.0); return worldPt(p.x + 0.45, p.y - 0.28); });
 
     updaters.push(t => {
-      const x = M.xCubic(t), y = M.g(x), m = M.dg(x);
+      const x = x2Now(t), y = M.g(x), m = M.dg(x);
       setPos(moveDot, ax.to(x, y, 0.05));
       const dx = 0.45;
       moveTan.set(ax.to(x - dx, y - m * dx, 0.04), ax.to(x + dx, y + m * dx, 0.04));
@@ -213,15 +250,25 @@ export function buildWorld(E) {
     const heightBar = rod(g, { r: 0.042, pal: 'red', name: 'Accumulated height f(x)', ex: [0.25, 0, 0.4] });
     const heightDot = dot(g, 0.08, 'red', 'Point (x, f(x))', 'hi', [0, 0, 0.5]);
 
-    label('vec blue', () => `area ∫₀ˣ <i>t</i> d<i>t</i> = ${fmt(M.f(M.xSweep(clockT)))}`, () => {
+    draggable(heightDot, {
+      axes: axHeight,
+      constrain: ([x]) => {
+        const xc = Math.min(2.85, Math.max(0.2, x));
+        return [xc, M.f(xc), 0.04];
+      },
+      onDrag: ([xc]) => { drag.x4 = xc; },
+      onReset: () => { drag.x4 = null; },
+    });
+
+    label('vec blue', () => `area ∫₀ˣ <i>t</i> d<i>t</i> = ${fmt(M.f(x4Now()))}`, () => {
       const p = axSlope.to(1.4, 2.85); return worldPt(p.x, p.y + 0.25);
     });
-    label('vec red', () => `height ½<i>x</i>² = ${fmt(M.f(M.xSweep(clockT)))}`, () => {
+    label('vec red', () => `height ½<i>x</i>² = ${fmt(M.f(x4Now()))}`, () => {
       const p = axHeight.to(1.5, 4.1); return worldPt(p.x, p.y + 0.25);
     });
 
     updaters.push(t => {
-      const x = M.xSweep(t), y = M.f(x);
+      const x = x4Now(t), y = M.f(x);
       shadeSlope.update(M.df, { x: [0, x] });
       const pBot = axHeight.to(x, 0, 0.04), pTop = axHeight.to(x, y, 0.04);
       heightBar.set(pBot, pTop);
@@ -246,25 +293,38 @@ export function buildWorld(E) {
 
     const netDot = dot(g, 0.08, 'blue', 'Net change s(x)', 'hi', [0, 0, 0.5]);
 
+    draggable(netDot, {
+      axes: ax,
+      constrain: ([x]) => {
+        const xc = Math.min(2.9, Math.max(0.15, x));
+        return [xc, M.netWave(xc), 0.04];
+      },
+      onDrag: ([xc]) => { drag.x5 = xc; },
+      onReset: () => { drag.x5 = null; },
+    });
+
     label('vec red', 'rate cos(½π<i>t</i>)', () => {
       const p = ax.to(0.45, 0.95); return worldPt(p.x + 0.35, p.y + 0.24);
     });
-    label('vec blue', () => `net ∫₀ˣ = ${fmt(M.netWave(M.xSweep(clockT)))}`, () => {
-      const x = M.xSweep(clockT), p = ax.to(x, M.netWave(x));
+    label('vec blue', () => `net ∫₀ˣ = ${fmt(M.netWave(x5Now()))}`, () => {
+      const x = x5Now(), p = ax.to(x, M.netWave(x));
       return worldPt(p.x + 0.45, p.y + (M.netWave(x) >= 0 ? 0.32 : -0.32));
     });
 
     updaters.push(t => {
-      const x = M.xSweep(t);
+      const x = x5Now(t);
       signedShade.update(M.rateWave, { x: [0, x] });
       setPos(netDot, ax.to(x, M.netWave(x), 0.04));
     });
   }
 
+  function stateAt(t = clockT) {
+    return { h: hNow(t), x1: x1Now(t), x2: x2Now(t), n: M.barsAt(t), x4: x4Now(t), x5: x5Now(t), drag };
+  }
   function update(t) {
     clockT = t;
     for (const fn of updaters) fn(t);
   }
   update(clockT);
-  return { update, labels };
+  return { update, labels, stateAt, drag };
 }

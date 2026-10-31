@@ -37,14 +37,18 @@ export const PRACTICE = {
   ],
   2: [
     { q: `What is the determinant det(<i>A</i>) = <i>ad</i> − <i>bc</i> of <i>A</i> = [[1.50, 0.50], [0.50, 1.25]]?`,
+      numeric: { answer: detA, tol: 0.01, placeholder: '1.625' },
       choices: ['1.375', fmt(detA, 3), '1.875', '2.125'], answer: 1,
       why: `<div class="eq">det(<i>A</i>) = (1.50)(1.25) − (0.50)(0.50) = 1.875 − 0.250 = ${fmt(detA, 3)}</div>` },
     { q: `A region of area 4.00 sits in the plane. After applying <i>A</i> with det(<i>A</i>) = ${fmt(detA, 3)}, what is the area of the transformed region?`,
+      numeric: { answer: area2, tol: 0.02, placeholder: '6.50' },
       choices: ['4.00', '5.63', fmt(area2, 2), '7.50'], answer: 2,
       why: `<p>Every tiny grid square is scaled in area by |det(<i>A</i>)| = ${fmt(detA, 3)}, so a region of area 4 becomes 4 × ${fmt(detA, 3)} = <b>${fmt(area2, 2)}</b>.</p>` },
   ],
   3: [
     { q: `For <i>C</i> = [[1.2, 0.6], [0.8, <i>d</i>]], what value of <i>d</i> makes the matrix singular (det(<i>C</i>) = 0) so the entire 2D grid collapses onto a line?`,
+      numeric: { answer: dSing, tol: 0.01, placeholder: '0.40' },
+      target: { label: 'Check singular collapse in figure', hint: 'Drag Cĵ to d = 0.40 where det(C) = 0', check: s => Math.abs(s?.collapse?.detC ?? 1) <= 0.08 },
       choices: ['0.20', fmt(dSing, 2), '0.60', '0.80'], answer: 1,
       why: `<p>Setting det(<i>C</i>) = 1.2<i>d</i> − (0.6)(0.8) = 1.2<i>d</i> − 0.48 = 0 gives <i>d</i> = 0.48 / 1.2 = <b>${fmt(dSing, 2)}</b>. Then column 2 is exactly ½ of column 1.</p>` },
     { q: `When <i>d</i> = ${fmt(dSing, 1)}, where does the singular matrix <i>C</i> = [[1.2, 0.6], [0.8, 0.4]] send the vector (−1, 2)?`,
@@ -53,6 +57,7 @@ export const PRACTICE = {
   ],
   4: [
     { q: `For <i>E</i> = [[1.5, 0.5], [0.5, 1.5]], the vector <b>v</b>₁ = (1, 1) satisfies <i>E</i><b>v</b>₁ = (2, 2) = 2<b>v</b>₁. Where does <i>E</i> send (3, 3)?`,
+      target: { label: 'Check eigenvector alignment in figure', hint: 'Drag u(θ) onto an eigenvector axis where u × Eu ≈ 0', check: s => Math.abs(s?.eigen?.cross ?? 1) <= 0.12 },
       choices: [fmtVec([3, 3]), fmtVec([4.5, 4.5]), fmtVec(ev3), fmtVec([6, 3])], answer: 2,
       why: `<p>The point (3, 3) lies on the λ₁ = 2 eigenvector axis <i>y</i> = <i>x</i>, so <i>E</i> simply stretches it by a factor of 2 to <b>${fmtVec(ev3)}</b>.</p>` },
     { q: `The eigenvalues of <i>E</i> = [[1.5, 0.5], [0.5, 1.5]] are λ₁ = 2 and λ₂ = 1. What do their sum λ₁ + λ₂ and product λ₁λ₂ equal?`,

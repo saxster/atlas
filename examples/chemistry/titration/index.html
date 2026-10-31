@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The buffer flat and the equivalence cliff · Atlas of Chemistry</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../engine/atlas.css">
+<link rel="stylesheet" href="../../../engine/figure.css">
+<script type="importmap">
+{ "imports": { "@saxster/atlas/adapters/": "../../../adapters/", "@saxster/atlas/": "../../../engine/", "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/" } }
+</script>
+</head>
+<body class="fig-body">
+  <header class="topbar">
+    <a href="../" class="brand">Atlas of Chemistry</a>
+    <span class="crumb">Fig. C.2 · Acid–base titration &amp; buffers</span>
+    <span class="fill"></span>
+    <a class="back" href="../../../">All subjects</a>
+  </header>
+  <main class="figpage">
+    <aside class="side">
+      <p class="question" id="question"></p>
+      <div class="mode" id="mode" role="group" aria-label="How the steps run"><button type="button" data-mode="manual">Manual</button><button type="button" data-mode="auto">Auto</button></div>
+      <ol class="steps" id="steps" aria-label="Steps"></ol>
+      <button type="button" class="again" id="again">Start over</button>
+    </aside>
+    <section class="figwrap" id="right">
+      <div class="figure">
+        <canvas id="gl" aria-label="A 3D burette dripping NaOH into a flask of amber HA weak-acid molecules and blue A⁻ conjugate-base ions on the left, paired with the pH(V_b) titration curve on the right showing the half-equivalence buffer plateau at pH 4.74 and the vertical equivalence cliff at V_b = 25.0 mL (pH 8.72)."></canvas>
+        <div id="labels" aria-hidden="true"></div>
+        <div class="corner tl" id="figno"></div>
+        <div class="corner tr" id="figtitle"></div>
+        <div class="hintbar" id="hint" aria-live="polite"></div>
+        <div class="speed" id="speed" hidden></div>
+        <div class="corner br readout" id="readout"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <p class="bigidea" id="bigidea"></p>
+      <article class="plate" id="plate" hidden></article>
+    </section>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

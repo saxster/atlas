@@ -9,4 +9,8 @@ export const CONCEPTS = [
     shownIn: ['economics/market'] },
   { id: 'supply-demand', name: 'Supply and demand settle where they cross', formula: '<i>Q</i><sub>d</sub>(<i>P</i>) = <i>Q</i><sub>s</sub>(<i>P</i>)',
     shownIn: ['economics/market'] },
+  { id: 'comparative-advantage', name: 'Comparative advantage and the production possibility frontier', formula: 'specialise where opportunity cost −<i>dG</i>/<i>dC</i> is lowest',
+    shownIn: ['economics/ppf'] },
+  { id: 'spending-multiplier', name: 'The Keynesian spending multiplier', formula: 'Δ<i>Y</i> = Δ<i>G</i> · ∑ <i>c</i><sup><i>k</i></sup> = Δ<i>G</i> / (1 − MPC)',
+    shownIn: ['economics/multiplier'] },
 ];

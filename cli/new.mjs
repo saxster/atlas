@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const GRAMMARS = { book: 'chapters', machine: 'figures', explorer: 'figures' };
+const GRAMMARS = { book: 'chapters', machine: 'figures', explorer: 'figures', sandbox: 'figures' };
 const fail = msg => { throw Object.assign(new Error(msg), { usage: true }); };
 
 export async function create(target, { grammar = 'book' } = {}) {

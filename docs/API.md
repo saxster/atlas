@@ -1,6 +1,6 @@
 # Atlas API
 
-Atlas draws teaching figures: a pure model, a 3D scene in paper and ink, and one of three ways for a reader to work
+Atlas draws teaching figures: a pure model, a 3D scene in paper and ink, and one of four ways for a reader to work
 it. This page is the reference. For a first figure, run `npx atlas new <subject>/<id>` and edit what it writes.
 
 ## Install
@@ -57,7 +57,7 @@ coordinates.
 
 | Block | Draws | Returns, besides `object` and `labels` |
 |---|---|---|
-| `axes(parent, { x, y, z?, size?, at?, ticks?, names?, grid? })` | axes with ticks and names; with a `z` range, z is up | `to(x, y, z)`: a data point as a world point |
+| `axes(parent, { x, y, z?, size?, at?, ticks?, names?, grid? })` | axes with ticks and names; with a `z` range, z is up | `to(x, y, z)`, `from(vec)` (data ↔ world points) |
 | `plot(parent, f, { axes, x?, samples?, color? })` | y = f(x) | `update(f, { x? })` |
 | `area(parent, f, { axes, x?, y0?, bars?, rule?, pal?, opacity? })` | shaded region or `bars` Riemann rectangles between `y0` and `f(x)` | `update(f, { x?, y0?, bars?, rule? })` |
 | `surface(parent, f, { axes, x?, y?, n?, pal? })` | z = f(x, y), shaded paper | `update(f)` |
@@ -69,6 +69,7 @@ coordinates.
 | `blob(parent, { radius?, lobes?, cleft?, seed?, rings?, segs?, pal? })` | seeded coarse-grained globular shape with optional active-site cleft | `mesh`, `update(spec)` |
 | `particles(parent, count, { radius?, color?, axes? })` | one instanced set of balls | `set(i, [x, y, z])`, `show(n)` |
 | `molecule(parent, xyz, { scale?, names? })` | atoms and bonds from XYZ text (ångström); bonds from covalent radii | `atoms`, `bonds` (and `parseXYZ(text)`) |
+| `draggable(target, { axes?, plane?, constrain?, onDrag?, onReset? })` | (`stage.js`) makes any 3D mesh/group directly grab-and-drag interactive on a plane or curve | `{ get, set, reset, project }` |
 
 `update` and `set` rewrite geometry in place, so they can run every frame. Colours are `'hi'` (ink), `'grey'`,
 any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the comment at the top of `engine/prims.js`;
@@ -77,7 +78,7 @@ any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the c
 Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `lines`, `arrow`, `liveTube`,
 `shadeMat`, `PALETTE`) for shapes the blocks don't cover.
 
-## Three grammars
+## Four grammars
 
 Each takes one description object and owns the page around the figure. The full field list is in the comment at the
 top of each file.
@@ -85,7 +86,7 @@ top of each file.
 **Book** (`startBook(chapter)`, `book.js`). The reader scrolls; each page has a camera, a lit part and text, and a
 click breaks a part down. `chapter` is `{ no, subject, PAGES, PLATES, buildWorld, lookKeys, state, readout }`. A page
 is `{ kicker, title, sub, body, cam, lit, look, fig, alt, parts?, molecule? }`. Practice questions come from
-`practice.js`.
+`practice.js` and support 4-choice (`choices`), numeric entry (`numeric: { answer, tol }`), and 3D drag-position verification (`target: { label, hint, check(state, E) }`).
 
 **Machine** (`startMachine(figure)`, `machine.js`). Numbered steps, only the next one live. Manual by default, Auto
 on request, and the choice is remembered. A step is `{ label, hint, run, play, real?, cam, look?, lit? }`: `run`
@@ -95,7 +96,9 @@ model seconds shown in `play` seconds on screen, with a speed badge. `chips` fil
 `{ q, choices, answer(params), why(params) }`: the model works out the answer, which shows after the run. A control
 is `{ key, label, min, max, step, fmt?, rebuild? }`.
 
-All three draw through `createStage` (`stage.js`).
+**Sandbox** (`startSandbox(figure)`, `sandbox.js`). Constructive play: presets (`presets`), a 2×2 matrix or parameter editor (`matrix`, `controls`), and a palette (`palette`) to place, remove and drag 3D pieces (`items`) directly on the stage while chips and charts update live.
+
+All four draw through `createStage` (`stage.js`) and support shareable state URLs (`?t=...`, `?step=...`, `?key=val`).
 
 ## Just the figure, in any page
 
@@ -137,7 +140,7 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 
 | Command | Does |
 |---|---|
-| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer` | copies a working minimal example to start from |
+| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox` | copies a working minimal example to start from |
 | `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
 | `npx atlas critic <figure…>` | frames that change far more than their neighbours, and labels that overlap or hide |

@@ -5,6 +5,7 @@ import { rng } from './rng.js';
 import { scale, samples } from './chart.js';
 import * as THREE from 'three';
 import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule } from './prims.js';
+import { draggable } from './stage.js';
 
 const C = checks();
 C.check('deriv of sin is cos', [0.3, 1.1, 2.5].every(x => near(deriv(Math.sin, x), Math.cos(x), 1e-8)));
@@ -90,4 +91,31 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const yBefore = bl1.mesh.geometry.attributes.position.getY(0);
   bl1.update({ radius: 1.4 });
   C.check('blob: deterministic globular mesh with radius/lobes/pal aliases and update()', yBefore === bl2.object.geometry.attributes.position.getY(0) && yBefore > 0.5 && bl1.mesh.geometry.attributes.position.getY(0) > yBefore); }
+{ const A2 = axes(new THREE.Group(), { x: [-2, 3], y: [-1, 4], size: [5, 4], at: [1, 2, 0] });
+  const A3 = axes(new THREE.Group(), { x: [1, 5], y: [0, 2], z: [-1, 1], size: [4, 2, 3] });
+  const rt2 = A2.from(A2.to(1.7, 2.3)), rt3 = A3.from(A3.to(3.4, 1.2, -0.4));
+  C.check('axes.from: round-trips 2D and 3D data coordinates through to()', near(rt2[0], 1.7, 1e-12) && near(rt2[1], 2.3, 1e-12) && near(rt3[0], 3.4, 1e-12) && near(rt3[1], 1.2, 1e-12) && near(rt3[2], -0.4, 1e-12));
+  const m = new THREE.Mesh();
+  let dragged = null;
+  const d = draggable(m, { axes: A2, constrain: ([x]) => [Math.max(0, Math.min(2, x)), 0.5 * x * x], onDrag: p => { dragged = p; } });
+  d.set([1.5, 99]);
+  C.check('draggable: get/set/project constrains data coordinates, moves mesh on axes, and invokes onDrag', near(d.get()[0], 1.5, 1e-12) && near(dragged[0], 1.5, 1e-12) && near(dragged[1], 1.125, 1e-12) && m.position.distanceTo(A2.to(1.5, 1.125)) < 1e-12);
+  d.reset();
+  C.check('draggable.reset: clears dragged value', d.get() === null && d.value === null); }
+{ const { CHAPTER: CCalc } = await import('../examples/maths/calculus/chapter.js');
+  const { PRACTICE: PCalc } = await import('../examples/maths/calculus/practice.js');
+  const { CHAPTER: CLa } = await import('../examples/maths/linear-algebra/chapter.js');
+  const { PRACTICE: PLa } = await import('../examples/maths/linear-algebra/practice.js');
+  const { CHAPTER: CElec } = await import('../examples/physics/electrostatics/chapter.js');
+  const { PRACTICE: PElec } = await import('../examples/physics/electrostatics/practice.js');
+  CCalc._W = { stateAt: () => ({ h: 1.0, x1: 2.5, x2: 2.0, n: 6, x4: 2.0, x5: 1.0 }) };
+  const sCalc = CCalc.state(0, false);
+  CLa._W = { stateAt: () => ({ s: 1, mat0: { a: 1.5, b: 0.5, c: 0.5, d: 1.25 }, k: 1.2, mat2: { a: 1.5, b: 0.5, c: 0.5, d: 1.25 }, d: 0.4, theta: Math.PI / 4 }) };
+  const sLa = CLa.state(0, false);
+  CElec._W = { drag: { lineX: 0.30 } };
+  const sElec = CElec.state(0, false);
+  C.check('practice target.check: calculus, linear-algebra, and electrostatics 3D drag checks evaluate true at target states',
+    PCalc[0][0].target.check(sCalc) && PCalc[1][0].target.check(sCalc) && PCalc[2][1].target.check(sCalc)
+    && PLa[3][0].target.check(sLa) && PLa[4][0].target.check(sLa)
+    && PElec[3][0].target.check(sElec)); }
 C.report();

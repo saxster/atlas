@@ -38,4 +38,8 @@ export const XREFS = [
   ['maths/calculus/3', '2.3 Area by rectangles', 'physics/energy/5', '4.5 Spring potential energy', 'Stretching a spring adds thin strips of work <i>kx</i> d<i>x</i>; their total area under <i>F</i> = <i>kx</i> is ½<i>kx</i>².'],
   ['maths/calculus/4', '2.4 The Fundamental Theorem', 'physics/kinematics/10', '1.10 Area is displacement', 'Integrating velocity ∫ <i>v</i>(<i>t</i>) <i>dt</i> reconstructs the change in position <i>x</i>(<i>t</i>) − <i>x</i>(0).'],
   ['maths/linear-algebra/2', '3.2 The determinant is area', 'physics/gauss/0', 'Ch. 10 Electric flux', 'Just as det <i>A</i> = <i>ad</i> − <i>bc</i> measures the signed area of a parallelogram, the cross product |<b>a</b> × <b>b</b>| gives the surface element <i>dA</i> for flux.'],
+  ['maths/fourier/0', 'Ch. 5 Rotating circles', 'maths/unit-circle/5', '1.5 The sine wave', 'Adding spinning epicycles stacks sine waves of frequency <i>k</i>ω<sub>0</sub> on top of the fundamental circle.'],
+  ['maths/differential-equations/3', '4.3 Phase portraits', 'physics/oscillations/8', '6.8 The SHM equation', 'The second-order equation <i>x</i>″ = −ω²<i>x</i> becomes a circle in the (<i>x</i>, <i>v</i>) phase plane.'],
+  ['maths/multivariable/3', '6.3 Divergence & flux', 'physics/gauss/1', '10.1 Gauss’s law', 'Local divergence ∇·<b>F</b> measures source density, whose volume integral equals the boundary flux.'],
+  ['chemistry/orbitals/0', 'Ch. 3 The 1s cloud', 'physics/potential/1', '11.1 Assembling charges', 'The electron sits in the 1/<i>r</i> Coulomb potential well of the nucleus, spread into a standing wave of probability.'],
 ];

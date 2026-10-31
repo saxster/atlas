@@ -4,6 +4,7 @@
 // 10 cm) unless a scene says otherwise. Every position and arrow length comes from model.js.
 import * as THREE from 'three';
 import { part, cyl, lines, arrow, setArrow, shadeMat, xAxis, zAxis, V } from '@saxster/atlas/parts.js';
+import { draggable } from '@saxster/atlas/stage.js';
 import * as M from './model.js';
 
 export const S = 10;                 // world metres per real metre (drawn 10× full size)
@@ -49,6 +50,7 @@ export function buildWorld(E) {
     return l;
   };
   const ex = g => Math.max(g.userData.explode, 0);
+  const drag = { pairR: null, lineX: null, testR: null, testAng: null, dipoleX: null, dipoleY: null, ringZ: null };
 
   // ---------- 0 · charge: three carbon atoms (a cartoon: not to scale) ----------
   const X0 = STATIONS.charge;
@@ -112,7 +114,7 @@ export function buildWorld(E) {
     const link = part(gB, cyl(0.012, 1, 8), { tone: 'lo', pal: 'dark', name: 'Molecules' });
     mols.push({ p, pos, neg, link });
   }
-  label('tick', 'wall', () => V(wallX + 0.55, 2.35, 0));
+  label('tick', 'wall', () => V(wallX + 0.35, 2.82, 0.25));
   label('tick', `balloon +${(M.BALLOON.q / M.nC).toFixed(0)} nC`, () => balloonG.localToWorld(V(-0.2, BR * 1.18 + 0.32, 0)));
 
   // ---------- 2 · Coulomb's law: two point charges ----------
@@ -121,7 +123,12 @@ export function buildWorld(E) {
   const gC = asm('coulomb', root, { title: 'Two point charges', sub: 'equal and opposite, inverse square' });
   const c1 = charge(gC, 1, 0.26, `+${M.PAIR.q1 / M.uC} μC`), c2 = charge(gC, -1, 0.21, `−${-M.PAIR.q2 / M.uC} μC`);
   const fC1 = force(gC), fC2 = force(gC), rLine = dashed(gC);
-  label('vec', 'F<sub>on 1</sub>', () => tip(fC1, 0.05) && tip(fC1, 0.05).add(V(0, 0.28, 0))); label('vec', 'F<sub>on 2</sub>', () => tip(fC2, 0.05) && tip(fC2, 0.05).add(V(0, 0.28, 0)));
+  draggable(c2, {
+    autoMove: false,
+    onDrag: ([wx]) => { drag.pairR = Math.min(0.52, Math.max(0.18, ((wx - X2) * 2) / S)); },
+    onReset: () => { drag.pairR = null; },
+  });
+  label('vec', 'F<sub>on 1</sub>', () => tip(fC1, 0.05) && tip(fC1, 0.05).add(V(0, -0.32, 0))); label('vec', 'F<sub>on 2</sub>', () => tip(fC2, 0.05) && tip(fC2, 0.05).add(V(0, -0.32, 0)));
   label('axis', '<i>r</i>', () => V(X2 + 0.08, Y2 - 0.32, 0));
   // breakdown: a like pair at the same distance, which repels
   const likeG = new THREE.Group(); gC.add(likeG);
@@ -139,6 +146,11 @@ export function buildWorld(E) {
   const qA = charge(gL, 1, 0.24, `+${M.LINE.qA / M.uC} μC`), qB = charge(gL, 1, 0.15, `+${M.LINE.qB / M.uC} μC`);
   qA.position.set(LX(0), Y3, 0); qB.position.set(LX(M.LINE.D), Y3, 0);
   const q0 = charge(gL, 1, 0.1, null, 'Test charge');
+  draggable(q0, {
+    autoMove: false,
+    onDrag: ([wx]) => { drag.lineX = Math.min(0.48, Math.max(0.12, (wx - X3) / S + M.LINE.D / 2)); },
+    onReset: () => { drag.lineX = null; },
+  });
   const fA = force(gL), fB = force(gL), fN = force(gL, true);
   label('vec', 'F<sub>A</sub>', () => tip(fA)); label('vec', 'F<sub>B</sub>', () => tip(fB)); label('vec red', 'ΣF', () => tip(fN));
   label('tick', '<i>q</i><sub>0</sub>', () => q0.getWorldPosition(V()).add(V(0.05, -0.3, 0)));
@@ -166,7 +178,16 @@ export function buildWorld(E) {
   const vP = fieldOf(CP, 1); fieldOf(CN, -1);
   label('vec blue', '<i>E</i>', () => tip(vP[0]));
   const t0 = charge(gF, 1, 0.09, null, 'Test charge'), fT = force(gF), rT = dashed(gF), rhat = comp(gF, 'r̂');
-  label('vec', '<i>F</i> = <i>q</i><sub>0</sub><i>E</i>', () => tip(fT, 0.1) && tip(fT, 0.1).add(V(-0.25, 0.42, 0))); label('tick', '<i>q</i><sub>0</sub>', () => t0.getWorldPosition(V()).add(V(-0.05, 0.3, 0)));
+  draggable(t0, {
+    autoMove: false,
+    onDrag: ([wx, wy]) => {
+      const dx = (wx - CP.x) / S, dy = (wy - CP.y) / S;
+      drag.testR = Math.min(0.32, Math.max(0.06, Math.hypot(dx, dy)));
+      drag.testAng = Math.atan2(dy, dx);
+    },
+    onReset: () => { drag.testR = null; drag.testAng = null; },
+  });
+  label('vec', '<i>F</i> = <i>q</i><sub>0</sub><i>E</i>', () => tip(fT, 0.25) && tip(fT, 0.25).add(V(0.95, 0.38, 0))); label('tick', '<i>q</i><sub>0</sub>', () => t0.getWorldPosition(V()).add(V(-0.22, -0.34, 0)));
   label('vec', 'r̂', () => ex(gF) > 0.3 ? tip(rhat, 0.05).add(V(0.1, -0.25, 0)) : null);
   const t1 = charge(gF, 1, 0.09, null, 'Test charge'), fT1 = force(gF);
   label('vec', '<i>F</i>', () => ex(gF) > 0.3 ? tip(fT1) : null);
@@ -183,6 +204,16 @@ export function buildWorld(E) {
     lines(gD, pts, BLUE_LINE); }
   lines(gD, [DW([-0.42, 0, 0]).x, D0.y, 0, DW([0.5, 0, 0]).x, D0.y, 0, D0.x, D0.y - 1.6, 0, D0.x, D0.y + 3.8, 0], '#b4b4b8');
   const pAx = ball(gD, 0.07, { pal: 'ink', name: 'P on the axis' }), pBi = ball(gD, 0.07, { pal: 'ink', name: 'P on the bisector' });
+  draggable(pAx, {
+    autoMove: false,
+    onDrag: ([wx]) => { drag.dipoleX = Math.min(0.42, Math.max(0.16, (wx - D0.x) / S)); },
+    onReset: () => { drag.dipoleX = null; },
+  });
+  draggable(pBi, {
+    autoMove: false,
+    onDrag: ([, wy]) => { drag.dipoleY = Math.min(0.34, Math.max(0.10, (wy - D0.y) / S)); },
+    onReset: () => { drag.dipoleY = null; },
+  });
   label('tick', 'P', () => pAx.getWorldPosition(V()).add(V(-0.05, -0.3, 0))); label('tick', 'P', () => pBi.getWorldPosition(V()).add(V(0.3, 0.12, 0)));
   const eAx = eArrow(gD), eBi = eArrow(gD);
   label('vec blue', '<i>E</i>', () => tip(eAx)); label('vec blue', '<i>E</i>', () => tip(eBi, 0.3));
@@ -219,6 +250,11 @@ export function buildWorld(E) {
   lines(gG, [C7.x - 0.8, C7.y, 0, C7.x + 7.2, C7.y, 0], '#b4b4b8');
   label('tick', `+${(M.RING.Q / M.nC).toFixed(0)} nC`, () => C7.clone().add(V(0, RR + 0.4, 0)));
   const pG = ball(gG, 0.07, { pal: 'ink', name: 'P on the axis' });
+  draggable(pG, {
+    autoMove: false,
+    onDrag: ([wx]) => { drag.ringZ = Math.min(0.45, Math.max(0.02, (wx - C7.x) / S)); },
+    onReset: () => { drag.ringZ = null; },
+  });
   label('tick', 'P', () => pG.getWorldPosition(V()).add(V(0.02, -0.32, 0)));
   const eG = eArrow(gG); label('vec blue', '<i>E</i>', () => tip(eG));
   const dG = beads.map(() => dE(gG)), rG = beads.map(() => dashed(gG, 30));
@@ -285,7 +321,7 @@ export function buildWorld(E) {
     }
 
     // 2 · Coulomb: the pair breathes in and out; opened, a like pair repels underneath
-    { const r = s.pairR, a = V(X2 - r * S / 2, Y2, 0), b = V(X2 + r * S / 2, Y2, 0);
+    { const r = drag.pairR ?? s.pairR, a = V(X2 - r * S / 2, Y2, 0), b = V(X2 + r * S / 2, Y2, 0);
       c1.position.copy(a); c2.position.copy(b);
       const F = M.coulomb(M.PAIR.q1, M.PAIR.q2, r) * F_SCALE.coulomb;
       setArrow(fC1, a, V(F, 0, 0)); setArrow(fC2, b, V(-F, 0, 0));
@@ -296,13 +332,14 @@ export function buildWorld(E) {
       setArrow(fL1, la, V(-FL, 0, 0), e); setArrow(fL2, lb, V(FL, 0, 0), e); }
 
     // 3 · line: the test charge slides between A and B; opened, it settles at the balance point
-    { const x = s.lineX + (M.LINE.xEq - s.lineX) * ex(gL), r = M.lineForces(x), p = V(LX(x), Y3, 0);
+    { const lx0 = drag.lineX ?? s.lineX, x = lx0 + (M.LINE.xEq - lx0) * ex(gL), r = M.lineForces(x), p = V(LX(x), Y3, 0);
       q0.position.copy(p);
       setArrow(fA, p, V(r.FA[0] * F_SCALE.line, 0, 0)); setArrow(fB, p.clone().add(V(0, -0.02, 0)), V(r.FB[0] * F_SCALE.line, 0, 0));
       setArrow(fN, p.clone().add(V(0, 0.42, 0)), V(r.net[0] * F_SCALE.line, 0, 0)); }
 
     // 4 · point charge: a test charge moves out along a ray; F = q0 E shrinks as 1/r²
-    { const r = s.testR + (0.2 - s.testR) * ex(gF), u = V(Math.cos(M.POINT.ang), Math.sin(M.POINT.ang), 0), p = CP.clone().addScaledVector(u, r * S), perp = V(-u.y, u.x, 0);
+    { const tr0 = drag.testR ?? s.testR, ang = drag.testAng ?? M.POINT.ang;
+      const r = tr0 + (0.2 - tr0) * ex(gF), u = V(Math.cos(ang), Math.sin(ang), 0), p = CP.clone().addScaledVector(u, r * S), perp = V(-u.y, u.x, 0);
       t0.position.copy(p);
       const F = M.POINT.q0 * M.pointMag(M.POINT.Q, r);
       setArrow(fT, p, u.clone().multiplyScalar(F / M.POINT.q0 * E_SCALE.field));      // same length as E at that point (stated on the page)
@@ -311,7 +348,7 @@ export function buildWorld(E) {
       setArrow(fT1, p1, u.clone().multiplyScalar(-F / M.POINT.q0 * E_SCALE.field), e); }
 
     // 5 · dipole: P slides along the axis and up the bisector
-    { const x = s.dipoleX, y = s.dipoleY, A = [x, 0, 0], B = [0, y, 0], e = ex(gD);
+    { const x = drag.dipoleX ?? s.dipoleX, y = drag.dipoleY ?? s.dipoleY, A = [x, 0, 0], B = [0, y, 0], e = ex(gD);
       pAx.position.copy(DW(A)); pBi.position.copy(DW(B));
       const EA = M.sumE(dch, A), EB = M.sumE(dch, B);
       setArrow(eAx, DW(A), V(EA[0], EA[1], 0).multiplyScalar(E_SCALE.dipole)); setArrow(eBi, DW(B), V(EB[0], EB[1], 0).multiplyScalar(E_SCALE.dipole));
@@ -333,7 +370,7 @@ export function buildWorld(E) {
       }); }
 
     // 7 · ring: P moves out along the axis; opened, it stops at the peak and shows each bead's dE
-    { const e = ex(gG), z = s.ringZ + (M.RING_ZMAX - s.ringZ) * e, P = C7.clone().add(V(z * S, 0, 0));
+    { const e = ex(gG), rz0 = drag.ringZ ?? s.ringZ, z = rz0 + (M.RING_ZMAX - rz0) * e, P = C7.clone().add(V(z * S, 0, 0));
       pG.position.copy(P); setArrow(eG, P, V(M.ringAxis(z) * E_SCALE.ring, 0, 0));
       M.ringBeads(M.RING.beads).forEach((bd, i) => { const d = M.pointE(bd.q, bd.at, [z, 0, 0]); setArrow(dG[i], P, V(d[0], d[1], d[2]).multiplyScalar(E_SCALE.ring * 2), e); rG[i].visible = e > 0.05; rG[i].aim(beads[i].position, P); }); }
 
@@ -345,5 +382,5 @@ export function buildWorld(E) {
       setArrow(vx, p, V(st.vx * vs, 0, 0), e); setArrow(vy, p, V(0, st.vy * vs, 0), e);
       strobes.forEach(m => { m.visible = m.userData.t <= s.plates.t; }); }
   }
-  return { update, labels };
+  return { update, labels, drag };
 }

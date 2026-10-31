@@ -73,7 +73,22 @@ export function axes(parent, { x, y, z, size = [4, 4, 4], at = [0, 0, 0], ticks 
     const dx = (px - o.x) * k.x, dy = (py - o.y) * k.y, dz = (pz - o.z) * k.z;
     return up ? out.set(at[0] + dx, at[1] + dz, at[2] - dy) : out.set(at[0] + dx, at[1] + dy, at[2] + dz);
   };
+  const from = p => {
+    const [wx, wy, wz = 0] = p.isVector3 ? [p.x, p.y, p.z] : p;
+    const dx = (wx - at[0]) / k.x, dy = (up ? -(wz - at[2]) : (wy - at[1])) / k.y, dz = (up ? (wy - at[1]) : (wz - at[2])) / k.z;
+    return [o.x + dx, o.y + dy, o.z + dz];
+  };
   const object = new THREE.Group(); parent.add(object);
+  const fromWorld = w => {
+    const v = w.isVector3 ? w.clone() : V(...w);
+    if (object.parent) { object.parent.updateWorldMatrix(true, false); object.parent.worldToLocal(v); }
+    return from(v);
+  };
+  const toWorld = (px, py, pz = 0) => {
+    const v = to(px, py, pz);
+    if (object.parent) { object.parent.updateWorldMatrix(true, false); object.parent.localToWorld(v); }
+    return v;
+  };
   const labels = [], seg = [], t = typeof ticks === 'number' ? { x: ticks, y: ticks, z: ticks } : ticks;
   const P = (a, v) => [a === 'x' ? v : o.x, a === 'y' ? v : o.y, a === 'z' ? v : o.z];
   // ticks and their numbers stand off below the x axis and left of the others, in world units
@@ -97,7 +112,7 @@ export function axes(parent, { x, y, z, size = [4, 4, 4], at = [0, 0, 0], ticks 
     lines(object, faint, '#ececE8').position.z = up ? 0 : -0.01;
   }
   lines(object, seg, '#8a8a8f');
-  return { object, labels, to, x: R.x, y: R.y, z: z || null };
+  return { object, labels, to, from, fromWorld, toWorld, x: R.x, y: R.y, z: z || null };
 }
 
 // a tube along n + 1 points, rewritten in place (liveTube); thin enough to be its own stroke, so no edge pass

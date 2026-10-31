@@ -3,7 +3,7 @@
 // stage (stage.js); the book is everything around it: pages, the leaf turning, practice, the top bar, Play.
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
-import { createStage, smooth, ease } from './stage.js';
+import { createStage, smooth, ease, mountShareButton } from './stage.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -52,16 +52,18 @@ export function startBook(chapter) {
 
   // ---------- pages ----------
   sizeSpace();
-  let PRACTICE = {};
+  let PRACTICE = {}, lastState = null;
   // practice questions live beside the chapter (practice.js: { pageIndex: [question, ...] }); a chapter may have none
   import(new URL('practice.js', location.href).href).then(m => { PRACTICE = m.PRACTICE || {}; shown = leafFor = -1; }, () => {});
+  const numHtml = q => q.numeric ? `<div class="numrow"><input type="number" step="any" class="numin" placeholder="${esc(q.numeric.placeholder || 'Type a number…')}" aria-label="Numeric answer">${q.numeric.unit ? `<span class="numunit">${q.numeric.unit}</span>` : ''}<button type="button" class="numcheck">Check</button><span class="numstatus" aria-live="polite"></span></div>` : '';
+  const targetHtml = q => q.target ? `<div class="targetrow"><button type="button" class="targetcheck">${q.target.label || 'Check figure position'}</button><span class="targetstatus" aria-live="polite">${q.target.hint || 'Drag the point in the 3D figure, then check'}</span></div>` : '';
   const practiceHtml = i => {
     const qs = PRACTICE[i] || [];
     if (!qs.length) return '';
     return `<section class="practice"><div class="kicker">Practice</div>${qs.map((q, n) => `<div class="q" data-q="${n}">
       <p class="qtext"><span class="qn">${n + 1}</span>${q.q}</p>
-      ${q.choices ? `<ol class="choices">${q.choices.map((c, k) => `<li><button type="button" data-c="${k}"><span class="letter">${'ABCDE'[k]}</span><span>${c}</span></button></li>`).join('')}</ol>`
-        : '<button type="button" class="reveal">Show the solution</button>'}
+      ${targetHtml(q)}${numHtml(q)}${q.choices ? `<ol class="choices">${q.choices.map((c, k) => `<li><button type="button" data-c="${k}"><span class="letter">${'ABCDE'[k]}</span><span>${c}</span></button></li>`).join('')}</ol>`
+        : (!q.numeric && !q.target ? '<button type="button" class="reveal">Show the solution</button>' : '')}
       <div class="why" hidden>${q.why || q.solution}</div></div>`).join('')}</section>`;
   };
   const xrefHtml = i => {
@@ -105,7 +107,30 @@ export function startBook(chapter) {
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
   const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${moleculeHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
-  // answering: click a choice to mark it and show the worked solution
+  // answering: click a choice, check a numeric answer, or check a dragged 3D target position
+  const markRight = (q, item) => {
+    q.classList.add('done');
+    q.querySelectorAll('[data-c]').forEach(c => { c.disabled = true; c.classList.toggle('right', +c.dataset.c === item.answer); });
+    q.querySelector('.why').hidden = false;
+  };
+  const checkNumeric = (q, item) => {
+    const inp = q.querySelector('.numin'), st = q.querySelector('.numstatus');
+    if (!inp || !item.numeric) return;
+    const val = parseFloat(inp.value.replace('−', '-'));
+    if (Number.isNaN(val)) { if (st) st.textContent = 'Enter a number'; return; }
+    const ok = Math.abs(val - item.numeric.answer) <= (item.numeric.tol ?? 0.02);
+    inp.classList.toggle('right', ok); inp.classList.toggle('wrong', !ok);
+    if (st) { st.textContent = ok ? `✓ ${item.numeric.answer}` : 'Try again'; st.className = `numstatus ${ok ? 'right' : 'wrong'}`; }
+    if (ok) { inp.disabled = true; markRight(q, item); }
+  };
+  const checkTarget = (q, item) => {
+    const b = q.querySelector('.targetcheck'), st = q.querySelector('.targetstatus');
+    if (!b || !item.target) return;
+    const ok = !!item.target.check(lastState, S.W, E);
+    b.classList.toggle('right', ok); b.classList.toggle('wrong', !ok);
+    if (st) { st.textContent = ok ? '✓ Target matched in figure!' : (item.target.tryAgain || 'Drag the handle in the figure closer to the target and check again.'); st.className = `targetstatus ${ok ? 'right' : 'wrong'}`; }
+    if (ok) markRight(q, item);
+  };
   $('sheet').addEventListener('click', e => {
     const b = e.target.closest('button'), q = b && b.closest('.q');
     if (b?.dataset.turn) return goto(+b.dataset.turn);
@@ -113,13 +138,20 @@ export function startBook(chapter) {
     if (b?.dataset.molecule) return openMolecule(+b.dataset.molecule, b);
     if (!q) return;
     const item = PRACTICE[shown][+q.dataset.q];
+    if (b.classList.contains('numcheck')) return checkNumeric(q, item);
+    if (b.classList.contains('targetcheck')) return checkTarget(q, item);
     if (b.dataset.c !== undefined) {
       if (q.classList.contains('done')) return;
-      q.classList.add('done');
-      q.querySelectorAll('[data-c]').forEach(c => { c.disabled = true; c.classList.toggle('right', +c.dataset.c === item.answer); });
+      markRight(q, item);
       if (+b.dataset.c !== item.answer) b.classList.add('wrong');
-    } else if (b.classList.contains('reveal')) b.hidden = true;
-    q.querySelector('.why').hidden = false;
+    } else if (b.classList.contains('reveal')) { b.hidden = true; q.querySelector('.why').hidden = false; }
+  });
+  $('sheet').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.classList?.contains('numin')) {
+      e.preventDefault();
+      const q = e.target.closest('.q');
+      if (q) checkNumeric(q, PRACTICE[shown][+q.dataset.q]);
+    }
   });
   let shown = -1, leafFor = -1;
   // the leaf's back is the next left page: the same folio at its foot
@@ -255,6 +287,7 @@ export function startBook(chapter) {
     // the figure: camera, time, world, labels (stage.js); time pauses while something is pointed at or open
     const state = S.step({ now, dt, s, litPage: shown, running: started && !userPaused, narrow: narrow(), narrowZoom: chapter.narrowZoom ?? 1,
       clockAt: RENDER ? (chapter.clock0 || 0) + tourT : undefined });
+    lastState = state;
     paused.classList.toggle('on', !reduced && started && !userPaused && !!(S.selected || S.hovered));
 
     $('readout').textContent = chapter.readout(state, PAGES[shown]);
@@ -263,10 +296,18 @@ export function startBook(chapter) {
     if (!RENDER) requestAnimationFrame(frame);
   }
   S.relight();
+  if (Q.has('t') && !RENDER) S.clock = +Q.get('t');
   { const k = fromHash(); if (k !== null) goto(k, true); }
+  const shareUrl = () => {
+    const u = new URL(location.href);
+    u.searchParams.set('t', S.clock.toFixed(2));
+    u.hash = shown ? `#${shown}` : '';
+    return u.toString();
+  };
+  if (!EMBED) mountShareButton(playB || document.querySelector('.pager'), shareUrl, 'playbtn sharebtn');
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, S, select, goto, N, labelReport: S.labelReport, get started() { return started; }, get clock() { return S.clock; } };
+  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, get started() { return started; }, get clock() { return S.clock; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;

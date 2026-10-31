@@ -7,4 +7,10 @@ export const CONCEPTS = [
     shownIn: ['biology/growth'] },
   { id: 'enzyme-kinetics', name: 'Michaelis–Menten enzyme saturation', formula: '<i>v</i> = <i>V</i><sub>max</sub>[S] / (<i>K</i><sub>m</sub> + [S])',
     shownIn: ['biology/enzyme'] },
+  { id: 'action-potential', name: 'Nernst potential and Hodgkin–Huxley membrane depolarization', formula: '<i>E<sub>X</sub></i> = (<i>RT</i>/<i>zF</i>) ln([<i>X</i>]<sub>out</sub>/[<i>X</i>]<sub>in</sub>), &nbsp;<i>V<sub>m</sub></i> = ∑ <i>g<sub>i</sub>E<sub>i</sub></i> / ∑ <i>g<sub>i</sub></i>',
+    shownIn: ['biology/action-potential'] },
+  { id: 'central-dogma', name: 'Triplet genetic code: transcription and ribosomal translation', formula: '4³ = 64 codons (6 bits): DNA → mRNA → polypeptide',
+    shownIn: ['biology/central-dogma'] },
+  { id: 'lotka-volterra', name: 'Lotka–Volterra predator–prey cycles and Volterra’s principle', formula: '<i>dR</i>/<i>dt</i> = α<i>R</i> − β<i>RF</i>, &nbsp;<i>dF</i>/<i>dt</i> = δ<i>RF</i> − γ<i>F</i>, &nbsp;(<i>R</i>*, <i>F</i>*) = (γ/δ, α/β)',
+    shownIn: ['biology/lotka-volterra'] },
 ];

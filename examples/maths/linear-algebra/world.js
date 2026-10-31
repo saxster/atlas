@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { PALETTE, part, box, rod, lines, shadeMat, V } from '@saxster/atlas/parts.js';
 import { axes, lattice, vector, plot } from '@saxster/atlas/prims.js';
+import { draggable } from '@saxster/atlas/stage.js';
 import * as M from './model.js';
 
 export const STATIONS = { basis: 0, shear: 8.5, det: 17, collapse: 25.5, eigen: 34, compose: 42.5 };
@@ -67,6 +68,12 @@ export function buildWorld(E) {
   }
 
   let clockT = 2.2;
+  const drag = { mat0: null, k: null, mat2: null, d: null, theta: null };
+  const mat0Now = (t = clockT) => drag.mat0 ?? M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(t));
+  const kNow = (t = clockT) => drag.k ?? M.kAt(t);
+  const mat2Now = (t = clockT) => drag.mat2 ?? M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(t));
+  const dNow = (t = clockT) => drag.d ?? M.dCollapseAt(t);
+  const thetaNow = (t = clockT) => drag.theta ?? M.thetaAt(t);
   const updaters = [];
 
   // ==================== 0 · BASIS COLUMNS & LATTICE ====================
@@ -85,25 +92,38 @@ export function buildWorld(E) {
     const vJ = vector(g, [0, 0], [0, 1], { axes: ax, color: 'blue', name: 'Second column Aĵ' });
     const pDot = dot(g, 0.08, 'ink', 'Image of P(1, 1) = Aî + Aĵ');
 
+    draggable(vI, {
+      axes: ax,
+      constrain: ([x, y]) => [Math.min(2.2, Math.max(-0.4, x)), Math.min(2.2, Math.max(-0.4, y)), 0],
+      onDrag: ([a, c]) => { const cur = mat0Now(); drag.mat0 = { a, b: cur.b, c, d: cur.d }; },
+      onReset: () => { drag.mat0 = null; },
+    });
+    draggable(vJ, {
+      axes: ax,
+      constrain: ([x, y]) => [Math.min(2.2, Math.max(-0.4, x)), Math.min(2.2, Math.max(-0.4, y)), 0],
+      onDrag: ([b, d]) => { const cur = mat0Now(); drag.mat0 = { a: cur.a, b, c: cur.c, d }; },
+      onReset: () => { drag.mat0 = null; },
+    });
+
     label('vec red', () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat0Now();
       return `<i>A</i><b>î</b> (${fmt(Ms.a, 1)}, ${fmt(Ms.c, 1)})`;
     }, () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat0Now();
       const p = ax.to(Ms.a, Ms.c);
       return worldPt(p.x + 0.52, p.y - 0.18);
     });
     label('vec blue', () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat0Now();
       return `<i>A</i><b>ĵ</b> (${fmt(Ms.b, 1)}, ${fmt(Ms.d, 1)})`;
     }, () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat0Now();
       const p = ax.to(Ms.b, Ms.d);
       return worldPt(p.x - 0.58, p.y + 0.25);
     });
 
     updaters.push(t => {
-      const s = M.sSweep(t), Ms = M.lerpMat(M.MAT_I, M.MAT_A, s);
+      const Ms = mat0Now(t);
       lat.update((x, y) => M.applyMat(Ms, [x, y]));
       vI.set([0, 0], [Ms.a, Ms.c]);
       vJ.set([0, 0], [Ms.b, Ms.d]);
@@ -128,20 +148,27 @@ export function buildWorld(E) {
     const vI = vector(g, [0, 0], [1, 0], { axes: ax, color: 'red', name: 'Fixed horizontal basis î = (1, 0)' });
     const vJ = vector(g, [0, 0], [0, 1], { axes: ax, color: 'blue', name: 'Sheared vertical basis Sĵ = (k, 1)' });
 
+    draggable(vJ, {
+      axes: ax,
+      constrain: ([x]) => [Math.min(1.5, Math.max(-0.3, x)), 1, 0],
+      onDrag: ([k]) => { drag.k = k; },
+      onReset: () => { drag.k = null; },
+    });
+
     label('vec blue', () => {
-      const k = M.kAt(clockT);
+      const k = kNow();
       return `<i>S</i><b>ĵ</b> = (${fmt(k)}, 1)`;
     }, () => {
-      const k = M.kAt(clockT), p = ax.to(k, 1);
+      const k = kNow(), p = ax.to(k, 1);
       return worldPt(p.x + 0.48, p.y + 0.26);
     });
     label('board', 'area = 1.00', () => {
-      const k = M.kAt(clockT), p = ax.to(0.5 + 0.5 * k, 0.45);
+      const k = kNow(), p = ax.to(0.5 + 0.5 * k, 0.45);
       return worldPt(p.x, p.y);
     });
 
     updaters.push(t => {
-      const k = M.kAt(t), Sk = M.shearMat(k);
+      const k = kNow(t), Sk = M.shearMat(k);
       lat.update((x, y) => M.applyMat(Sk, [x, y]));
       quad.set(M.unitSquareCorners(Sk));
       vI.set([0, 0], [1, 0]);
@@ -167,17 +194,30 @@ export function buildWorld(E) {
     const topRod = rod(g, { r: 0.022, pal: 'blue', name: 'Parallel side Aĵ from Aî' });
     const rightRod = rod(g, { r: 0.022, pal: 'red', name: 'Parallel side Aî from Aĵ' });
 
+    draggable(vI, {
+      axes: ax,
+      constrain: ([x, y]) => [Math.min(2.0, Math.max(-0.2, x)), Math.min(1.8, Math.max(-0.2, y)), 0],
+      onDrag: ([a, c]) => { const cur = mat2Now(); drag.mat2 = { a, b: cur.b, c, d: cur.d }; },
+      onReset: () => { drag.mat2 = null; },
+    });
+    draggable(vJ, {
+      axes: ax,
+      constrain: ([x, y]) => [Math.min(2.0, Math.max(-0.2, x)), Math.min(1.8, Math.max(-0.2, y)), 0],
+      onDrag: ([b, d]) => { const cur = mat2Now(); drag.mat2 = { a: cur.a, b, c: cur.c, d }; },
+      onReset: () => { drag.mat2 = null; },
+    });
+
     label('vec red', () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat2Now();
       return `det = ${fmt(M.det(Ms), 3)}`;
     }, () => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(clockT));
+      const Ms = mat2Now();
       const c = M.applyMat(Ms, [1, 1]), p = ax.to(c[0], c[1]);
       return worldPt(p.x + 0.42, p.y + 0.22);
     });
 
     updaters.push(t => {
-      const Ms = M.lerpMat(M.MAT_I, M.MAT_A, M.sSweep(t));
+      const Ms = mat2Now(t);
       const corners = M.unitSquareCorners(Ms);
       quad.set(corners);
       lat.update((x, y) => M.applyMat(Ms, [x, y]));
@@ -208,8 +248,15 @@ export function buildWorld(E) {
     const vI = vector(g, [0, 0], [1.2, 0.8], { axes: ax, color: 'red', name: 'Column 1: (1.2, 0.8)' });
     const vJ = vector(g, [0, 0], [0.6, 1.0], { axes: ax, color: 'blue', name: 'Column 2: (0.6, d)' });
 
+    draggable(vJ, {
+      axes: ax,
+      constrain: ([, y]) => [0.6, Math.min(1.4, Math.max(-0.2, y)), 0],
+      onDrag: ([, d]) => { drag.d = d; },
+      onReset: () => { drag.d = null; },
+    });
+
     label('vec blue', () => {
-      const d = M.dCollapseAt(clockT), C = M.collapseMat(d);
+      const d = dNow(), C = M.collapseMat(d);
       return `<i>d</i> = ${fmt(d)} · det = ${fmt(M.det(C))}`;
     }, () => {
       const p = ax.to(0.85, 1.52);
@@ -221,7 +268,7 @@ export function buildWorld(E) {
     });
 
     updaters.push(t => {
-      const d = M.dCollapseAt(t), C = M.collapseMat(d);
+      const d = dNow(t), C = M.collapseMat(d);
       lat.update((x, y) => M.applyMat(C, [x, y]));
       quad.set(M.unitSquareCorners(C));
       vI.set([0, 0], [C.a, C.c]);
@@ -245,6 +292,16 @@ export function buildWorld(E) {
     const vIn = vector(g, [0, 0], [1, 0], { axes: ax, color: 'ink', name: 'Revolving unit vector u(θ)' });
     const vOut = vector(g, [0, 0], [1.5, 0.5], { axes: ax, color: 'red', name: 'Transformed vector E u(θ)' });
 
+    draggable(vIn, {
+      axes: ax,
+      constrain: ([x, y]) => {
+        const th = Math.atan2(y, x);
+        return [Math.cos(th), Math.sin(th), 0, th];
+      },
+      onDrag: ([, , , th]) => { drag.theta = (th + 2 * Math.PI) % (2 * Math.PI); },
+      onReset: () => { drag.theta = null; },
+    });
+
     label('vec red', '<b>v</b>₁: <i>E</i><b>v</b>₁ = 2<b>v</b>₁', () => {
       const p = ax.to(1.45, 1.65); return worldPt(p.x + 0.35, p.y + 0.18);
     });
@@ -253,7 +310,7 @@ export function buildWorld(E) {
     });
 
     updaters.push(t => {
-      const th = M.thetaAt(t);
+      const th = thetaNow(t);
       const u = [Math.cos(th), Math.sin(th)];
       const eu = M.applyMat(M.MAT_E, u);
       vIn.set([0, 0], u);
@@ -297,10 +354,21 @@ export function buildWorld(E) {
     });
   }
 
+  function stateAt(t = clockT) {
+    return {
+      s: M.sSweep(t),
+      mat0: mat0Now(t),
+      k: kNow(t),
+      mat2: mat2Now(t),
+      d: dNow(t),
+      theta: thetaNow(t),
+      drag,
+    };
+  }
   function update(t) {
     clockT = t;
     for (const fn of updaters) fn(t);
   }
   update(clockT);
-  return { update, labels };
+  return { update, labels, stateAt, drag };
 }

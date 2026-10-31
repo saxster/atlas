@@ -19,7 +19,7 @@
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, smooth } from './stage.js';
+import { createStage, smooth, mountShareButton } from './stage.js';
 
 const $ = id => document.getElementById(id);
 const MODE_KEY = 'atlas:machine-mode';
@@ -74,7 +74,19 @@ export function startMachine(figure) {
   const stepB = [...document.querySelectorAll('#steps .step')], chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
   let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !reduced ? 'auto' : 'manual');
-  let done = 0, k = 0, u = 0, wait = 0;
+  let done = !RENDER && Q.has('step') ? Math.min(Math.max(+Q.get('step') || 0, 0), N) : 0, k = 0, u = 0, wait = 0;
+  if (!RENDER && Q.has('t') && !Q.has('step')) {
+    const tc = +Q.get('t') || 0;
+    for (let i = 0; i < N; i++) if (tc >= T0[i] + STEPS[i].run - 1e-6) done = i + 1;
+  }
+  const shareUrl = () => {
+    const url = new URL(location.href); url.search = '';
+    const d = k ? k : done;
+    if (d > 0) url.searchParams.set('step', String(d));
+    const p = poseOf(done, k, u);
+    if (p.clock > 0) url.searchParams.set('t', p.clock.toFixed(2));
+    return url.toString();
+  };
   const syncMode = () => document.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
   document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { mode = b.dataset.mode; localStorage.setItem(MODE_KEY, mode); syncMode(); if (mode === 'auto' && !k) wait = 0.4; });
   syncMode();
@@ -82,6 +94,7 @@ export function startMachine(figure) {
   function startOver() { done = 0; k = 0; u = 0; wait = mode === 'auto' ? 0.6 : 0; S.select(null); }
   $('steps').addEventListener('click', e => { const b = e.target.closest('.step'); if (!b) return; if (mode === 'auto') { mode = 'manual'; syncMode(); } press(+b.dataset.k); });
   $('again').onclick = startOver;
+  mountShareButton($('again'), shareUrl);
   addEventListener('keydown', e => {
     if (e.target.closest?.('button, input, select, textarea, a')) return;
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (done === N) startOver(); else press(done + 1); }
@@ -158,7 +171,7 @@ export function startMachine(figure) {
   if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
-  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver,
+  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver, shareUrl,
     get state() { return { done, k, u, mode }; }, get clock() { return S.clock; } };
   if (RENDER) {
     window.DURATION = DURATION;

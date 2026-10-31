@@ -80,6 +80,7 @@ export const PRACTICE = {
   ],
   2: [
     { q: `The page’s +${M.PAIR.q1 / uC} μC and −${-M.PAIR.q2 / uC} μC charges are ${p(P2.r * 100, 0)} cm apart. The size of the force on the −${-M.PAIR.q2 / uC} μC charge is`,
+      numeric: { answer: P2.F, tol: 0.02, unit: 'N', placeholder: g(P2.F) },
       choices: P2.nums.map(x => `${g(x)} N`), answer: 2, nums: P2.nums,
       why: `<div class="eq"><i>F</i> = <i>k</i>|<i>q</i><sub>1</sub><i>q</i><sub>2</sub>|/<i>r</i>² = ${sci(K)} × (${M.PAIR.q1 / uC} × 10<sup>−6</sup>)(${-M.PAIR.q2 / uC} × 10<sup>−6</sup>)/(${p(P2.r, 2)})² = ${g(P2.F)} N</div><p>Both charges feel the same ${g(P2.F)} N, a third-law pair; the smaller charge does not feel half as much (${g(P2.nums[3])} N).</p>` },
     { q: `The page’s like pair, +${P2b.q1 / uC} μC and +${P2b.q2 / uC} μC, is held ${p(P2b.r1 * 100, 0)} cm apart. The +${P2b.q2 / uC} μC charge is released (the other stays fixed). How much work does the electric force do on it by the time they are ${p(P2b.r2 * 100, 0)} cm apart?`,
@@ -88,6 +89,8 @@ export const PRACTICE = {
   ],
   3: [
     { q: `On the page, A (+${qA / uC} μC) and B (+${qB / uC} μC) are ${p(D * 100, 0)} cm apart. How far from A is the net force on a test charge between them zero?`,
+      numeric: { answer: P3.x * 100, tol: 0.2, unit: 'cm', placeholder: p(P3.x * 100, 1) },
+      target: { label: 'Check balance point in figure', hint: `Drag the test charge to the balance point x = ${p(P3.x * 100, 1)} cm where ΣF = 0`, check: s => Math.abs((s?.lineX ?? 0) - P3.x) <= 0.025 },
       choices: P3.nums.map(x => `${p(x, 1)} cm`), answer: 3, nums: P3.nums,
       why: `<div class="eq"><i>kq</i><sub>A</sub>/<i>x</i>² = <i>kq</i><sub>B</sub>/(<i>d</i> − <i>x</i>)² &nbsp;→&nbsp; (<i>d</i> − <i>x</i>)/<i>x</i> = √(<i>q</i><sub>B</sub>/<i>q</i><sub>A</sub>) = ${p(Math.sqrt(qB / qA), 2)} &nbsp;→&nbsp; <i>x</i> = ${p(P3.x * 100, 1)} cm</div><p>It sits nearer the <b>smaller</b> charge, B. Splitting <i>d</i> in the ratio of the charges (${p(P3.nums[1], 1)} cm) forgets that force goes as 1/<i>r</i>², so the distances go as the square roots.</p>` },
     { q: `The +${p(q0 / uC, 1)} μC test charge is nudged a small distance <i>s</i> along the line from that balance point. The net force is then <i>F</i> ≈ −κ<i>s</i>. κ is`,

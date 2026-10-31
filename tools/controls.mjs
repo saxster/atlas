@@ -17,9 +17,9 @@ const clock = () => p.evaluate(() => __atlas.clock);
 await open(`/${c}/`); await wait(600);
 check('plays at once by default', await p.evaluate(() => __atlas.started) && await p.$eval('#play', e => e.getAttribute('aria-label')) === 'Pause');
 
-await open(`/${c}/?calm#1`);
+await open(`/${c}/?calm&t=4.25#1`);
 const c0 = await clock(); await wait(900);
-check('calm: still until asked', c0 === await clock() && await p.$eval('#play', e => e.getAttribute('aria-pressed')) === 'false');
+check('calm: still until asked and honors ?t=4.25', Math.abs(c0 - 4.25) < 0.05 && c0 === await clock() && await p.$eval('#play', e => e.getAttribute('aria-pressed')) === 'false' && !!await p.$('#share'));
 await p.click('#play'); await p.waitForFunction(c => __atlas.clock > c, { timeout: 15000 }, c0).catch(() => {}); const c1 = await clock();
 check('calm: Play starts it', c1 > c0, `clock ${c1.toFixed(2)} s`);
 await p.click('#play'); await wait(300); const c2 = await clock(); await wait(700);

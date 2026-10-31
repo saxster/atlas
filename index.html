@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="engine/atlas.css">
 <link rel="stylesheet" href="engine/shelf.css">
+<script type="module" src="engine/search.js"></script>
 <style>
   .lib { max-width: 760px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
   .lib h2 { font: 400 28px/1.2 var(--serif); color: var(--strong); margin: 40px 0 10px; }
@@ -25,18 +26,19 @@
     <p>A small library: write the model, say what to draw, and get a 3D paper-and-ink figure a reader can work</p>
   </section>
   <main class="lib">
-    <h2>Three ways to work a figure</h2>
+    <h2>Four ways to work a figure</h2>
     <ul>
       <li><b>Book.</b> Scroll turns the page and the camera moves; click a part to break it down. <a href="examples/minimal/book/">Example</a></li>
       <li><b>Machine.</b> Numbered steps, one live at a time, Manual or Auto. <a href="examples/minimal/machine/">Example</a></li>
       <li><b>Explorer.</b> Predict first, then drag the sliders and run it. <a href="examples/minimal/explorer/">Example</a></li>
+      <li><b>Sandbox.</b> Place, drag or wire pieces in 3D, or enter your own matrix and parameters. <a href="examples/minimal/sandbox/">Example</a></li>
     </ul>
     <h2>Start</h2>
 <pre>npm install github:saxster/atlas three
 npx atlas new biology/heart --grammar machine</pre>
     <p>That writes a model, its checks, the figure and a page. Every number on screen comes from the model, and the checks prove the model a second way.</p>
     <h2>Built with it</h2>
-    <p><a href="examples/">Twenty-seven figures</a> across physics, maths, biology, chemistry, statistics and economics, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
+    <p><a href="examples/">Forty-one figures</a> across physics, maths, biology, chemistry, statistics and economics, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
   </main>
 </body>
 </html>

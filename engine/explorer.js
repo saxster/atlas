@@ -13,7 +13,7 @@
 //   readout(state, params) → corner text, chips: [{ label, value: (state, params) → text }],
 //   chart?(state, params) → svg markup, PLATES?, narrowZoom? (camera distance factor on phones), frameAspect? (as machine.js)
 // }
-import { createStage } from './stage.js';
+import { createStage, mountShareButton } from './stage.js';
 import { speedLabel } from './machine.js';
 
 const $ = id => document.getElementById(id);
@@ -26,7 +26,8 @@ export function startExplorer(figure) {
   const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
   if (RENDER) document.documentElement.classList.add('render');
   const params = { ...figure.params };
-  for (const c of figure.controls || []) if (Q.has(c.key)) params[c.key] = +Q.get(c.key);   // ?p=0.7 opens it so
+  let hasParamQuery = false;
+  for (const c of figure.controls || []) if (Q.has(c.key)) { params[c.key] = +Q.get(c.key); hasParamQuery = true; }   // ?p=0.7 opens it so
 
   document.title = `${figure.title} · Atlas`;
   $('figtitle').textContent = figure.title; $('figno').textContent = `Fig. ${figure.no}`;
@@ -35,7 +36,8 @@ export function startExplorer(figure) {
   const chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
   // ---------- predict first ----------
-  let predicted = !figure.predict || RENDER, guess = null, ran = false;
+  const hasTimeQuery = !RENDER && Q.has('t');
+  let predicted = !figure.predict || RENDER || hasParamQuery || hasTimeQuery, guess = null, ran = false;
   if (figure.predict) {
     $('predict').innerHTML = `<div class="kicker">Predict first</div><p class="q">${figure.predict.q}</p><ol class="choices">${figure.predict.choices.map((c, i) =>
       `<li><button type="button" data-c="${i}"><span class="letter">${'ABCDE'[i]}</span><span>${c}</span></button></li>`).join('')}</ol>`;
@@ -66,21 +68,31 @@ export function startExplorer(figure) {
     const c = figure.controls.find(x => x.key === key); params[key] = +e.target.value; e.target.nextElementSibling.textContent = fmt(c);
     if (c.rebuild) build();
     reset();
+    syncUrl();
   });
   // the prediction is about the board as it first stands: the sliders wait until it is made
   $('run').textContent = figure.run.label; $('run').disabled = !predicted;
   if (!predicted) $('controls').querySelectorAll('input').forEach(x => x.disabled = true);
-  let clock = 0, running = false;
   const duration = () => figure.run.duration(params);
-  function reset() { clock = 0; running = false; ran = false; $('run').textContent = figure.run.label; }
+  let clock = hasTimeQuery ? Math.min(Math.max(+Q.get('t') || 0, 0), duration()) : 0, running = false;
+  if (hasTimeQuery && clock >= duration()) { ran = true; $('run').textContent = 'Run it again'; }
+  const shareUrl = () => {
+    const u = new URL(location.href); u.search = '';
+    for (const c of figure.controls || []) if (params[c.key] !== figure.params[c.key]) u.searchParams.set(c.key, String(params[c.key]));
+    if (clock > 0) u.searchParams.set('t', clock.toFixed(2));
+    return u.toString();
+  };
+  const syncUrl = () => { if (!RENDER) history.replaceState(null, '', shareUrl()); };
+  function reset() { clock = 0; running = false; ran = false; $('run').textContent = figure.run.label; syncUrl(); }
   $('run').onclick = () => {
-    if (running) { running = false; $('run').textContent = 'Go on'; return; }
+    if (running) { running = false; $('run').textContent = 'Go on'; syncUrl(); return; }
     if (clock >= duration()) clock = 0;
     running = true; $('run').textContent = 'Pause';
     // on a phone the figure sits above the controls: bring it into view to watch the run
     if (narrowQ.matches) document.querySelector('.figure').scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
   };
   $('again').onclick = () => reset();
+  mountShareButton($('again'), shareUrl, 'again sharebtn', syncUrl);
 
   // ---------- the figure ----------
   let S = null;
@@ -116,13 +128,13 @@ export function startExplorer(figure) {
     const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;
     if (running) {
       clock = reduced ? duration() : Math.min(clock + dt, duration());
-      if (clock >= duration()) { running = false; ran = true; $('run').textContent = 'Run it again'; reveal(); }
+      if (clock >= duration()) { running = false; ran = true; $('run').textContent = 'Run it again'; reveal(); syncUrl(); }
     }
     draw(now, dt, clock);
     if (!RENDER) requestAnimationFrame(frame);
   }
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, 0); else frame(t); }));
-  window.__atlas = { E: S.E, S, N: 1, labelReport: S.labelReport, params, reset,
+  window.__atlas = { E: S.E, S, N: 1, labelReport: S.labelReport, params, reset, shareUrl,
     get state() { return { clock, running, predicted, ran }; }, get clock() { return S.clock; } };
   if (RENDER) {
     const D = duration() + END;

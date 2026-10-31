@@ -86,6 +86,7 @@ const html = `<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../engine/atlas.css">
 <link rel="stylesheet" href="concepts.css">
+<script type="module" src="../../engine/search.js"></script>
 </head>
 <body>
 <!-- written by concepts/build.mjs from concepts/*.js: edit those, then run it -->
@@ -93,6 +94,7 @@ const html = `<!doctype html>
   <section class="hero">
     <h1>One idea, many subjects.</h1>
     <p>Every idea in the atlases, and the figures that show it</p>
+    <div class="concept-filter-wrap"><input type="search" id="concept-filter" class="concept-filter" placeholder="Filter concepts, formulas, or subjects… (or press ⌘K)" aria-label="Filter concepts"></div>
   </section>
   <nav><div class="in"><a href="#threads">Threads</a>${bySubject.map(b => `<a href="#${b.subject}">${esc(NAMES[b.subject])}</a>`).join('')}<a href="../physics/equations/">AP equation sheets</a></div></nav>
   <main>

@@ -25,8 +25,9 @@ npx atlas new biology/heart --grammar machine
    - **Book.** Scrolling turns pages and moves the camera; clicking a part breaks it down.
    - **Machine.** Numbered steps, one live at a time, Manual or Auto.
    - **Explorer.** The reader predicts first, then drags sliders and runs it.
+   - **Sandbox.** Constructive play: place and drag 3D pieces, or enter a custom matrix or parameters.
 
-The three minimal examples in `examples/minimal/` are each about 50 to 70 lines of scene and figure code. Every
+The four minimal examples in `examples/minimal/` are each about 50 to 70 lines of scene and figure code. Every
 example figure also works under `?render`, where `window.seek(t)` draws any moment the same way every time. That is
 what the stills, tests and videos use.
 
@@ -34,10 +35,10 @@ what the stills, tests and videos use.
 
 | Path | What |
 |---|---|
-| `engine/` | the library: stage, three grammars, building blocks, charts, model checks, seeded randomness |
+| `engine/` | the library: stage, four grammars, `draggable`, instant search, building blocks, charts, model checks, seeded randomness |
 | `adapters/` | `kym-live.js` (mount a figure in a Kym textbook), `molecule.js` (3Dmol, loaded on demand) |
 | `bin/atlas.mjs` | `atlas new` |
-| `examples/` | 27 figures in physics, maths, biology, chemistry, statistics and economics, plus a concept index |
+| `examples/` | 41 figures in physics, maths, biology, chemistry, statistics and economics, plus a concept index |
 | `tools/` | checks, browser tests, stills, jump and label critics, video recording, vendoring into textbooks |
 | `docs/API.md` | the reference |
 
