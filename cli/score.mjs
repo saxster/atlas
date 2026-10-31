@@ -108,6 +108,19 @@ const I = +p3.match(/Integrated loudness:\s+I:\s+(-?[\d.]+)/)[1], TP = +p3.match
 const ok = Math.abs(I + 14) <= 1 && TP <= -0.9;
 console.log(ok ? 'PASS' : 'FAIL', `loudness ${I} LUFS (target −14 ±1), true peak ${TP} dBTP (limit −1)`);
 
+// waveform PNG with beat markers (page/step starts in red, designed events in amber) for visual sync check
+const wavePng = timelineFile.replace(/\.timeline\.json$/, '') + '.wave.png';
+const W_WAVE = 1600, H_WAVE = 240;
+const boxes = [
+  ...T.starts.map(t => `drawbox=x=${Math.min(W_WAVE - 2, Math.max(0, Math.round((t / T.duration) * W_WAVE)))}:y=0:w=2:h=${H_WAVE}:color=#e5484d@0.8:t=fill`),
+  ...ev.slice(0, 48).map(t => `drawbox=x=${Math.min(W_WAVE - 1, Math.max(0, Math.round((t / T.duration) * W_WAVE)))}:y=0:w=1:h=${H_WAVE}:color=#d97706@0.45:t=fill`),
+];
+try {
+  ff(['-y', '-i', wav, '-filter_complex', [`aformat=channel_layouts=mono`, `showwavespic=s=${W_WAVE}x${H_WAVE}:colors=#18181a`, ...boxes].join(','), '-frames:v', '1', wavePng]);
+} catch {
+  try { ff(['-y', '-i', wav, '-filter_complex', `aformat=channel_layouts=mono,showwavespic=s=${W_WAVE}x${H_WAVE}:colors=#18181a`, '-frames:v', '1', wavePng]); } catch {}
+}
+
 if (silentVideo && outVideo) {
   ff(['-y', '-i', silentVideo, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', outVideo]);
   fs.unlinkSync(silentVideo); fs.unlinkSync(wav);

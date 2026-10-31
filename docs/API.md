@@ -46,8 +46,8 @@ on one screen from disagreeing.
   opens a breakdown on click, under the name `key`.
 - `update(state, look)` poses the scene for a model state. `look` holds 0 to 1 weights for the `lookKeys` a page
   or step turns on, eased by the engine.
-- `labels` is a list of `{ cls, html, at }`. `at()` returns a `THREE.Vector3`, or `null` to hide the label. The
-  label classes are in `engine/labels.css` (`board`, `tick`, `axis`, `mark`, `vec`, `sound`).
+- `labels` is a list of `{ cls, html, at, leader?, anchor? }`. `at()` returns a `THREE.Vector3`, or `null` to hide the label. When `leader: true` (and optional `anchor()` returning the 3D attachment point), the stage draws a bent SVG leader line with a target dot connecting the 3D part to the offset label. The label classes are in `engine/labels.css` (`board`, `tick`, `axis`, `mark`, `vec`, `tag`, `sound`).
+- `E.setCutaway(planeOrPlanes, keys?)`, `E.setXray(amount, keys?)`, `E.setIsolate(keys)` and `E.warm()` control section-plane clipping, ghosted housing transparency, subsystem isolation and first-frame shader pre-compilation. Pages and steps can also drive them declaratively via `look: { xray, section, isolate, ex }`.
 
 ## Building blocks (`prims.js`)
 
@@ -69,14 +69,23 @@ coordinates.
 | `blob(parent, { radius?, lobes?, cleft?, seed?, rings?, segs?, pal? })` | seeded coarse-grained globular shape with optional active-site cleft | `mesh`, `update(spec)` |
 | `particles(parent, count, { radius?, color?, axes? })` | one instanced set of balls | `set(i, [x, y, z])`, `show(n)` |
 | `molecule(parent, xyz, { scale?, names? })` | atoms and bonds from XYZ text (ångström); bonds from covalent radii | `atoms`, `bonds` (and `parseXYZ(text)`) |
+| `linkage(parent, { joints, links, r?, pinR?, pinDepth?, z?, axes?, pal?, pinPal? })` | multi-bar planar or 3D linkage of rods and pin bosses | `bars`, `pins`, `update(joints)` |
 | `draggable(target, { axes?, plane?, constrain?, onDrag?, onReset? })` | (`stage.js`) makes any 3D mesh/group directly grab-and-drag interactive on a plane or curve | `{ get, set, reset, project }` |
 
 `update` and `set` rewrite geometry in place, so they can run every frame. Colours are `'hi'` (ink), `'grey'`,
 any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the comment at the top of `engine/prims.js`;
 `engine/selftest.mjs` tests every block, and `examples/minimal/` shows the core patterns.
 
-Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `lines`, `arrow`, `liveTube`,
-`shadeMat`, `PALETTE`) for shapes the blocks don't cover.
+Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `rod`, `gearGeo`, `gear`, `rackGeo`, `rack`,
+`spring`, `lines`, `arrow`, `liveTube`, `shadeMat`, `PALETTE`) for shapes and mechanical CAD parts (`spring.set(a, b)` stretches a helical coil in place every frame).
+
+## Kinematics & Constraint Solver (`kinematics.js`)
+
+Pure forward and inverse kinematics for mechanical figures (`@saxster/atlas/kinematics.js`, no DOM or three.js):
+
+- **Analytical forward kinematics:** `circleIntersect(p0, r0, p1, r1, branch)`, `sliderCrank(theta, r, L, offset?)` (returns `{ s, v, a, phi, pin, piston }`), `fourBar(a, b, c, d, theta, branch?)`, `gearRatio(driveAngle, teethDrive, teethDriven, opts?)`, `rackPinion({ module, teeth, stroke?, angle? })`, `differential({ ring?, left?, right?, ratio? })`.
+- **Declarative constraint solver:** `createSolver(defs, { iterations?, tol? })` topologically sorts sequential chains (`revolute`, `prismatic`, `gear`, `rackPinion`, `sliderCrank`, `circleIntersect`, `fourBar`, `differential`) for single-pass exact evaluation and relaxes closed loops (`distance` or custom `{ solve, residual }`).
+- **Inverse kinematics:** `twoLinkIK(base, target, L1, L2, elbow)`, `fabrik(joints, lengths, target, opts?)` (2D/3D serial chain solver), and `jacobianIK({ angles, fk, target, method: 'dls' | 'transpose', limits?, step?, damping? })`.
 
 ## Four grammars
 
@@ -89,8 +98,9 @@ is `{ kicker, title, sub, body, cam, lit, look, fig, alt, parts?, molecule? }`. 
 `practice.js` and support 4-choice (`choices`), numeric entry (`numeric: { answer, tol }`), and 3D drag-position verification (`target: { label, hint, check(state, E) }`).
 
 **Machine** (`startMachine(figure)`, `machine.js`). Numbered steps, only the next one live. Manual by default, Auto
-on request, and the choice is remembered. A step is `{ label, hint, run, play, real?, cam, look?, lit? }`: `run`
+on request (with simulated operator cursor and 25 s pointer-interaction handover), and the choice is remembered. A step is `{ label, hint, run, play, real?, cam, look?, lit? }`: `run`
 model seconds shown in `play` seconds on screen, with a speed badge. `chips` fill in from the step that earns them.
+Optional `cuts: ['solid', 'xray', 'section']` (with `xrayKeys`, `cutKeys`, `cutPlane`) mounts a cutaway pill bar (also supported in `sandbox.js`).
 
 **Explorer** (`startExplorer(figure)`, `explorer.js`). Predict first, then sliders and a seeded run. `predict` is
 `{ q, choices, answer(params), why(params) }`: the model works out the answer, which shows after the run. A control
@@ -125,7 +135,7 @@ mountFigure(document.querySelector('#cell'), CHAPTER, { page: 2, height: 420 });
 
 `const C = checks()` gives `C.check(label, ok, info)` rows; `C.report()` prints them and exits 1 on any failure. Helpers: `near`, `deriv`, `integ`
 (Simpson), `bisect`, `rk4`, `mean`, `variance`, `meanWithin`, `chiSquare` with its exact CDF and critical value,
-`normalQuantile`, `binomial`. `rng(seed)` (`rng.js`) is seeded randomness, so a stochastic model checks exactly.
+`normalQuantile`, `binomial`, `checkLinkLengths(joints, links, tol?)`. `rng(seed)` (`rng.js`) is seeded randomness, so a stochastic model checks exactly.
 
 ## In a textbook
 
@@ -140,7 +150,7 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 
 | Command | Does |
 |---|---|
-| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox` | copies a working minimal example to start from |
+| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown` | copies a working minimal example to start from |
 | `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
 | `npx atlas critic <figure…>` | frames that change far more than their neighbours, and labels that overlap or hide |

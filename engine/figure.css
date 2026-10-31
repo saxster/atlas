@@ -15,10 +15,13 @@
 .question { font: italic 400 24px/1.25 var(--serif); color: var(--strong); margin: 0; }
 .kicker { font: 500 11px/1 var(--mono); letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
 
-/* Manual / Auto */
+/* Manual / Auto & Cutaway pill bars */
 .mode { display: inline-flex; align-self: flex-start; border: 1px solid var(--faint); border-radius: 999px; padding: 2px; background: var(--card); }
 .mode button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
 .mode button[aria-pressed="true"] { background: var(--hi); color: var(--card); }
+.cutbar { margin-top: -6px; }
+.tourcursor { position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none; opacity: 0; transition: opacity .2s; }
+.tourcursor .ring { position: absolute; left: 3px; top: 2px; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--red); pointer-events: none; opacity: 0; }
 
 /* the steps: big pills with a number in a circle; the running one lights, finished ones fade, the next one pulses */
 .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }

@@ -19,7 +19,7 @@
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, smooth, mountShareButton } from './stage.js';
+import { createStage, smooth, mountShareButton, mountCutBar } from './stage.js';
 
 const $ = id => document.getElementById(id);
 const MODE_KEY = 'atlas:machine-mode';
@@ -75,6 +75,8 @@ export function startMachine(figure) {
 
   let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !reduced ? 'auto' : 'manual');
   let done = !RENDER && Q.has('step') ? Math.min(Math.max(+Q.get('step') || 0, 0), N) : 0, k = 0, u = 0, wait = 0;
+  let cutBar = null;
+  let idleWait = 0;
   if (!RENDER && Q.has('t') && !Q.has('step')) {
     const tc = +Q.get('t') || 0;
     for (let i = 0; i < N; i++) if (tc >= T0[i] + STEPS[i].run - 1e-6) done = i + 1;
@@ -85,24 +87,53 @@ export function startMachine(figure) {
     if (d > 0) url.searchParams.set('step', String(d));
     const p = poseOf(done, k, u);
     if (p.clock > 0) url.searchParams.set('t', p.clock.toFixed(2));
+    if (cutBar && cutBar.mode !== 'solid') url.searchParams.set('cut', cutBar.mode);
     return url.toString();
   };
   const syncMode = () => document.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-  document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { mode = b.dataset.mode; localStorage.setItem(MODE_KEY, mode); syncMode(); if (mode === 'auto' && !k) wait = 0.4; });
+  document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { mode = b.dataset.mode; idleWait = 0; localStorage.setItem(MODE_KEY, mode); syncMode(); if (mode === 'auto' && !k) wait = 0.4; });
   syncMode();
   function press(n) { if (k || n !== done + 1) return; k = n; u = 0; }
-  function startOver() { done = 0; k = 0; u = 0; wait = mode === 'auto' ? 0.6 : 0; S.select(null); }
-  $('steps').addEventListener('click', e => { const b = e.target.closest('.step'); if (!b) return; if (mode === 'auto') { mode = 'manual'; syncMode(); } press(+b.dataset.k); });
+  function startOver() { done = 0; k = 0; u = 0; wait = mode === 'auto' ? 0.6 : 0; cutBar?.reset(); S.select(null); }
+  $('steps').addEventListener('click', e => { const b = e.target.closest('.step'); if (!b) return; if (mode === 'auto') { mode = 'manual'; idleWait = 0; syncMode(); } press(+b.dataset.k); });
   $('again').onclick = startOver;
   mountShareButton($('again'), shareUrl);
   addEventListener('keydown', e => {
     if (e.target.closest?.('button, input, select, textarea, a')) return;
+    if (mode === 'auto' && !RENDER) idleWait = 25;
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (done === N) startOver(); else press(done + 1); }
     if (e.key === 'Escape') S.select(null);
   });
 
   // ---------- the figure ----------
   const S = createStage($('gl'), $('labels'), { ...figure, PAGES }, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  S.hooks.onPointerDown = () => { if (mode === 'auto' && !RENDER) { idleWait = 25; } };
+
+  // Optional cutaway / x-ray / section bar when figure.cuts is provided
+  cutBar = mountCutBar($('mode'), figure, () => S, { initialMode: Q.get('cut') || null, place: 'after' });
+  if (cutBar && Q.has('cut')) cutBar.apply(Q.get('cut'), true);
+
+  // Simulated operator cursor + click ring during Auto / ?render tours
+  const tourCur = document.createElement('div');
+  tourCur.className = 'tourcursor';
+  tourCur.setAttribute('aria-hidden', 'true');
+  tourCur.innerHTML = `<span class="ring"></span><svg width="18" height="18" viewBox="0 0 28 28"><path d="M3 2 L24 11 L14 14.5 L10.5 24 Z" fill="var(--hi, #18181a)" stroke="var(--card, #fff)" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  document.body.appendChild(tourCur);
+  const ringEl = tourCur.querySelector('.ring');
+  function updateTourCursor(pose) {
+    const show = (mode === 'auto' || RENDER) && idleWait <= 0 && !narrowQ.matches && stepB.length > 0;
+    if (!show || !pose.step) { tourCur.style.opacity = '0'; return; }
+    const btn = stepB[pose.step - 1];
+    if (!btn) { tourCur.style.opacity = '0'; return; }
+    const r = btn.getBoundingClientRect();
+    const tx = r.left + 22, ty = r.top + r.height * 0.55;
+    const age = pose.playing ? (pose.u || 0) : 99;
+    const pressRing = age >= 0 && age < 0.45 ? 1 - age / 0.45 : 0;
+    tourCur.style.opacity = age < 1.1 ? String(Math.min(1, (1.1 - age) / 0.35)) : '0';
+    tourCur.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${age < 0.14 ? 0.88 : 1})`;
+    ringEl.style.opacity = String(pressRing * 0.85);
+    ringEl.style.transform = `translate(-50%, -50%) scale(${(0.35 + (1 - pressRing) * 0.9).toFixed(2)})`;
+  }
   S.hooks.onHover = key => { $('hint').textContent = key ? `${S.E.ASM[key].userData.title}: click to look closer` : hintFor(); };
   S.hooks.onSelect = key => {
     const pl = $('plate');
@@ -137,6 +168,8 @@ export function startMachine(figure) {
     const st = pose.playing ? STEPS[pose.step - 1] : null, sp = st && (st.real ?? st.run) > 0 ? speedLabel(st.real ?? st.run, st.play) : '';   // a step that only changes the view has no speed
     $('speed').textContent = sp; $('speed').hidden = !sp;
     drawSounds(pose, state);
+    updateTourCursor(pose);
+    cutBar?.syncFromLook(S.lastLook);
     if (S.selected && $('facts') && figure.PLATES[S.selected].facts) $('facts').innerHTML = figure.PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
     const curDone = pose.playing ? pose.step - 1 : pose.step, curK = pose.playing ? pose.step : 0;
     if (curDone !== lastDone || curK !== lastK) {
@@ -162,8 +195,12 @@ export function startMachine(figure) {
       u += reduced ? STEPS[k - 1].play : dt;                 // reduced motion: a step lands at once
       if (u >= STEPS[k - 1].play) { done = k; k = 0; u = 0; wait = done === N ? END : GAP; }
     } else if (mode === 'auto') {
-      wait -= dt;
-      if (wait <= 0) { if (done === N) startOver(); else press(done + 1); }
+      if (idleWait > 0) {
+        idleWait = Math.max(0, idleWait - dt);
+      } else {
+        wait -= dt;
+        if (wait <= 0) { if (done === N) startOver(); else press(done + 1); }
+      }
     }
     draw(now, dt, poseOf(done, k, u));
     if (!RENDER) requestAnimationFrame(frame);
@@ -171,8 +208,8 @@ export function startMachine(figure) {
   if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
   document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
-  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver, shareUrl,
-    get state() { return { done, k, u, mode }; }, get clock() { return S.clock; } };
+  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
+    get state() { return { done, k, u, mode, cut: cutBar?.mode || 'solid' }; }, get clock() { return S.clock; } };
   if (RENDER) {
     window.DURATION = DURATION;
     // stills land mid-step: each step's tour stretch, the intro before the first press

@@ -41,7 +41,23 @@ export async function record(target, { out = 'videos', size = '1920x1080', fps =
   // the gate: exactly DURATION × fps frames
   const counted = +execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_entries', 'stream=nb_read_frames', '-of', 'csv=p=0', silent]).toString().replace(/[^0-9]/g, '');
   console.log(counted === frames ? 'PASS' : 'FAIL', `frame count ${counted}, expected ${frames}`);
-  execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', silent, '-vf', `fps=1/3,scale=480:-1,tile=4x${Math.ceil(R.duration / 3 / 4)}`, '-frames:v', '1', '-q:v', '4', path.join(outDir, `${name}.sheet.jpg`)]);
+  const stamp = `drawtext=text='t=%{pts\\:flt}s':x=10:y=10:fontsize=16:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=4`;
+  const sheetBase = `fps=1/3,scale=480:-1`, sheetTile = `tile=4x${Math.ceil(R.duration / 3 / 4)}`;
+  try {
+    execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', silent, '-vf', `${sheetBase},${stamp},${sheetTile}`, '-frames:v', '1', '-q:v', '4', path.join(outDir, `${name}.sheet.jpg`)]);
+  } catch {
+    execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', silent, '-vf', `${sheetBase},${sheetTile}`, '-frames:v', '1', '-q:v', '4', path.join(outDir, `${name}.sheet.jpg`)]);
+  }
+  if (R.starts?.length) {
+    const beatFrames = [...new Set(R.starts.map(s => Math.min(frames - 1, Math.max(0, Math.round((s + 0.3) * FPS)))))];
+    const sel = beatFrames.map(n => `eq(n\\,${n})`).join('+');
+    const cols = Math.min(4, beatFrames.length), rows = Math.ceil(beatFrames.length / cols);
+    try {
+      execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', silent, '-vf', `select='${sel}',scale=480:-1,${stamp},tile=${cols}x${rows}`, '-vsync', '0', '-frames:v', '1', '-q:v', '4', path.join(outDir, `${name}.beats.jpg`)]);
+    } catch {
+      execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', silent, '-vf', `select='${sel}',scale=480:-1,tile=${cols}x${rows}`, '-vsync', '0', '-frames:v', '1', '-q:v', '4', path.join(outDir, `${name}.beats.jpg`)]);
+    }
+  }
 
   if (quiet) fs.renameSync(silent, video);
   else execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'score.mjs'), path.join(outDir, `${name}.timeline.json`), silent, video], { stdio: 'inherit' });

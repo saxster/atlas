@@ -6,6 +6,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 export const TONE = { faint: 0.2, lo: 0.4, mid: 0.6, hi: 0.8, lit: 1.0 };
 
 const SHADE_V = `
+  #include <clipping_planes_pars_vertex>
   varying vec3 vWN;
   void main() {
     vec3 n = normal;
@@ -15,11 +16,14 @@ const SHADE_V = `
     vWN = normalize(mat3(modelMatrix) * n);
     #include <begin_vertex>
     #include <project_vertex>
+    #include <clipping_planes_vertex>
   }`;
 const SHADE_F = `
+  #include <clipping_planes_pars_fragment>
   uniform vec3 uTop; uniform vec3 uLight; uniform vec3 uDark; uniform float uOpacity; uniform float uLit;
   varying vec3 vWN;
   void main() {
+    #include <clipping_planes_fragment>
     vec3 n = normalize(vWN);
     // sides: close tones by facing, continuous so curved parts never staircase
     float side = clamp(dot(normalize(vec3(-0.55, 0.0, 0.83)), normalize(vec3(n.x, 0.0, n.z) + 1e-5)) * 0.5 + 0.5, 0.0, 1.0);
@@ -37,6 +41,9 @@ export const PALETTE = {
   ink: ['#4a4a50', '#2c2c30', '#18181a'],
   red: ['#f07a7e', '#e5484d', '#b8343a'],
   blue: ['#8fb0f0', '#5b86d6', '#3d63a8'],          // velocity / system totals, where a chapter needs a second hue
+  green: ['#7ec49e', '#3f8a63', '#2e604a'],
+  ochre: ['#e3b857', '#c8962e', '#936022'],
+  amber: ['#e3b857', '#c8962e', '#936022'],
   board: ['#fdfdfb', '#f7f7f4', '#ececE8'],
 };
 let before = null;                                  // the palette as it was before a theme replaced it
@@ -68,6 +75,7 @@ export function applyTheme(theme) {
     blue: tri(theme.blue || '#356d83'),
     green: tri(theme.green || '#2e604a'),
     ochre: tri(theme.ochre || '#936022'),
+    amber: tri(theme.ochre || '#936022'),
     board: [mix(sheet, ink, 0.0), mix(sheet, ink, 0.02), mix(sheet, ink, 0.06)],
   });
   return { sheet: '#' + sheet.getHexString(), ink: '#' + ink.getHexString(), dark, inks: [0.18, 0.32, 0.5, 0.82, 1].map(u => mix(sheet, ink, u)) };
@@ -196,4 +204,138 @@ export function liveTube(n, radius, radial = 6) {
     bb.expandByScalar(radius); bb.getBoundingSphere(bs);
   };
   return geo;
+}
+
+// ---------- mechanical CAD primitives: gears, racks, and deformable coil springs ----------
+
+// Extruded involute/trapezoidal spur or helical gear geometry in the XY plane (axis along Z, thickness width).
+// Specify either { r } (pitch radius) or { module } (pitch radius = 0.5 * module * teeth).
+export function gearGeo(teeth = 16, { module: m, r, width = 0.14, helix = 0, bore = 0, pressureAngle = 20, bevel = true } = {}) {
+  const rp = r ?? 0.5 * (m ?? 0.1) * teeth;
+  const mod = (2 * rp) / teeth;
+  const ra = rp + 0.95 * mod, rr = Math.max(bore + mod * 0.3, rp - 1.15 * mod);
+  const sh = new THREE.Shape();
+  const da = (Math.PI * 2) / teeth;
+  const flank = Math.max(0.06, Math.min(0.24, Math.tan((pressureAngle * Math.PI) / 180) * 0.41));
+  for (let i = 0; i < teeth; i++) {
+    const a0 = i * da;
+    const pts = [
+      [rr, a0],
+      [rr, a0 + da * 0.18],
+      [ra, a0 + da * (0.18 + flank)],
+      [ra, a0 + da * (0.76 - flank)],
+      [rr, a0 + da * 0.76],
+    ];
+    pts.forEach(([rad, ang], k) => {
+      const x = rad * Math.cos(ang), y = rad * Math.sin(ang);
+      if (i === 0 && k === 0) sh.moveTo(x, y); else sh.lineTo(x, y);
+    });
+  }
+  sh.closePath();
+  if (bore > 0) {
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, bore, 0, Math.PI * 2, true);
+    sh.holes.push(hole);
+  }
+  const bev = bevel ? Math.min(mod * 0.14, width * 0.12) : 0;
+  const g = new THREE.ExtrudeGeometry(sh, {
+    depth: width,
+    bevelEnabled: bev > 0,
+    bevelThickness: bev,
+    bevelSize: bev * 0.85,
+    bevelSegments: 1,
+    curveSegments: 4,
+  });
+  g.translate(0, 0, -width / 2);
+  if (helix) {
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const a = (p.getZ(i) / width) * helix;
+      const x = p.getX(i), y = p.getY(i);
+      p.setXY(i, x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a));
+    }
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+export function gear(parent, { teeth = 16, module: m, r, width = 0.14, helix = 0, bore = 0, pressureAngle = 20, pal = 'paper', tone = 'mid', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat } = {}) {
+  const rp = r ?? 0.5 * (m ?? 0.1) * teeth;
+  const mesh = part(parent, gearGeo(teeth, { module: m, r: rp, width, helix, bore, pressureAngle }), { pal, tone, pos, rot, name, ex, mat });
+  mesh.userData.rp = rp;
+  mesh.userData.teeth = teeth;
+  return mesh;
+}
+
+// Extruded linear gear rack along X (teeth on +Y face by default; rotateZ(Math.PI) for teeth on -Y), extruded by width along Z.
+export function rackGeo(teeth = 12, { module: m = 0.1, pitch, width = 0.14, height = 0.18, bevel = true } = {}) {
+  const p = pitch ?? Math.PI * m;
+  const mod = p / Math.PI;
+  const len = teeth * p;
+  const yBase = -height / 2, yRoot = height / 2 - 1.1 * mod, yTip = height / 2 + 0.9 * mod;
+  const sh = new THREE.Shape();
+  sh.moveTo(-len / 2, yBase);
+  sh.lineTo(-len / 2, yRoot);
+  for (let i = 0; i < teeth; i++) {
+    const x0 = -len / 2 + i * p;
+    sh.lineTo(x0 + p * 0.18, yRoot);
+    sh.lineTo(x0 + p * 0.33, yTip);
+    sh.lineTo(x0 + p * 0.61, yTip);
+    sh.lineTo(x0 + p * 0.76, yRoot);
+  }
+  sh.lineTo(len / 2, yRoot);
+  sh.lineTo(len / 2, yBase);
+  sh.closePath();
+  const bev = bevel ? Math.min(mod * 0.14, width * 0.12) : 0;
+  const g = new THREE.ExtrudeGeometry(sh, {
+    depth: width,
+    bevelEnabled: bev > 0,
+    bevelThickness: bev,
+    bevelSize: bev * 0.85,
+    bevelSegments: 1,
+  });
+  g.translate(0, 0, -width / 2);
+  g.computeVertexNormals();
+  return g;
+}
+
+export function rack(parent, { teeth = 12, module: m = 0.1, pitch, width = 0.14, height = 0.18, pal = 'paper', tone = 'mid', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat } = {}) {
+  const p = pitch ?? Math.PI * m;
+  const mesh = part(parent, rackGeo(teeth, { module: m, pitch: p, width, height }), { pal, tone, pos, rot, name, ex, mat });
+  mesh.userData.pitch = p;
+  mesh.userData.length = teeth * p;
+  return mesh;
+}
+
+// Deformable helical coil spring built on liveTube: spring.set(a, b) stretches and compresses the coil between two 3D
+// endpoints in place every frame without allocating new geometry.
+export function spring(parent, { r = 0.09, wire = 0.016, turns = 7, segs = 96, radial = 6, pal = 'dark', tone = 'hi', name, ex = [0, 0, 0], from = [0, 0, 0], to = [0, 1, 0] } = {}) {
+  const geo = liveTube(segs, wire, radial);
+  const mesh = part(parent, geo, { pal, tone, name, ex });
+  const pts = Array.from({ length: segs + 1 }, () => V());
+  const A = V(), B = V(), T = V(), U = V(), W = V();
+  mesh.set = (a, b, rOverride = r) => {
+    A.copy(a.isVector3 ? a : V(...a));
+    B.copy(b.isVector3 ? b : V(...b));
+    T.subVectors(B, A);
+    const len = T.length();
+    mesh.visible = len > 1e-4;
+    if (!mesh.visible) return;
+    T.divideScalar(len);
+    U.set(Math.abs(T.y) < 0.9 ? 0 : 1, Math.abs(T.y) < 0.9 ? 1 : 0, 0);
+    U.addScaledVector(T, -U.dot(T)).normalize();
+    W.crossVectors(T, U);
+    for (let i = 0; i <= segs; i++) {
+      const u = i / segs;
+      // taper the end coils over the first and last 8% so the spring lands cleanly on its mounts
+      const env = Math.sin(Math.min(1, u / 0.08, (1 - u) / 0.08) * (Math.PI / 2));
+      const ang = u * turns * Math.PI * 2;
+      const rad = rOverride * env;
+      const c = Math.cos(ang) * rad, s = Math.sin(ang) * rad;
+      pts[i].copy(A).addScaledVector(T, u * len).addScaledVector(U, c).addScaledVector(W, s);
+    }
+    geo.update(pts);
+  };
+  mesh.set(from, to);
+  return mesh;
 }

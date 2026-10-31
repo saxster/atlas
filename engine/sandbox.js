@@ -1,7 +1,7 @@
 // The sandbox: constructive play. Place, remove or drag pieces in 3D, type your own matrix or parameters, or pick a
 // preset, and watch the figure, chips and chart respond at once. Built on stage.js and draggable(), with shareable URLs
 // and a deterministic ?render tour across presets so tools/cards.mjs and tools/stills.mjs work out of the box.
-import { createStage, ease, mountShareButton } from './stage.js';
+import { createStage, ease, mountShareButton, mountCutBar } from './stage.js';
 
 const $ = id => document.getElementById(id);
 const clone = x => JSON.parse(JSON.stringify(x));
@@ -18,6 +18,7 @@ export function startSandbox(figure) {
   const params = { ...baseParams };
   let items = clone(baseItems);
   let activePreset = figure.presets?.[0]?.key || '';
+  let cutBar = null;
 
   // Restore state from URL query string (?preset=... or ?a=1.5&b=...&items=...)
   if (Q.has('preset')) {
@@ -45,9 +46,18 @@ export function startSandbox(figure) {
       if (v !== baseParams[k]) u.searchParams.set(k, typeof v === 'number' ? String(+v.toFixed(3)) : String(v));
     }
     if (JSON.stringify(items) !== JSON.stringify(baseItems)) u.searchParams.set('items', JSON.stringify(items));
+    if (cutBar && cutBar.mode !== 'solid') u.searchParams.set('cut', cutBar.mode);
     return u.toString();
   };
   const syncUrl = () => { if (!RENDER) history.replaceState(null, '', shareUrl()); };
+
+  // ---------- optional cutaway / x-ray / section bar ----------
+  let S = null;
+  cutBar = mountCutBar($('presets') || $('controls'), figure, () => S, {
+    initialMode: Q.get('cut') || null,
+    place: 'before',
+    onChange: () => syncUrl(),
+  });
 
   // ---------- presets ----------
   const presetsEl = $('presets');
@@ -185,7 +195,6 @@ export function startSandbox(figure) {
   };
 
   // ---------- the figure ----------
-  let S = null;
   const fig = () => ({
     ...figure,
     PAGES: (typeof figure.PAGES === 'function' ? figure.PAGES(params, items) : figure.PAGES).map(p => ({ look: {}, ...p })),
@@ -205,6 +214,7 @@ export function startSandbox(figure) {
       pl.innerHTML = `<button type="button" class="close">Close</button><div class="kicker">Closer</div><h2>${ud.title}</h2><p class="sub">${ud.sub || ''}</p><p>${figure.PLATES[key].text}</p>`;
       pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
     };
+    if (cutBar?.overridden) cutBar.apply(cutBar.mode, true);
     if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport });
   }
   build();
@@ -228,8 +238,8 @@ export function startSandbox(figure) {
 
   window.__atlas = {
     E: S.E, S, N: 1, labelReport: S.labelReport, params, get items() { return items; },
-    reset, shareUrl, setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
-    get state() { return { clock, params: { ...params }, items: clone(items), activePreset }; },
+    reset, shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
+    get state() { return { clock, params: { ...params }, items: clone(items), activePreset, cut: cutBar?.mode || 'solid' }; },
     get clock() { return S.clock; },
   };
 

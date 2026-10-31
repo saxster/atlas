@@ -7,6 +7,109 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { TONE, ATLAS_INKS, applyTheme } from './parts.js';
 
+// Assembly controller: manages named 3D subsystems (ASM), lit/hover tones, section clipping planes (setCutaway),
+// translucent housing ghosting (setXray), subsystem isolation (setIsolate), and spring-damped exploded views.
+// Pure Three.js scene-graph logic (no WebGL context required), so selftest.mjs can verify all state transitions in Node.
+export function createAssemblyController(ASM = {}) {
+  let isolatedKey = null;
+  const meshesOf = g => { const out = []; g.traverse(o => { if (o.isMesh && o.userData.part !== undefined) out.push(o); }); return out; };
+  function asm(key, parent, meta) {
+    const g = new THREE.Group();
+    g.userData = { asm: key, ...meta, explode: 0, target: 0, vel: 0 };
+    ASM[key] = g; if (parent) parent.add(g);
+    return g;
+  }
+  const ensureOwnMat = m => {
+    if (!m.userData._ownMat && m.material?.clone) {
+      m.userData._baseMat = m.material;
+      m.material = m.material.clone();
+      m.userData._ownMat = true;
+    }
+    return m.material;
+  };
+  const syncMeshAppearance = m => {
+    const on = !!m.userData.lit;
+    const dim = !!m.userData._isolatedDim;
+    const xr = m.userData._xray || 0;
+    m.userData.tone = on ? TONE.lit : (dim || xr > 0.05) ? TONE.faint : m.userData.baseTone;
+    if (dim || xr > 0 || m.userData._ownMat) {
+      const mat = ensureOwnMat(m);
+      const op = dim ? 0.14 : (1 - 0.78 * xr);
+      mat.transparent = op < 0.995;
+      mat.depthWrite = op >= 0.5 && !dim;
+      if (mat.uniforms?.uOpacity) mat.uniforms.uOpacity.value = op;
+      else mat.opacity = op;
+    }
+  };
+  function setLit(key, partName) {
+    for (const [k, g] of Object.entries(ASM)) for (const m of meshesOf(g)) {
+      m.userData.lit = k === key && (!partName || m.userData.part === partName) ? 1 : 0;
+      syncMeshAppearance(m);
+    }
+  }
+  const toPlane = p => p?.isPlane ? p : Array.isArray(p) ? new THREE.Plane(new THREE.Vector3(p[0], p[1], p[2]).normalize(), p[3] ?? 0) : null;
+  function setCutaway(planes, asmKeys = null) {
+    const list = (Array.isArray(planes) && typeof planes[0] !== 'number' ? planes : planes ? [planes] : []).map(toPlane).filter(Boolean);
+    const groups = asmKeys ? asmKeys.map(k => ASM[k]).filter(Boolean) : Object.values(ASM);
+    for (const g of groups) {
+      if (!asmKeys && g.userData.noCut) continue;
+      for (const m of meshesOf(g)) {
+        if (m.userData.noCut) continue;
+        const mat = ensureOwnMat(m);
+        mat.clipping = list.length > 0;
+        mat.clippingPlanes = list.length ? list : null;
+        mat.side = list.length ? THREE.DoubleSide : THREE.FrontSide;
+        mat.needsUpdate = true;
+      }
+    }
+  }
+  function setXray(amount = 0, asmKeys = null) {
+    const k = Math.max(0, Math.min(1, amount));
+    const defaultKeys = Object.entries(ASM).filter(([, g]) => g.userData.xray || g.userData.housing).map(([key]) => key);
+    const keys = asmKeys || (defaultKeys.length ? defaultKeys : Object.keys(ASM).slice(0, 1));
+    for (const key of keys) {
+      const g = ASM[key]; if (!g) continue;
+      for (const m of meshesOf(g)) {
+        m.userData._xray = k;
+        syncMeshAppearance(m);
+      }
+    }
+  }
+  function setIsolate(key = null) {
+    isolatedKey = key || null;
+    for (const [k, g] of Object.entries(ASM)) {
+      const dim = isolatedKey && k !== isolatedKey ? 1 : 0;
+      for (const m of meshesOf(g)) {
+        m.userData._isolatedDim = dim;
+        syncMeshAppearance(m);
+      }
+    }
+  }
+  function setExplode(amount = 0, asmKeys = null, immediate = false) {
+    const k = Math.max(0, amount);
+    const groups = asmKeys ? asmKeys.map(key => ASM[key]).filter(Boolean) : Object.values(ASM);
+    for (const g of groups) {
+      g.userData.target = k;
+      if (immediate) {
+        g.userData.explode = k;
+        g.userData.vel = 0;
+        g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) o.position.copy(o.userData.home).addScaledVector(o.userData.ex, k); });
+      }
+    }
+  }
+  function stepExplode(dt) {
+    for (const g of Object.values(ASM)) {
+      const u = g.userData;
+      u.vel += (-(u.explode - u.target) * 90 - u.vel * 2 * Math.sqrt(90)) * dt;
+      u.explode += u.vel * dt;
+      if (Math.abs(u.explode - u.target) < 1e-4 && Math.abs(u.vel) < 1e-4) { u.explode = u.target; u.vel = 0; }
+      const e = Math.max(u.explode, 0);
+      g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) o.position.copy(o.userData.home).addScaledVector(o.userData.ex, e); });
+    }
+  }
+  return { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, setExplode, stepExplode };
+}
+
 // theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
 export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null } = {}) {
   const th = applyTheme(theme);
@@ -15,23 +118,24 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   if (th) bg = new THREE.Color(th.sheet).convertSRGBToLinear();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
   renderer.setClearColor(bg);
+  renderer.localClippingEnabled = true;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(fov, 1, near, far);
-  const ASM = {};
-
-  function asm(key, parent, meta) {
-    const g = new THREE.Group();
-    g.userData = { asm: key, ...meta, explode: 0, target: 0, vel: 0 };
-    ASM[key] = g; parent.add(g);
-    return g;
-  }
+  const { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, setExplode, stepExplode } = createAssemblyController({});
 
   // ---------- normal pass: view normal in rgb, line tone in alpha ----------
   const nmats = new Map();
-  const normalMat = tone => {
-    if (!nmats.has(tone)) nmats.set(tone, new THREE.ShaderMaterial({
+  const normalMat = (tone, clipPlanes = null) => {
+    const cKey = clipPlanes?.length ? clipPlanes.map(p => `${p.normal.x},${p.normal.y},${p.normal.z},${p.constant}`).join('|') : '';
+    const key = `${tone}:${cKey}`;
+    if (!nmats.has(key)) nmats.set(key, new THREE.ShaderMaterial({
+      clipping: !!clipPlanes?.length,
+      clippingPlanes: clipPlanes,
+      side: clipPlanes?.length ? THREE.DoubleSide : THREE.FrontSide,
       uniforms: { uTone: { value: tone } },
-      vertexShader: `varying vec3 vN; void main(){
+      vertexShader: `
+        #include <clipping_planes_pars_vertex>
+        varying vec3 vN; void main(){
         vec3 n = normal;
         #ifdef USE_INSTANCING
           n = mat3(instanceMatrix) * n;
@@ -39,10 +143,16 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
         vN = normalize(normalMatrix * n);
         #include <begin_vertex>
         #include <project_vertex>
+        #include <clipping_planes_vertex>
       }`,
-      fragmentShader: `uniform float uTone; varying vec3 vN; void main(){ gl_FragColor = vec4(normalize(vN) * 0.5 + 0.5, uTone); }`,
+      fragmentShader: `
+        #include <clipping_planes_pars_fragment>
+        uniform float uTone; varying vec3 vN; void main(){
+        #include <clipping_planes_fragment>
+        gl_FragColor = vec4(normalize(vN) * 0.5 + 0.5, uTone);
+      }`,
     }));
-    return nmats.get(tone);
+    return nmats.get(key);
   };
   const normalRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(1, 1) });
   const colorRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
@@ -112,7 +222,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     scene.traverse(o => {
       if (!o.visible) return;
       if (o.isLine || o.isLineSegments || o.isPoints || o.isSprite || o.userData.noEdge) { swap.push([o, null]); o.visible = false; return; }
-      if (o.isMesh) { swap.push([o, o.material]); o.material = normalMat(o.userData.tone ?? TONE.mid); }
+      if (o.isMesh) { swap.push([o, o.material]); o.material = normalMat(o.userData.tone ?? TONE.mid, o.material?.clippingPlanes); }
     });
     renderer.setRenderTarget(normalRT); renderer.setClearColor(0x000000, 0); renderer.clear();
     renderer.render(scene, camera);
@@ -121,13 +231,10 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     composer.render();
   }
 
-  // ---------- one lit thing (optionally one named part of it) ----------
-  const meshesOf = g => { const out = []; g.traverse(o => { if (o.isMesh && o.userData.part !== undefined) out.push(o); }); return out; };
-  function setLit(key, partName) {
-    for (const [k, g] of Object.entries(ASM)) for (const m of meshesOf(g)) {
-      const on = k === key && (!partName || m.userData.part === partName);
-      m.userData.tone = on ? TONE.lit : m.userData.baseTone;
-      m.userData.lit = on ? 1 : 0;
+  // Parallel off-thread shader warm-up (compileAsync) so the first interactive frame never stalls on integrated GPUs
+  async function warm() {
+    if (typeof renderer.compileAsync === 'function') {
+      try { await renderer.compileAsync(scene, camera); } catch {}
     }
   }
 
@@ -168,18 +275,6 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     return best;
   }
 
-  // ---------- explode springs ----------
-  function stepExplode(dt) {
-    for (const g of Object.values(ASM)) {
-      const u = g.userData;
-      u.vel += (-(u.explode - u.target) * 90 - u.vel * 2 * Math.sqrt(90)) * dt;
-      u.explode += u.vel * dt;
-      if (Math.abs(u.explode - u.target) < 1e-4 && Math.abs(u.vel) < 1e-4) { u.explode = u.target; u.vel = 0; }
-      const e = Math.max(u.explode, 0);
-      g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) o.position.copy(o.userData.home).addScaledVector(o.userData.ex, e); });
-    }
-  }
-
   function placeCamera({ target, az, el, dist }) {
     const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
     camera.position.set(target[0] + dist * Math.sin(a) * Math.cos(e), target[1] + dist * Math.sin(e), target[2] + dist * Math.cos(a) * Math.cos(e));
@@ -200,5 +295,5 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     renderer.dispose(); renderer.forceContextLoss();
   }
 
-  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };
+  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, setCutaway, setXray, setIsolate, setExplode, warm, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };
 }

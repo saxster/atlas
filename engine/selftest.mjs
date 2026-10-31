@@ -1,10 +1,13 @@
 // node engine/selftest.mjs — the shared checks toolkit and seeded RNG against known values, and the building blocks'
 // geometry (prims.js, built in node: no browser).
-import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial } from './checks.js';
+import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial, checkLinkLengths } from './checks.js';
 import { rng } from './rng.js';
 import { scale, samples } from './chart.js';
 import * as THREE from 'three';
-import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule } from './prims.js';
+import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule, linkage } from './prims.js';
+import { part, box, gearGeo, gear, rack, spring, TONE } from './parts.js';
+import { createAssemblyController } from './render.js';
+import { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
 import { draggable } from './stage.js';
 
 const C = checks();
@@ -118,4 +121,163 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     PCalc[0][0].target.check(sCalc) && PCalc[1][0].target.check(sCalc) && PCalc[2][1].target.check(sCalc)
     && PLa[3][0].target.check(sLa) && PLa[4][0].target.check(sLa)
     && PElec[3][0].target.check(sElec)); }
+// ---------- kinematics & mechanical CAD primitives ----------
+{ const r = 0.045, L = 0.145;
+  const angles = [0.2, 0.9, 1.8, 2.7];
+  const vOk = angles.every(th => near(sliderCrank(th, r, L).v, deriv(t => sliderCrank(t, r, L).s, th), 1e-7));
+  const aOk = angles.every(th => near(sliderCrank(th, r, L).a, deriv(t => sliderCrank(t, r, L).v, th), 1e-7));
+  const lenOk = angles.every(th => {
+    const sc = sliderCrank(th, r, L);
+    return near(Math.hypot(sc.piston[0] - sc.pin[0], sc.piston[1] - sc.pin[1]), L, 1e-12);
+  });
+  C.check('sliderCrank: analytical v = ds/dθ, a = dv/dθ, and rod length |piston − pin| = L', vOk && aOk && lenOk);
+}
+{ // Theo Jansen's 11-bar linkage holy numbers & fourBar
+  const J = { a: 38, b: 41.5, c: 39.3, d: 40.1, e: 55.8, f: 39.4, g: 36.7, h: 65.7, i: 49.0, j: 50.0, k: 61.9, l: 7.8, m: 15.0 };
+  const jansenLinks = [
+    ['O', 'crank', J.m], ['A', 'B', J.b], ['B', 'crank', J.j],
+    ['A', 'D', J.d], ['B', 'C', J.e], ['D', 'C', J.f],
+    ['A', 'E', J.c], ['D', 'E', J.g], ['E', 'crank', J.k],
+    ['E', 'F', J.h], ['C', 'F', J.i],
+  ];
+  const jansenOk = [0, 0.7, 1.9, 3.5, 5.1].every(th => {
+    const O = [0, 0], A = [-J.a, -J.l], crank = [J.m * Math.cos(th), J.m * Math.sin(th)];
+    const B = circleIntersect(A, J.b, crank, J.j, -1);
+    const E = circleIntersect(A, J.c, crank, J.k, 1);
+    const D = circleIntersect(A, J.d, E, J.g, -1);
+    const Cpt = circleIntersect(B, J.e, D, J.f, -1);
+    const F = circleIntersect(E, J.h, Cpt, J.i, 1);
+    return checkLinkLengths({ O, A, crank, B, C: Cpt, D, E, F }, jansenLinks, 1e-5);
+  });
+  const fb = fourBar(1.2, 3.5, 2.2, 4.0, 0.8, 1);
+  const fbOk = checkLinkLengths({ O: fb.O, A: fb.A, B: fb.B, C: fb.C }, [['O', 'A', 1.2], ['A', 'B', 3.5], ['C', 'B', 2.2], ['O', 'C', 4.0]]);
+  C.check('fourBar & Theo Jansen 11-bar linkage: all bars preserve exact link lengths across full crank rotation', jansenOk && fbOk);
+}
+{ const gr = gearRatio(Math.PI, 16, 48);
+  const grIdler = gearRatio(Math.PI, 16, 16, 1);
+  const rpPos = rackPinion(0.5, 0.04, 20);
+  const rp = rackPinion({ module: 0.04, teeth: 20, angle: Math.PI / 2 });
+  const rpInv = rackPinion({ module: 0.04, teeth: 20, stroke: rp.stroke });
+  const dfPos = differential(10, 7);
+  const df = differential({ ring: 10, left: 7 });
+  C.check('gearRatio, rackPinion & differential: positional and object forms give exact angle, travel, and carrier split',
+    near(gr.angle, -Math.PI / 3, 1e-12) && near(gr.ratio, -1 / 3, 1e-12) && near(grIdler.ratio, 1, 1e-12)
+    && near(rpPos.angle, 0.5 / 0.4, 1e-12) && near(rp.stroke, (Math.PI / 2) * 0.4, 1e-12) && near(rpInv.angle, Math.PI / 2, 1e-12)
+    && near(dfPos.right, 13, 1e-12) && near(df.right, 13, 1e-12) && near(0.5 * (df.left + df.right), df.ring, 1e-12));
+}
+{ // Declarative constraint solver: sequential chain + closed-loop relaxation (with and without residual)
+  const solver = createSolver([
+    { type: 'revolute', id: 'crank', input: 'theta', output: 'crank.angle', scale: 1 },
+    { type: 'gear', id: 'mesh1', drive: 'crank.angle', driven: 'driven.angle', teethDrive: 12, teethDriven: 24 },
+    { type: 'slider-crank', id: 'piston', crank: 'crank.angle', r: 0.5, L: 1.6 },
+  ]);
+  const st = solver.solve({ theta: 0.6 });
+  C.check('createSolver: topologically sorts declarative constraints in one exact pass',
+     solver.loops.length === 0 && near(st['driven.angle'], -0.3, 1e-12) && near(st['piston.pos'], sliderCrank(0.6, 0.5, 1.6).s, 1e-12));
+  // Closed loop distance relaxation (mutually dependent cycle)
+  const loopSolver = createSolver([
+    { type: 'distance', id: 'd1', a: 'P1', b: 'P2', length: 2.0, fixedA: true },
+    { type: 'distance', id: 'd2', a: 'P3', b: 'P2', length: 2.0, fixedA: true },
+  ], { iterations: 80 });
+  const loopSt = loopSolver.solve({ P1: [0, 0], P2: [1.1, 0.9], P3: [3.0, 0] });
+  const loopOk = checkLinkLengths(loopSt, [['P1', 'P2', 2.0], ['P2', 'P3', 2.0]], 1e-5);
+  // Cyclic custom constraint without residual function must run all iterations
+  let noResCalls = 0;
+  const cyclicNoRes = createSolver([
+    { id: 'c1', inputs: ['y'], outputs: ['x'], solve(s) { noResCalls++; s.x = 1 + 0.25 * (s.y ?? 0); } },
+    { id: 'c2', inputs: ['x'], outputs: ['y'], solve(s) { s.y = s.x; } },
+  ], { iterations: 20 });
+  const cycSt = cyclicNoRes.solve({ x: 0, y: 0 });
+  C.check('createSolver: iterative relaxation converges closed distance loop and runs full iterations when residual is omitted',
+    loopOk && noResCalls === 20 && near(cycSt.x, 4 / 3, 1e-6));
+}
+{ // Inverse Kinematics: twoLinkIK, fabrik (fixed and free base), jacobianIK (both dls and transpose with limits)
+  const ik2 = twoLinkIK([0, 0], [1.6, 0.9], 1.2, 1.1, 1);
+  C.check('twoLinkIK: analytical 2-link arm places elbow and end-effector at exact link lengths and target',
+    ik2.reachable && near(Math.hypot(ik2.elbowPt[0], ik2.elbowPt[1]), 1.2, 1e-12)
+    && near(Math.hypot(ik2.endPt[0] - ik2.elbowPt[0], ik2.endPt[1] - ik2.elbowPt[1]), 1.1, 1e-12)
+    && near(ik2.endPt[0], 1.6, 1e-12) && near(ik2.endPt[1], 0.9, 1e-12));
+
+  const chain0 = [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]];
+  const fab = fabrik(chain0, [1, 1, 1], [1.5, 1.5, 0.5], { tol: 1e-7, iterations: 30 });
+  const fabFree = fabrik(chain0, [1, 1, 1], [5, 5, 0], { baseFixed: false });
+  const fabLensOk = [0, 1, 2].every(i => near(Math.hypot(
+    fab.joints[i + 1][0] - fab.joints[i][0],
+    fab.joints[i + 1][1] - fab.joints[i][1],
+    fab.joints[i + 1][2] - fab.joints[i][2],
+  ), 1.0, 1e-5) && near(Math.hypot(
+    fabFree.joints[i + 1][0] - fabFree.joints[i][0],
+    fabFree.joints[i + 1][1] - fabFree.joints[i][1],
+    fabFree.joints[i + 1][2] - fabFree.joints[i][2],
+  ), 1.0, 1e-5));
+  C.check('fabrik: 3D multi-joint chain converges to target (baseFixed true & false) while preserving all segment lengths',
+    fabLensOk && fab.error < 1e-5 && fabFree.error < 1e-9 && fabFree.joints[0][0] > 1, `err=${fab.error.toExponential(2)}`);
+
+  const fk3 = ([a, b, c]) => [
+    Math.cos(a) + 0.8 * Math.cos(a + b) + 0.5 * Math.cos(a + b + c),
+    Math.sin(a) + 0.8 * Math.sin(a + b) + 0.5 * Math.sin(a + b + c),
+  ];
+  const jDls = jacobianIK({ fk: fk3, angles: [0.2, 0.3, -0.2], target: [1.2, 1.1], method: 'dls', limits: [[-Math.PI, Math.PI], [-2, 2], [-2, 2]] });
+  const jTr = jacobianIK({ fk: fk3, angles: [0.2, 0.3, -0.2], target: [1.2, 1.1], method: 'transpose', iterations: 120, step: 0.6, limits: [[-Math.PI, Math.PI], [-2, 2], [-2, 2]] });
+  C.check('jacobianIK: both DLS and Jacobian Transpose converge and honour joint limits',
+    jDls.error < 1e-5 && jTr.error < 1e-2 && jDls.angles.every((a, i) => a >= (i === 0 ? -Math.PI : -2) && a <= (i === 0 ? Math.PI : 2)),
+    `dls=${jDls.error.toExponential(1)}, tr=${jTr.error.toExponential(1)}`);
+}
+{ // CAD primitives: gear (including pressureAngle), rack, spring, linkage
+  const root = new THREE.Group();
+  const g14 = gearGeo(18, { r: 0.9, width: 0.2, pressureAngle: 14.5 });
+  const g25 = gearGeo(18, { r: 0.9, width: 0.2, pressureAngle: 25 });
+  const gMesh = gear(root, { teeth: 18, r: 0.9, width: 0.2, bore: 0.2, pal: 'amber' });
+  const rMesh = rack(root, { teeth: 10, pitch: 0.3, width: 0.2, height: 0.25, pal: 'ochre' });
+  const sp = spring(root, { r: 0.18, wire: 0.025, turns: 8 });
+  const spBuf = sp.geometry.attributes.position.array;
+  sp.set([0, 0, 0], [0, 1.6, 0]);
+  const yMax1 = Math.max(...Array.from({ length: sp.geometry.attributes.position.count }, (_, i) => sp.geometry.attributes.position.getY(i)));
+  sp.set([0, 0, 0], [0, 2.8, 0]);
+  const yMax2 = Math.max(...Array.from({ length: sp.geometry.attributes.position.count }, (_, i) => sp.geometry.attributes.position.getY(i)));
+  const lk = linkage(root, {
+    joints: { A: [0, 0], B: [1, 1], C: [2, 0] },
+    links: [['A', 'B', 'AB'], ['B', 'C', 'BC']],
+  });
+  lk.update({ A: [0, 0], B: [1.2, 1.4], C: [2.4, 0] });
+  const profileDiffers = Array.from({ length: g14.attributes.position.count }, (_, i) => Math.abs(g14.attributes.position.getX(i) - g25.attributes.position.getX(i))).some(d => d > 1e-4);
+  C.check('gear, rack, spring & linkage: build valid meshes (with pressureAngle profile variation), stretch coils in place, and update linkage bars/pins',
+    gMesh.geometry.attributes.position.count > 100 && rMesh.geometry.attributes.position.count > 50
+    && profileDiffers
+    && sp.geometry.attributes.position.array === spBuf && yMax2 > yMax1 + 1.0
+    && lk.bars.length === 2 && Object.keys(lk.pins).length === 3 && lk.labels.length === 2);
+}
+{ // Teardown assembly controller: setCutaway, setXray, setIsolate, setExplode, stepExplode
+  const scene = new THREE.Group();
+  const ctrl = createAssemblyController();
+  const gHousing = ctrl.asm('housing', scene, { title: 'Housing', xray: true });
+  const gCore = ctrl.asm('core', scene, { title: 'Core' });
+  const mHousing = part(gHousing, box(1, 1, 1), { pal: 'paper', tone: 'mid', ex: [0, 1, 0], name: 'Shell' });
+  const mCore = part(gCore, box(0.5, 0.5, 0.5), { pal: 'red', tone: 'hi', ex: [1, 0, 0], name: 'Rotor' });
+
+  ctrl.setCutaway([0, 0, -1, 0.1], ['housing']);
+  const cutOk = mHousing.material.clipping === true && mHousing.material.clippingPlanes?.length === 1
+    && mHousing.material.side === THREE.DoubleSide && !mCore.material.clippingPlanes;
+  ctrl.setCutaway(null, ['housing']);
+  const cutClearOk = mHousing.material.clipping === false && mHousing.material.clippingPlanes === null;
+
+  ctrl.setXray(1, ['housing']);
+  const xrayOk = mHousing.material.transparent === true && near(mHousing.material.uniforms.uOpacity.value, 0.22, 1e-6)
+    && mHousing.userData.tone === TONE.faint && mCore.userData.tone === TONE.hi;
+  ctrl.setXray(0, ['housing']);
+
+  ctrl.setIsolate('core');
+  const isoOk = near(mHousing.material.uniforms.uOpacity.value, 0.14, 1e-6) && mHousing.userData.tone === TONE.faint
+    && near(mCore.material.uniforms?.uOpacity?.value ?? 1, 1, 1e-6) && mCore.userData.tone === TONE.hi;
+  ctrl.setIsolate(null);
+
+  ctrl.setExplode(1);
+  for (let i = 0; i < 60; i++) ctrl.stepExplode(1 / 60);
+  const exOk = near(mHousing.position.y, 1, 1e-2) && near(mCore.position.x, 1, 1e-2);
+  ctrl.setExplode(0, null, true);
+  ctrl.stepExplode(1 / 60);
+  const snapOk = mHousing.position.y === 0 && mCore.position.x === 0;
+  C.check('setCutaway, setXray, setIsolate & setExplode: synchronize clipping planes, DoubleSide, translucent ghosting, isolation dimming, and spring explode',
+    cutOk && cutClearOk && xrayOk && isoOk && exOk && snapOk);
+}
 C.report();

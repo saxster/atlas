@@ -28,13 +28,15 @@
 // molecule(parent, xyz, { scale = 1, names = true }) → { object, labels, atoms: [{ elem, pos }], bonds: [[i, j]] }
 //   xyz: XYZ text in ångström; atoms are centred on their centroid, pos as given in the text. Bonds join atoms closer
 //   than 1.15 × the sum of their covalent radii.
+// linkage(parent, { joints, links, r = 0.028, pinR = 0.048, pinDepth = 0.09, z = 0, axes?, pal = 'ink', pinPal = 'paper', name = 'Linkage' })
+//   → { object, labels, bars, pins, update(joints) }
 // Colours: 'hi' (ink), 'grey', any PALETTE name ('red', 'blue', 'paper' …), 'ochre', 'green', or '#hex'.
 // update/set rewrite geometry in place, so they can run every frame.
 import * as THREE from 'three';
-import { part, arrow, setArrow, lines, liveTube, shadeMat, PALETTE, TONE, V } from './parts.js';
+import { part, arrow, setArrow, rod, cyl, zAxis, lines, liveTube, shadeMat, PALETTE, TONE, V } from './parts.js';
 import { rng } from './rng.js';
 
-const EXTRA = { ochre: '#c8962e', green: '#3f8a63' };
+const EXTRA = { ochre: '#c8962e', amber: '#c8962e', green: '#3f8a63' };
 // a colour as a palette name, made on first use for '#hex', 'ochre' and 'green' (a theme may have replaced PALETTE since)
 function palOf(c) {
   if (c === 'hi' || c === 'ink') return 'ink';
@@ -396,4 +398,67 @@ export function molecule(parent, xyz, { scale = 1, names = true, name = 'Molecul
   }
   const labels = names ? atoms.map((a, i) => pin('mark', a.elem, object, () => object.position.clone().add(at[i]).add(V(0, r(a) + 0.16 * scale, 0)))) : [];
   return { object, labels, atoms, bonds };
+}
+
+// Multi-bar planar or 3D linkage: builds cylindrical rods for each [keyA, keyB, label?] link and pin bosses for each
+// joint in joints = { key: [x, y, z?] }. update(joints) repositions every bar, pin, and label in one call.
+export function linkage(parent, {
+  joints = {},
+  links = [],
+  r = 0.028,
+  pinR = 0.048,
+  pinDepth = 0.09,
+  z = 0,
+  axes,
+  pal = 'ink',
+  pinPal = 'paper',
+  tone = 'hi',
+  name = 'Linkage',
+} = {}) {
+  const to = toOf(axes);
+  const object = new THREE.Group(); object.name = name; parent.add(object);
+  const barPal = palOf(pal), pPal = palOf(pinPal);
+  const bars = links.map(([a, b, lab, linkPal]) => ({
+    a, b, lab,
+    mesh: rod(object, { r, pal: linkPal ? palOf(linkPal) : barPal, tone, name: lab || `${a}–${b}` }),
+  }));
+  const pinGeo = zAxis(cyl(pinR, pinDepth, 20));
+  const pins = {};
+  const jointKeys = [...new Set([...Object.keys(joints), ...links.flatMap(([a, b]) => [a, b])])];
+  for (const k of jointKeys) {
+    pins[k] = part(object, pinGeo, { pal: pPal, tone: 'mid', name: `Joint ${k}` });
+  }
+  let curJoints = { ...joints };
+  const worldOf = k => {
+    const p = curJoints[k];
+    if (!p) return null;
+    return p.isVector3 ? to(p.x, p.y, p.z) : to(p[0], p[1], p[2] ?? z);
+  };
+  const labels = [];
+  for (const b of bars) {
+    if (b.lab) {
+      labels.push(pin('mark', b.lab, object, () => {
+        const pa = worldOf(b.a), pb = worldOf(b.b);
+        return pa && pb ? pa.clone().lerp(pb, 0.5).add(V(0, r * 3.5 + 0.08, 0)) : null;
+      }));
+    }
+  }
+  function update(nextJoints = curJoints) {
+    curJoints = nextJoints;
+    for (const k of jointKeys) {
+      const wp = worldOf(k);
+      if (wp && pins[k]) {
+        pins[k].visible = true;
+        pins[k].position.copy(wp);
+        pins[k].userData.home.copy(wp);
+      } else if (pins[k]) pins[k].visible = false;
+    }
+    for (const b of bars) {
+      const pa = worldOf(b.a), pb = worldOf(b.b);
+      if (pa && pb) b.mesh.set(pa, pb);
+      else b.mesh.visible = false;
+    }
+  }
+  update(joints);
+  return { object, labels, bars: bars.map(b => b.mesh), pins, update };
 }

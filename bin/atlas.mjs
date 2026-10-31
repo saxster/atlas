@@ -2,7 +2,7 @@
 // atlas: start a figure, check its model, and look at it, from any repo that has @saxster/atlas installed.
 // Figures are folders relative to the current one (biology/heart). The browser commands need Chrome (CHROME=… if it
 // isn't at the usual place); record also needs ffmpeg.
-const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox]   start a figure from a working example
+const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown]   start a figure from a working example
 atlas check [dir]                                          run every checks.mjs under dir (default: here)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
 atlas critic <figure…>                                     frames that jump, labels that overlap or hide

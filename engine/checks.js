@@ -98,3 +98,14 @@ export function normalQuantile(p) {
   return (((((a[0] * s + a[1]) * s + a[2]) * s + a[3]) * s + a[4]) * s + a[5]) * r / (((((b[0] * s + b[1]) * s + b[2]) * s + b[3]) * s + b[4]) * s + 1);
 }
 export const binomial = (n, k) => { let c = 1; for (let i = 1; i <= k; i++) c = c * (n - k + i) / i; return c; };
+
+// ---------- kinematics & linkage invariants ----------
+// Verifies that every rigid bar [keyA, keyB, expectedLength] in a joint map (or array of points) preserves its length.
+export function checkLinkLengths(joints, links, tol = 1e-6) {
+  return links.every(([a, b, L]) => {
+    const pa = joints[a], pb = joints[b];
+    if (!pa || !pb) return false;
+    const d = Math.hypot(pb[0] - pa[0], pb[1] - pa[1], (pb[2] ?? 0) - (pa[2] ?? 0));
+    return near(d, L, tol);
+  });
+}

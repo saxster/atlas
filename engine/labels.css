@@ -10,4 +10,5 @@
 .lbl.vec.blue { color: #3d63a8; }
 .lbl.vec.grey { color: var(--mid); }
 .lbl.mark { font: 15px/1 var(--serif); color: #86868c; }
+.lbl.tag { font: 500 12px/1.2 var(--mono); color: var(--strong); background: rgba(251, 251, 250, .9); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--faint); transform: translate(0, -50%); }
 .lbl.sound { font: italic 600 19px/1 var(--serif); color: var(--red); letter-spacing: .02em; transform: translate(-50%, -100%) rotate(-6deg); }

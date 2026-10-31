@@ -29,6 +29,56 @@ export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syn
   return shareB;
 }
 
+export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, place = 'after', onChange = null } = {}) {
+  if (!figure.cuts?.length || !anchorEl) return null;
+  let cutMode = initialMode || 'solid';
+  let userOverrode = initialMode !== null;
+  const cutBar = document.createElement('div');
+  cutBar.className = 'mode cutbar';
+  cutBar.id = 'cuts';
+  cutBar.setAttribute('role', 'group');
+  cutBar.setAttribute('aria-label', 'Cutaway mode');
+  const labels = { solid: 'Solid', xray: 'X-ray', section: 'Section' };
+  cutBar.innerHTML = figure.cuts.map(c => `<button type="button" data-cut="${c}" aria-pressed="${c === cutMode}">${labels[c] || c}</button>`).join('');
+  if (place === 'before') anchorEl.before(cutBar);
+  else anchorEl.after(cutBar);
+  const syncButtons = m => {
+    cutMode = m;
+    cutBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cut === cutMode)));
+  };
+  const apply = (c, fromUser = true) => {
+    userOverrode = fromUser;
+    syncButtons(c);
+    const S = getStage();
+    if (S) {
+      S.cutOverride = userOverrode ? cutMode : null;
+      S.E.setXray(cutMode === 'xray' ? 1 : 0, figure.xrayKeys || null);
+      S.E.setCutaway(cutMode === 'section' ? (figure.cutPlane || [0, 0, -1, 0]) : null, figure.cutKeys || null);
+    }
+    if (onChange) onChange(cutMode, userOverrode);
+  };
+  cutBar.addEventListener('click', e => {
+    const b = e.target.closest('[data-cut]'); if (!b) return;
+    apply(b.dataset.cut, true);
+  });
+  return {
+    el: cutBar,
+    apply,
+    syncFromLook(look) {
+      if (userOverrode) return;
+      const next = look.section > 0.5 ? 'section' : look.xray > 0.5 ? 'xray' : 'solid';
+      if (next !== cutMode) syncButtons(next);
+    },
+    reset() {
+      userOverrode = false;
+      const S = getStage();
+      if (S) S.cutOverride = null;
+    },
+    get mode() { return cutMode; },
+    get overridden() { return userOverrode; },
+  };
+}
+
 // draggable(target, { axes?, plane?, constrain?, onDrag?, onStart?, onEnd?, onReset?, anchor?, pad?, autoMove? })
 // Makes any 3D mesh, vector, arrow or group directly grabbable on the canvas.
 // - axes: optional prims.axes instance; when given, constrain/onDrag work in data coordinates [x, y, z].
@@ -113,20 +163,57 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   const box = () => { if (moved) { moved = false; const b = canvas.getBoundingClientRect(); rect.left = b.left; rect.top = b.top; } return rect; };
   if (dprCap) E.setDprCap(dprCap);
 
-  // ---------- labels anchored to the scene ----------
+  // ---------- labels anchored to the scene (with optional SVG leader lines) ----------
+  const leaderSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  leaderSvg.setAttribute('class', 'leaders');
+  leaderSvg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible';
+  labelsEl.appendChild(leaderSvg);
+
   const labels = (W.labels || []).map(L => {
-    const el = document.createElement('div'); el.className = 'lbl ' + L.cls; el.innerHTML = L.html; labelsEl.appendChild(el);
-    return { el, at: L.at, text: L.text, last: L.html };   // text: optional () => html for live values
+    const initHtml = L.html ?? (typeof L.text === 'string' ? L.text : '');
+    const textFn = typeof L.text === 'function' ? L.text : null;
+    const el = document.createElement('div'); el.className = 'lbl ' + L.cls; el.innerHTML = initHtml; labelsEl.appendChild(el);
+    let line = null, dot = null;
+    if (L.leader) {
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      line.setAttribute('fill', 'none');
+      line.setAttribute('stroke', 'var(--muted, #86868c)');
+      line.setAttribute('stroke-width', '1');
+      leaderSvg.appendChild(line);
+      dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('r', '2.5');
+      dot.setAttribute('fill', 'var(--muted, #86868c)');
+      leaderSvg.appendChild(dot);
+    }
+    return { el, line, dot, leader: L.leader || null, anchor: L.anchor || null, at: L.at, text: textFn, last: initHtml };   // text: optional () => html for live values
   });
   function placeLabels(w, h) {
     const shown = [];
     for (const L of labels) {
       const p = L.at();
-      if (!p) { L.el.style.opacity = 0; continue; }
-      const [x, y, front] = E.toScreen(p, w, h);
+      if (!p) { L.el.style.opacity = 0; if (L.line) L.line.style.opacity = 0; if (L.dot) L.dot.style.opacity = 0; continue; }
+      const [px, py, front] = E.toScreen(p, w, h);
+      const off = typeof L.leader === 'function' ? L.leader() : L.leader;
+      let ax = px, ay = py, x = px, y = py;
+      if (Array.isArray(off)) {
+        x = ax + off[0]; y = ay + off[1];
+      } else if (L.anchor) {
+        const ap = L.anchor();
+        if (ap) [ax, ay] = E.toScreen(ap, w, h);
+      }
       const on = front && x > 8 && x < w - 8 && y > 8 && y < h - 8;
       L.el.style.opacity = on ? 1 : 0;
       L.el.style.left = `${x}px`; L.el.style.top = `${y}px`;
+      if (L.line) {
+        L.line.style.opacity = on ? 0.78 : 0;
+        L.dot.style.opacity = on ? 0.85 : 0;
+        if (on) {
+          const elbowX = ax + (x - ax) * 0.65;
+          L.line.setAttribute('points', `${ax.toFixed(1)},${ay.toFixed(1)} ${elbowX.toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
+          L.dot.setAttribute('cx', ax.toFixed(1));
+          L.dot.setAttribute('cy', ay.toFixed(1));
+        }
+      }
       if (L.text) { const h = L.text(); if (h !== L.last) { L.el.innerHTML = h; L.last = h; } }
       if (on) shown.push([L, x]);
     }
@@ -309,7 +396,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   // ---------- one frame ----------
   // s: the page position; litPage: whose lit thing is lit (the page whose text shows); running: time may advance
   // (false while paused or still); clockAt: set the clock outright (a recorded tour) instead of advancing it.
-  let clock = chapter.clock0 || 0, scrubbed = null, lastClockAt, focusAmt = 0, lastFocus = null, orbitPage = 0, orbitHome = false;
+  let clock = chapter.clock0 || 0, scrubbed = null, lastClockAt, focusAmt = 0, lastFocus = null, orbitPage = 0, orbitHome = false, cutOverride = null, lastLook = {};
   // blend: 'turn' eases each page's camera and look in over the second part of the scroll (a book's page turn);
   // 'linear' follows s as it is, for a caller that already eases s (a machine's step).
   function step({ now, dt, s, litPage = Math.round(s), running = true, narrow = false, narrowZoom = 1, clockAt, blend = 'turn' }) {
@@ -317,10 +404,13 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     const i = Math.min(Math.floor(s), N - 1), f = s - i, j = Math.min(i + 1, N - 1);
     if (PAGES[litPage].lit !== pageLit) { pageLit = PAGES[litPage].lit; relight(); }
 
-    // camera: the scroll path, blended toward the opened thing
+    // camera: the scroll path, blended toward the opened thing (shortest-way azimuth + mid-swing pull-back on wide turns)
     const u = blend === 'linear' ? f : ease(smooth(0.3, 1, f));
     const A = PAGES[i].cam, B = PAGES[j].cam;
-    let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: lerp(A.az, B.az, u), el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) };
+    const dAz = ((((B.az - A.az) % 360) + 540) % 360) - 180;
+    const swing = Math.max(0, (Math.abs(dAz) - 65) / 115);
+    const pullBack = 1 + 0.18 * swing * Math.sin(Math.PI * u);
+    let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: A.az + dAz * u, el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) * pullBack };
     // a canvas narrower than the cameras were framed for pulls back; a page may say its own (a close-up in a wide figure)
     const fa = k => PAGES[k].frameAspect ?? chapter.frameAspect ?? 1.25;
     cam.dist *= Math.max(1, lerp(fa(i), fa(j), u) / E.camera.aspect);
@@ -349,9 +439,29 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       clock = scrubbed ?? clockAt;
     } else if (!reduced) clock += dt * timeRate;
     const state = chapter.state(clock, reduced);
-    const LA = PAGES[i].look, LB = PAGES[j].look, look = {};
-    for (const key of chapter.lookKeys) look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
+    const LA = PAGES[i].look || {}, LB = PAGES[j].look || {}, look = {};
+    for (const key of chapter.lookKeys || []) {
+      if (key === 'isolate') continue;
+      look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
+    }
+    for (const key of ['xray', 'section', 'ex']) {
+      if (look[key] === undefined && (LA[key] !== undefined || LB[key] !== undefined)) {
+        look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
+      }
+    }
+    if (LA.isolate !== undefined || LB.isolate !== undefined) {
+      look.isolate = (u < 0.5 ? LA.isolate : LB.isolate) ?? null;
+    }
     if (chapter.forceLook) chapter.forceLook(selected, look);
+    if (!cutOverride) {
+      if (look.xray !== undefined || look.section !== undefined) {
+        E.setXray(look.xray || 0, chapter.xrayKeys || null);
+        E.setCutaway((look.section || 0) > 0.5 ? (chapter.cutPlane || [0, 0, -1, 0]) : null, chapter.cutKeys || null);
+      }
+    }
+    if (look.isolate !== undefined) E.setIsolate(look.isolate);
+    if (look.ex !== undefined && !selected) E.setExplode(look.ex, null, true);
+    lastLook = look;
     W.update(state, look);
     E.stepExplode(dt);
 
@@ -374,7 +484,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       anchorV.copy(p); const d = E.camera.position.distanceTo(anchorV);
       ray.set(E.camera.position, anchorV.clone().sub(E.camera.position).normalize()); ray.far = d * 0.97;
       const hit = ray.intersectObjects(solids, false).find(h => { for (let o = h.object; o; o = o.parent) if (!o.visible) return false; return true; });
-      return { text: L.el.textContent, box: [r.left - cb.left, r.top - cb.top, r.width, r.height], hiddenBy: hit && !L.el.classList.contains('vec') ? (hit.object.userData.part || 'a solid') : null };
+      return { text: L.el.textContent, box: [r.left - cb.left, r.top - cb.top, r.width, r.height], hiddenBy: hit && !L.el.classList.contains('vec') && !L.leader ? (hit.object.userData.part || 'a solid') : null };
     });
   }
 
@@ -382,11 +492,14 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     for (const f of off) f();
     ro.disconnect();
     for (const L of labels) L.el.remove();
+    leaderSvg.remove();
     E.dispose();
   }
 
   return {
     E, W, N, hooks, step, select, relight, labelReport, destroy, fit, draggable,
+    get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
+    get lastLook() { return lastLook; },
     get selected() { return selected; }, get hovered() { return hovered; }, get dragging() { return !!drag; },
     get clock() { return clock; }, set clock(c) { clock = c; },
   };

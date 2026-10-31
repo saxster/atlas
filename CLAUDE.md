@@ -17,7 +17,7 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   `/examples/<subject>/<chapter>/#<page>`.
 - Examples import the library by its package name (`@saxster/atlas/stage.js`), never by relative path, so they read
   like user code: node resolves it by package self-reference, the browser by the importmap in each index.html.
-- `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/`: keep those three working and small.
+- `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/` (`book`, `machine`, `explorer`, `sandbox`, `teardown`): keep those five working and small.
 - `cli/` is shipped: the browser harness (`render.mjs`), stills, jumps, labels, record and score as functions over the
   current folder, behind `bin/atlas.mjs` (`atlas check | stills | critic | record`). `tools/` wraps them for the
   atlas's own examples (all, or `physics/newton`-style names). Run tools from the repo root: they serve the current
@@ -77,14 +77,15 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   pulls back. `narrowZoom`: extra distance on phones.
 - A book page's `molecule` (XYZ text, ångström) adds "See the real molecule": `adapters/molecule.js` loads 3Dmol.js
   2.5.5 (BSD-3) from jsDelivr only when tapped, and says so when offline.
-- Grammars: `engine/book.js` (scroll-book), `engine/machine.js` (steps, Manual/Auto), `engine/explorer.js`
-  (predict, sliders, seeded run). Each page's `<main>` class and markup follow the pilots
-  (`economics/compound`, `statistics/galton`).
+- Grammars: `engine/book.js` (scroll-book), `engine/machine.js` (steps, Manual/Auto, optional `cuts: ['solid', 'xray', 'section']`), `engine/explorer.js`
+  (predict, sliders, seeded run), `engine/sandbox.js` (presets, matrix, palette, draggable 3D items, optional `cuts`). Each page's `<main>` class and markup follow the pilots
+  (`economics/compound`, `statistics/galton`, `examples/minimal/teardown`).
+- Kinematics & mechanical CAD: `engine/kinematics.js` (`circleIntersect`, `sliderCrank`, `fourBar`, `gearRatio`, `rackPinion`, `differential`, `createSolver`, `twoLinkIK`, `fabrik`, `jacobianIK`), `engine/parts.js` (`gear`, `rack`, `spring`), `engine/prims.js` (`linkage`), and `leader: true` callout labels in `engine/stage.js`.
 - Textbook embeds: `adapters/kym-live.js` (`mountAtlas`), copied into a book by `tools/vendor.mjs`.
 
 ## Video (needs ffmpeg; output in `videos/`, ignored)
 - `node tools/record.mjs <subject/id> [--size 1920x1080] [--fps 60] [--silent]`: seeks the `?render` tour frame by
-  frame into H.264; fails unless the frame count is round(DURATION × fps). Writes a contact sheet (a frame per 3 s)
-  and a timeline (`starts`, `events`) for the score.
+  frame into H.264; fails unless the frame count is round(DURATION × fps). Writes a contact sheet (`<name>.sheet.jpg`),
+  settled beat sheet (`<name>.beats.jpg`), and a timeline (`starts`, `events`) for the score.
 - `node cli/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
-  page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, then measured (PASS/FAIL).
+  page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, measured (PASS/FAIL), plus `<name>.wave.png` with beat markers.
