@@ -98,6 +98,15 @@ export function createAssemblyController(ASM = {}) {
       }
     }
   }
+  function applyEx(o, k) {
+    const u = o.userData, p = u._postEx;
+    if (!p) { u.home.copy(o.position); u._postEx = o.position.clone(); }
+    else { if (o.position.x !== p.x) u.home.x = o.position.x; if (o.position.y !== p.y) u.home.y = o.position.y; if (o.position.z !== p.z) u.home.z = o.position.z; }
+    o.position.copy(u.home).addScaledVector(u.ex, k); u._postEx.copy(o.position);
+  }
+  function resetExplode() {
+    for (const g of Object.values(ASM)) g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex?.lengthSq() > 0) applyEx(o, 0); });
+  }
   function setExplode(amount = 0, asmKeys = null, immediate = false) {
     const k = Math.max(0, amount);
     const groups = asmKeys ? asmKeys.map(key => ASM[key]).filter(Boolean) : Object.values(ASM);
@@ -106,7 +115,7 @@ export function createAssemblyController(ASM = {}) {
       if (immediate) {
         g.userData.explode = k;
         g.userData.vel = 0;
-        g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) o.position.copy(o.userData.home).addScaledVector(o.userData.ex, k); });
+        g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) applyEx(o, k); });
       }
     }
   }
@@ -117,10 +126,10 @@ export function createAssemblyController(ASM = {}) {
       u.explode += u.vel * dt;
       if (Math.abs(u.explode - u.target) < 1e-4 && Math.abs(u.vel) < 1e-4) { u.explode = u.target; u.vel = 0; }
       const e = Math.max(u.explode, 0);
-      g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) o.position.copy(o.userData.home).addScaledVector(o.userData.ex, e); });
+      g.traverse(o => { if (o !== g && o.userData.home && o.userData.ex && o.userData.ex.lengthSq() > 0) applyEx(o, e); });
     }
   }
-  return { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, setExplode, stepExplode };
+  return { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, resetExplode, setExplode, stepExplode };
 }
 
 // theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
@@ -135,7 +144,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   renderer.localClippingEnabled = true;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(fov, 1, near, far);
-  const { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, setExplode, stepExplode } = createAssemblyController({});
+  const { ASM, meshesOf, asm, setLit, setCutaway, setXray, setIsolate, resetExplode, setExplode, stepExplode } = createAssemblyController({});
 
   // ---------- normal pass: view normal in rgb, line tone in alpha ----------
   const nmats = new Map();
@@ -322,5 +331,5 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     if (!retainContext && !renderer.getContext().isContextLost()) renderer.forceContextLoss();
   }
 
-  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, setCutaway, setXray, setIsolate, setExplode, warm, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };
+  return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, setCutaway, setXray, setIsolate, resetExplode, setExplode, warm, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };
 }

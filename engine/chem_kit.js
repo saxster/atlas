@@ -258,6 +258,83 @@ export const CHEM_MOLECULES = {
       [0, 5, 1], [0, 6, 1], [0, 7, 1],
     ],
   },
+  CH3COO_minus: {
+    atoms: [
+      { el: 'C', x: -1.10, y:  0.00, z:  0.00 },
+      { el: 'C', x:  0.32, y:  0.00, z:  0.00 },
+      { el: 'O', x:  0.92, y:  1.08, z:  0.00 },
+      { el: 'O', x:  0.92, y: -1.08, z:  0.00 },
+      { el: 'H', x: -1.62, y:  0.92, z:  0.00 },
+      { el: 'H', x: -1.42, y: -0.52, z:  0.88 },
+      { el: 'H', x: -1.42, y: -0.52, z: -0.88 },
+    ],
+    bonds: [
+      [0, 1, 1], [1, 2, 2], [1, 3, 1],
+      [0, 4, 1], [0, 5, 1], [0, 6, 1],
+    ],
+  },
+  CH3OH: {
+    atoms: [
+      { el: 'C', x: -0.66, y:  0.02, z:  0.00 },
+      { el: 'O', x:  0.75, y: -0.12, z:  0.00 },
+      { el: 'H', x:  1.15, y:  0.76, z:  0.00 },
+      { el: 'H', x: -1.08, y: -0.98, z:  0.00 },
+      { el: 'H', x: -1.02, y:  0.55, z:  0.89 },
+      { el: 'H', x: -1.02, y:  0.55, z: -0.89 },
+    ],
+    bonds: [
+      [0, 1, 1], [1, 2, 1],
+      [0, 3, 1], [0, 4, 1], [0, 5, 1],
+    ],
+  },
+  methylEthanoate: {
+    atoms: [
+      { el: 'C', x: -1.82, y: -0.24, z:  0.00 },
+      { el: 'C', x: -0.42, y:  0.12, z:  0.00 },
+      { el: 'O', x: -0.02, y:  1.26, z:  0.00 },
+      { el: 'O', x:  0.42, y: -0.94, z:  0.00 },
+      { el: 'C', x:  1.80, y: -0.68, z:  0.00 },
+      { el: 'H', x: -2.42, y:  0.66, z:  0.00 },
+      { el: 'H', x: -2.06, y: -0.84, z:  0.88 },
+      { el: 'H', x: -2.06, y: -0.84, z: -0.88 },
+      { el: 'H', x:  2.32, y: -1.62, z:  0.00 },
+      { el: 'H', x:  2.08, y: -0.10, z:  0.88 },
+      { el: 'H', x:  2.08, y: -0.10, z: -0.88 },
+    ],
+    bonds: [
+      [0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1],
+      [0, 5, 1], [0, 6, 1], [0, 7, 1],
+      [4, 8, 1], [4, 9, 1], [4, 10, 1],
+    ],
+  },
+  CH2O: {
+    atoms: [
+      { el: 'C', x:  0.00, y:  0.00, z: 0 },
+      { el: 'O', x:  0.00, y:  1.21, z: 0 },
+      { el: 'H', x: -0.94, y: -0.58, z: 0 },
+      { el: 'H', x:  0.94, y: -0.58, z: 0 },
+    ],
+    bonds: [[0, 1, 2], [0, 2, 1], [0, 3, 1]],
+  },
+  H2O2: {
+    atoms: [
+      { el: 'O', x: -0.73, y:  0.00, z:  0.00 },
+      { el: 'O', x:  0.73, y:  0.00, z:  0.00 },
+      { el: 'H', x: -0.98, y:  0.88, z:  0.25 },
+      { el: 'H', x:  0.98, y: -0.35, z:  0.85 },
+    ],
+    bonds: [[0, 1, 1], [0, 2, 1], [1, 3, 1]],
+  },
+  HCO3_minus: {
+    atoms: [
+      { el: 'C', x:  0.00, y:  0.00, z: 0 },
+      { el: 'O', x:  0.00, y:  1.25, z: 0 },
+      { el: 'O', x: -1.12, y: -0.62, z: 0 },
+      { el: 'O', x:  1.15, y: -0.65, z: 0 },
+      { el: 'H', x:  1.92, y: -0.10, z: 0 },
+    ],
+    bonds: [[0, 1, 2], [0, 2, 1], [0, 3, 1], [3, 4, 1]],
+  },
   CO3_2minus: {
     atoms: [
       { el: 'C', x:  0.00, y:  0.00, z:  0.00 },
@@ -276,10 +353,11 @@ export function buildMolecule3D(parent, specOrKey, { scale = 0.55, pos = [0, 0, 
   g.position.set(...pos);
   g.rotation.set(...rot);
   parent.add(g);
-  if (!spec) return { group: g, atoms: [], bonds: [] };
+  if (!spec) return { group: g, atoms: [], bonds: [], updateBonds() {} };
 
   const atomMeshes = [];
   const bondRods = [];
+  const bondSpecs = [];
 
   for (let i = 0; i < spec.atoms.length; i++) {
     const a = spec.atoms[i];
@@ -297,21 +375,46 @@ export function buildMolecule3D(parent, specOrKey, { scale = 0.55, pos = [0, 0, 
   }
 
   for (const [i, j, order = 1] of spec.bonds || []) {
-    const a = spec.atoms[i], b = spec.atoms[j];
-    const p1 = V(a.x * scale, a.y * scale, a.z * scale);
-    const p2 = V(b.x * scale, b.y * scale, b.z * scale);
-    const dir = p2.clone().sub(p1);
-    const perp = Math.abs(dir.y) < 0.9 ? V(0, 1, 0).cross(dir).normalize() : V(1, 0, 0).cross(dir).normalize();
     const offsets = order === 1 ? [0] : order === 2 ? [-0.045, 0.045] : [-0.07, 0, 0.07];
     for (const off of offsets) {
-      const shift = perp.clone().multiplyScalar(off * (scale / 0.55));
       const r = rod(g, { r: (order === 1 ? 0.042 : 0.03) * (scale / 0.55), pal: 'dark', tone: 'mid', name: 'Covalent bond' });
-      r.set(p1.clone().add(shift), p2.clone().add(shift));
       bondRods.push(r);
+      bondSpecs.push({ i, j, off: off * (scale / 0.55), rod: r });
     }
   }
 
-  return { group: g, atoms: atomMeshes, bonds: bondRods };
+  function updateBonds() {
+    for (const b of bondSpecs) {
+      const p1 = atomMeshes[b.i].position;
+      const p2 = atomMeshes[b.j].position;
+      const dir = p2.clone().sub(p1);
+      if (dir.lengthSq() < 1e-8) continue;
+      const perp = Math.abs(dir.y) < 0.9 * dir.length() ? V(0, 1, 0).cross(dir).normalize() : V(1, 0, 0).cross(dir).normalize();
+      const shift = perp.multiplyScalar(b.off);
+      b.rod.set(p1.clone().add(shift), p2.clone().add(shift));
+    }
+  }
+  updateBonds();
+
+  return { group: g, atoms: atomMeshes, bonds: bondRods, updateBonds };
+}
+
+// Continuous 3D curve tube builder for potential wells, heating curves, reaction barriers, and titration curves
+export function buildCurveTube(parent, pts, { r = 0.042, pal = 'red', tone = 'hi', segs = 64, radSegs = 10, name = 'Curve' } = {}) {
+  const vecs = pts.map(p => (p.isVector3 ? p : V(p[0], p[1], p[2] || 0)));
+  const curve = new THREE.CatmullRomCurve3(vecs);
+  const mesh = part(parent, new THREE.TubeGeometry(curve, segs, r, radSegs, false), {
+    pal,
+    tone,
+    name,
+  });
+  mesh.setPoints = nextPts => {
+    const nextVecs = nextPts.map(p => (p.isVector3 ? p : V(p[0], p[1], p[2] || 0)));
+    const nextCurve = new THREE.CatmullRomCurve3(nextVecs);
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.TubeGeometry(nextCurve, segs, r, radSegs, false);
+  };
+  return mesh;
 }
 
 // Deterministic golden-spiral 3D nucleon cluster (protons + neutrons)
@@ -354,12 +457,57 @@ export function buildNucleusCluster(parent, maxNucleons = 24, { rNucleon = 0.14,
   };
 }
 
-// Build a 3D crystal lattice (rock-salt NaCl, diamond, or layered graphite)
+// Build a 3D crystal lattice (rock-salt NaCl, tetrahedral diamond, or layered graphite)
 export function buildCrystalLattice(parent, { kind = 'nacl', nx = 3, ny = 3, nz = 3, spacing = 0.48, pos = [0, 0, 0] } = {}) {
   const g = new THREE.Group();
   g.position.set(...pos);
   parent.add(g);
   const nodes = [];
+
+  if (kind === 'diamond') {
+    const dirs = [
+      [1, 1, 1],
+      [1, -1, -1],
+      [-1, 1, -1],
+      [-1, -1, 1],
+    ];
+    const scale = spacing * 0.62;
+    const coordMap = new Map();
+    const bondPairs = [];
+    const addNode = (ix, iy, iz, shell) => {
+      const key = `${ix},${iy},${iz}`;
+      if (coordMap.has(key)) return coordMap.get(key);
+      const x = ix * scale, y = iy * scale, z = iz * scale;
+      const m = part(g, sphere(shell === 0 ? 0.14 : 0.125, 18), {
+        pal: 'dark',
+        tone: shell <= 1 ? 'hi' : 'mid',
+        pos: [x, y, z],
+        ex: [x * 0.45, y * 0.45, z * 0.45],
+        name: 'C sp³ tetrahedral atom',
+      });
+      const node = { mesh: m, ix, iy, iz, pos: V(x, y, z), isA: shell % 2 === 0 };
+      nodes.push(node);
+      coordMap.set(key, node);
+      return node;
+    };
+    const center = addNode(0, 0, 0, 0);
+    for (const [dx, dy, dz] of dirs) {
+      const n1 = addNode(dx, dy, dz, 1);
+      bondPairs.push([center, n1]);
+      for (const [wx, wy, wz] of dirs) {
+        const jx = dx - wx, jy = dy - wy, jz = dz - wz;
+        if (jx === 0 && jy === 0 && jz === 0) continue;
+        const n2 = addNode(jx, jy, jz, 2);
+        bondPairs.push([n1, n2]);
+      }
+    }
+    for (const [a, b] of bondPairs) {
+      const r = rod(g, { r: 0.032, pal: 'dark', tone: 'mid', name: 'C–C covalent bond (154 pm)' });
+      r.set(a.pos, b.pos);
+    }
+    return { group: g, nodes };
+  }
+
   const xOff = ((nx - 1) * spacing) / 2;
   const yOff = ((ny - 1) * spacing) / 2;
   const zOff = ((nz - 1) * spacing) / 2;

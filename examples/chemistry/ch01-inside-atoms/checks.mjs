@@ -5,6 +5,7 @@ const headOn = rutherfordScattering(2, 5.0, 79);
 const distant = rutherfordScattering(180, 5.0, 79);
 assert(headOn.thetaDeg > 140, 'Small impact parameter near Au nucleus produces back-scattering (>140 deg)');
 assert(distant.thetaDeg < 15, 'Large impact parameter passes nearly straight (<15 deg)');
+assert(headOn.closestApproachFm < distant.closestApproachFm, 'Smaller impact parameter reaches closer to the gold nucleus');
 
 const c14 = atomIdentity(6, 8, 6);
 assert.equal(c14.symbol, 'C', '6 protons is always Carbon');

@@ -23,16 +23,16 @@ const ELEMENTS = [
 ];
 
 export function rutherfordScattering(impactParamFm = 15, alphaEnergyMeV = 5.0, targetZ = 79) {
-  const b = Math.max(1, impactParamFm);
-  const E = Math.max(1, alphaEnergyMeV);
-  // Characteristic Coulomb length d0 = (2 * Z_alpha * Z_target * e^2) / (4 pi eps0 * 2 E)
-  // In fm & MeV: e^2 / (4 pi eps0) = 1.44 MeV*fm -> b0 = (2 * targetZ * 1.44) / (2 * E) = 1.44 * targetZ / E
+  const b = Math.max(1, Math.min(200, impactParamFm));
+  const E = Math.max(1, Math.min(20, alphaEnergyMeV));
+  // Characteristic Coulomb length b0 = (Z_alpha * Z_target * e^2) / (4 pi eps0 * 2 E) = 1.44 * targetZ / E
   const b0 = (1.44 * targetZ) / E;
   // tan(theta / 2) = b0 / b
   const thetaRad = 2 * Math.atan2(b0, b);
   const thetaDeg = (thetaRad * 180) / Math.PI;
+  const closestApproachFm = b0 * (1 + Math.sqrt(1 + (b / b0) * (b / b0)));
   const regime = thetaDeg > 90 ? 'Back-scattered (>90°)' : thetaDeg > 15 ? 'Deflected (15°–90°)' : 'Nearly straight (<15°)';
-  return { impactParamFm: b, alphaEnergyMeV: E, thetaDeg, regime };
+  return { impactParamFm: b, alphaEnergyMeV: E, thetaDeg, closestApproachFm, regime };
 }
 
 export function atomIdentity(protons = 6, neutrons = 6, electrons = 6) {

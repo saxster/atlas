@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, shadeMat, part, box, cyl, sphere, rod,
+  THREE, shadeMat, part, box, cyl, sphere, rod, arrow3,
   buildMolecule3D, studioGrid, playTone, V
 } from '@saxster/atlas/chem_kit.js';
 import * as M from './model.js';
@@ -8,40 +8,40 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Carbon geometries',
-    fig: 'Figure 10.1 · Carbon catenation & bonding geometries: tetrahedral CH₄ (109.5°), planar C₂H₄ (120°), linear C₂H₂ (180°)',
+    fig: 'Figure 10.1 · Carbon geometries: tetrahedral CH₄ (109.5°), planar C₂H₄ (120°), linear C₂H₂ (180°)',
     title: 'Carbon Catenation & Bond Order',
     alt: '3D comparison of tetrahedral sp3 methane, trigonal planar sp2 ethene with a double bond, and linear sp ethyne with a triple bond.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 7.0 },
+    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 11.6 },
     lit: 'ethene_sp2',
     parts: ['methane_sp3', 'ethene_sp2', 'ethyne_sp'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Alkane chains & bp',
-    fig: 'Figure 10.2 · Homologous alkane series (CₙH₂ₙ₊₂): chain length, contact surface area, and boiling point',
+    fig: 'Figure 10.2 · Homologous alkanes (CₙH₂ₙ₊₂): chain length, branching & boiling point',
     title: 'Alkane Homologues & Dispersion',
-    alt: '3D linear n-butane chain alongside boiling-point pillars for C1 to C8 alkanes rising from -161.5 C to +125.7 C.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 7.2 },
+    alt: '3D linear n-butane and branched isobutane alongside boiling-point pillars for C1 to C8 alkanes.',
+    cam: { target: [14, 1.25, 0], az: -20, el: 20, dist: 11.8 },
     lit: 'alkane_bp_bars',
     parts: ['butane_chain', 'alkane_bp_bars'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Constitutional isomers',
-    fig: 'Figure 10.3 · Constitutional isomers with identical formula C₂H₆O: ethanol (+78.4 °C) vs dimethyl ether (−24.8 °C)',
+    fig: 'Figure 10.3 · C₂H₆O constitutional isomers: ethanol (+78.4 °C) vs dimethyl ether (−24.8 °C)',
     title: 'Same Formula, Different Connectivity',
     alt: '3D ball-and-stick comparison of ethanol (CH3CH2OH, capable of O-H hydrogen bonding) and dimethyl ether (CH3OCH3).',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 11.6 },
     lit: 'ethanol_isomer',
     parts: ['ethanol_isomer', 'ether_isomer'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Functional groups & esters',
-    fig: 'Figure 10.4 · Carboxylic acid + alcohol condensation: RCOOH + R′OH ⇌ RCOOR′ + H₂O',
+    fig: 'Figure 10.4 · Ester condensation: CH₃COOH + CH₃OH ⇌ CH₃COOCH₃ + H₂O',
     title: 'Functional Groups & Ester Condensation',
-    alt: '3D ethanoic acid molecule with carboxyl group (-COOH) condensing with an alcohol by eliminating H2O to form an ester linkage.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    alt: '3D ethanoic acid condensing with methanol to form methyl ethanoate ester plus eliminated water.',
+    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 11.8 },
     lit: 'carboxyl_acid',
     parts: ['carboxyl_acid', 'eliminated_water'],
     look: { xray: 0, section: 0 },
@@ -84,6 +84,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 10,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -154,9 +155,10 @@ export const CHAPTER = {
     buildMolecule3D(spAsm, 'C2H2', { scale: 0.48, pos: [1.35, 1.35, 0] });
     label('board', 'CH₄ (109.5°) · C₂H₄ (120°) · C₂H₂ (180°)', () => V(0, 2.35, 0));
 
-    // Station 1 (x = 14): n-Butane Chain & Alkane Boiling Point Bars
-    const butAsm = asm('butane_chain', root, { title: 'Zig-zag n-Butane chain (C₄H₁₀)', sub: 'Tetrahedral C–C–C–C backbone' });
-    buildMolecule3D(butAsm, 'nButane', { scale: 0.42, pos: [13.0, 1.45, 0] });
+    // Station 1 (x = 14): n-Butane vs Isobutane & Alkane Boiling Point Bars
+    const butAsm = asm('butane_chain', root, { title: 'Linear n-Butane (−0.5 °C) vs branched Isobutane (−11.7 °C)', sub: 'Branching reduces contact area & dispersion' });
+    buildMolecule3D(butAsm, 'nButane', { scale: 0.38, pos: [12.85, 1.65, 0] });
+    buildMolecule3D(butAsm, 'isobutane', { scale: 0.38, pos: [12.85, 0.78, 0] });
 
     const bpAsm = asm('alkane_bp_bars', root, { title: 'C₁–C₈ alkane boiling points', sub: 'Rises with dispersion surface area' });
     bpAsm.position.set(15.0, 0.1, 0);
@@ -167,26 +169,33 @@ export const CHAPTER = {
       const m = part(bpAsm, box(0.18, h, 0.28, 0.02), { pal: st.bpC < 25 ? 'blue' : 'green', tone: 'hi', pos: [(n - 4.5) * 0.24, h / 2, 0], ex: [0.3, 0.2, 0], name: `${st.name} (${st.bpC} °C)` });
       bpBars.push({ mesh: m, n });
     }
-    label('board', 'CₙH₂ₙ₊₂ chain', () => V(13.0, 2.25, 0));
+    label('board', 'n-Butane vs Isobutane (C₄H₁₀)', () => V(12.85, 2.35, 0));
     label('board', 'Boiling point rises C₁ → C₈', () => V(15.0, 2.15, 0));
 
     // Station 2 (x = 28): Constitutional Isomers (Ethanol vs Dimethyl Ether)
     const ethAsm = asm('ethanol_isomer', root, { title: 'Ethanol (CH₃CH₂OH, +78.4 °C)', sub: 'Polar –OH forms hydrogen bonds' });
-    buildMolecule3D(ethAsm, 'ethanol', { scale: 0.48, pos: [27.0, 1.35, 0] });
+    buildMolecule3D(ethAsm, 'ethanol', { scale: 0.44, pos: [26.85, 1.58, 0] });
+    buildMolecule3D(ethAsm, 'ethanol', { scale: 0.44, pos: [26.85, 0.85, 0.25] });
+    const hbRod = rod(ethAsm, { r: 0.016, pal: 'blue', tone: 'hi', name: 'Intermolecular O–H···O hydrogen bond' });
+    hbRod.set(V(27.2, 1.5, 0), V(27.2, 0.92, 0.2));
 
     const dmeAsm = asm('ether_isomer', root, { title: 'Dimethyl ether (CH₃OCH₃, −24.8 °C)', sub: 'Same C₂H₆O formula, no O–H bond' });
-    buildMolecule3D(dmeAsm, 'dimethylEther', { scale: 0.48, pos: [29.0, 1.35, 0] });
-    label('board', 'Ethanol (–OH, +78.4 °C)', () => V(27.0, 2.25, 0));
-    label('board', 'Dimethyl ether (C–O–C, −24.8 °C)', () => V(29.0, 2.25, 0));
+    buildMolecule3D(dmeAsm, 'dimethylEther', { scale: 0.48, pos: [29.1, 1.35, 0] });
+    label('board', 'Ethanol (O–H H-bonded, +78.4 °C)', () => V(26.85, 2.28, 0));
+    label('board', 'Dimethyl ether (no O–H, −24.8 °C)', () => V(29.1, 2.28, 0));
 
     // Station 3 (x = 42): Carboxylic Acid + Alcohol -> Ester + H2O
-    const acdAsm = asm('carboxyl_acid', root, { title: 'Ethanoic acid (CH₃COOH)', sub: 'Carboxyl functional group (–COOH)' });
-    buildMolecule3D(acdAsm, 'ethanoicAcid', { scale: 0.52, pos: [41.2, 1.35, 0] });
+    const acdAsm = asm('carboxyl_acid', root, { title: 'Reactants: CH₃COOH + CH₃OH', sub: 'Carboxylic acid + alcohol' });
+    buildMolecule3D(acdAsm, 'ethanoicAcid', { scale: 0.44, pos: [40.75, 1.62, 0] });
+    buildMolecule3D(acdAsm, 'CH3OH', { scale: 0.44, pos: [40.75, 0.85, 0] });
+    const condArr = arrow3(acdAsm, { r: 0.024, headR: 0.065, headL: 0.13, pal: 'ochre', tone: 'hi', name: 'Condensation equilibrium' });
+    condArr.set(V(41.55, 1.25, 0), V(42.15, 1.25, 0));
 
-    const watAsm = asm('eliminated_water', root, { title: 'Eliminated H₂O in condensation', sub: 'Splits out as ester C–O bond forms' });
-    const condWater = buildMolecule3D(watAsm, 'H2O', { scale: 0.48, pos: [42.9, 1.35, 0] });
-    label('board', 'Carboxylic acid (–COOH)', () => V(41.2, 2.3, 0));
-    label('board', '+ H₂O eliminated', () => V(42.9, 2.1, 0));
+    const watAsm = asm('eliminated_water', root, { title: 'Products: Methyl ethanoate + H₂O', sub: 'Ester linkage (–COO–) + eliminated water' });
+    buildMolecule3D(watAsm, 'methylEthanoate', { scale: 0.44, pos: [43.05, 1.62, 0] });
+    const condWater = buildMolecule3D(watAsm, 'H2O', { scale: 0.44, pos: [43.05, 0.85, 0] });
+    label('board', 'CH₃COOH + CH₃OH', () => V(40.75, 2.32, 0));
+    label('board', 'Ester (CH₃COOCH₃) + H₂O', () => V(43.05, 2.32, 0));
 
     return {
       labels,
@@ -194,7 +203,7 @@ export const CHAPTER = {
         for (const b of bpBars) {
           b.mesh.position.z = b.n === s.alk.n ? 0.25 : 0;
         }
-        condWater.group.position.y = 1.35 + Math.sin(s.t * 2) * 0.12;
+        condWater.group.position.y = 0.85 + Math.sin(s.t * 2) * 0.08;
       },
     };
   },

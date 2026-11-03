@@ -1,47 +1,47 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, shadeMat, part, box, cyl, sphere, rod, arrow3,
-  studioGrid, playTone, V
+  buildCurveTube, studioGrid, playTone, V
 } from '@saxster/atlas/chem_kit.js';
 import * as M from './model.js';
 
 export const PAGES = [
   {
     tab: 'Shielding & Z_eff',
-    fig: 'Figure 9.1 · Core electron shielding (σ) and effective nuclear charge (Z_eff = Z − σ) across Period 2',
+    fig: 'Figure 9.1 · Core shielding (σ) & effective nuclear charge (Z_eff = Z − σ) across Period 2',
     title: 'Core Shielding & Effective Nuclear Charge',
     alt: '3D nucleus surrounded by an inner 1s core shielding shell and n=2 valence electrons pulled inward as Zeff increases.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 6.8 },
+    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 11.4 },
     lit: 'valence_shell',
     parts: ['core_shield', 'valence_shell'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Atomic radii skyline',
-    fig: 'Figure 9.2 · 3D periodic skyline of atomic radii across Period 2 (Li → Ne) as Z_eff increases',
+    fig: 'Figure 9.2 · Period 2 atomic radii skyline (Li → Ne) contracting as Z_eff rises',
     title: 'Periodic Contraction of Atomic Radius',
     alt: '3D row of Period 2 atoms from Li (152 pm) down to Ne (58 pm) contracting as effective nuclear charge rises.',
-    cam: { target: [14, 1.35, 0], az: -18, el: 22, dist: 7.2 },
+    cam: { target: [14, 1.25, 0], az: -18, el: 22, dist: 11.6 },
     lit: 'radii_row',
     parts: ['radii_row', 'zeff_ramp'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Ionization energy jump',
-    fig: 'Figure 9.3 · First ionization energy (IE₁) trend & the giant core-shell jump in IE₂ for Li',
+    fig: 'Figure 9.3 · First ionization energy (IE₁) trend & core-shell jump in IE₂',
     title: 'First & Core-Shell Ionization Energies',
     alt: '3D ionization energy pillars across Period 2 alongside the huge energy cliff when removing a 1s core electron.',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [28, 1.25, 0], az: 24, el: 20, dist: 11.8 },
     lit: 'ie_pillars',
     parts: ['ie_pillars', 'core_cliff'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Emission spectra',
-    fig: 'Figure 9.4 · Quantized electronic energy levels (n = 1 … 5) & discrete photon emission (ΔE = hc/λ)',
+    fig: 'Figure 9.4 · Quantized electronic levels (n = 1 … 5) & photon emission (ΔE = hc/λ)',
     title: 'Quantized Levels & Emission Spectra',
     alt: '3D electronic energy ladder with downward transition arrow emitting a quantized photon wave of wavelength hc/Delta E.',
-    cam: { target: [42, 1.35, 0], az: 22, el: 20, dist: 6.8 },
+    cam: { target: [42, 1.25, 0], az: 22, el: 20, dist: 11.4 },
     lit: 'energy_rungs',
     parts: ['energy_rungs', 'emitted_photon'],
     look: { xray: 0, section: 0 },
@@ -82,6 +82,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 9,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -156,6 +157,7 @@ export const CHAPTER = {
       const m = part(rowAsm, sphere(r, 18), { pal: 'blue', tone: 'hi', pos: [(z - 6.5) * 0.52, 0, 0], ex: [0, 0.45, 0], name: `${st.sym} (${st.radiusPm} pm)` });
       radSpheres.push({ mesh: m, z });
     }
+    const radPtr = arrow3(rowAsm, { r: 0.024, headR: 0.065, headL: 0.13, pal: 'red', tone: 'hi', name: 'Selected Period 2 element' });
 
     const rampAsm = asm('zeff_ramp', root, { title: 'Rising Z_eff base', sub: '+1.30 (Li) to +5.85 (Ne)' });
     rampAsm.position.set(14, 0.25, 0);
@@ -165,17 +167,20 @@ export const CHAPTER = {
     // Station 2 (x = 28): First Ionization Energy & Core Cliff
     const ieAsm = asm('ie_pillars', root, { title: 'Period 2 IE₁ skyline', sub: '520 kJ/mol (Li) to 2081 kJ/mol (Ne)' });
     ieAsm.position.set(27.5, 0.1, 0);
+    const iePillars = [];
     for (let z = 3; z <= 10; z++) {
       const st = M.period2TrendState(z);
       const h = (st.ie1Kj / 2081) * 1.65;
-      part(ieAsm, box(0.24, h, 0.34, 0.02), { pal: z === 5 || z === 8 ? 'ochre' : 'green', tone: 'hi', pos: [(z - 6.5) * 0.34, h / 2, 0], ex: [0, 0.35, 0], name: `IE₁ ${st.sym} (${st.ie1Kj} kJ/mol)` });
+      const m = part(ieAsm, box(0.24, h, 0.34, 0.02), { pal: z === 5 || z === 8 ? 'ochre' : 'green', tone: 'hi', pos: [(z - 6.5) * 0.34, h / 2, 0], ex: [0, 0.35, 0], name: `IE₁ ${st.sym} (${st.ie1Kj} kJ/mol)` });
+      iePillars.push({ mesh: m, z, h });
     }
+    const iePtr = arrow3(ieAsm, { r: 0.024, headR: 0.065, headL: 0.13, pal: 'red', tone: 'hi', name: 'Selected element IE₁' });
 
     const cliffAsm = asm('core_cliff', root, { title: 'Core-shell IE₂ jump (Li⁺)', sub: '7298 kJ/mol to remove 1s core e⁻' });
     cliffAsm.position.set(29.4, 0.1, 0);
-    part(cliffAsm, box(0.42, 2.35, 0.42, 0.02), { pal: 'red', tone: 'hi', pos: [0, 1.175, 0], ex: [0.4, 0.4, 0], name: 'Core 1s ionization cliff' });
-    label('board', 'IE₁ trend across Period 2', () => V(27.5, 2.0, 0));
-    label('board', 'Core-shell jump (IE₂)', () => V(29.4, 2.65, 0));
+    const ie2Bar = part(cliffAsm, box(0.42, 2.35, 0.42, 0.02), { pal: 'red', tone: 'hi', pos: [0, 1.175, 0], ex: [0.4, 0.4, 0], name: 'Second ionization IE₂ pillar' });
+    label('board', 'IE₁ trend (2p¹ / 2p⁴ dips)', () => V(27.5, 2.0, 0));
+    label('board', 'IE₂ jump (7298 kJ/mol for Li⁺)', () => V(29.4, 2.65, 0));
 
     // Station 3 (x = 42): Quantized Energy Rungs & Emitted Photon
     const rungAsm = asm('energy_rungs', root, { title: 'Quantized energy rungs (n = 1 … 5)', sub: 'E_n = −13.6 eV / n²' });
@@ -189,11 +194,11 @@ export const CHAPTER = {
 
     const photAsm = asm('emitted_photon', root, { title: 'Emitted photon (hc/λ)', sub: 'Discrete spectral line' });
     photAsm.position.set(42.8, 1.25, 0);
-    const photonSpheres = [];
-    for (let i = 0; i < 8; i++) {
-      const m = part(photAsm, sphere(0.075, 12), { pal: 'ochre', tone: 'lit', pos: [(i - 3.5) * 0.18, Math.sin(i) * 0.18, 0], ex: [0.4, 0, 0], name: 'Photon wave packet' });
-      photonSpheres.push({ mesh: m, i });
+    const wavePts = [];
+    for (let i = 0; i <= 24; i++) {
+      wavePts.push([(i - 12) * 0.065, Math.sin(i * 0.6) * 0.18, 0]);
     }
+    const photWave = buildCurveTube(photAsm, wavePts, { r: 0.032, pal: 'ochre', tone: 'lit', ex: [0.4, 0, 0], name: 'Quantized photon wave packet' });
     label('board', 'Quantized levels (n)', () => V(41.4, 2.35, 0));
     label('board', 'Emitted photon (ΔE = hc/λ)', () => V(42.8, 1.85, 0));
 
@@ -203,13 +208,25 @@ export const CHAPTER = {
         const rScale = (s.tr.radiusPm / 110);
         valSphere.scale.setScalar(rScale);
         for (const it of radSpheres) {
-          it.mesh.position.y = it.z === s.tr.z ? 0.25 : 0;
+          it.mesh.position.y = it.z === s.tr.z ? 0.22 : 0;
         }
+        const rx = (s.tr.z - 6.5) * 0.52;
+        radPtr.set(V(rx, 0.82, 0), V(rx, 0.48, 0));
+        const ix = (s.tr.z - 6.5) * 0.34;
+        const ih = (s.tr.ie1Kj / 2081) * 1.65;
+        iePtr.set(V(ix, ih + 0.42, 0), V(ix, ih + 0.08, 0));
+        const ie2Frac = Math.max(0.28, Math.min(1.0, s.tr.ie2Kj / 7298));
+        ie2Bar.scale.y = ie2Frac;
+        ie2Bar.position.y = (2.35 * ie2Frac) / 2;
+
         const yTop = rungY[Math.min(4, s.sp.nUpper - 1)];
         transArr.set(V(0, yTop, 0), V(0, rungY[1], 0));
-        for (const p of photonSpheres) {
-          p.mesh.position.y = Math.sin(s.t * 4 + p.i * (s.sp.nUpper * 0.35)) * 0.22;
+        const nextWave = [];
+        const freq = 0.45 + (s.sp.nUpper - 2) * 0.18;
+        for (let i = 0; i <= 24; i++) {
+          nextWave.push([(i - 12) * 0.065, Math.sin(s.t * 4.5 + i * freq) * 0.18, 0]);
         }
+        photWave.setPoints(nextWave);
       },
     };
   },

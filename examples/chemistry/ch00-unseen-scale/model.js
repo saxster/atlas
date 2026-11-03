@@ -1,10 +1,12 @@
 // Chapter 0 pure model: observation vs inference ledger, Brownian root-mean-square displacement,
 // filtration pore retention, and powers-of-ten scale / dimensional unit cancellation.
-export const KB = 1.380649e-23; // J/K
+export const KB = 1.380649e-23; // J/K (exact SI)
+export const H2O_DIAMETER_NM = 0.275; // nm
 
 export function brownianState(tempK = 298, radiusNm = 500, viscosityPas = 0.00089, timeSec = 2) {
   const T = Math.max(250, Math.min(370, tempK));
-  const r = Math.max(50, radiusNm) * 1e-9;
+  const rNm = Math.max(50, Math.min(2500, radiusNm));
+  const r = rNm * 1e-9;
   const eta = Math.max(1e-4, viscosityPas);
   const t = Math.max(0.1, timeSec);
   // Stokes-Einstein diffusivity D = k_B T / (6 pi eta r)
@@ -12,11 +14,12 @@ export function brownianState(tempK = 298, radiusNm = 500, viscosityPas = 0.0008
   // 2D mean-square displacement <r^2> = 4 D t
   const rmsUm = Math.sqrt(4 * D * t) * 1e6;
   const hitsPerMicrosec = Math.round((T / 298) * 1e8);
-  return { tempK: T, radiusNm, D, rmsUm, hitsPerMicrosec };
+  const moleculesAcrossGrain = Math.round((2 * rNm) / H2O_DIAMETER_NM);
+  return { tempK: T, radiusNm: rNm, D, rmsUm, hitsPerMicrosec, moleculesAcrossGrain };
 }
 
 export function filtrationState(poreNm = 200, sandRadiusNm = 2500, hydratedIonRadiusNm = 0.38) {
-  const pore = Math.max(1, poreNm);
+  const pore = Math.max(1, Math.min(1000, poreNm));
   const sandRetained = sandRadiusNm > pore;
   const ionPasses = hydratedIonRadiusNm < pore;
   const selectivityRatio = sandRadiusNm / hydratedIonRadiusNm;

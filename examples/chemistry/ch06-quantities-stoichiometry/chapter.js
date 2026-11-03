@@ -8,40 +8,40 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'The mole & molar mass',
-    fig: 'Figure 6.1 · Equal-mole samples (1.00 mol = 6.022 × 10²³ entities) of C (12.0 g), H₂O (18.0 g), and Cu (63.5 g)',
+    fig: 'Figure 6.1 · Equal-mole samples (1.00 mol) of C (12.0 g), H₂O (18.0 g), and Cu (63.5 g)',
     title: 'Avogadro’s Counting Bridge',
     alt: '3D weighing pans holding 1.00 mol each of carbon, water, and copper—identical particle counts with different masses.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 7.0 },
+    cam: { target: [0, 1.15, 0], az: 22, el: 20, dist: 11.6 },
     lit: 'mole_samples',
     parts: ['mole_samples', 'avogadro_bridge'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Empirical vs molecular',
-    fig: 'Figure 6.2 · Empirical ratio unit (CH₂O) versus complete molecular unit (C₃H₆O₃ / C₆H₁₂O₆)',
+    fig: 'Figure 6.2 · Empirical ratio unit (CH₂O) vs molecular formula (C₂H₄O₂)',
     title: 'Ratios & Empirical Formulas',
     alt: '3D comparison of a single CH2O empirical unit with a multi-unit molecular structure.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 6.8 },
+    cam: { target: [14, 1.3, 0], az: -20, el: 20, dist: 11.4 },
     lit: 'molecular_bundle',
     parts: ['empirical_unit', 'molecular_bundle'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Limiting reactant',
-    fig: 'Figure 6.3 · N₂ + 3 H₂ → 2 NH₃: stoichiometric reaction bundles, limiting reactant, and leftover excess',
+    fig: 'Figure 6.3 · N₂ + 3 H₂ → 2 NH₃: reaction bundles, limiting reactant & leftover excess',
     title: 'Limiting Reactant & Excess Tray',
     alt: '3D reactant tray of N2 and H2 molecules pairing in a 1:3 ratio to form 2 NH3 plus leftover excess molecules.',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 11.8 },
     lit: 'product_nh3_tray',
     parts: ['feed_tray', 'product_nh3_tray', 'excess_tray'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Mass chain & yield',
-    fig: 'Figure 6.4 · Stoichiometric bridge (grams A → mol A → mol B → grams B) & theoretical vs actual yield',
+    fig: 'Figure 6.4 · Stoichiometric bridge (g A → mol A → mol B → g B) & percent yield',
     title: 'Stoichiometric Bridge & Percent Yield',
     alt: '3D four-step stoichiometric bridge connecting laboratory mass to molar ratio and comparing theoretical vs actual product columns.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [42, 1.15, 0], az: 24, el: 20, dist: 11.6 },
     lit: 'yield_columns',
     parts: ['stoich_bridge', 'yield_columns'],
     look: { xray: 0.15, section: 0 },
@@ -86,6 +86,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 6,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -162,37 +163,31 @@ export const CHAPTER = {
 
     // Station 1 (x = 14): Empirical vs Molecular Formula
     const empAsm = asm('empirical_unit', root, { title: 'Empirical unit (CH₂O)', sub: '1 C : 2 H : 1 O simplest ratio' });
-    empAsm.position.set(13.1, 1.3, 0);
-    buildMolecule3D(empAsm, {
-      atoms: [
-        { el: 'C', x: 0, y: 0, z: 0 },
-        { el: 'O', x: 0, y: 1.15, z: 0 },
-        { el: 'H', x: -0.88, y: -0.55, z: 0 },
-        { el: 'H', x: 0.88, y: -0.55, z: 0 },
-      ],
-      bonds: [[0, 1, 2], [0, 2, 1], [0, 3, 1]],
-    }, { scale: 0.5 });
+    buildMolecule3D(empAsm, 'CH2O', { scale: 0.55, pos: [12.9, 1.3, 0] });
 
-    const molBunAsm = asm('molecular_bundle', root, { title: 'Molecular dimer (C₂H₄O₂)', sub: '2 × (CH₂O) empirical units' });
+    const molBunAsm = asm('molecular_bundle', root, { title: 'Molecular formula (C₂H₄O₂)', sub: '2 × (CH₂O) empirical units' });
     buildMolecule3D(molBunAsm, 'ethanoicAcid', { scale: 0.52, pos: [14.9, 1.3, 0] });
-    label('board', 'Empirical CH₂O (1:2:1)', () => V(13.1, 2.25, 0));
-    label('board', 'Molecular C₂H₄O₂ (2× CH₂O)', () => V(14.9, 2.25, 0));
+    const empArrow = arrow3(molBunAsm, { r: 0.024, headR: 0.065, headL: 0.13, pal: 'ochre', tone: 'hi', name: '×2 empirical multiplier' });
+    empArrow.set(V(13.55, 1.3, 0), V(14.15, 1.3, 0));
+    label('board', 'Empirical CH₂O (30 g/mol)', () => V(12.9, 2.25, 0));
+    label('board', 'Molecular C₂H₄O₂ (60 g/mol)', () => V(14.9, 2.25, 0));
 
     // Station 2 (x = 28): Limiting Reactant & Excess Tray (N2 + 3 H2 -> 2 NH3)
     const feedAsm = asm('feed_tray', root, { title: 'Reactant feed (N₂ + 3 H₂)', sub: 'Requires 1 N₂ per 3 H₂' });
-    feedAsm.position.set(26.6, 1.35, 0);
+    feedAsm.position.set(26.5, 1.35, 0);
     const n2Feed = [0, 1, 2, 3].map(i => buildMolecule3D(feedAsm, 'N2', { scale: 0.38, pos: [-0.35, (i - 1.5) * 0.42, 0] }));
     const h2Feed = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => buildMolecule3D(feedAsm, 'H2', { scale: 0.35, pos: [0.35, (i - 4) * 0.22, 0] }));
 
     const nh3Asm = asm('product_nh3_tray', root, { title: 'Formed NH₃ product', sub: 'Capped by limiting reactant' });
-    nh3Asm.position.set(28.2, 1.35, 0);
+    nh3Asm.position.set(28.1, 1.35, 0);
     const nh3Mols = [0, 1, 2, 3, 4, 5].map(i => buildMolecule3D(nh3Asm, 'NH3', { scale: 0.38, pos: [(i % 2 - 0.5) * 0.48, (Math.floor(i / 2) - 1) * 0.48, 0] }));
 
     const exAsm = asm('excess_tray', root, { title: 'Leftover excess reactant', sub: 'Unreacted after limiting runs out' });
-    exAsm.position.set(29.5, 1.35, 0);
-    const exBeads = [0, 1, 2, 3].map(i => part(exAsm, sphere(0.16, 16), { pal: 'ochre', tone: 'hi', pos: [0, (i - 1.5) * 0.4, 0], ex: [0.4, 0, 0], name: 'Leftover excess molecule' }));
-    label('board', 'Feed: N₂ + H₂', () => V(26.6, 2.4, 0));
-    label('board', 'NH₃ + Leftover excess', () => V(28.9, 2.4, 0));
+    exAsm.position.set(29.55, 1.35, 0);
+    const exN2Mols = [0, 1, 2, 3].map(i => buildMolecule3D(exAsm, 'N2', { scale: 0.36, pos: [-0.24, (i - 1.5) * 0.4, 0] }));
+    const exH2Mols = [0, 1, 2, 3, 4, 5].map(i => buildMolecule3D(exAsm, 'H2', { scale: 0.34, pos: [0.24, (i - 2.5) * 0.28, 0] }));
+    label('board', 'Feed: N₂ + H₂', () => V(26.5, 2.4, 0));
+    label('board', 'NH₃ + Leftover N₂ / H₂', () => V(28.85, 2.4, 0));
 
     // Station 3 (x = 42): Stoichiometric Bridge & Percent Yield
     const brAsm = asm('stoich_bridge', root, { title: 'Mass → Mole → Mole → Mass arch', sub: 'Stoichiometric conversion pathway' });
@@ -200,6 +195,8 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       part(brAsm, box(0.36, 0.55 + (i === 1 || i === 2 ? 0.45 : 0), 0.36, 0.02), { pal: i === 1 || i === 2 ? 'blue' : 'ochre', tone: 'hi', pos: [(i - 1.5) * 0.46, 0.35, 0], ex: [0, 0.25 * (i + 1), 0], name: `Stoichiometric step ${i + 1}` });
     }
+    const bridgeArr = arrow3(brAsm, { r: 0.022, headR: 0.06, headL: 0.12, pal: 'blue', tone: 'hi', name: 'Molar ratio ν_B/ν_A' });
+    bridgeArr.set(V(-0.23, 0.95, 0), V(0.23, 0.95, 0));
 
     const yldAsm = asm('yield_columns', root, { title: 'Theoretical vs actual yield', sub: '% Yield = (Actual / Theoretical) × 100' });
     yldAsm.position.set(43.1, 0.1, 0);
@@ -215,8 +212,10 @@ export const CHAPTER = {
         h2Feed.forEach((m, i) => { m.group.visible = i < s.lim.nH2; });
         const nNh3 = Math.round(s.lim.nh3Formed);
         nh3Mols.forEach((m, i) => { m.group.visible = i < nNh3; });
-        const nEx = Math.round(s.lim.n2Left + s.lim.h2Left);
-        exBeads.forEach((m, i) => { m.visible = i < nEx; });
+        const n2Ex = Math.round(s.lim.n2Left);
+        const h2Ex = Math.round(s.lim.h2Left);
+        exN2Mols.forEach((m, i) => { m.group.visible = i < n2Ex; });
+        exH2Mols.forEach((m, i) => { m.group.visible = i < h2Ex; });
 
         const yFrac = Math.max(0.15, s.yld.percentYield / 100);
         actBar.scale.y = yFrac;

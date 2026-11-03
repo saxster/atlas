@@ -1,47 +1,47 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, shadeMat, part, box, cyl, sphere, rod, arrow3,
-  buildMolecule3D, studioGrid, playTone, V
+  THREE, part, box, sphere, arrow3,
+  buildMolecule3D, buildCurveTube, studioGrid, playTone, V
 } from '@saxster/atlas/chem_kit.js';
 import * as M from './model.js';
 
 export const PAGES = [
   {
     tab: 'Bond energy ledger',
-    fig: 'Figure 5.1 · Enthalpy ledger: endothermic bond-breaking cost (+1370 kJ) vs exothermic bond-making payback (−1852 kJ)',
+    fig: 'Enthalpy ledger: endothermic bond-breaking (+1370 kJ) vs exothermic bond-making (−1852 kJ)',
     title: 'Bond-Breaking vs Bond-Making',
-    alt: '3D enthalpy columns comparing the energy required to break reactant bonds with the energy released forming product bonds.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 6.8 },
+    alt: '3D enthalpy step diagram showing reactant shelf climbing +1370 kJ to separated atoms and dropping -1852 kJ to products for net Delta H = -482 kJ/mol.',
+    cam: { target: [0, 1.25, 0], az: 20, el: 20, dist: 11.6 },
     lit: 'bond_payback_col',
     parts: ['bond_cost_col', 'bond_payback_col'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Activation barrier & catalyst',
-    fig: 'Figure 5.2 · Reaction coordinate profile: uncatalyzed Ea barrier vs lower-energy catalytic pathway',
+    fig: 'Reaction coordinate profile: uncatalyzed Ea barrier vs lower-energy catalytic pathway',
     title: 'Activation Barrier & Catalysis',
-    alt: '3D reaction coordinate arch showing the high uncatalyzed transition-state barrier versus the lower catalytic pathway.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 7.0 },
+    alt: '3D continuous reaction coordinate curves showing the high uncatalyzed transition-state barrier versus the lower catalytic pathway.',
+    cam: { target: [14, 1.3, 0], az: -18, el: 20, dist: 11.8 },
     lit: 'catalyst_arch',
     parts: ['uncat_arch', 'catalyst_arch', 'transition_complex'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Collision & orientation',
-    fig: 'Figure 5.3 · Molecular collisions: why reactive collisions require both E ≥ Ea and proper 3D orientation',
+    fig: 'Molecular collisions: why reactive collisions require both E ≥ Ea and proper 3D orientation',
     title: 'Collision Energy & Orientation',
     alt: '3D colliding reactant molecules showing productive aligned collision versus unproductive glancing bounce.',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 6.8 },
+    cam: { target: [28, 1.3, 0], az: 22, el: 20, dist: 11.6 },
     lit: 'aligned_pair',
     parts: ['aligned_pair', 'misaligned_pair'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Dynamic equilibrium',
-    fig: 'Figure 5.4 · Reversible dynamic equilibrium (A ⇌ B): matched opposing rates & Le Châtelier shifts',
+    fig: 'Reversible dynamic equilibrium (A ⇌ B): matched opposing rates and Le Châtelier shifts',
     title: 'Dynamic Equilibrium & Le Châtelier',
     alt: '3D two-chamber equilibrium vessel with equal forward and reverse flux arrows and equilibrium concentration pillars.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [42, 1.3, 0], az: 22, el: 20, dist: 11.8 },
     lit: 'eq_pillars',
     parts: ['eq_pillars', 'rate_arrows'],
     look: { xray: 0.15, section: 0 },
@@ -50,11 +50,11 @@ export const PAGES = [
 
 export const PLATES = {
   bond_cost_col: {
-    text: 'Bond-breaking column (always endothermic, +ΔH): energy must be supplied to pull bonded atoms apart to separated atoms at the top of the potential well.',
+    text: 'Bond-breaking step (always endothermic, +ΔH): +1370 kJ/mol must be supplied to pull 2 H–H and 1 O=O apart into separated 4 H + 2 O atoms at the top shelf.',
     facts: s => [['Bonds broken', `+${s.led.brokenKj} kJ/mol`]],
   },
   bond_payback_col: {
-    text: 'Bond-making column (always exothermic, −ΔH): energy is released when separated atoms fall into new covalent potential wells; net ΔH = broken − formed.',
+    text: 'Bond-making step (always exothermic, −ΔH): −1852 kJ/mol is released when separated atoms fall into 4 new O–H covalent wells; net ΔH = +1370 − 1852 = −482 kJ/mol.',
     facts: s => [['Bonds formed', `−${s.led.formedKj} kJ/mol`], ['Net ΔH', `${s.led.deltaHKj} kJ/mol`]],
   },
   uncat_arch: {
@@ -87,6 +87,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 5,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -150,41 +151,52 @@ export const CHAPTER = {
     const labels = [];
     const label = (cls, html, at, opts = {}) => labels.push({ cls, html, at, ...opts });
 
-    // Station 0 (x = 0): Bond-Breaking vs Bond-Making Ledger
-    const costAsm = asm('bond_cost_col', root, { title: 'Endothermic bond-breaking (+1370 kJ)', sub: 'Input required to separate atoms' });
-    costAsm.position.set(-0.65, 0.1, 0);
-    part(costAsm, box(0.65, 1.45, 0.65, 0.03), { pal: 'red', tone: 'hi', pos: [0, 0.725, 0], ex: [-0.45, 0.3, 0], name: 'Bond-breaking cost (+1370 kJ/mol)' });
+    // Station 0 (x = 0): 3-Shelf Bond-Enthalpy Cycle (+1370 kJ up to separated atoms, -1852 kJ down to products, net -482 kJ)
+    const costAsm = asm('bond_cost_col', root, { title: 'Endothermic bond-breaking (+1370 kJ)', sub: '2 H₂ + O₂ → 4 H + 2 O (separated atoms)' });
+    costAsm.position.set(0, 0.1, 0);
+    // Reactant shelf (2 H2 + O2 at y = 0.85)
+    part(costAsm, box(0.95, 0.08, 0.55, 0.02), { pal: 'blue', tone: 'hi', pos: [-1.15, 0.85, 0], name: 'Reactant enthalpy shelf (2 H₂ + O₂)' });
+    // Separated atoms peak shelf (4 H + 2 O at y = 2.05)
+    part(costAsm, box(0.95, 0.08, 0.55, 0.02), { pal: 'ochre', tone: 'hi', pos: [0, 2.05, 0], name: 'Separated atoms shelf (4 H + 2 O)' });
+    const upBreakArr = arrow3(costAsm, { r: 0.032, headR: 0.085, headL: 0.16, pal: 'red', name: 'Break bonds (+1370 kJ/mol)' });
+    upBreakArr.set(V(-0.68, 0.88, 0), V(-0.22, 2.02, 0));
 
-    const payAsm = asm('bond_payback_col', root, { title: 'Exothermic bond-making (−1852 kJ)', sub: 'Released forming 4 O–H bonds' });
-    payAsm.position.set(0.65, 0.1, 0);
-    part(payAsm, box(0.65, 1.95, 0.65, 0.03), { pal: 'green', tone: 'hi', pos: [0, 0.975, 0], ex: [0.45, 0.3, 0], name: 'Bond-making payback (−1852 kJ/mol)' });
-    label('board', 'Break bonds (+1370 kJ)', () => V(-0.65, 1.85, 0));
-    label('board', 'Make bonds (−1852 kJ)', () => V(0.65, 2.35, 0));
+    const payAsm = asm('bond_payback_col', root, { title: 'Exothermic bond-making (−1852 kJ)', sub: '4 H + 2 O → 2 H₂O (net ΔH = −482 kJ)' });
+    payAsm.position.set(0, 0.1, 0);
+    // Product shelf (2 H2O at y = 0.35)
+    part(payAsm, box(0.95, 0.08, 0.55, 0.02), { pal: 'green', tone: 'hi', pos: [1.15, 0.35, 0], name: 'Product enthalpy shelf (2 H₂O)' });
+    const downMakeArr = arrow3(payAsm, { r: 0.032, headR: 0.085, headL: 0.16, pal: 'green', name: 'Make bonds (−1852 kJ/mol)' });
+    downMakeArr.set(V(0.22, 2.02, 0), V(0.75, 0.40, 0));
+    const netDhArr = arrow3(payAsm, { r: 0.026, headR: 0.075, headL: 0.14, pal: 'ochre', name: 'Net ΔH = −482 kJ/mol' });
+    netDhArr.set(V(1.15, 0.85, 0.25), V(1.15, 0.38, 0.25));
+    label('board', 'Break: +1370 kJ → 4H + 2O', () => V(-0.65, 2.28, 0));
+    label('board', 'Make: −1852 kJ (Net −482 kJ)', () => V(0.85, 1.35, 0.25));
 
-    // Station 1 (x = 14): Activation Energy Arch & Catalyst Pathway
+    // Station 1 (x = 14): Smooth Continuous Activation Energy Arch & Catalyst Pathway
     const uncatAsm = asm('uncat_arch', root, { title: 'Uncatalyzed energy barrier (Ea)', sub: 'High transition-state saddle' });
     uncatAsm.position.set(14, 0.2, 0);
-    const uncatArch = [];
-    for (let i = 0; i < 9; i++) {
-      const u = i / 8;
-      const y = 0.6 + Math.sin(u * Math.PI) * 1.45 - u * 0.35;
-      const m = part(uncatAsm, sphere(0.11, 14), { pal: 'red', tone: 'hi', pos: [(u - 0.5) * 2.4, y, -0.25], ex: [0, 0.45, -0.3], name: 'Uncatalyzed profile point' });
-      uncatArch.push({ mesh: m, u });
-    }
+    const makeArchPts = (peakH, zOff) => {
+      const pts = [];
+      for (let i = 0; i <= 16; i++) {
+        const u = i / 16;
+        const s = Math.sin(u * Math.PI);
+        const y = 0.65 + (s * s) * peakH - (u > 0.5 ? (u - 0.5) * 0.7 : 0);
+        pts.push(V((u - 0.5) * 2.5, y, zOff));
+      }
+      return pts;
+    };
+    const uncatTube = buildCurveTube(uncatAsm, makeArchPts(1.45, -0.22), { r: 0.034, pal: 'red', tone: 'hi', segs: 48, name: 'Uncatalyzed reaction profile' });
+    const eaArrow = arrow3(uncatAsm, { r: 0.024, headR: 0.068, headL: 0.13, pal: 'red', name: 'Activation barrier Ea' });
 
     const catAsm = asm('catalyst_arch', root, { title: 'Catalyzed pathway (Ea,cat)', sub: 'Lower barrier, identical ΔH' });
     catAsm.position.set(14, 0.2, 0);
-    for (let i = 0; i < 9; i++) {
-      const u = i / 8;
-      const y = 0.6 + Math.sin(u * Math.PI) * 0.72 - u * 0.35;
-      part(catAsm, sphere(0.11, 14), { pal: 'green', tone: 'lit', pos: [(u - 0.5) * 2.4, y, 0.25], ex: [0, -0.25, 0.35], name: 'Catalyzed profile point' });
-    }
+    const catTube = buildCurveTube(catAsm, makeArchPts(0.75, 0.22), { r: 0.034, pal: 'green', tone: 'lit', segs: 48, name: 'Catalyzed reaction profile' });
 
     const tsAsm = asm('transition_complex', root, { title: 'Activated transition state (‡)', sub: 'Partial bonds breaking & forming' });
-    tsAsm.position.set(14, 2.15, -0.25);
-    const tsMesh = part(tsAsm, sphere(0.24, 18), { pal: 'ochre', tone: 'lit', ex: [0, 0.5, 0], name: 'Transition state complex ‡' });
-    label('board', 'Uncatalyzed Ea peak (‡)', () => V(14, 2.55, -0.25));
-    label('board', 'Catalyzed low-barrier path', () => V(14, 1.35, 0.45));
+    tsAsm.position.set(14, 2.15, -0.22);
+    const tsMesh = part(tsAsm, sphere(0.22, 18), { pal: 'ochre', tone: 'lit', ex: [0, 0.5, 0], name: 'Transition state complex ‡' });
+    label('board', 'Uncatalyzed Ea peak (‡)', () => V(14, 2.52, -0.22));
+    label('board', 'Catalyzed low-barrier path', () => V(14, 1.38, 0.35));
 
     // Station 2 (x = 28): Collision Energy & Orientation
     const alAsm = asm('aligned_pair', root, { title: 'Aligned reactive collision', sub: 'Correct steric orientation + E ≥ Ea' });
@@ -194,10 +206,10 @@ export const CHAPTER = {
 
     const misAsm = asm('misaligned_pair', root, { title: 'Misaligned glancing collision', sub: 'Bounces off without reacting' });
     misAsm.position.set(28, 0.75, 0);
-    buildMolecule3D(misAsm, 'HCl', { scale: 0.45, pos: [-0.55, 0, 0], rot: [0, 0, 1.57] });
-    buildMolecule3D(misAsm, 'OH_minus', { scale: 0.45, pos: [0.55, 0, 0], rot: [0, 0, -1.2] });
-    label('board', 'Aligned collision → reacts', () => V(28, 2.2, 0));
-    label('board', 'Misaligned → bounces', () => V(28, 0.35, 0.6));
+    const misA = buildMolecule3D(misAsm, 'HCl', { scale: 0.45, pos: [-0.55, 0, 0], rot: [0, 0, 1.57] });
+    const misB = buildMolecule3D(misAsm, 'OH_minus', { scale: 0.45, pos: [0.55, 0, 0], rot: [0, 0, -1.2] });
+    label('board', 'Aligned collision → reacts', () => V(28, 2.22, 0));
+    label('board', 'Misaligned → bounces apart', () => V(28, 0.32, 0.6));
 
     // Station 3 (x = 42): Reversible Dynamic Equilibrium
     const eqAsm = asm('eq_pillars', root, { title: 'Equilibrium concentrations [A]eq & [B]eq', sub: 'Ratio [B]/[A] = Keq' });
@@ -208,29 +220,46 @@ export const CHAPTER = {
     const arrAsm = asm('rate_arrows', root, { title: 'Equal opposing rates (rf = rr)', sub: 'Dynamic microscopic exchange' });
     arrAsm.position.set(42, 1.25, 0);
     const fwdArr = arrow3(arrAsm, { r: 0.032, headR: 0.08, headL: 0.16, pal: 'ochre', tone: 'lit', name: 'Forward rate rf = kf[A]' });
-    fwdArr.set(V(-0.4, 0.18, 0), V(0.4, 0.18, 0));
+    fwdArr.set(V(-0.42, 0.18, 0), V(0.42, 0.18, 0));
     const revArr = arrow3(arrAsm, { r: 0.032, headR: 0.08, headL: 0.16, pal: 'ochre', tone: 'mid', name: 'Reverse rate rr = kr[B]' });
-    revArr.set(V(0.4, -0.18, 0), V(-0.4, -0.18, 0));
-    label('board', 'rf = rr (dynamic balance)', () => V(42, 1.85, 0));
-    label('board', '[A]eq vs [B]eq', () => V(42, 2.35, 0));
+    revArr.set(V(0.42, -0.18, 0), V(-0.42, -0.18, 0));
+    const fwdBead = part(arrAsm, sphere(0.075, 14), { pal: 'blue', tone: 'lit', pos: [0, 0.28, 0], name: 'Forward A → B flux particle' });
+    const revBead = part(arrAsm, sphere(0.075, 14), { pal: 'green', tone: 'lit', pos: [0, -0.28, 0], name: 'Reverse B → A flux particle' });
+    label('board', 'rf = rr (dynamic balance)', () => V(42, 1.88, 0));
+    label('board', '[A]eq vs [B]eq', () => V(42, 2.38, 0));
 
+    let lastEa = -1;
     return {
       labels,
       update(s) {
-        const peakH = (s.arr.rawEa / 75) * 1.45;
-        for (const pt of uncatArch) {
-          pt.mesh.position.y = 0.6 + Math.sin(pt.u * Math.PI) * peakH - pt.u * 0.35;
+        const peakH = (s.arr.rawEa / 75) * 1.35;
+        if (Math.abs(s.arr.rawEa - lastEa) > 0.1) {
+          lastEa = s.arr.rawEa;
+          uncatTube.setPoints(makeArchPts(peakH, -0.22));
+          catTube.setPoints(makeArchPts(peakH * 0.58, 0.22));
+          eaArrow.set(V(-0.4, 0.65, -0.22), V(-0.4, 0.65 + peakH, -0.22));
         }
-        tsMesh.position.y = 0.8 + peakH;
-        const osc = Math.abs(Math.sin(s.t * 2.2)) * 0.38;
+        tsMesh.position.y = 0.85 + peakH;
+
+        const speed = s.arr.tempK / 298;
+        const osc = Math.abs(Math.sin(s.t * 2.2 * speed)) * 0.38;
         colA.group.position.x = -0.65 + osc;
         colB.group.position.x = 0.65 - osc;
+        const misOsc = Math.abs(Math.cos(s.t * 2.2 * speed)) * 0.32;
+        misA.group.position.x = -0.65 + misOsc;
+        misB.group.position.x = 0.65 - misOsc;
+        misA.group.position.y = Math.sin(s.t * 4.4 * speed) * 0.08;
+
         const hA = Math.max(0.25, s.eq.aEq * 2.0);
         const hB = Math.max(0.25, s.eq.bEq * 2.0);
         barA.scale.y = hA / 1.2;
         barA.position.y = hA / 2;
         barB.scale.y = hB / 1.2;
         barB.position.y = hB / 2;
+        // Equal opposing particle exchange at equilibrium
+        const uEq = (s.t * 0.9) % 1;
+        fwdBead.position.x = -0.42 + uEq * 0.84;
+        revBead.position.x = 0.42 - uEq * 0.84;
       },
     };
   },

@@ -8,40 +8,40 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Alloys & polymers',
-    fig: 'Figure 11.1 · Metallic iron lattice with interstitial carbon atoms (steel alloy) locking slip planes',
+    fig: 'Figure 11.1 · Metallic Fe lattice with interstitial C atoms (steel) pinning slip planes',
     title: 'Alloys, Lattices & Materials',
     alt: '3D body-centred metallic iron lattice reinforced with smaller interstitial carbon atoms that prevent layer slip.',
-    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 6.8 },
+    cam: { target: [0, 1.25, 0], az: 24, el: 20, dist: 11.4 },
     lit: 'interstitial_carbon',
     parts: ['iron_lattice', 'interstitial_carbon'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Li-ion battery',
-    fig: 'Figure 11.2 · Rechargeable lithium-ion intercalation cell: Li⁺ shuttles between graphite and metal oxide while e⁻ take the wire',
+    fig: 'Figure 11.2 · Rechargeable Li-ion cell: Li⁺ shuttles between graphite and oxide',
     title: 'Rechargeable Lithium-Ion Cell',
     alt: '3D layered graphite anode and CoO2 oxide cathode with Li+ ions shuttling through electrolyte while total Li count stays 8.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 7.2 },
+    cam: { target: [14, 1.25, 0], az: -20, el: 20, dist: 11.8 },
     lit: 'graphite_anode',
     parts: ['graphite_anode', 'oxide_cathode', 'li_ions'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'IR greenhouse vibrations',
-    fig: 'Figure 11.3 · Infrared vibrational absorption: dipole-changing CO₂ bending/stretching vs IR-inactive N₂ and O₂',
+    fig: 'Figure 11.3 · IR vibrational absorption: dipole-changing CO₂ vs IR-inactive N₂',
     title: 'Greenhouse Gases & IR Vibrations',
     alt: '3D CO2 and H2O molecules undergoing dipole-changing infrared vibrations contrasted with symmetric homonuclear N2.',
-    cam: { target: [28, 1.35, 0], az: 22, el: 20, dist: 6.8 },
+    cam: { target: [28, 1.35, 0], az: 22, el: 20, dist: 11.4 },
     lit: 'co2_vibrator',
     parts: ['co2_vibrator', 'n2_transparent'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Ocean carbonate buffer',
-    fig: 'Figure 11.4 · Ocean acidification & carbonate buffering: CO₂(aq) + H₂O + CO₃²⁻ ⇌ 2 HCO₃⁻',
+    fig: 'Figure 11.4 · Ocean carbonate buffer: CO₂(aq) + H₂O + CO₃²⁻ ⇌ 2 HCO₃⁻',
     title: 'Ocean Acidification & Carbonate Buffer',
     alt: '3D seawater column showing dissolved CO2 reacting with carbonate ions (CO3^2-) to form bicarbonate (HCO3-) above a CaCO3 shell.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [42, 1.2, 0], az: 24, el: 20, dist: 11.6 },
     lit: 'carbonate_ions',
     parts: ['seawater_column', 'carbonate_ions', 'caco3_shell'],
     look: { xray: 0.25, section: 0 },
@@ -88,6 +88,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 11,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -186,6 +187,7 @@ export const CHAPTER = {
     // Station 2 (x = 28): IR Greenhouse Vibrations
     const co2VAsm = asm('co2_vibrator', root, { title: 'IR-active CO₂ bending & stretching', sub: 'Oscillating dipole absorbs IR' });
     const co2Vib = buildMolecule3D(co2VAsm, 'CO2', { scale: 0.62, pos: [27.2, 1.4, 0] });
+    const irDipArr = arrow3(co2VAsm, { r: 0.024, headR: 0.065, headL: 0.13, pal: 'red', tone: 'hi', name: 'Transient IR dipole Δμ' });
 
     const n2TAsm = asm('n2_transparent', root, { title: 'IR-transparent N₂ (μ = 0)', sub: 'Symmetric homonuclear bond' });
     buildMolecule3D(n2TAsm, 'N2', { scale: 0.62, pos: [28.9, 1.4, 0] });
@@ -197,7 +199,8 @@ export const CHAPTER = {
     buildBeaker(seaAsm, { r: 1.0, h: 1.85, liquidRatio: 0.78, liquidPal: 'blue', pos: [42, 0.1, 0], name: 'Seawater column' });
 
     const carbAsm = asm('carbonate_ions', root, { title: 'Carbonate (CO₃²⁻) & Bicarbonate (HCO₃⁻)', sub: 'CO₂ + H₂O + CO₃²⁻ ⇌ 2 HCO₃⁻' });
-    const carbMol = buildMolecule3D(carbAsm, 'CO3_2minus', { scale: 0.42, pos: [42, 1.25, 0] });
+    const carbMol = buildMolecule3D(carbAsm, 'CO3_2minus', { scale: 0.38, pos: [41.55, 1.18, 0] });
+    const bicarbMol = buildMolecule3D(carbAsm, 'HCO3_minus', { scale: 0.38, pos: [42.45, 1.18, 0] });
 
     const shAsm = asm('caco3_shell', root, { title: 'Marine CaCO₃ shell lattice', sub: 'Requires CO₃²⁻ supersaturation' });
     shAsm.position.set(42, 0.35, 0);
@@ -213,16 +216,21 @@ export const CHAPTER = {
           const inGraphite = b.i < s.li.atGraphite;
           b.mesh.position.x = inGraphite ? -1.1 + (b.i % 2) * 0.22 : 1.1 - (b.i % 2) * 0.22;
         }
-        // CO2 bending vibration
+        // CO2 bending vibration + dynamic bond update
         if (co2Vib.atoms.length === 3) {
-          const bend = Math.sin(s.t * 4.2) * 0.18;
+          const bend = Math.sin(s.t * 4.2) * 0.22;
           co2Vib.atoms[0].position.y = bend;
           co2Vib.atoms[1].position.y = -bend * 0.5;
           co2Vib.atoms[2].position.y = -bend * 0.5;
+          co2Vib.updateBonds();
+          const dy = Math.abs(bend) > 0.03 ? bend * 1.8 : 0.04;
+          irDipArr.set(V(27.2, 1.4, 0.28), V(27.2, 1.4 + dy, 0.28));
         }
-        const cScale = Math.max(0.55, s.oc.carbonatePct / 100);
+        const cScale = Math.max(0.45, (s.oc.carbonatePct / 100) * 0.42);
         carbMol.group.scale.setScalar(cScale);
-        shellMesh.scale.setScalar(cScale);
+        const biScale = Math.min(0.52, (1.45 - s.oc.carbonatePct / 100) * 0.42);
+        bicarbMol.group.scale.setScalar(biScale);
+        shellMesh.scale.setScalar(Math.max(0.55, s.oc.carbonatePct / 100));
       },
     };
   },

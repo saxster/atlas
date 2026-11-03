@@ -8,40 +8,40 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Direct Zn/Cu redox',
-    fig: 'Figure 8.1 · Direct electron transfer: Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s) on a zinc strip',
+    fig: 'Figure 8.1 · Direct electron transfer: Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s)',
     title: 'Direct Metal–Ion Electron Transfer',
     alt: '3D zinc metal strip immersed in blue CuSO4 solution with Cu2+ ions capturing 2e- to plate as copper while Zn2+ dissolves.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 6.8 },
+    cam: { target: [0, 1.15, 0], az: 22, el: 20, dist: 11.4 },
     lit: 'zinc_strip',
     parts: ['zinc_strip', 'copper_solution'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Electron & atom balance',
-    fig: 'Figure 8.2 · Balancing oxidation and reduction half-reactions so electrons lost equal electrons gained',
+    fig: 'Figure 8.2 · Balancing half-reactions so electrons lost equal electrons gained',
     title: 'Balancing Half-Reactions',
     alt: '3D paired oxidation and reduction electron-transfer columns demonstrating matched electron conservation.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 6.8 },
+    cam: { target: [14, 1.15, 0], az: -20, el: 20, dist: 11.4 },
     lit: 'electron_bridge',
     parts: ['oxidation_half', 'reduction_half', 'electron_bridge'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Daniell galvanic cell',
-    fig: 'Figure 8.3 · Two-beaker Daniell galvanic cell (E° = +1.10 V) with external wire and KNO₃ salt bridge',
+    fig: 'Figure 8.3 · Two-beaker Daniell cell (E° = +1.10 V) with wire & KNO₃ salt bridge',
     title: 'Daniell Galvanic Cell & Salt Bridge',
     alt: '3D Zn/Zn2+ anode beaker and Cu/Cu2+ cathode beaker linked by a U-tube salt bridge and external wire.',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 24, el: 20, dist: 11.8 },
     lit: 'salt_bridge',
     parts: ['anode_halfcell', 'cathode_halfcell', 'salt_bridge'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Driven electrolysis',
-    fig: 'Figure 8.4 · Galvanic discharge vs driven electrolytic charging (V_ext > 1.10 V) & Faraday stoichiometry',
+    fig: 'Figure 8.4 · Driven electrolysis (V_ext > 1.10 V) & Faraday stoichiometry',
     title: 'Electrolysis & Faraday’s Law',
     alt: '3D electrolytic cell with external DC power supply reversing electron flow and plating metal proportional to I * t / F.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [42, 1.25, 0], az: 24, el: 20, dist: 11.6 },
     lit: 'dc_power_supply',
     parts: ['dc_power_supply', 'plated_cathode'],
     look: { xray: 0.15, section: 0 },
@@ -89,6 +89,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 8,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -150,6 +151,16 @@ export const CHAPTER = {
     // Station 0 (x = 0): Direct Zn Strip in CuSO4 Beaker
     const cuSolAsm = asm('copper_solution', root, { title: 'CuSO₄(aq) solution vessel', sub: 'Cu²⁺ ions reduced at strip' });
     buildBeaker(cuSolAsm, { r: 0.95, h: 1.75, liquidRatio: 0.72, liquidPal: 'blue', pos: [0, 0.1, 0], name: 'CuSO₄ beaker' });
+    const cuIonBeads = [0, 1, 2, 3, 4, 5].map(i => part(cuSolAsm, sphere(0.095, 14), {
+      pal: 'blue', tone: 'lit',
+      pos: [(i % 2 === 0 ? -0.52 : 0.52), 0.42 + Math.floor(i / 2) * 0.32, (i % 3 - 1) * 0.22],
+      ex: [0, 0.35, 0], name: 'Cu²⁺(aq) ion',
+    }));
+    const znIonBeads = [0, 1, 2, 3, 4, 5].map(i => part(cuSolAsm, sphere(0.09, 14), {
+      pal: 'paper', tone: 'hi',
+      pos: [(i % 2 === 0 ? -0.36 : 0.36), 0.38 + Math.floor(i / 2) * 0.32, (i % 3 - 1) * -0.22],
+      ex: [0, 0.35, 0], name: 'Zn²⁺(aq) ion',
+    }));
 
     const znAsm = asm('zinc_strip', root, { title: 'Immersed Zn(s) electrode strip', sub: 'Oxidized to Zn²⁺ + 2e⁻' });
     znAsm.position.set(0, 1.15, 0);
@@ -185,8 +196,12 @@ export const CHAPTER = {
     const sbAsm = asm('salt_bridge', root, { title: 'KNO₃ salt bridge & external wire', sub: 'Completes electrical circuit' });
     sbAsm.position.set(28.0, 1.45, 0);
     part(sbAsm, box(1.6, 0.14, 0.14, 0.02), { pal: 'green', tone: 'lit', pos: [0, 0.1, 0], ex: [0, 0.45, 0], name: 'U-tube salt bridge' });
+    const kIonBead = part(sbAsm, sphere(0.065, 12), { pal: 'blue', tone: 'hi', pos: [0.25, 0.1, 0.08], name: 'K⁺ cation migrating' });
+    const no3IonBead = part(sbAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'hi', pos: [-0.25, 0.1, -0.08], name: 'NO₃⁻ anion migrating' });
+    const wireRod = rod(sbAsm, { r: 0.022, pal: 'dark', tone: 'hi', name: 'External conductor wire' });
+    wireRod.set(V(-1.1, 0.55, 0), V(1.1, 0.55, 0));
     const wireBead = part(sbAsm, sphere(0.09, 14), { pal: 'red', tone: 'hi', pos: [0, 0.55, 0], name: 'Moving electron' });
-    label('board', 'Salt bridge (ion balance)', () => V(28.0, 1.8, 0));
+    label('board', 'Salt bridge (K⁺ / NO₃⁻ balance)', () => V(28.0, 1.8, 0));
     label('board', 'External wire (e⁻ flow)', () => V(28.0, 2.35, 0));
 
     // Station 3 (x = 42): Driven Electrolysis & Faraday Law
@@ -205,10 +220,14 @@ export const CHAPTER = {
       update(s) {
         const frac = Math.max(0.15, s.led.cuPlated / 6);
         cuCoat.scale.set(1 + frac * 0.3, frac, 1 + frac * 0.3);
+        cuIonBeads.forEach((b, i) => { b.visible = i < s.led.cuIons; });
+        znIonBeads.forEach((b, i) => { b.visible = i < s.led.znIons; });
         oxCol.scale.y = Math.max(0.2, frac * 1.3);
         redCol.scale.y = Math.max(0.2, frac * 1.3);
         const dir = s.cell.netDrivingV >= 0 ? 1 : -1;
         wireBead.position.x = (((s.t * 0.8 * dir) % 1 + 1) % 1 - 0.5) * 2.0;
+        kIonBead.position.x = (((s.t * 0.45 * dir) % 1 + 1) % 1 - 0.5) * 1.2;
+        no3IonBead.position.x = (((-s.t * 0.45 * dir) % 1 + 1) % 1 - 0.5) * 1.2;
         const mScale = 0.6 + (s.far.currentAmps / 5.0) * 0.7;
         farDeposit.scale.set(mScale, 1, mScale);
       },

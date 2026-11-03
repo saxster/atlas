@@ -1,47 +1,47 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, shadeMat, part, box, cyl, sphere, rod, arrow3,
-  buildMolecule3D, buildBeaker, studioGrid, playTone, V
+  buildMolecule3D, buildBeaker, buildCurveTube, studioGrid, playTone, V
 } from '@saxster/atlas/chem_kit.js';
 import * as M from './model.js';
 
 export const PAGES = [
   {
     tab: 'Proton transfer',
-    fig: 'Figure 7.1 · Brønsted–Lowry proton transfer: HA + H₂O ⇌ A⁻ + H₃O⁺ conjugate acid–base pairs',
+    fig: 'Figure 7.1 · Brønsted–Lowry proton transfer: HA + H₂O ⇌ A⁻ + H₃O⁺ conjugate pairs',
     title: 'Brønsted–Lowry Proton Transfer',
     alt: '3D acid molecule donating an H+ proton to a water molecule to form hydronium (H3O+) and a conjugate base anion (A-).',
-    cam: { target: [0, 1.35, 0], az: 20, el: 20, dist: 6.8 },
+    cam: { target: [0, 1.35, 0], az: 20, el: 20, dist: 11.4 },
     lit: 'hydronium_ion',
     parts: ['acid_donor', 'hydronium_ion'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Strong vs concentrated',
-    fig: 'Figure 7.2 · Acid strength (degree of ionization α) versus total solute concentration (mol/L)',
+    fig: 'Figure 7.2 · Acid strength (ionization α) vs total solute concentration (mol/L)',
     title: 'Strong vs Concentrated Acids',
     alt: '3D side-by-side beakers contrasting a fully dissociated strong acid with a mostly intact weak acid at equal molarity.',
-    cam: { target: [14, 1.35, 0], az: -20, el: 20, dist: 7.0 },
+    cam: { target: [14, 1.15, 0], az: -20, el: 20, dist: 11.6 },
     lit: 'weak_acid_vessel',
     parts: ['strong_acid_vessel', 'weak_acid_vessel'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Logarithmic pH scale',
-    fig: 'Figure 7.3 · Logarithmic pH ladder: each 1-unit step changes [H₃O⁺] tenfold while [H₃O⁺][OH⁻] = Kw',
+    fig: 'Figure 7.3 · Logarithmic pH ladder: 10× [H₃O⁺] change per unit while [H₃O⁺][OH⁻] = Kw',
     title: 'The Tenfold Logarithmic pH Scale',
     alt: '3D opposing H3O+ and OH- logarithmic columns showing how pH + pOH = 14 across acidic, neutral, and basic solutions.',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 6.8 },
+    cam: { target: [28, 1.15, 0], az: 24, el: 20, dist: 11.4 },
     lit: 'ph_seesaw',
     parts: ['ph_seesaw', 'kw_fulcrum'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Titration & buffers',
-    fig: 'Figure 7.4 · Burette titration curve, equivalence inflection, and conjugate HA/A⁻ buffer plateau',
+    fig: 'Figure 7.4 · Burette titration curve, equivalence jump & HA/A⁻ buffer plateau',
     title: 'Titration Curve & Buffer Capacity',
     alt: '3D titration burette over a conical flask alongside the 3D sigmoid pH curve showing the buffer plateau and equivalence jump.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [42, 1.25, 0], az: 24, el: 20, dist: 11.8 },
     lit: 'titration_burette',
     parts: ['titration_burette', 'buffer_flask', 'sigmoid_curve'],
     look: { xray: 0.2, section: 0 },
@@ -85,6 +85,7 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 7,
+  narrowZoom: 1.18,
   PAGES,
   PLATES,
   clock0: 0,
@@ -151,19 +152,25 @@ export const CHAPTER = {
     label('board', 'H₃O⁺ acceptor', () => V(0.85, 2.15, 0));
 
     // Station 1 (x = 14): Strong vs Weak Acid Beakers
-    const strAsm = asm('strong_acid_vessel', root, { title: 'Strong acid (100% ionized)', sub: 'Separate H₃O⁺ and A⁻ ions' });
+    const strAsm = asm('strong_acid_vessel', root, { title: 'Strong acid (100% ionized)', sub: 'Separate H₃O⁺ and Cl⁻ ions' });
     buildBeaker(strAsm, { r: 0.72, h: 1.55, liquidRatio: 0.68, liquidPal: 'red', pos: [13.0, 0.1, 0], name: 'Strong acid vessel' });
     for (let i = 0; i < 6; i++) {
-      part(strAsm, sphere(0.1, 14), { pal: i % 2 === 0 ? 'red' : 'green', tone: 'lit', pos: [13.0 + ((i % 3) - 1) * 0.32, 0.55 + Math.floor(i / 3) * 0.35, 0], ex: [0, 0.4, 0], name: i % 2 === 0 ? 'Free H₃O⁺ ion' : 'Free Cl⁻ ion' });
+      if (i % 2 === 0) {
+        buildMolecule3D(strAsm, 'H3O_plus', { scale: 0.22, pos: [13.0 + ((i % 3) - 1) * 0.32, 0.55 + Math.floor(i / 3) * 0.35, 0] });
+      } else {
+        part(strAsm, sphere(0.11, 14), { pal: 'green', tone: 'lit', pos: [13.0 + ((i % 3) - 1) * 0.32, 0.55 + Math.floor(i / 3) * 0.35, 0], ex: [0, 0.4, 0], name: 'Free Cl⁻ ion' });
+      }
     }
 
-    const wkAsm = asm('weak_acid_vessel', root, { title: 'Weak acid (mostly intact HA)', sub: 'Partial equilibrium dissociation' });
+    const wkAsm = asm('weak_acid_vessel', root, { title: 'Weak acid (mostly intact CH₃COOH)', sub: 'Partial equilibrium dissociation' });
     buildBeaker(wkAsm, { r: 0.72, h: 1.55, liquidRatio: 0.68, liquidPal: 'ochre', pos: [15.0, 0.1, 0], name: 'Weak acid vessel' });
-    for (let i = 0; i < 5; i++) {
-      buildMolecule3D(wkAsm, 'HCl', { scale: 0.25, pos: [15.0 + ((i % 2) - 0.5) * 0.38, 0.48 + (i % 3) * 0.24, 0] });
+    for (let i = 0; i < 4; i++) {
+      buildMolecule3D(wkAsm, 'ethanoicAcid', { scale: 0.21, pos: [15.0 + ((i % 2) - 0.5) * 0.38, 0.48 + Math.floor(i / 2) * 0.38, 0] });
     }
-    label('board', 'Strong: ~100% ionized', () => V(13.0, 1.95, 0));
-    label('board', 'Weak: mostly intact HA', () => V(15.0, 1.95, 0));
+    buildMolecule3D(wkAsm, 'CH3COO_minus', { scale: 0.21, pos: [14.85, 1.05, 0.18] });
+    buildMolecule3D(wkAsm, 'H3O_plus', { scale: 0.21, pos: [15.2, 1.05, -0.18] });
+    label('board', 'Strong: ~100% H₃O⁺ + A⁻', () => V(13.0, 1.95, 0));
+    label('board', 'Weak: ~99% intact HA', () => V(15.0, 1.95, 0));
 
     // Station 2 (x = 28): Logarithmic pH See-Saw
     const seeAsm = asm('ph_seesaw', root, { title: 'Logarithmic [H₃O⁺] vs [OH⁻] bars', sub: '10× change per pH unit' });
@@ -186,12 +193,20 @@ export const CHAPTER = {
 
     const sigAsm = asm('sigmoid_curve', root, { title: 'Sigmoid titration pH curve', sub: 'Buffer plateau + equivalence jump' });
     sigAsm.position.set(42.9, 0.25, 0);
-    for (let i = 0; i <= 10; i++) {
-      const vb = i * 4;
+    const sigPts = [];
+    for (let i = 0; i <= 40; i++) {
+      const vb = i;
       const pH = M.titrationCurveState(vb, 25, 0.1, 0.1, 4.76).pH;
-      part(sigAsm, sphere(0.075, 12), { pal: Math.abs(vb - 25) < 3 ? 'red' : 'green', tone: 'hi', pos: [(i - 5) * 0.22, (pH / 14) * 1.9, 0], ex: [0.35, 0, 0], name: `pH at ${vb} mL` });
+      sigPts.push([(vb / 4 - 5) * 0.22, (pH / 14) * 1.9, 0]);
     }
-    const markerBead = part(sigAsm, sphere(0.14, 16), { pal: 'ochre', tone: 'lit', pos: [0, 0.65, 0.12], name: 'Current titration point' });
+    const sigTube = buildCurveTube(sigAsm, sigPts, { r: 0.042, pal: 'green', tone: 'hi', ex: [0.35, 0, 0], name: 'Titration pH curve' });
+    // Buffer plateau shelf at half-equivalence (12.5 mL, pH = pKa)
+    const bufRod = rod(sigAsm, { r: 0.018, pal: 'blue', tone: 'hi', name: 'Buffer plateau (pH ≈ pKa)' });
+    bufRod.set(V((6.25 / 4 - 5) * 0.22, (4.76 / 14) * 1.9, -0.05), V((18.75 / 4 - 5) * 0.22, (4.76 / 14) * 1.9, -0.05));
+    // Vertical equivalence line at 25.0 mL
+    const eqRod = rod(sigAsm, { r: 0.016, pal: 'red', tone: 'hi', name: 'Equivalence volume (25.0 mL)' });
+    eqRod.set(V((25 / 4 - 5) * 0.22, 0, -0.05), V((25 / 4 - 5) * 0.22, 1.9, -0.05));
+    const markerBead = part(sigAsm, sphere(0.13, 18), { pal: 'ochre', tone: 'lit', pos: [0, 0.65, 0.08], name: 'Current titration point' });
     label('board', 'Burette & buffer flask', () => V(41.1, 2.75, 0));
     label('board', 'Buffer plateau & equivalence jump', () => V(42.9, 2.35, 0));
 
@@ -207,7 +222,14 @@ export const CHAPTER = {
         ohCol.position.y = (ohRatio * 1.4 * 1.4) / 2;
 
         titBeaker.setLevel(0.45 + (s.tit.addedBaseMl / 40) * 0.38);
-        markerBead.position.set(((s.tit.addedBaseMl / 4) - 5) * 0.22, (s.tit.pH / 14) * 1.9, 0.12);
+        const effPka = Math.max(2.0, s.acid.pKa);
+        const nextPts = [];
+        for (let i = 0; i <= 40; i++) {
+          const pH = M.titrationCurveState(i, 25, 0.1, 0.1, effPka).pH;
+          nextPts.push([(i / 4 - 5) * 0.22, (pH / 14) * 1.9, 0]);
+        }
+        sigTube.setPoints(nextPts);
+        markerBead.position.set(((s.tit.addedBaseMl / 4) - 5) * 0.22, (s.tit.pH / 14) * 1.9, 0.08);
       },
     };
   },

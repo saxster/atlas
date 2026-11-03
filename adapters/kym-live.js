@@ -276,6 +276,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
         kick();
       };
       if (cutMode !== 'solid') applyCutMode(cutMode);
+      if (preset?.lit && S.E?.ASM?.[preset.lit]) S.litOverride = preset.lit;
       fallback2D = false;
     } catch (e) {
       fallback2D = true;
@@ -401,12 +402,13 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
     controlsEl.appendChild(pageWrap);
   }
 
-  function setPage(idx) {
+  function setPage(idx, keepLitOverride = false) {
     page = Math.min(Math.max(idx | 0, 0), chapter.PAGES.length - 1);
     P = chapter.PAGES[page];
     title.textContent = P.tab || P.fig;
     updateAria();
     pageButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(i === page)));
+    if (S && !keepLitOverride) S.litOverride = null;
     if (S && S.selected) S.select(null);
     rebuildPartButtons();
     kick();
@@ -722,7 +724,8 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
         Object.assign(chapter.params, preset.params);
         syncSlidersFromParams();
       }
-      if (preset.page != null) setPage(preset.page);
+      if (S) S.litOverride = (preset.lit && S.E?.ASM?.[preset.lit]) ? preset.lit : null;
+      if (preset.page != null) setPage(preset.page, true);
       else kick();
     },
     destroy() {

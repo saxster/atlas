@@ -255,8 +255,8 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   }
 
   // ---------- hover / click / direct 3D drag ----------
-  let hovered = null, hoveredDrag = null, selected = null, pageLit = PAGES[0].lit;
-  const relight = () => E.setLit(hovered || selected || pageLit);
+  let hovered = null, hoveredDrag = null, selected = null, litOverride = null, pageLit = PAGES[0].lit;
+  const relight = () => E.setLit(hovered || selected || litOverride || pageLit);
   const dRay = new E.THREE.Raycaster(), dNdc = new E.THREE.Vector2(), dHit = new E.THREE.Vector3();
   function liveDraggables() {
     const out = [];
@@ -500,6 +500,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     if (look.isolate !== undefined) E.setIsolate(look.isolate);
     if (look.ex !== undefined && !selected) E.setExplode(look.ex, null, true);
     lastLook = look;
+    E.resetExplode?.();
     W.update(state, look);
     E.stepExplode(dt);
 
@@ -681,6 +682,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   return {
     E, W, N, hooks, step, select, relight, labelReport, sceneReport, destroy, fit, draggable,
     get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
+    get litOverride() { return litOverride; }, set litOverride(v) { litOverride = v; relight(); },
     get lastLook() { return lastLook; },
     get selected() { return selected; }, get hovered() { return hovered; }, get dragging() { return !!drag; },
     get clock() { return clock; }, set clock(c) { clock = c; },
