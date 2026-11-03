@@ -13,4 +13,6 @@ export const CONCEPTS = [
     shownIn: ['biology/central-dogma'] },
   { id: 'lotka-volterra', name: 'Lotka–Volterra predator–prey cycles and Volterra’s principle', formula: '<i>dR</i>/<i>dt</i> = α<i>R</i> − β<i>RF</i>, &nbsp;<i>dF</i>/<i>dt</i> = δ<i>RF</i> − γ<i>F</i>, &nbsp;(<i>R</i>*, <i>F</i>*) = (γ/δ, α/β)',
     shownIn: ['biology/lotka-volterra'] },
+  { id: 'leaf-gas-exchange', name: 'Beer–Lambert light capture and Fickian stomatal conductance', formula: '<i>I</i>(<i>z</i>) = <i>I</i><sub>0</sub><i>e</i><sup>−μ<i>z</i></sup>, &nbsp;<i>J</i><sub>CO₂</sub> = <i>g</i><sub>s</sub>(<i>C</i><sub>a</sub> − <i>C</i><sub>i</sub>)',
+    shownIn: ['biology/leaf-section'] },
 ];

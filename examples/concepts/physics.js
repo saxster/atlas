@@ -13,4 +13,6 @@ export const CONCEPTS = [
     shownIn: ['physics/circuits/8'] },
   { id: 'linear-drag', name: 'Falling against drag proportional to v', formula: '<i>v</i> = <i>v</i><sub>T</sub>(1 − <i>e</i><sup>−<i>t</i>/τ</sup>)',
     shownIn: ['physics/newton/11'] },
+  { id: 'thin-lens', name: 'Thin-lens equation and lateral magnification', formula: '1/<i>f</i> = 1/<i>d</i><sub>o</sub> + 1/<i>d</i><sub>i</sub>, &nbsp;<i>M</i> = −<i>d</i><sub>i</sub>/<i>d</i><sub>o</sub>',
+    shownIn: ['physics/optics-bench'] },
 ];

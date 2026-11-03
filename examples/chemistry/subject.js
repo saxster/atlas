@@ -7,7 +7,7 @@ export const SUBJECT = {
   name: 'Atlas of Chemistry',
   blurb: 'orbitals, molecules, reactions and energy',
   chapters: ['vsepr', 'orbitals'],
-  figures: ['kinetics', 'titration', 'arrhenius'],
+  figures: ['kinetics', 'titration', 'arrhenius', 'crystal-projection'],
   hero: 'Chemistry, taken apart.',
   tagline: 'Orbitals, molecules, buffers and reaction barriers built from first principles',
   // contents-page cards (tools/site.mjs); page: the book page tools/cards.mjs draws the picture from
@@ -22,6 +22,8 @@ export const SUBJECT = {
       alt: 'A burette dripping NaOH into a flask of weak acid HA and conjugate base A⁻ alongside the pH titration curve and equivalence cliff' },
     arrhenius: { section: 'Kinetics and equilibrium', title: 'Over the barrier: temperature and catalysts', sub: 'activation energy, the Maxwell–Boltzmann tail and Arrhenius rate', grammar: 'explorer',
       alt: 'A 3D potential energy barrier U(x) with colliding molecules and a catalyzed pathway paired with the Maxwell–Boltzmann high-energy tail' },
+    'crystal-projection': { section: 'Structure & bonding', title: 'From 2D unit-cell plan to 3D NaCl crystal', sub: 'how a flat (001) projection builds rock-salt NaCl and Bragg planes', grammar: 'machine', at: 5.5,
+      alt: 'A 2D crystallographic (001) plan of rock-salt NaCl sliced at z = 0 that extrudes into a 3D face-centred cubic lattice and (200) Bragg planes' },
   },
   links: [],
   source: 'https://github.com/saxster/atlas',

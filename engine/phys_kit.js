@@ -4,6 +4,7 @@ import { part, box, cyl, lines, arrow as rawArrow, setArrow as rawSetArrow, rod 
 import * as rawPrims from './prims.js';
 import * as K from './kinematics.js';
 import * as motion from './motion.js';
+export * from './cad_kit.js';
 
 export function arrow(parent, palOrOpts = 'red', opts = {}) {
   if (palOrOpts && typeof palOrOpts === 'object') {

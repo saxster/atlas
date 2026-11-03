@@ -48,7 +48,7 @@ export function createAssemblyController(ASM = {}) {
     }
   }
   const toPlane = p => p?.isPlane ? p : Array.isArray(p) ? new THREE.Plane(new THREE.Vector3(p[0], p[1], p[2]).normalize(), p[3] ?? 0) : null;
-  function setCutaway(planes, asmKeys = null) {
+  function setCutaway(planes, asmKeys = null, opts = {}) {
     const list = (Array.isArray(planes) && typeof planes[0] !== 'number' ? planes : planes ? [planes] : []).map(toPlane).filter(Boolean);
     const groups = asmKeys ? asmKeys.map(k => ASM[k]).filter(Boolean) : Object.values(ASM);
     for (const g of groups) {
@@ -56,11 +56,24 @@ export function createAssemblyController(ASM = {}) {
       for (const m of meshesOf(g)) {
         if (m.userData.noCut) continue;
         const mat = ensureOwnMat(m);
+        const isTrans = !!mat.transparent;
         mat.clipping = list.length > 0;
         mat.clippingPlanes = list.length ? list : null;
-        mat.side = list.length ? THREE.DoubleSide : THREE.FrontSide;
+        mat.side = list.length && !isTrans ? THREE.DoubleSide : THREE.FrontSide;
+        if (mat.uniforms?.uHasPoche) {
+          const usePoche = list.length > 0 && !isTrans && (m.userData.poche ?? !!opts.poche);
+          mat.uniforms.uHasPoche.value = usePoche ? 1 : 0;
+        }
         mat.needsUpdate = true;
       }
+      g.traverse(o => {
+        if (!(o.isLine || o.isLineSegments)) return;
+        for (let p = o; p && p !== g; p = p.parent) if (p.userData?.noCut) return;
+        const mat = ensureOwnMat(o);
+        mat.clipping = list.length > 0;
+        mat.clippingPlanes = list.length ? list : null;
+        mat.needsUpdate = true;
+      });
     }
   }
   function setXray(amount = 0, asmKeys = null) {
@@ -150,7 +163,8 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
         #include <clipping_planes_pars_fragment>
         uniform float uTone; varying vec3 vN; void main(){
         #include <clipping_planes_fragment>
-        gl_FragColor = vec4(normalize(vN) * 0.5 + 0.5, uTone);
+        vec3 n = normalize(vN) * (gl_FrontFacing ? 1.0 : -1.0);
+        gl_FragColor = vec4(n * 0.5 + 0.5, uTone);
       }`,
     }));
     return nmats.get(key);
@@ -276,7 +290,18 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     return best;
   }
 
-  function placeCamera({ target, az, el, dist }) {
+  function placeCamera({ target, az, el, dist, fov }) {
+    const nextFov = fov ?? camera.fov;
+    const nPlane = Math.max(0.08, dist > 40 ? dist * 0.15 : near);
+    const fPlane = Math.max(far, dist * 2.5);
+    if (Math.abs(camera.fov - nextFov) > 1e-4 || Math.abs(camera.near - nPlane) > 1e-3 || Math.abs(camera.far - fPlane) > 1e-2) {
+      camera.fov = nextFov;
+      camera.near = nPlane;
+      camera.far = fPlane;
+      camera.updateProjectionMatrix();
+      edges.uniforms.cameraNear.value = nPlane;
+      edges.uniforms.cameraFar.value = fPlane;
+    }
     const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
     camera.position.set(target[0] + dist * Math.sin(a) * Math.cos(e), target[1] + dist * Math.sin(e), target[2] + dist * Math.cos(a) * Math.cos(e));
     camera.lookAt(...target);

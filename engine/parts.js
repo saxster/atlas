@@ -20,10 +20,15 @@ const SHADE_V = `
   }`;
 const SHADE_F = `
   #include <clipping_planes_pars_fragment>
-  uniform vec3 uTop; uniform vec3 uLight; uniform vec3 uDark; uniform float uOpacity; uniform float uLit;
+  uniform vec3 uTop; uniform vec3 uLight; uniform vec3 uDark; uniform vec3 uPoche; uniform float uHasPoche; uniform float uOpacity; uniform float uLit;
   varying vec3 vWN;
   void main() {
     #include <clipping_planes_fragment>
+    if (uHasPoche > 0.5 && !gl_FrontFacing) {
+      gl_FragColor = vec4(uPoche, uOpacity);
+      #include <colorspace_fragment>
+      return;
+    }
     vec3 n = normalize(vWN);
     // sides: close tones by facing, continuous so curved parts never staircase
     float side = clamp(dot(normalize(vec3(-0.55, 0.0, 0.83)), normalize(vec3(n.x, 0.0, n.z) + 1e-5)) * 0.5 + 0.5, 0.0, 1.0);
@@ -105,24 +110,33 @@ export function themeScene(scene, th) {
   });
 }
 const cache = new Map();
-export function shadeMat(pal = 'paper', { opacity = 1 } = {}) {
-  const key = pal + opacity;
-  if (opacity === 1 && cache.has(key)) return cache.get(key);
-  const [top, light, dark] = PALETTE[pal];
+export function shadeMat(pal = 'paper', { opacity = 1, poche = false } = {}) {
+  const key = `${pal}:${opacity}:${poche ? 1 : 0}`;
+  if (opacity === 1 && !poche && cache.has(key)) return cache.get(key);
+  const [top, light, dark] = PALETTE[pal] || PALETTE.paper;
+  const inkCol = PALETTE.ink ? PALETTE.ink[2] : '#18181a';
   const m = new THREE.ShaderMaterial({
     vertexShader: SHADE_V, fragmentShader: SHADE_F, transparent: opacity < 1, depthWrite: opacity >= 1,
-    uniforms: { uTop: { value: new THREE.Color(top) }, uLight: { value: new THREE.Color(light) }, uDark: { value: new THREE.Color(dark) }, uOpacity: { value: opacity }, uLit: { value: 0 } },
+    uniforms: {
+      uTop: { value: new THREE.Color(top) },
+      uLight: { value: new THREE.Color(light) },
+      uDark: { value: new THREE.Color(dark) },
+      uPoche: { value: new THREE.Color(inkCol) },
+      uHasPoche: { value: poche ? 1 : 0 },
+      uOpacity: { value: opacity },
+      uLit: { value: 0 },
+    },
   });
-  if (opacity === 1) cache.set(key, m);
+  if (opacity === 1 && !poche) cache.set(key, m);
   return m;
 }
 
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-export function part(parent, geo, { tone = 'mid', pal = 'paper', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat } = {}) {
-  const m = new THREE.Mesh(geo, mat || shadeMat(pal));
+export function part(parent, geo, { tone = 'mid', pal = 'paper', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat, poche } = {}) {
+  const m = new THREE.Mesh(geo, mat || shadeMat(pal, { poche: !!poche }));
   m.position.set(...pos);
   if (rot) m.rotation.set(...rot);
-  m.userData = { tone: TONE[tone], baseTone: TONE[tone], part: name, home: m.position.clone(), ex: V(...ex) };
+  m.userData = { tone: TONE[tone], baseTone: TONE[tone], part: name, home: m.position.clone(), ex: V(...ex), poche };
   parent.add(m);
   return m;
 }
@@ -338,4 +352,34 @@ export function spring(parent, { r = 0.09, wire = 0.016, turns = 7, segs = 96, r
   };
   mesh.set(from, to);
   return mesh;
+}
+
+// Applies or clears Three.js section-cut clipping planes across all meshes and lines under root,
+// preserving translucent glass (FrontSide, non-pochè) and respecting userData.noCut.
+export function applyClipPlanes(root, planes, { poche = false } = {}) {
+  const list = Array.isArray(planes) ? planes.filter(Boolean) : planes ? [planes] : [];
+  const active = list.length > 0;
+  root.traverse(o => {
+    if (!(o.isMesh || o.isLine || o.isLineSegments)) return;
+    for (let p = o; p && p !== root; p = p.parent) if (p.userData?.noCut) return;
+    if (o.userData?.noCut) return;
+    if (!o.userData._ownMat && o.material?.clone) {
+      o.userData._baseMat = o.material;
+      o.material = o.material.clone();
+      o.userData._ownMat = true;
+    }
+    const mat = o.material;
+    if (!mat) return;
+    const isTrans = !!mat.transparent;
+    mat.clipping = active;
+    mat.clippingPlanes = active ? list : null;
+    if (o.isMesh) {
+      mat.side = active && !isTrans ? THREE.DoubleSide : THREE.FrontSide;
+      if (mat.uniforms?.uHasPoche) {
+        const usePoche = active && !isTrans && (o.userData.poche ?? poche);
+        mat.uniforms.uHasPoche.value = usePoche ? 1 : 0;
+      }
+    }
+    mat.needsUpdate = true;
+  });
 }

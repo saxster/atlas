@@ -15,4 +15,6 @@ export const CONCEPTS = [
     shownIn: ['chemistry/titration'] },
   { id: 'arrhenius-rate', name: 'Activation energy and the Arrhenius equation', formula: '<i>k</i> = <i>A e</i><sup>−<i>E</i><sub>a</sub>/<i>RT</i></sup>',
     shownIn: ['chemistry/arrhenius'] },
+  { id: 'bragg-crystal', name: 'Unit-cell density and Bragg X-ray diffraction', formula: '2<i>d</i><sub><i>hkl</i></sub> sin θ = <i>n</i>λ, &nbsp;ρ = <i>ZM</i> / (<i>N</i><sub>A</sub><i>a</i><sub>0</sub>³)',
+    shownIn: ['chemistry/crystal-projection'] },
 ];

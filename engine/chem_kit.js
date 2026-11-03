@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { PALETTE as PAL, shadeMat, part, box, lines, arrow, setArrow, rod, liveTube, gear, spring, V, xAxis, zAxis } from './parts.js';
 import * as prims from './prims.js';
+export * from './cad_kit.js';
 
 export { THREE, PAL, shadeMat, part, box, lines, arrow, setArrow, rod, liveTube, gear, spring, V, xAxis, zAxis, prims };
 

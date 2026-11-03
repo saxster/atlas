@@ -17,5 +17,6 @@ export { axes, plot, area, surface, curve, vector, field, streamline, lattice, b
 export { chart, samples, scale, moveCursor } from './chart.js';
 export { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCDF, chiSquareCritical, normalQuantile, binomial, checkLinkLengths } from './checks.js';
 export { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
+export * from './cad_kit.js';
 export { rng } from './rng.js';
 export { readTheme, KYM } from './theme.js';

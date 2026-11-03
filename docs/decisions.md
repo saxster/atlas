@@ -47,3 +47,11 @@ This log records the non-obvious engineering decisions and invariants behind `@s
   - Every local repo path referenced in `CLAUDE.md` and `docs/API.md` must resolve to an existing file or directory.
 - **Why:**
   - Coding agents silently truncate project instruction files above 32 KiB (`project_doc_max_bytes = 32768`) and re-attach only the first ~5,000 tokens per invoked skill after context compaction. Keeping instructions concise and putting historical rationale in `docs/decisions.md` ensures zero silent truncation.
+
+## 7. Unified 2D Blueprint & 3D Model Pipeline (`engine/cad_kit.js`, `stage.js`, `render.js`, `parts.js`)
+
+- **Decision:** Treat the 2D technical drawing/floorplan and the 3D physical model as a single geometric truth (`examples/minimal/blueprint`, `docs/2d-to-3d-evaluation.md`):
+  1. **Watertight boolean CSG (`RectSolid` & `extrudePlan`):** Build walls, slabs, and openings by adding and subtracting axis-aligned boxes on a non-uniform coordinate grid so touching solids share zero interior seam faces and collinear corner edges merge cleanly.
+  2. **Horizontal section cuts with solid ink pochè (`poche: true`, `look.cutY`):** When sliced by a clipping plane (`y = 1.20 m`), watertight backfaces (`!gl_FrontFacing`) render as solid ink (`uPoche`) and flip their view-space normals in `normalMat` so cut boundaries receive crisp ink outlines.
+  3. **Telephoto log-FOV dolly-zoom (`planPose`, `logFovLerp`, `cam.fov`):** Interpolate $\ln\tan(\text{fov}/2)$ and $\ln(\text{frameHeight})$ together when transitioning between a $2^\circ\text{--}3^\circ$ overhead blueprint pose and a $20^\circ\text{--}50^\circ$ perspective view so apparent subject scale remains linear without switching cameras.
+- **Why:** Maintaining separate 2D SVG floorplans and 3D scenes causes coordinate drift and camera cuts. Slicing a single watertight 3D solid under a $3^\circ$ telephoto lens produces an authentic architectural blueprint that extrudes continuously into 3D perspective.

@@ -8,9 +8,9 @@ import { ROOT, subjects, key, EXAMPLES } from './chapters.mjs';
 import { serve, launch, open } from '../cli/render.mjs';
 
 const only = process.argv.slice(2).map(key);
-const jobs = (await subjects()).filter(s => s.contents !== false).flatMap(s =>
+const jobs = (await subjects()).flatMap(s =>
   [...(s.chapters || []), ...(s.figures || [])].map(id => ({ s, id, key: `examples/${s.id}/${id}`, card: s.cards?.[id] || {}, book: (s.chapters || []).includes(id) })))
-  .filter(j => !only.length || only.includes(j.key));
+  .filter(j => only.length ? only.includes(j.key) : (j.s.contents !== false || !j.book));
 const { server, base } = serve(), browser = await launch();
 let bad = 0;
 for (const j of jobs) {

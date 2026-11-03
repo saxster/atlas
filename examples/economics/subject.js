@@ -6,7 +6,7 @@ export const SUBJECT = {
   id: 'economics',
   name: 'Atlas of Economics',
   blurb: 'money, markets and growth',
-  figures: ['compound', 'market', 'ppf', 'multiplier'],
+  figures: ['compound', 'market', 'ppf', 'multiplier', 'isoquant'],
   hero: 'Economics, taken apart.',
   tagline: 'Money and markets as machines you can step through',
   // contents-page cards (tools/site.mjs); at: the tour time tools/cards.mjs draws the picture from (default: the end)
@@ -19,6 +19,8 @@ export const SUBJECT = {
       alt: 'Two solo Production Possibility Frontiers linked to a kinked joint World PPF at (60 cloth, 100 grain) with post-trade consumption outside both solo frontiers' },
     multiplier: { section: 'Macroeconomics', title: 'How ₹100 of spending becomes ₹400 of income', sub: 're-spending rounds, savings leakages and the Keynesian Cross', grammar: 'machine', at: 14.0,
       alt: 'Geometric cascade of spending rounds ΔG·c^k beside a Keynesian Cross staircase converging to 4× total income at ₹400 Cr' },
+    isoquant: { section: 'Microeconomics', title: 'From 2D isoquant map to 3D production mountain', sub: 'Cobb–Douglas contours, the vertical budget wall and MRTS = w/r', grammar: 'machine', at: 5.5,
+      alt: 'A 2D isoquant and isocost tangency chart that extrudes into a 3D Cobb–Douglas production mountain sliced horizontally at Q* = 60 in black pochè' },
   },
   links: [],
   source: 'https://github.com/saxster/atlas',

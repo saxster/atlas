@@ -7,9 +7,9 @@ export const SUBJECT = {
   name: 'Minimal examples',
   blurb: 'one small figure per grammar, built from the building blocks',
   chapters: ['book'],
-  figures: ['machine', 'explorer', 'sandbox', 'teardown'],
-  hero: 'Five figures, about fifty lines each.',
-  tagline: 'A book, a machine, an explorer, a sandbox and a mechanical teardown, each built from the building blocks',
+  figures: ['machine', 'explorer', 'sandbox', 'teardown', 'blueprint'],
+  hero: 'Six figures, about fifty lines each.',
+  tagline: 'A book, a machine, an explorer, a sandbox, a mechanical teardown and a 2D-to-3D blueprint, each built from the building blocks',
   // contents-page cards (tools/site.mjs); page: the book page, at: the tour time tools/cards.mjs draws the picture from
   cards: {
     book: { section: 'Book', title: 'The derivative is the slope', sub: 'a tangent sliding along a cubic', pages: 3, page: 1,
@@ -22,6 +22,8 @@ export const SUBJECT = {
       alt: 'Positive and negative charges on a 2D grid with electric field arrows and a draggable probe' },
     teardown: { section: 'Teardown', title: 'Four-stroke teardown', sub: 'slider-crank, 2:1 gears, valve spring and cutaways', grammar: 'machine', at: 5.5,
       alt: 'A single-cylinder four-stroke mechanism with a cutaway block, slider-crank linkage, 14:28 camshaft spur gear pair, and helical valve spring' },
+    blueprint: { section: 'Blueprint', title: 'From 2D blueprint to 3D solar room', sub: 'log-FOV plan sheet, watertight pochè walls and solar overhang', grammar: 'machine', at: 5.2,
+      alt: 'A 2D architectural floorplan cut at 1.20 metres with black pochè walls and dimension chains rising into a 3D passive-solar room' },
   },
   links: [],
   source: 'https://github.com/saxster/atlas',

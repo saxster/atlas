@@ -13,4 +13,6 @@ export const CONCEPTS = [
     shownIn: ['economics/ppf'] },
   { id: 'spending-multiplier', name: 'The Keynesian spending multiplier', formula: 'Δ<i>Y</i> = Δ<i>G</i> · ∑ <i>c</i><sup><i>k</i></sup> = Δ<i>G</i> / (1 − MPC)',
     shownIn: ['economics/multiplier'] },
+  { id: 'isoquant-tangency', name: 'Cobb–Douglas isoquants and cost-minimising tangency', formula: '<i>Q</i> = <i>AL</i><sup>α</sup><i>K</i><sup>β</sup>, &nbsp;MRTS<sub><i>L,K</i></sub> = MP<sub><i>L</i></sub>/MP<sub><i>K</i></sub> = <i>w</i>/<i>r</i>',
+    shownIn: ['economics/isoquant'] },
 ];

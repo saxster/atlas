@@ -49,6 +49,14 @@ export const SEARCH_INDEX = [
     "href": "biology/lotka-volterra/"
   },
   {
+    "kind": "machine",
+    "subject": "Biology",
+    "title": "From 2D histology slide to 3D living leaf",
+    "sub": "palisade light capture, spongy air spaces and guard-cell stomata",
+    "text": "A 2D biology leaf histology slide cut at 110 µm with black pochè walls that extrudes into 3D palisade columns, vascular tubes, and guard-cell stoma",
+    "href": "biology/leaf-section/"
+  },
+  {
     "kind": "chapter",
     "subject": "Chemistry",
     "title": "The shapes of molecules",
@@ -396,6 +404,14 @@ export const SEARCH_INDEX = [
   },
   {
     "kind": "machine",
+    "subject": "Chemistry",
+    "title": "From 2D unit-cell plan to 3D NaCl crystal",
+    "sub": "how a flat (001) projection builds rock-salt NaCl and Bragg planes",
+    "text": "A 2D crystallographic (001) plan of rock-salt NaCl sliced at z = 0 that extrudes into a 3D face-centred cubic lattice and (200) Bragg planes",
+    "href": "chemistry/crystal-projection/"
+  },
+  {
+    "kind": "machine",
     "subject": "Economics",
     "title": "₹1,000 a month at 8 %",
     "sub": "how interest earns interest",
@@ -425,6 +441,14 @@ export const SEARCH_INDEX = [
     "sub": "re-spending rounds, savings leakages and the Keynesian Cross",
     "text": "Geometric cascade of spending rounds ΔG·c^k beside a Keynesian Cross staircase converging to 4× total income at ₹400 Cr",
     "href": "economics/multiplier/"
+  },
+  {
+    "kind": "machine",
+    "subject": "Economics",
+    "title": "From 2D isoquant map to 3D production mountain",
+    "sub": "Cobb–Douglas contours, the vertical budget wall and MRTS = w/r",
+    "text": "A 2D isoquant and isocost tangency chart that extrudes into a 3D Cobb–Douglas production mountain sliced horizontally at Q* = 60 in black pochè",
+    "href": "economics/isoquant/"
   },
   {
     "kind": "chapter",
@@ -1355,6 +1379,14 @@ export const SEARCH_INDEX = [
     "sub": "drag basis columns, type a matrix and test probes",
     "text": "Interactive 2×2 matrix board with draggable red Aî and blue Aĵ basis columns, amber determinant parallelogram, and green eigenvector lines",
     "href": "maths/matrix-sandbox/"
+  },
+  {
+    "kind": "machine",
+    "subject": "Mathematics",
+    "title": "From 2D base circle to 3D cross-section dome",
+    "sub": "Cavalieri’s slice integral ∫ A(x) dx and pochè cutaways",
+    "text": "A 2D textbook base circle x² + z² = R² extruding 20 semicircular 3D cross-sections and sliced horizontally in black pochè",
+    "href": "maths/cross-sections/"
   },
   {
     "kind": "chapter",
@@ -5180,6 +5212,14 @@ export const SEARCH_INDEX = [
     "href": "physics/induction/#9"
   },
   {
+    "kind": "machine",
+    "subject": "Physics",
+    "title": "From 2D ray diagram to 3D optical bench",
+    "sub": "thin-lens principal rays, 270° lens revolution and magnification",
+    "text": "A 2D principal-ray diagram that revolves into a 3D cutaway biconvex glass lens and brass barrel",
+    "href": "physics/optics-bench/"
+  },
+  {
     "kind": "explorer",
     "subject": "Statistics",
     "title": "Where 500 balls land",
@@ -5269,6 +5309,14 @@ export const SEARCH_INDEX = [
   },
   {
     "kind": "concept",
+    "subject": "Biology",
+    "title": "Beer–Lambert light capture and Fickian stomatal conductance",
+    "formula": "I ( z ) = I 0 e −μ z , &nbsp; J CO₂ = g s ( C a − C i )",
+    "formulaHtml": "<i>I</i>(<i>z</i>) = <i>I</i><sub>0</sub><i>e</i><sup>−μ<i>z</i></sup>, &nbsp;<i>J</i><sub>CO₂</sub> = <i>g</i><sub>s</sub>(<i>C</i><sub>a</sub> − <i>C</i><sub>i</sub>)",
+    "href": "biology/leaf-section/"
+  },
+  {
+    "kind": "concept",
     "subject": "Chemistry",
     "title": "Electron pairs spread as far apart as they can",
     "formula": "VSEPR: domains → shape",
@@ -5333,6 +5381,14 @@ export const SEARCH_INDEX = [
   },
   {
     "kind": "concept",
+    "subject": "Chemistry",
+    "title": "Unit-cell density and Bragg X-ray diffraction",
+    "formula": "2 d hkl sin θ = n λ, &nbsp;ρ = ZM / ( N A a 0 ³)",
+    "formulaHtml": "2<i>d</i><sub><i>hkl</i></sub> sin θ = <i>n</i>λ, &nbsp;ρ = <i>ZM</i> / (<i>N</i><sub>A</sub><i>a</i><sub>0</sub>³)",
+    "href": "chemistry/crystal-projection/"
+  },
+  {
+    "kind": "concept",
     "subject": "Economics",
     "title": "Compound interest",
     "formula": "A = P (1 + r ) n",
@@ -5389,6 +5445,14 @@ export const SEARCH_INDEX = [
   },
   {
     "kind": "concept",
+    "subject": "Economics",
+    "title": "Cobb–Douglas isoquants and cost-minimising tangency",
+    "formula": "Q = AL α K β , &nbsp;MRTS L,K = MP L /MP K = w / r",
+    "formulaHtml": "<i>Q</i> = <i>AL</i><sup>α</sup><i>K</i><sup>β</sup>, &nbsp;MRTS<sub><i>L,K</i></sub> = MP<sub><i>L</i></sub>/MP<sub><i>K</i></sub> = <i>w</i>/<i>r</i>",
+    "href": "economics/isoquant/"
+  },
+  {
+    "kind": "concept",
     "subject": "Mathematics",
     "title": "Sine and cosine are the shadows of a turning point",
     "formula": "P = (cos θ, sin θ)",
@@ -5434,6 +5498,14 @@ export const SEARCH_INDEX = [
     "formula": "∫ 0 x f ′( t ) dt = f ( x ) − f (0)",
     "formulaHtml": "∫<sub>0</sub><sup><i>x</i></sup> <i>f</i> ′(<i>t</i>) <i>dt</i> = <i>f</i>(<i>x</i>) − <i>f</i>(0)",
     "href": "maths/calculus/#3"
+  },
+  {
+    "kind": "concept",
+    "subject": "Mathematics",
+    "title": "Volume by cross-sections (Cavalieri’s slice integral)",
+    "formula": "V = ∫ a b A ( x ) dx",
+    "formulaHtml": "<i>V</i> = ∫<sub><i>a</i></sub><sup><i>b</i></sup> <i>A</i>(<i>x</i>) <i>dx</i>",
+    "href": "maths/cross-sections/"
   },
   {
     "kind": "concept",
@@ -5554,6 +5626,14 @@ export const SEARCH_INDEX = [
     "formula": "v = v T (1 − e − t /τ )",
     "formulaHtml": "<i>v</i> = <i>v</i><sub>T</sub>(1 − <i>e</i><sup>−<i>t</i>/τ</sup>)",
     "href": "physics/newton/#11"
+  },
+  {
+    "kind": "concept",
+    "subject": "Physics",
+    "title": "Thin-lens equation and lateral magnification",
+    "formula": "1/ f = 1/ d o + 1/ d i , &nbsp; M = − d i / d o",
+    "formulaHtml": "1/<i>f</i> = 1/<i>d</i><sub>o</sub> + 1/<i>d</i><sub>i</sub>, &nbsp;<i>M</i> = −<i>d</i><sub>i</sub>/<i>d</i><sub>o</sub>",
+    "href": "physics/optics-bench/"
   },
   {
     "kind": "concept",

@@ -161,4 +161,14 @@ for (const [file, html] of pages) {
   if (CHECK) { stale++; console.log('STALE  ', file); continue; }
   fs.writeFileSync(p, html); console.log('wrote  ', file);
 }
-if (stale) { console.log('run: node tools/site.mjs'); process.exit(1); }
+if (CHECK) {
+  for (const idxFile of ['index.html', ...all.map(s => `${s.id}/index.html`)]) {
+    const p = path.join(EXAMPLES, idxFile);
+    if (!fs.existsSync(p)) continue;
+    const dir = path.dirname(p), src = fs.readFileSync(p, 'utf8');
+    for (const [, imgRel] of src.matchAll(/<img\s+[^>]*src="([^"]+)"/g)) {
+      if (!fs.existsSync(path.join(dir, imgRel))) { stale++; console.log('MISSING', path.join(path.dirname(idxFile), imgRel)); }
+    }
+  }
+}
+if (stale) { console.log('run: node tools/site.mjs && node tools/cards.mjs'); process.exit(1); }

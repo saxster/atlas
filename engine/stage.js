@@ -9,12 +9,14 @@ import {
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
+  planArea, planBounds, planPose, logFovLerp, glide,
 } from './motion.js';
 
 export {
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
+  planArea, planBounds, planPose, logFovLerp, glide,
 };
 
 export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syncUrl = null) {
@@ -59,8 +61,9 @@ export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, pl
     const S = getStage();
     if (S) {
       S.cutOverride = userOverrode ? cutMode : null;
+      const cp = figure.cutPlane || [0, 0, -1, 0];
       S.E.setXray(cutMode === 'xray' ? 1 : 0, figure.xrayKeys || null);
-      S.E.setCutaway(cutMode === 'section' ? (figure.cutPlane || [0, 0, -1, 0]) : null, figure.cutKeys || null);
+      S.E.setCutaway(cutMode === 'section' ? cp : null, figure.cutKeys || null, { poche: Math.abs(cp[1] || 0) > 0.5 });
     }
     if (onChange) onChange(cutMode, userOverrode);
   };
@@ -73,7 +76,8 @@ export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, pl
     apply,
     syncFromLook(look) {
       if (userOverrode) return;
-      const next = look.section > 0.5 ? 'section' : look.xray > 0.5 ? 'xray' : 'solid';
+      const isCutY = look.cutY !== undefined && look.cutY < (figure.cutOpenY ?? 9.9);
+      const next = (look.section > 0.5 || isCutY) ? 'section' : look.xray > 0.5 ? 'xray' : 'solid';
       if (next !== cutMode) syncButtons(next);
     },
     reset() {
@@ -434,7 +438,12 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     const dAz = ((((B.az - A.az) % 360) + 540) % 360) - 180;
     const swing = Math.max(0, (Math.abs(dAz) - 65) / 115);
     const pullBack = 1 + 0.18 * swing * Math.sin(Math.PI * u);
-    let cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: A.az + dAz * u, el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) * pullBack };
+    let cam;
+    if (A.fov !== undefined || B.fov !== undefined) {
+      cam = logFovLerp(A, B, u, pullBack);
+    } else {
+      cam = { target: A.target.map((v, k) => lerp(v, B.target[k], u)), az: A.az + dAz * u, el: lerp(A.el, B.el, u), dist: lerp(A.dist, B.dist, u) * pullBack };
+    }
     // a canvas narrower than the cameras were framed for pulls back; a page may say its own (a close-up in a wide figure)
     const fa = k => PAGES[k].frameAspect ?? chapter.frameAspect ?? 1.25;
     cam.dist *= Math.max(1, lerp(fa(i), fa(j), u) / E.camera.aspect);
@@ -448,10 +457,11 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     if (selected) lastFocus = focusOf(selected);
     if (focusAmt > 0.001 && lastFocus) {
       const F = lastFocus;
-      cam = { target: cam.target.map((v, k) => lerp(v, F.target[k], focusAmt)), az: cam.az, el: lerp(cam.el, Math.max(cam.el, 6), focusAmt), dist: lerp(cam.dist, F.dist, focusAmt) };
+      cam = { ...cam, target: cam.target.map((v, k) => lerp(v, F.target[k], focusAmt)), az: cam.az, el: lerp(cam.el, Math.max(cam.el, 6), focusAmt), dist: lerp(cam.dist, F.dist, focusAmt) };
     }
     cam.az += orbit.az;
-    cam.el = Math.min(Math.max(cam.el + orbit.el, -4), 85);
+    const maxEl = (A.el > 85 || B.el > 85) ? 89.6 : 85;
+    cam.el = Math.min(Math.max(cam.el + orbit.el, -4), maxEl);
     cam.target = cam.target.map((v, k) => v + orbit.pan.getComponent(k));
     lookAt.fromArray(cam.target);
     E.placeCamera(cam);
@@ -468,9 +478,10 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       if (key === 'isolate') continue;
       look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
     }
-    for (const key of ['xray', 'section', 'ex']) {
+    for (const key of ['xray', 'section', 'ex', 'cutY']) {
       if (look[key] === undefined && (LA[key] !== undefined || LB[key] !== undefined)) {
-        look[key] = lerp(LA[key] || 0, LB[key] || 0, u);
+        const defVal = key === 'cutY' ? (chapter.cutOpenY ?? 10) : 0;
+        look[key] = lerp(LA[key] ?? defVal, LB[key] ?? defVal, u);
       }
     }
     if (LA.isolate !== undefined || LB.isolate !== undefined) {
@@ -478,7 +489,10 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     }
     if (chapter.forceLook) chapter.forceLook(selected, look);
     if (!cutOverride) {
-      if (look.xray !== undefined || look.section !== undefined) {
+      if (look.cutY !== undefined) {
+        const cutMax = chapter.cutOpenY ?? 9.9;
+        E.setCutaway(look.cutY < cutMax ? [0, -1, 0, look.cutY] : null, chapter.cutKeys || null, { poche: true });
+      } else if (look.xray !== undefined || look.section !== undefined) {
         E.setXray(look.xray || 0, chapter.xrayKeys || null);
         E.setCutaway((look.section || 0) > 0.5 ? (chapter.cutPlane || [0, 0, -1, 0]) : null, chapter.cutKeys || null);
       }

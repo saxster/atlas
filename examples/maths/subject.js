@@ -7,7 +7,7 @@ export const SUBJECT = {
   name: 'Atlas of Mathematics',
   blurb: 'trigonometry, calculus, linear algebra, differential equations and Fourier series',
   chapters: ['unit-circle', 'calculus', 'linear-algebra', 'differential-equations', 'fourier', 'multivariable'],
-  figures: ['matrix-sandbox'],
+  figures: ['matrix-sandbox', 'cross-sections'],
   hero: 'Mathematics, taken apart.',
   tagline: 'Each idea as a figure you can turn over and take apart',
   // contents-page cards (tools/site.mjs); page: the book page tools/cards.mjs draws the picture from
@@ -16,6 +16,8 @@ export const SUBJECT = {
       alt: 'A point on a circle lit from the side, its shadow on a screen showing its height, the sine' },
     'calculus': { section: 'Calculus', title: 'Slope and area', sub: 'derivatives, Riemann sums and the Fundamental Theorem', pages: 6, page: 3,
       alt: 'Blue midpoint Riemann rectangles under the red parabola f(x) = ½x² from x = 0 to 3' },
+    'cross-sections': { section: 'Calculus', title: 'From 2D base circle to 3D cross-section dome', sub: 'Cavalieri’s slice integral ∫ A(x) dx and pochè cutaways', grammar: 'machine', at: 5.5,
+      alt: 'A 2D textbook base circle x² + z² = R² extruding 20 semicircular 3D cross-sections and sliced horizontally in black pochè' },
     'linear-algebra': { section: 'Linear algebra', title: 'Linear transformations', sub: 'matrices as grid moves, area scale and eigenvectors', pages: 6, page: 2,
       alt: 'A 2D coordinate grid and unit square stretched into a parallelogram of area det(A) = ad − bc by basis columns Aî and Aĵ' },
     'matrix-sandbox': { section: 'Linear algebra', title: 'The 2×2 matrix sandbox', sub: 'drag basis columns, type a matrix and test probes', grammar: 'sandbox', at: 2.0,

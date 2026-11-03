@@ -17,7 +17,7 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   `/examples/<subject>/<chapter>/#<page>`.
 - Examples import the library by its package name (`@saxster/atlas/stage.js`), never by relative path, so they read
   like user code: node resolves it by package self-reference, the browser by the importmap in each index.html.
-- `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/` (`book`, `machine`, `explorer`, `sandbox`, `teardown`): keep those five working and small.
+- `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/` (`book`, `machine`, `explorer`, `sandbox`, `teardown`, `blueprint`): keep those six working and small.
 - `cli/` is shipped: the browser harness (`render.mjs`), stills, jumps, labels, record and score as functions over the
   current folder, behind `bin/atlas.mjs` (`atlas check | stills | critic | record`). `tools/` wraps them for the
   atlas's own examples (all, or `physics/newton`-style names). Run tools from the repo root: they serve the current
@@ -83,7 +83,7 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
 - Grammars: `engine/book.js` (scroll-book), `engine/machine.js` (steps, Manual/Auto, optional `cuts: ['solid', 'xray', 'section']`), `engine/explorer.js`
   (predict, sliders, seeded run), `engine/sandbox.js` (presets, matrix, palette, draggable 3D items, optional `cuts`). Each page's `<main>` class and markup follow the pilots
   (`examples/economics/compound`, `examples/statistics/galton`, `examples/minimal/teardown`).
-- Kinematics, procedural motion & mechanical CAD: `engine/kinematics.js` (`circleIntersect`, `sliderCrank`, `fourBar`, `gearRatio`, `rackPinion`, `differential`, `createSolver`, `twoLinkIK`, `fabrik`, `jacobianIK`), `engine/motion.js` (`phase`, `win`, `warpTime`, `spring`, `settleShake`, `squashStretch`, `eases`, `loopNoise`, `hash`, `rand`, `rrange`), `engine/parts.js` (`gear`, `rack`, `spring`), `engine/prims.js` (`linkage`), and `leader: true` callout labels in `engine/stage.js`.
+- Kinematics, procedural motion, 2D-to-3D CAD & mechanical detailing: `engine/kinematics.js` (`circleIntersect`, `sliderCrank`, `fourBar`, `gearRatio`, `rackPinion`, `differential`, `createSolver`, `twoLinkIK`, `fabrik`, `jacobianIK`), `engine/motion.js` (`phase`, `win`, `warpTime`, `spring`, `settleShake`, `squashStretch`, `eases`, `loopNoise`, `hash`, `rand`, `rrange`, `planArea`, `planBounds`, `planPose`, `logFovLerp`, `glide`), `engine/cad_kit.js` (`RectSolid`, `extrudePlan`, 4 STEM/Economics 2D-to-3D compilers, blueprint sheet generators, parametric 3D detailing, procedural textures, and `inkAware`; full export list in `docs/API.md`), `engine/parts.js` (`gear`, `rack`, `spring`, `applyClipPlanes`), `engine/prims.js` (`linkage`), and `leader: true` callout labels in `engine/stage.js`. Deep evaluation: `docs/2d-to-3d-evaluation.md`.
 - Textbook embeds: `adapters/kym-live.js` (`mountAtlas`), copied into a book by `tools/vendor.mjs`.
 
 ## Video (needs ffmpeg; output in `videos/`, ignored)

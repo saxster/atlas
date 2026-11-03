@@ -77,7 +77,7 @@ any `PALETTE` name, `'ochre'`, `'green'` or `'#hex'`. The full contract is the c
 `engine/selftest.mjs` tests every block, and `examples/minimal/` shows the core patterns.
 
 Below them sit the paper-and-ink pieces in `parts.js` (`part`, `box`, `cyl`, `rod`, `gearGeo`, `gear`, `rackGeo`, `rack`,
-`spring`, `lines`, `arrow`, `liveTube`, `shadeMat`, `PALETTE`) for shapes and mechanical CAD parts (`spring.set(a, b)` stretches a helical coil in place every frame).
+`spring`, `lines`, `arrow`, `liveTube`, `shadeMat`, `applyClipPlanes`, `PALETTE`) for shapes and mechanical CAD parts (`spring.set(a, b)` stretches a helical coil in place every frame).
 
 ## Kinematics & Constraint Solver (`kinematics.js`)
 
@@ -95,6 +95,19 @@ Pure functions of time `t` (`@saxster/atlas/motion.js`, also re-exported by `@sa
 - **Time windows & seamless loops:** `phase(t, period = 1, offset = 0)` (normalised `0..1` cycle phase), `win(p, a, b, fn = null)` (clamped `0..1` sub-window over `[a, b]`, optionally shaped by `fn`), `warpTime(t, period = 12, amp = 0.15)` (periodic speed modulation where `warpTime(t + period) === warpTime(t) + period`).
 - **Closed-loop springs & secondary motion:** `spring(u, zeta = 0.35, freq = 3.2)` (underdamped harmonic response pinned at `spring(0) === 0` and smoothly blended to `spring(1) === 1`), `settleShake(tau, freq = 6, decay = 0.25, end = 1)`, `squashStretch(sy, power = 0.75)` (`[sx, sy, sz]` volume-preserving scale around `sy = 1`).
 - **Easings & seamless loop noise:** `eases` (28 standard easings: `linear`, `in/out/inOut` `Sine`/`Quad`/`Cubic`/`Quart`/`Quint`/`Expo`/`Circ`/`Back`, `outElastic`, `outBounce`, `spring`), `loopNoise(t, seed = 0, period = 12, octaves = 2)` (periodic multi-octave harmonic noise on a circle where `loopNoise(t + period, seed, period, octaves) === loopNoise(t, seed, period, octaves)`), `hash(n)`, `rand(i, salt = 0)`, `rrange(i, a, b, salt = 0)`.
+
+## 2D-to-3D CAD, Blueprint & Procedural Detailing Kit (`cad_kit.js`)
+
+Bridges 2D technical drawings, floorplans, and STEM/Economics textbook diagrams to 3D models (`@saxster/atlas/cad_kit.js`, also re-exported by `@saxster/atlas`, `phys_kit.js`, `chem_kit.js`, and `bio_kit.js`; see `docs/2d-to-3d-evaluation.md` and `examples/{minimal/blueprint,maths/cross-sections,physics/optics-bench,chemistry/crystal-projection,biology/leaf-section,economics/isoquant}`):
+
+- **Pure plan & camera framing math (safe for `model.js` and `checks.mjs`, exported from `motion.js`, `cad_kit.js`, `stage.js`, and `index.js`):** `planArea(polyOrBox)`, `planBounds(spec)`, `planPose(boundsOrSpec, { fov = 3, el = 89.4, az = 0, aspect = 1.25, pad = 1.18 })`, `logFovLerp(camA, camB, t, pullBack = 1)`, `glide(keys)`. Pages and steps in `stage.js` also accept `cam.fov` and `look.cutY` directly.
+- **Watertight boolean CSG & floorplan compiler:** `new RectSolid().add(x0, y0, z0, x1, y1, z1).sub(...).build(faceKey, edgeKey)` (watertight boundary faces with metric UVs + merged non-coplanar corner edges), `extrudePlan(parent, spec, opts)` (compiles `rooms`, `walls`, `windows`, `doors`, `slides`, `dims`, `grids`, `border` into a watertight 3D model with pochè section cuts `plan.setCutY(y)`, hinged doors `plan.setDoors(frac)`, and sliding glass doors `plan.setSlides(frac)`), `buildSheet` (supports `dims`, `doors`, `slides`, `grids`, `border`, `curves`, `vectors`, `circles`, and `crosshairs`), `dimChain` (supports custom `unit`, `decimals`, `scale`, and `fmt`), `swingArc`, `slideArrow`.
+- **Universal STEM & Economics 2D-to-3D compilers:**
+  - `revolveSection(parent, spec, opts)`: revolves a 2D axisymmetric cross-section (`profile: [[x, r], ...]`, `rInner`) around the X-axis into a 3D solid of revolution with watertight meridian cutaway end-caps and `setSweep(u)` (e.g., optical lenses, nozzles, flasks; `examples/physics/optics-bench`).
+  - `extrudeCrossSections(parent, spec, opts)`: extrudes a 2D base region (`xRange`, `zLow(x)`, `zHigh(x)`) into $N$ 3D Cavalieri/Riemann cross-sectional slices (`shape: 'semicircle' | 'square' | 'triangle' | 'rect'`) with `setLift(u)` and `setHighlight(idx)` (`examples/maths/cross-sections`).
+  - `extrudeLayers(parent, spec, opts)`: extrudes a 2D stratified/histological cross-section (`layers: [{ z0, z1, x0, x1, key, cutOut }]`, `columns`, `tubes`) into a watertight 3D multi-layer block along Y with `setDepth(u)` (`examples/biology/leaf-section`).
+  - `extrudeContours(parent, spec, opts)`: extrudes a 2D contour/isoquant map + linear constraint line into a watertight 3D solid surface $y = f(x, z)$ + vertical 3D constraint wall with `setElevation(u)` (`examples/economics/isoquant`).
+- **Parametric 3D detailing & procedural PBR:** `uvMetres(geo, scale)`, `bevelBox(w, h, d, bevel, segs)`, `shell(w, d, h, { thickness, radius })` (closed-bottom hollow rounded extrusion), `lathe(points, { segs, spline })`, `drape(w, d, h, { drop, fold })`, `fronts(parent, { w, h, d, nx, ny, gap, pull })` (shadow-gap cabinetry with bar/knob/edge pulls), `contactShadow(parent, w, d, opts)`, `batchGeos(items)` (merges static geometries with per-vertex `aCenter`), `branchTree(parent, opts)` (Frenet-frame procedural organic tree with foliated canopy), `procTex(kind, opts)` (`'wood'`, `'marble'`, `'tile'`, `'terrazzo'`, `'brushed'`, `'linen'`, `'painting'`), `tweakMat(material, opts)` (world-space 3D value-noise macro de-tiling via `onBeforeCompile`), `createRevealController(zones, opts)`, and `inkAware(material, ctrl, opts)`.
 
 ## 3D Mesh Audit & Specimen Viewer (`mesh-audit.js`, `adapters/specimen.js`)
 
@@ -167,7 +180,7 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 
 | Command | Does |
 |---|---|
-| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown` | copies a working minimal example to start from |
+| `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown\|blueprint` | copies a working minimal example to start from |
 | `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
 | `npx atlas critic <figure…> [--intersections]` | frames that jump, labels that overlap or hide, and 3D framing/occlusion/mesh clashes |

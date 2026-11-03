@@ -4,6 +4,7 @@ import { part, box, cyl, lines, arrow, setArrow, rod, liveTube, gear, spring, sh
 import * as prims from './prims.js';
 import * as K from './kinematics.js';
 import * as motion from './motion.js';
+export * from './cad_kit.js';
 
 export { THREE, part, box, cyl, lines, arrow, setArrow, rod, liveTube, gear, spring, shadeMat, V, xAxis, zAxis, prims, K, motion };
 
