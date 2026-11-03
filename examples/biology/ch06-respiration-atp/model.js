@@ -1,14 +1,13 @@
 // Chapter 6 pure model: aerobic respiration ATP relay, Lavoisier mass/RQ ledger, and anaerobic lactate/yeast fermentation.
 export function aerobicRelayAccount(o2Pct = 100, demandLevel = 50) {
-  const o2 = Math.max(0, Math.min(100, o2Pct)) / 100;
-  const glycolysisAtp = 2;
-  const krebsAtp = 2 * o2;
-  const oxPhosAtp = 28 * o2;
-  const totalAtpPerGlucose = glycolysisAtp + krebsAtp + oxPhosAtp;
-  const pmfMv = 180 * o2;
-  const rotorHz = 150 * o2 * (0.5 + 0.5 * (demandLevel / 100));
-  const lactateAccumMm = Math.max(0, (demandLevel - 100 * o2) * 0.18);
-  return { o2Pct, demandLevel, glycolysisAtp, krebsAtp, oxPhosAtp, totalAtpPerGlucose, pmfMv, rotorHz, lactateAccumMm };
+  const bounded = (v, fallback) => Number.isFinite(+v) ? Math.max(0, Math.min(100, +v)) : fallback;
+  const oxygenControl = bounded(o2Pct,100), activityControl = bounded(demandLevel,50);
+  const chainActive = oxygenControl > 0;
+  // An explanatory settled-state comparison, not a calibrated oxygen dose response.
+  // Animation speed has no biochemical clock, measured Hz or fixed ATP yield.
+  return { o2Pct:oxygenControl, demandLevel:activityControl, glycolysisAtp:2,
+    chainActive, animationRate:chainActive ? 0.5 + activityControl/200 : 0,
+    status:chainActive ? 'Oxygen-linked relay available' : 'Sustained absence: relay stalls after residual gradients dissipate' };
 }
 
 export function respiratoryQuotientLedger(substrate = 'glucose', moles = 1) {
@@ -18,7 +17,7 @@ export function respiratoryQuotientLedger(substrate = 'glucose', moles = 1) {
   }
   if (substrate === 'anaerobic_yeast') {
     // C6H12O6 -> 2 C2H5OH + 2 CO2 => O2 = 0, CO2 = 2
-    return { substrate, o2In: 0, co2Out: 2 * moles, rq: Infinity };
+    return { substrate, o2In: 0, co2Out: 2 * moles, rq: null };
   }
   return { substrate: 'glucose', o2In: 6 * moles, co2Out: 6 * moles, rq: 1.0 };
 }

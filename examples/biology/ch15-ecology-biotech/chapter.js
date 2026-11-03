@@ -1,16 +1,18 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, torus, gear,
+  THREE, part, box, cyl, sphere, capsule, torus, gear, shadeMat,
   prims, studioGrid, playTone, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
+const energyText = kJ => kJ.toLocaleString('en-GB', { maximumFractionDigits: 2 });
+
 export const PAGES = [
   {
-    tab: '10% Pyramid & LV',
-    fig: 'Figure 15.1–15.2 · Lindeman’s 3D 10% trophic energy pyramid & Lotka–Volterra invariant surface',
-    title: 'Trophic Energy Pyramids & Predator–Prey Orbits',
-    alt: '3D stepped trophic energy pyramid (10,000 -> 1,000 -> 100 -> 10 kJ) alongside the 3D Lotka-Volterra conserved invariant bowl V(R, F).',
+    tab: 'Energy Pyramid & LV',
+    fig: 'Figure 15.1–15.2 · Lindeman’s 3D production-energy pyramid with chosen transfer efficiency & Lotka–Volterra invariant surface',
+    title: 'Energy Transfer & a Predator–Prey Surface',
+    alt: 'A 3D energy pyramid whose horizontal block areas follow the selected energy proportions, alongside a Lotka–Volterra function surface sampled by a chosen path.',
     cam: { target: [0, 1.35, 0], az: 26, el: 22, dist: 7.6 },
     lit: 'trophic_pyramid',
     parts: ['trophic_pyramid', 'lv_bowl'],
@@ -50,11 +52,11 @@ export const PAGES = [
 
 export const PLATES = {
   trophic_pyramid: {
-    text: 'Raymond Lindeman’s 10% trophic law: at each step (Karvi shrubs → Chital deer → Leopard), ~90% of energy is lost as respiratory heat, unassimilated faeces, and detritus—limiting food chains to 4–5 links.',
-    facts: s => [['Producers', `${s.pyr.producerKj.toLocaleString()} kJ`], ['Herbivores', `${s.pyr.herbivoreKj.toFixed(0)} kJ`], ['Apex', `${s.pyr.apexCarnKj.toFixed(0)} kJ`]],
+    text: 'Illustrative production budget: the chosen transfer fraction is an assumption, not a universal law. All levels use the same chosen area and time interval. Horizontal block areas show relative energy; block heights are fixed for display. Energy outside the next consumer level includes respiratory heat and chemical energy in waste and detritus; chain length also depends on area and consumer requirements.',
+    facts: s => [['Transfer', `${s.trophicEtaPct}%`], ['Producers', `${energyText(s.pyr.producerKj)} kJ`], ['Herbivores', `${energyText(s.pyr.herbivoreKj)} kJ`], ['Primary carnivores', `${energyText(s.pyr.primaryCarnKj)} kJ`], ['Apex', `${energyText(s.pyr.apexCarnKj)} kJ`]],
   },
   lv_bowl: {
-    text: 'Lotka–Volterra conserved phase surface V(R, F) = δR − γ ln R + βF − α ln F: prey and predator populations trace closed orbits around the equilibrium saddle (R*, F*).',
+    text: 'Lotka–Volterra conserved phase surface V(R, F) = δR − γ ln R + βF − α ln F: V stays constant along solutions of the idealised two-population equations. Here the moving point scans chosen example states to reveal the surface; it is not a solved population trajectory.',
   },
   root_nodule: {
     text: 'Beijerinck’s symbiotic *Rhizobium* bacteroids inside legume root nodules: pink leghaemoglobin buffers free O₂ so nitrogenase can reduce atmospheric N≡N into NH₃ for plant amino acids.',
@@ -63,20 +65,20 @@ export const PLATES = {
     text: 'Eutrophication cascade: nitrate/phosphate fertiliser runoff triggers a surface algal bloom that blocks sunlight to submerged plants; aerobic bacteria decomposing dead algae strip dissolved O₂, suffocating fish.',
   },
   cooling_jacket: {
-    text: 'Thermostatted water-cooling jacket & pH/O₂ sensors: removes metabolic heat released by billions of respiring bacteria/fungi so enzymes stay at their 37 °C optimum instead of denaturing.',
+    text: 'Thermostatted water-cooling jacket & pH/O₂ sensors: removes metabolic heat released by billions of respiring bacteria/fungi so the model E. coli culture stays near its assumed 37 °C optimum; other organisms and processes need different conditions, including waste control.',
     facts: s => [['T_ferm', `${s.ferm.tempC} °C`], ['Insulin yield', `${s.ferm.insulinYieldMgL.toFixed(0)} mg/L`]],
   },
   impeller_shaft: {
-    text: 'Motor-driven Rushton turbine paddles: keep microorganisms, dissolved O₂, and glucose/mineral nutrients uniformly suspended without shear damage.',
+    text: 'Motor-driven Rushton turbine paddles: keep microorganisms, dissolved O₂, and glucose/mineral nutrients mixed; stirring must be managed because excessive shear can damage some cultures.',
   },
   air_sparger: {
     text: 'Microporous sterile ring sparger: bubbles filtered air (O₂) through the culture broth to sustain high-yield aerobic ATP production.',
   },
   recombinant_plasmid: {
-    text: 'Herbert Boyer & Stanley Cohen’s recombinant plasmid: cut with *Eco*RI restriction endonuclease to create complementary sticky ends, then sealed with DNA ligase to insert the human insulin cDNA gene.',
+    text: 'Building on Boyer and Cohen’s plasmid methods: prepare intron-free insulin coding DNA with bacterial controls, obtain compatible ends and seal with DNA ligase. Recover, process, fold and purify the expressed product; mature insulin has two chains.',
   },
   crispr_cas9: {
-    text: 'Jennifer Doudna & Emmanuelle Charpentier’s programmable CRISPR-Cas9: a 20-nt single-guide RNA (sgRNA) directs the Cas9 endonuclease to a matching DNA target next to a 5′-NGG-3′ PAM motif.',
+    text: 'Jennifer Doudna & Emmanuelle Charpentier’s programmable CRISPR-Cas9: the 20-nt target-matching region of a longer guide RNA directs the Cas9 endonuclease to a matching DNA target next to a 5′-NGG-3′ PAM motif.',
   },
 };
 
@@ -97,6 +99,14 @@ export const CHAPTER = {
     { id: 'runoffLoad', label: 'Nitrate fertiliser runoff load', min: 0, max: 100, step: 10, value: 30, unit: '%' },
   ],
   lessons: {
+    'ch15-trophic-3d': { page: 0 },
+    'ch15-trophic-3d-budget': { page: 0 },
+    'ch15-carbon-3d': { page: 1 },
+    'ch15-carbon-3d-nitrogen': { page: 1 },
+    'ch15-eutrophication-3d': { page: 1 },
+    'ch15-carbon-3d-forest': { page: 1 },
+    'ch15-plasmid-crispr-3d-fermenter': { page: 2 },
+    'ch15-eutrophication-3d-creek': { page: 1 },
     'ch15-pyramid-lv-3d': { page: 0, params: { trophicEtaPct: 10 } },
     'ch15-nodule-eutrophication-3d': { page: 1, params: { runoffLoad: 85 } },
     'ch15-fermenter-3d': { page: 2, params: { fermTempC: 37 } },
@@ -114,16 +124,16 @@ export const CHAPTER = {
   },
   readout(s, page, pageIdx) {
     if (pageIdx === 0) {
-      return `<b>Trophic transfer η = ${s.trophicEtaPct}%</b> · Producers: 10,000 kJ → Herbivores: <b>${s.pyr.herbivoreKj.toFixed(0)} kJ</b> → Primary carnivores: <b>${s.pyr.primaryCarnKj.toFixed(0)} kJ</b> → Apex: <b>${s.pyr.apexCarnKj.toFixed(1)} kJ</b>.`;
+      return `<b>Trophic transfer η = ${s.trophicEtaPct}%</b> · Producers: 10,000 kJ → Herbivores: <b>${energyText(s.pyr.herbivoreKj)} kJ</b> → Primary carnivores: <b>${energyText(s.pyr.primaryCarnKj)} kJ</b> → Apex: <b>${energyText(s.pyr.apexCarnKj)} kJ</b>. Horizontal block areas show the energy ratios; heights are fixed for display.`;
     }
     if (pageIdx === 1) {
-      const eutro = s.runoffLoad > 60 ? 'Severe surface algal bloom → decomposer O₂ crash (hypoxia)' : 'Balanced nutrient cycle → clear oxygenated water';
+      const eutro = s.runoffLoad > 60 ? 'Illustrative high-runoff state: bloom and low-oxygen risk' : 'Illustrative lower-runoff state; oxygen also depends on mixing and respiration';
       return `<b>Rhizobium N₂ Fixation & Lake Column (Runoff = ${s.runoffLoad}%)</b> · ${eutro}.`;
     }
     if (pageIdx === 2) {
-      return `<b>Jacketed Fermenter T = ${s.fermTempC} °C</b> · Active enzyme fraction = ${(s.ferm.tFactor * 100).toFixed(0)}% · Recombinant human insulin yield = <b>${s.ferm.insulinYieldMgL.toFixed(0)} mg/L</b>.`;
+      return `<b>Jacketed Fermenter T = ${s.fermTempC} °C</b> · Active enzyme fraction = ${(s.ferm.tFactor * 100).toFixed(0)}% · Illustrative processed insulin yield = <b>${s.ferm.insulinYieldMgL.toFixed(0)} mg/L</b>.`;
     }
-    return `<b>Recombinant Insulin Plasmid & CRISPR-Cas9</b> · Restriction enzyme cuts sticky ends · DNA ligase seals human insulin insert · sgRNA guides Cas9 to target PAM.`;
+    return `<b>Recombinant Insulin Plasmid & CRISPR-Cas9</b> · Restriction enzyme cuts sticky ends · DNA ligase seals human insulin insert · guide RNA directs Cas9 near a suitable PAM; cell repair makes the edit.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -134,20 +144,21 @@ export const CHAPTER = {
     const label = (cls, html, at, opts = {}) => labels.push({ cls, html, at, ...opts });
 
     // Station 0 (x = 0): 3D Stepped Trophic Energy Pyramid + Lotka-Volterra Conserved Surface
-    const pyrAsm = asm('trophic_pyramid', root, { title: 'Lindeman 3D Trophic Energy Pyramid', sub: '90% respiratory heat loss per step' });
+    const pyrAsm = asm('trophic_pyramid', root, { title: 'Lindeman 3D Trophic Energy Pyramid', sub: 'Chosen transfer fraction; energy outside the next level includes heat and detritus' });
     pyrAsm.position.set(-1.1, 0.1, 0);
     const tier1 = part(pyrAsm, box(1.55, 0.42, 1.55, 0.04), { pal: 'green', tone: 'lit', pos: [0, 0.21, 0], ex: [0, -0.2, 0], name: 'T1 Producers (10,000 kJ)' });
-    const tier2 = part(pyrAsm, box(1.05, 0.42, 1.05, 0.04), { pal: 'ochre', tone: 'hi', pos: [0, 0.65, 0], ex: [0, 0.15, 0], name: 'T2 Herbivores (1,000 kJ)' });
-    const tier3 = part(pyrAsm, box(0.62, 0.42, 0.62, 0.04), { pal: 'blue', tone: 'hi', pos: [0, 1.09, 0], ex: [0, 0.45, 0], name: 'T3 Carnivores (100 kJ)' });
-    const tier4 = part(pyrAsm, box(0.28, 0.42, 0.28, 0.04), { pal: 'red', tone: 'lit', pos: [0, 1.53, 0], ex: [0, 0.75, 0], name: 'T4 Apex predator (10 kJ)' });
+    const tier2 = part(pyrAsm, box(1.55, 0.42, 1.55, 0.04), { pal: 'ochre', tone: 'hi', pos: [0, 0.65, 0], ex: [0, 0.15, 0], name: 'T2 Herbivores (1,000 kJ)' });
+    const tier3 = part(pyrAsm, box(1.55, 0.42, 1.55, 0.04), { pal: 'blue', tone: 'hi', pos: [0, 1.09, 0], ex: [0, 0.45, 0], name: 'T3 Carnivores (100 kJ)' });
+    const tier4 = part(pyrAsm, box(1.55, 0.42, 1.55, 0.04), { pal: 'red', tone: 'lit', pos: [0, 1.53, 0], ex: [0, 0.75, 0], name: 'T4 Apex predator (10 kJ)' });
 
-    const lvAsm = asm('lv_bowl', root, { title: 'Lotka–Volterra phase bowl V(R, F)', sub: 'Closed predator–prey oscillation orbit' });
+    const lvAsm = asm('lv_bowl', root, { title: 'Lotka–Volterra phase bowl V(R, F)', sub: 'Chosen scan of example population states' });
     lvAsm.position.set(0.5, 0.25, -0.5);
-    const axL = prims.axes(lvAsm, { x: [0.25, 2.4], y: [1.8, 3.4], z: [0.25, 2.4], size: [1.9, 1.5, 1.6] });
-    prims.surface(axL, (R, F) => Math.min(3.3, M.lotkaVolterraInvariant(R, F)), { segs: 22, pal: 'blue', opacity: 0.78 });
+    const axL = prims.axes(lvAsm, { x: [0.25, 2.4], y: [0.25, 2.4], z: [1.8, 3.4], size: [1.9, 1.6, 1.5] });
+    prims.surface(lvAsm, (R, F) => Math.min(3.3, M.lotkaVolterraInvariant(R, F)), { axes: axL, n: 22, pal: 'blue' });
     const lvDot = part(lvAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: '(Prey R, Predator F) state' });
-    label('board', '10% Energy pyramid', () => V(-1.1, 2.15, 0));
-    label('board', 'V(R, F) orbit bowl', () => V(1.45, 2.05, -0.5));
+    let energyCaption = 'Energy tiers · η = 10%';
+    label('board', 'Energy tiers', () => V(-1.1, 2.15, 0), { text: () => energyCaption });
+    label('board', 'V(R, F) example states', () => V(1.45, 2.05, -0.5));
 
     // Station 1 (x = 14): 3D Root Nodule + Eutrophication Lake Column
     const nodAsm = asm('root_nodule', root, { title: 'Legume Rhizobium root nodule', sub: 'Leghaemoglobin O₂ buffer & nitrogenase' });
@@ -189,7 +200,7 @@ export const CHAPTER = {
 
     const casAsm = asm('crispr_cas9', root, { title: 'CRISPR-Cas9 & guide RNA (sgRNA)', sub: 'Programmable PAM-targeted DNA cleavage' });
     casAsm.position.set(43.0, 1.35, 0);
-    prims.blob(casAsm, { r: 0.72, subdiv: 3, seed: 53, pal: 'green', cleft: { dir: [-1, 0.1, 0], depth: 0.52, width: 0.5 }, name: 'Cas9 endonuclease protein' });
+    prims.blob(casAsm, { r: 0.72, rings: 24, segs: 36, seed: 53, pal: 'green', cleft: 0.52, name: 'Cas9 endonuclease protein' });
     part(casAsm, cyl(0.06, 1.35, 14), { pal: 'ochre', tone: 'lit', rot: [0, 0, 0.45], ex: [0.4, 0.3, 0], name: 'Target DNA + 20-nt sgRNA' });
     label('board', 'Recombinant plasmid', () => V(41.0, 2.35, 0));
     label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.0, 2.35, 0));
@@ -197,17 +208,22 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Scale trophic pyramid upper tiers by transfer efficiency
-        const sc = s.trophicEtaPct / 10;
-        tier2.scale.set(sc, 1, sc);
-        tier3.scale.set(sc * sc, 1, sc * sc);
-        tier4.scale.set(sc * sc * sc, 1, sc * sc * sc);
+        // Equal base geometries and square-root side scaling make horizontal
+        // block area proportional to the model energy at every chosen efficiency.
+        const energies = [s.pyr.producerKj, s.pyr.herbivoreKj, s.pyr.primaryCarnKj, s.pyr.apexCarnKj];
+        [tier1, tier2, tier3, tier4].forEach((tier, i) => {
+          const sideScale = Math.sqrt(energies[i] / energies[0]);
+          tier.scale.set(sideScale, 1, sideScale);
+          tier.userData.part = ['T1 Producers', 'T2 Herbivores', 'T3 Primary carnivores', 'T4 Apex consumers'][i] + ` (${energyText(energies[i])} kJ)`;
+        });
+        energyCaption = `Energy tiers · η = ${s.trophicEtaPct}%`;
+        pyrAsm.userData.sub = `Chosen transfer η = ${s.trophicEtaPct}%; equal display heights`;
 
-        // Orbit dot on Lotka-Volterra bowl
+        // A chosen scan of example states on the Lotka–Volterra surface.
         const ang = s.t * 1.2;
         const r = 1.0 + 0.42 * Math.cos(ang);
         const f = 1.0 + 0.42 * Math.sin(ang);
-        lvDot.position.copy(axL.to(r, M.lotkaVolterraInvariant(r, f) + 0.06, f));
+        lvDot.position.copy(axL.to(r, f, M.lotkaVolterraInvariant(r, f) + 0.06));
 
         // Algal bloom thickness scales with runoffLoad
         bloomMat.scale.y = 0.25 + (s.runoffLoad / 100) * 2.2;

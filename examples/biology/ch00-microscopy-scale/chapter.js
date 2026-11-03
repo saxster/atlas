@@ -1,47 +1,47 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, part, box, cyl, sphere, torus, cone, lines, arrow, setArrow, rod,
-  prims, motion, MOLECULES, studioGrid, playTone, V
+  prims, motion, MOLECULES, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
 export const PAGES = [
   {
     tab: 'Redi jars',
-    fig: 'Figure 0.1 · Redi’s three-jar controlled experiment (open, fine gauze, sealed)',
+    fig: 'Redi’s controlled jars',
     title: 'Redi’s Controlled Jars',
     alt: 'Three 3D glass jars holding meat: an open jar visited by flies, a gauze-topped jar where scent escapes and eggs stay on the mesh, and a sealed jar.',
-    cam: { target: [0, 1.3, 0], az: 26, el: 22, dist: 7.4 },
+    cam: { target: [0.15, 1.3, 0], az: 26, el: 22, dist: 13.0 },
     lit: 'gauze_jar',
     parts: ['open_jar', 'gauze_jar', 'sealed_jar'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Bead lens',
-    fig: 'Figure 0.2 · Leeuwenhoek’s single-bead brass microscope & ray cone',
+    fig: 'Bead-lens microscope',
     title: 'Leeuwenhoek’s Bead Microscope',
     alt: '3D brass microscope paddle with a tiny spherical glass lens, specimen screw pin, and refracted optical ray cone.',
-    cam: { target: [14, 1.4, 0], az: -28, el: 18, dist: 6.8 },
+    cam: { target: [14, 1.4, 0], az: -28, el: 18, dist: 11.2 },
     lit: 'bead_lens',
     parts: ['brass_plate', 'bead_lens', 'specimen_screw'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Swan-neck trap',
-    fig: 'Figure 0.3 · Pasteur’s swan-neck flask gravity dust & spore trap',
+    fig: 'Swan-neck contamination trap',
     title: 'Pasteur’s Swan-Neck Flask',
     alt: '3D round-bottom flask with an S-shaped curved glass neck where airborne spores settle by Stokes gravity in the lower bend.',
-    cam: { target: [28, 1.4, 0], az: 18, el: 20, dist: 7.2 },
+    cam: { target: [28, 1.4, 0], az: 18, el: 20, dist: 11.9 },
     lit: 'swan_bend',
     parts: ['flask_bulb', 'swan_bend'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Scale ladder',
-    fig: 'Figure 0.4 · Logarithmic biological scale tower from water cluster to cell',
+    fig: 'Schematic size-order columns',
     title: 'Biological Scale Ladder',
-    alt: '3D scale comparison from a hydrogen-bonded water molecule cluster to a bacteriophage, bacterium, and red blood cell.',
-    cam: { target: [42, 1.4, 0], az: 32, el: 22, dist: 7.6 },
+    alt: '3D scale comparison from a hydrogen-bonded water molecule cluster to a virus, bacterium and red blood cell, represented by labelled columns.',
+    cam: { target: [42, 1.4, 0], az: 32, el: 22, dist: 12.5 },
     lit: 'scale_tower',
     parts: ['water_mol', 'scale_tower'],
     look: { xray: 0, section: 0 },
@@ -62,14 +62,14 @@ export const PLATES = {
     text: 'Hand-beaten twin brass plates clamping the tiny spherical soda-lime glass bead between aligned pinhole apertures.',
   },
   bead_lens: {
-    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1); smaller radius bends marginal rays more steeply for up to 270× magnification.',
+    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1); smaller radius gives greater magnification in this ideal ball-lens model; usable magnification also depends on resolving detail.',
     facts: s => [['f', `${s.fMm.toFixed(2)} mm`], ['M', `${s.mag.toFixed(0)}×`], ['d_min', `${s.dMinNm.toFixed(0)} nm`]],
   },
   specimen_screw: {
-    text: 'Threaded brass focus and elevation screws that bring a capillary drop of rain or pepper-water to the exact 1.5 mm focal plane.',
+    text: 'Threaded focus and elevation screws position the specimen relative to the lens; the chosen focal length changes with the lens-radius control.',
   },
   flask_bulb: {
-    text: 'Boiled nutrient broth inside the round-bottom glass bulb: remains crystal-clear and sterile indefinitely while upright.',
+    text: 'Boiled nutrient broth inside the round-bottom glass bulb: can remain clear when initially sterilised and protected from contamination by the intact neck.',
   },
   swan_bend: {
     text: 'Lower S-bend gravity trap: airborne dust and microbial spores settle at Stokes velocity v_s into the moist bottom curve instead of climbing into the bulb.',
@@ -79,7 +79,7 @@ export const PLATES = {
     text: '3D hydrogen-bonded water cluster (0.28 nm O–O distance): the molecular floor of biological structure.',
   },
   scale_tower: {
-    text: 'Orders-of-magnitude columns spanning 0.1 nm molecules, 100 nm viruses, 2 µm bacteria, and 8 µm eukaryotic cells.',
+    text: 'Schematic columns order representative proteins (5 nm), viruses (100 nm), bacteria (2 µm) and red blood cells (8 µm). Heights show categories, not a calibrated logarithmic axis.',
   },
 };
 
@@ -124,13 +124,13 @@ export const CHAPTER = {
       return `<b>Redi’s Controlled Jars</b> · Open jar: flies enter → larvae on meat · Gauze jar: scent plume escapes, flies lay eggs on mesh only (0 larvae on meat) · Sealed jar: air & flies excluded.`;
     }
     if (pageIdx === 1) {
-      return `<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm · Magnification <b>${s.mag.toFixed(0)}×</b> · Diffraction limit d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
+      return `<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm · Magnification <b>${s.mag.toFixed(0)}×</b> · Chosen ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
     }
     if (pageIdx === 2) {
-      const status = s.tilted ? 'Broth tipped into neck bend → spores wash back → CLOUDY (contaminated)' : `Upright gravity trap → ${(s.trap.fractionTrapped * 100).toFixed(1)}% spores trapped in dip → STERILE`;
+      const status = s.tilted ? 'Tipped broth contacts trapped contamination; cloudiness represents subsequent growth under suitable conditions' : 'Upright bend keeps settled dust away from the broth in this schematic; the trapping estimate is illustrative, not a sterility prediction';
       return `<b>Swan-neck dip = ${s.neckDipMm} mm</b> · Stokes settling v_s = ${(s.trap.vsMmPerSec * 1000).toFixed(1)} µm/s · ${status}.`;
     }
-    return `<b>Logarithmic Scale Tower</b> · H₂O cluster (0.3 nm) → T4 Phage (100 nm) → E. coli (2 µm) → Human RBC (8 µm) · Each step spans orders of magnitude.`;
+    return `<b>Schematic size-order columns</b> · Water at molecular scale (~0.3 nm O–O spacing) → T4 Phage (100 nm) → E. coli (2 µm) → Human RBC (8 µm) · Labelled sizes supply the comparisons; column heights are illustrative.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -157,7 +157,7 @@ export const CHAPTER = {
       } else if (j.lid === 'sealed') {
         part(g, cyl(0.67, 0.12, 24), { pal: 'dark', tone: 'hi', pos: [0, 1.62, 0], ex: [0, 0.65, 0], name: 'Airtight parchment seal' });
       }
-      const pCloud = prims.particles(g, { count: 10, r: 0.045, pal: 'ink' });
+      const pCloud = prims.particles(g, 10, { radius: 0.045, color: 'ink' });
       flyClouds.push({ lid: j.lid, cloud: pCloud });
     }
     label('board', 'Open', () => V(-1.8, 2.15, 0));
@@ -196,13 +196,14 @@ export const CHAPTER = {
     ];
     const neckGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(neckPts), 40, 0.13, 12, false);
     part(neckAsm, neckGeo, { pal: 'blue', tone: 'hi', ex: [0.5, 0.35, 0], name: 'Curved S-neck tube' });
-    const sporeParticles = prims.particles(neckAsm, { count: 18, r: 0.04, pal: 'red' });
+    const brothMaterials = { clear: shadeMat('ochre'), cloudy: shadeMat('red') };
+    const sporeParticles = prims.particles(neckAsm, 18, { radius: 0.04, color: 'red' });
     label('board', 'Settled spores in dip', () => V(29.65, 1.4, 0), { leader: [38, 22] });
 
     // Station 3 (x = 42): Logarithmic Scale Ladder & Real Water Molecule Cluster
     const molAsm = asm('water_mol', root, { title: 'H₂O Hydrogen-bond cluster', sub: '0.28 nm molecular scale' });
     molAsm.position.set(40.6, 1.35, 0);
-    prims.molecule(molAsm, { atoms: MOLECULES.waterCluster.atoms, bonds: MOLECULES.waterCluster.bonds, scale: 0.28 });
+    prims.molecule(molAsm, MOLECULES.waterCluster.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.28, names: false, name: 'Water cluster' });
 
     const towerAsm = asm('scale_tower', root, { title: 'Biological scale columns', sub: 'Orders of magnitude' });
     towerAsm.position.set(42.8, 0.1, 0);
@@ -210,13 +211,13 @@ export const CHAPTER = {
       { h: 0.45, pal: 'blue', x: -0.9, name: 'Protein (5 nm)' },
       { h: 0.95, pal: 'ochre', x: -0.3, name: 'Phage virus (100 nm)' },
       { h: 1.55, pal: 'green', x: 0.3, name: 'Bacterium (2 µm)' },
-      { h: 2.25, pal: 'red', x: 0.9, name: 'Eukaryotic cell (10 µm)' },
+      { h: 2.25, pal: 'red', x: 0.9, name: 'Red blood cell (8 µm)' },
     ];
     for (const st of steps) {
       part(towerAsm, box(0.42, st.h, 0.42, 0.04), { pal: st.pal, tone: 'hi', pos: [st.x, st.h / 2, 0], ex: [0, st.h * 0.25, 0], name: st.name });
     }
-    label('board', 'H₂O cluster (0.3 nm)', () => V(40.6, 2.35, 0));
-    label('board', 'Log₁₀ scale steps', () => V(42.8, 2.55, 0));
+    label('board', 'Water: molecular scale', () => V(40.6, 2.35, 0));
+    label('board', 'Size-order columns', () => V(42.8, 2.55, 0));
 
     return {
       labels,
@@ -227,10 +228,10 @@ export const CHAPTER = {
           for (let i = 0; i < 10; i++) {
             const ang = s.t * 1.8 + i * 0.63;
             const r = 0.28 + 0.12 * Math.sin(s.t + i);
-            const y = fc.lid === 'open' ? 0.45 + 0.35 * Math.abs(Math.sin(s.t * 1.3 + i)) : 1.72 + 0.18 * Math.abs(Math.cos(s.t * 1.5 + i));
+            const y = fc.lid === 'none' ? 0.45 + 0.35 * Math.abs(Math.sin(s.t * 1.3 + i)) : 1.72 + 0.18 * Math.abs(Math.cos(s.t * 1.5 + i));
             pts.push([r * Math.cos(ang), y, r * Math.sin(ang)]);
           }
-          fc.cloud.set(pts);
+          pts.forEach((xyz, i) => fc.cloud.set(i, xyz));
         }
         // Scale bead lens & ray cone with lensRadiusMm
         const sc = s.lensRadiusMm / 0.75;
@@ -243,7 +244,7 @@ export const CHAPTER = {
         const tiltRad = s.tilted ? -0.42 : 0;
         flaskAsm.rotation.z = tiltRad;
         neckAsm.rotation.z = tiltRad;
-        brothMesh.material = shadeMat(s.tilted ? 'red' : 'ochre');
+        brothMesh.material = s.tilted ? brothMaterials.cloudy : brothMaterials.clear;
         const sp = [];
         for (let i = 0; i < 18; i++) {
           const u = i / 18;
@@ -253,7 +254,7 @@ export const CHAPTER = {
             sp.push([1.55 + 0.25 * Math.cos(i + s.t * 0.5), -0.42 - (s.neckDipMm - 20) * 0.008 + 0.04 * Math.sin(i), 0.04 * Math.cos(i)]);
           }
         }
-        sporeParticles.set(sp);
+        sp.forEach((xyz, i) => sporeParticles.set(i, xyz));
       },
     };
   },

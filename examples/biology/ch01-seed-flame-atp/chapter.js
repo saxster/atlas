@@ -1,47 +1,47 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, part, box, cyl, sphere, cone, capsule, rod,
-  prims, MOLECULES, buildAtpSynthase, studioGrid, playTone, V
+  prims, MOLECULES, buildAtpSynthase, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
 export const PAGES = [
   {
     tab: 'Seed imbibition',
-    fig: 'Figure 1.1 · Monsoon chickpea seed imbibition, micropyle influx & radicle emergence',
+    fig: 'Figure 1.1 · Seed hydration model',
     title: 'Monsoon Seed Imbibition',
-    alt: '3D chickpea seed cutaway showing testa coat, cotyledon starch stores, and emerging radicle root tip as water enters the micropyle.',
-    cam: { target: [0, 1.3, 0], az: 24, el: 20, dist: 6.8 },
+    alt: 'Schematic chickpea seed cutaway showing the coat, stored materials and a root symbol; hydration and development are chosen illustrations.',
+    cam: { target: [0, 1.3, 0], az: 24, el: 20, dist: 18 },
     lit: 'radicle_embryo',
     parts: ['seed_testa', 'cotyledons', 'radicle_embryo'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Flame vs staircase',
-    fig: 'Figure 1.2 · Uncontrolled single-drop combustion vs enzyme-coupled metabolic staircase',
+    fig: 'Figure 1.2 · Coupled reactions',
     title: 'Flame vs Stepped Oxidation',
-    alt: '3D free-energy cliff of burning sugar versus the 32-step enzymatic staircase that captures free energy as ATP.',
-    cam: { target: [14, 1.4, 0], az: -22, el: 22, dist: 7.4 },
+    alt: 'Conceptual energy diagrams for combustion and coupled metabolism; displayed steps do not count actual reactions.',
+    cam: { target: [14, 1.4, 0], az: -22, el: 22, dist: 18 },
     lit: 'stepped_staircase',
     parts: ['flame_drop', 'stepped_staircase'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'ATP battery & rotor',
-    fig: 'Figure 1.3 · Subbarow’s ATP triphosphate molecule & rotary F₀F₁ ATP synthase turbine',
-    title: 'The Universal ATP Battery',
-    alt: '3D ball-and-stick structure of ATP alongside the spinning F0F1 ATP synthase molecular turbine.',
-    cam: { target: [28, 1.4, 0], az: 28, el: 18, dist: 7.2 },
+    fig: 'Figure 1.3 · ATP and rotary synthase',
+    title: 'ATP as an Energy Carrier',
+    alt: 'Incomplete ball-and-stick schematic of an ATP core alongside a rotary ATP synthase model; neither uses experimentally fitted atomic coordinates.',
+    cam: { target: [28, 1.4, 0], az: 28, el: 18, dist: 18 },
     lit: 'atp_synthase',
     parts: ['atp_molecule', 'atp_synthase'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Viral borderland',
-    fig: 'Figure 1.4–1.5 · MRS GREN living bacterium vs crystalline icosahedral bacteriophage',
+    fig: 'Figure 1.5 · A phage and its host',
     title: 'The Viral Borderland',
     alt: '3D icosahedral bacteriophage with contractile tail sheath landing on a metabolising bacterial host cell.',
-    cam: { target: [42, 1.4, 0], az: 20, el: 22, dist: 7.4 },
+    cam: { target: [42, 1.4, 0], az: 20, el: 22, dist: 18 },
     lit: 'phage_capsid',
     parts: ['phage_capsid', 'phage_tail', 'host_bacterium'],
     look: { xray: 0.15, section: 0 },
@@ -50,36 +50,36 @@ export const PAGES = [
 
 export const PLATES = {
   seed_testa: {
-    text: 'Protective outer seed coat (testa) pierced by the microscopic micropyle pore; ruptures once matric water uptake swells the seed past ~62%.',
+    text: 'Protective seed coat (testa). Water enters permeable regions; the model uses a chosen opening threshold to reveal the root symbol, not a measured germination rule.',
   },
   cotyledons: {
     text: 'Twin embryonic seed leaves packed with starch and storage globulins that hydrate and mobilise into maltose and amino acids.',
   },
   radicle_embryo: {
-    text: 'Embryonic root (radicle) and shoot (plumule) axis: resumes respiration and turgor-driven elongation within hours of monsoon wetting.',
-    facts: s => [['Ψ_m', `${s.imb.psiMatricMPa.toFixed(1)} MPa`], ['H₂O uptake', `${s.imb.waterUptakePct.toFixed(0)}%`]],
+    text: 'Embryonic root (radicle) and shoot (plumule). Viable seeds can resume development after hydration under suitable conditions; this model supplies no observed timetable.',
+    facts: s => [['Ψ_m', `${s.imb.psiMatricMPa.toFixed(1)} MPa`], ['Added water / initial mass', `${s.imb.waterUptakePct.toFixed(0)}%`]],
   },
   flame_drop: {
-    text: 'Uncontrolled combustion drops 2870 kJ/mol in a single step over a high activation barrier, releasing 100% as intense heat and light that would denature living proteins.',
+    text: 'Combustion proceeds through many reactions and releases heat and light. The cliff is a conceptual comparison, not a one-step reaction mechanism.',
   },
   stepped_staircase: {
-    text: 'Coupled metabolic staircase lowers activation barriers with enzymes, banking ~32 ATP molecules (~976 kJ/mol, 34% efficiency) at 37 °C.',
-    facts: s => [['Captured', `${s.ox.capturedKj.toFixed(0)} kJ/mol`], ['Heat', `${s.ox.heatKj.toFixed(0)} kJ/mol`], ['Eff.', `${(s.ox.efficiency * 100).toFixed(1)}%`]],
+    text: 'Enzymes catalyse reactions; coupling connects fuel breakdown to ATP regeneration. The chosen standard-state free-energy budget illustrates accounting, not measured cellular efficiency or heat.',
+    facts: s => [['Captured', `${s.ox.capturedKj.toFixed(0)} kJ/mol`], ['Unassigned ΔG', `${s.ox.heatKj.toFixed(0)} kJ/mol`], ['Chosen share', `${(s.ox.efficiency * 100).toFixed(1)}%`]],
   },
   atp_molecule: {
-    text: 'Yellapragada Subbarow’s adenosine triphosphate (ATP): three negatively charged phosphate groups whose terminal γ-phosphate bond releases 30.5 kJ/mol on hydrolysis to ADP + Pi.',
+    text: 'ATP has three phosphate groups. The whole hydrolysis reaction, including water and product interactions, has a standard transformed free-energy change near −30.5 kJ/mol. Breaking a bond alone requires energy; actual cellular conditions change the reaction free energy.',
   },
   atp_synthase: {
-    text: 'Rotary F₀F₁ ATP synthase nanomachine: proton flow spins the F₀ c-ring and central γ-shaft, mechanically forcing the F₁ catalytic crown to press ADP + Pi into ATP.',
+    text: 'Rotary F₀F₁ ATP synthase nanomachine: proton flow spins the F₀ c-ring and central γ-shaft, coupling rotation to ATP synthesis from ADP and phosphate.',
   },
   phage_capsid: {
-    text: 'Crystalline icosahedral protein head (T = 7 triangulation) housing tightly spooled viral DNA—inert and zero-ATP outside a host cell.',
+    text: 'Schematic protein capsid enclosing viral DNA. The chosen T = 7 geometry is illustrative, not a structural measurement of a named phage; outside a host the particle has no independent cellular metabolism.',
   },
   phage_tail: {
     text: 'Contractile tail sheath, baseplate, and six tail fibres that latch onto bacterial surface receptors and inject the viral genome like a spring-loaded syringe.',
   },
   host_bacterium: {
-    text: 'Living prokaryotic cell performing all seven MRS GREN processes—whose ribosomes and ATP pool the virus hijacks upon injection.',
+    text: 'Living bacterial host with its own ribosomes and ATP supply. Viral replication uses host resources; host ribosomes make proteins, while enzymes copy genomes. The seven life processes need not all be visible at once.',
   },
 };
 
@@ -95,15 +95,19 @@ export const CHAPTER = {
   cutPlane: [0, 0, -1, 0.05],
   defaultParams: { imbibeHours: 8, atpYield: 32, phageInject: 0 },
   controls: [
-    { id: 'imbibeHours', label: 'Monsoon soaking time', min: 0, max: 16, step: 1, value: 8, unit: 'h' },
+    { id: 'imbibeHours', label: 'Chosen model interval', min: 0, max: 16, step: 1, value: 8, unit: 'h' },
     { id: 'atpYield', label: 'Coupled ATP banked per glucose', min: 2, max: 36, step: 2, value: 32, unit: 'ATP' },
     { id: 'phageInject', label: 'Phage tail contraction', min: 0, max: 100, step: 5, value: 0, unit: '%' },
   ],
   lessons: {
+    'ch01-seed-flame-3d': { page: 1 },
+    'ch01-atp-coin-3d': { page: 2 },
+    'ch01-coupled-gears-3d': { page: 2 },
+    'ch01-seed-flame-3d-virus': { page: 3 },
     'ch01-imbibition-3d': { page: 0, params: { imbibeHours: 9 } },
     'ch01-staircase-3d': { page: 1, params: { atpYield: 32 } },
     'ch01-atp-cycle-3d': { page: 2, params: { atpYield: 32 } },
-    'ch01-mrs-gren-3d': { page: 3, params: { phageInject: 15 } },
+    'ch01-mrs-gren-3d': { page: 2, params: { phageInject: 15 } },
     'ch01-virus-border-3d': { page: 3, params: { phageInject: 85 } },
   },
   sonify(ctx, s, page) {
@@ -121,13 +125,13 @@ export const CHAPTER = {
   },
   readout(s, page, pageIdx) {
     if (pageIdx === 0) {
-      return `<b>Soaking time = ${s.imb.hours} h</b> · Matric potential Ψ_m = ${s.imb.psiMatricMPa.toFixed(1)} MPa · Water uptake = <b>${s.imb.waterUptakePct.toFixed(0)}%</b> · Testa: ${s.imb.testaRuptured ? '<b>Ruptured (radicle emerging)</b>' : 'Intact'}.`;
+      return `<b>Illustrative interval = ${s.imb.hours} model h</b> · Matric potential Ψ_m = ${s.imb.psiMatricMPa.toFixed(1)} MPa · Added water = <b>${s.imb.waterUptakePct.toFixed(0)}% of starting seed mass</b> · Testa: ${s.imb.testaRuptured ? '<b>Open in chosen scenario</b>' : 'Intact'}.`;
     }
     if (pageIdx === 1) {
-      return `<b>Glucose oxidation (ΔG = −2870 kJ/mol)</b> · Banked: <b>${s.ox.nAtp} ATP (${s.ox.capturedKj.toFixed(0)} kJ/mol, ${(s.ox.efficiency * 100).toFixed(1)}%)</b> · Gentle metabolic heat: ${s.ox.heatKj.toFixed(0)} kJ/mol.`;
+      return `<b>Chosen standard-state account (2870 kJ/mol available)</b> · Banked: <b>${s.ox.nAtp} ATP (${s.ox.capturedKj.toFixed(0)} kJ/mol, ${(s.ox.efficiency * 100).toFixed(1)}%)</b> · Unassigned free-energy difference: ${s.ox.heatKj.toFixed(0)} kJ/mol. These are not measured heat or cellular-efficiency values.`;
     }
     if (pageIdx === 2) {
-      return `<b>ATP/ADP Cycle & Rotary F₀F₁ Turbine</b> · Terminal γ-phosphate bond stores 30.5 kJ/mol · 3 ATP synthesized per 360° γ-shaft revolution.`;
+      return `<b>ATP/ADP Cycle & Rotary F₀F₁ Turbine</b> · Whole hydrolysis reaction: standard transformed ΔG ≈ −30.5 kJ/mol; conditions matter · 3 ATP synthesized per 360° γ-shaft revolution.`;
     }
     return `<b>Viral Borderland</b> · Icosahedral capsid T = ${s.cap.T} (${s.cap.capsomeres} capsomeres) · Tail contraction = ${(s.phageInject * 100).toFixed(0)}% · ${s.phageInject > 0.5 ? 'Viral DNA injected into host cytoplasm' : 'Adsorbed to bacterial cell wall'}.`;
   },
@@ -156,7 +160,7 @@ export const CHAPTER = {
     label('board', 'Emerging radicle', () => V(0.55, 0.5, 0.85), { leader: [34, 18] });
 
     // Station 1 (x = 14): Flame Cliff vs Stepped Enzymatic Staircase
-    const flameAsm = asm('flame_drop', root, { title: 'Single-step flame cliff', sub: '2870 kJ/mol lost as heat' });
+    const flameAsm = asm('flame_drop', root, { title: 'Conceptual flame account', sub: 'Fuel reactions release heat and light' });
     flameAsm.position.set(12.8, 0.2, 0);
     part(flameAsm, box(0.7, 2.2, 0.7, 0.04), { pal: 'red', tone: 'hi', pos: [0, 1.1, 0], ex: [-0.4, 0.3, 0], name: 'Combustion free-energy cliff' });
 
@@ -168,18 +172,18 @@ export const CHAPTER = {
       const m = part(stairAsm, box(0.36, h, 0.65, 0.03), { pal: i % 2 === 0 ? 'green' : 'blue', tone: 'hi', pos: [i * 0.42, h / 2, 0], ex: [0, 0.25 * (6 - i), 0], name: `Coupled enzyme step ${i + 1}` });
       stairBars.push(m);
     }
-    label('board', 'Single flame cliff', () => V(12.8, 2.65, 0));
+    label('board', 'Conceptual flame account', () => V(12.8, 2.65, 0));
     label('board', 'Coupled ATP steps', () => V(15.2, 2.45, 0));
 
     // Station 2 (x = 28): Real ATP Molecule + Rotary F0F1 ATP Synthase
     const molAsm = asm('atp_molecule', root, { title: 'ATP triphosphate molecule', sub: 'Subbarow’s energy currency' });
     molAsm.position.set(26.5, 1.45, 0);
-    prims.molecule(molAsm, { atoms: MOLECULES.atpCore.atoms, bonds: MOLECULES.atpCore.bonds, scale: 0.22 });
+    prims.molecule(molAsm, MOLECULES.atpCore.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.22, names: false, name: 'ATP core schematic' });
 
     const synthAsm = asm('atp_synthase', root, { title: 'F₀F₁ ATP Synthase turbine', sub: 'Rotary molecular generator' });
     const synth = buildAtpSynthase(synthAsm, { x0: 29.2, y0: 1.35, z0: 0, scale: 1.05 });
-    label('board', 'ATP γ-phosphate tail', () => V(26.8, 2.35, 0));
-    label('board', 'F₀F₁ rotary synthase', () => V(29.2, 2.55, 0));
+    label('board', 'ATP core', () => V(26.8, 2.35, 0));
+    label('board', 'ATP synthase', () => V(29.2, 2.55, 0));
 
     // Station 3 (x = 42): Bacteriophage on Host Bacterium
     const hostAsm = asm('host_bacterium', root, { title: 'Metabolising host bacterium', sub: 'Living MRS GREN cell' });

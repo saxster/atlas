@@ -5,12 +5,12 @@ export function logisticColonyAccount(tHr = 6, rPerHr = 0.65, n0 = 10, kCap = 10
   return { tHr, nLog, dndt, inflectionN: kCap / 2 };
 }
 
-export function balancingSelectionAccount(sMalaria = 0.15, sSickle = 0.85, qFreq = 0.12) {
+export function balancingSelectionAccount(sMalaria = 0.15, sSickle = 0.80, qFreq = 0.12) {
   const q = Math.max(0, Math.min(1, qFreq));
   const p = 1 - q;
   // W(AA) = 1 - sMalaria, W(AS) = 1.0, W(SS) = 1 - sSickle
   const wBar = p * p * (1 - sMalaria) + 2 * p * q * 1.0 + q * q * (1 - sSickle);
-  const qEquilibrium = sMalaria / (sMalaria + sSickle);
+  const qEquilibrium = (sMalaria + sSickle > 0 ? sMalaria / (sMalaria + sSickle) : null);
   return { p, q, wBar, qEquilibrium };
 }
 

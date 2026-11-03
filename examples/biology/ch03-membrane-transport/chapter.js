@@ -1,7 +1,7 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, part, box, cyl, sphere, capsule,
-  prims, buildBilayer, rbcGeo, studioGrid, playTone, V
+  prims, buildBilayer, rbcGeo, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
@@ -10,8 +10,8 @@ export const PAGES = [
     tab: 'Fick diffusion',
     fig: 'Figure 3.1 · 3D Brownian particle walk across a permeable bilayer & Fick relaxation',
     title: 'Diffusion & Dynamic Equilibrium',
-    alt: '3D phospholipid bilayer with diffusing solute particles and exponential relaxation curve to 50/50 dynamic equilibrium.',
-    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    alt: '3D phospholipid bilayer with diffusing solute particles and exponential relaxation curve to 50/50 equilibrium in this equal-volume model.',
+    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 11.1 },
     lit: 'bilayer_gate',
     parts: ['bilayer_gate', 'fick_curve'],
     look: { xray: 0, section: 0 },
@@ -21,7 +21,7 @@ export const PAGES = [
     fig: 'Figure 3.2 · Agre’s aquaporin-1 hourglass water channel & water potential Ψ = Ψ_s + Ψ_p',
     title: 'Aquaporin Water Gate',
     alt: '3D hourglass aquaporin channel embedded in a lipid bilayer passing a single-file chain of water molecules while excluding hydrated ions.',
-    cam: { target: [14, 1.35, 0], az: -22, el: 20, dist: 6.8 },
+    cam: { target: [14, 1.35, 0], az: -22, el: 20, dist: 10.2 },
     lit: 'aquaporin_pore',
     parts: ['aquaporin_pore', 'single_file_water'],
     look: { xray: 0.25, section: 0 },
@@ -31,17 +31,17 @@ export const PAGES = [
     fig: 'Figure 3.3 · 3D RBC (lysed, biconcave, crenated) vs Plant Cell (turgid, flaccid, plasmolysed)',
     title: 'Osmosis in Animal & Plant Cells',
     alt: 'Side-by-side 3D comparison of a wall-less red blood cell and a cellulose-walled plant cell responding to external salt molarity.',
-    cam: { target: [28, 1.35, 0], az: 20, el: 22, dist: 7.4 },
+    cam: { target: [28, 1.35, 0], az: 20, el: 22, dist: 11.1 },
     lit: 'plant_osmosis',
     parts: ['rbc_osmosis', 'plant_osmosis'],
     look: { xray: 0.22, section: 0 },
   },
   {
-    tab: 'Active ATPase pump',
-    fig: 'Figure 3.4 · Skou’s ATP-driven conformational carrier pump in a root hair membrane',
+    tab: 'Energy-coupled pump model',
+    fig: 'Figure 3.4 · Illustrative ATP-driven carrier cycle; root nitrate uses a proton relay',
     title: 'Active Transport Against the Gradient',
-    alt: '3D conformational carrier protein hydrolyzed by ATP to pump mineral ions uphill from dilute soil into a root hair cell.',
-    cam: { target: [42, 1.35, 0], az: 26, el: 20, dist: 7.2 },
+    alt: 'Schematic carrier coupling ATP hydrolysis to solute transport. This generic model is not Skou’s sodium–potassium pump or the root nitrate cotransporter.',
+    cam: { target: [42, 1.35, 0], az: 26, el: 20, dist: 10.8 },
     lit: 'atpase_carrier',
     parts: ['atpase_carrier', 'atp_site'],
     look: { xray: 0.15, section: 0 },
@@ -50,31 +50,31 @@ export const PAGES = [
 
 export const PLATES = {
   bilayer_gate: {
-    text: 'Selectively permeable phospholipid bilayer: random thermal motion drives net flux J = −D(ΔC/Δx) until left/right crossings balance at 50/50 dynamic equilibrium.',
+    text: 'Selectively permeable phospholipid bilayer: random thermal motion drives net flux J = −D(ΔC/Δx) until left/right crossings balance at 50/50 equilibrium in this equal-volume model.',
     facts: s => [['Left', `${(s.fick.fracLeft * 100).toFixed(1)}%`], ['Right', `${(s.fick.fracRight * 100).toFixed(1)}%`]],
   },
   fick_curve: {
     text: 'Exponential relaxation curve N_L(t)/N = ½(1 + e^{−2kt}): steep initial net flux flattens to zero net change even while individual molecules keep crossing.',
   },
   aquaporin_pore: {
-    text: 'Peter Agre’s aquaporin-1 tetramer: a 0.28 nm hourglass selectivity filter lined with NPA asparagine motifs that reorient water dipoles and block protons (H₃O⁺) and hydrated Na⁺.',
+    text: 'Aquaporin-1 has water-selective pathways. Chemical interactions in the pore help exclude ions; the enlarged hourglass is schematic, not atomic coordinates.',
   },
   single_file_water: {
-    text: 'Single-file stream of H₂O molecules marching down the water potential gradient Ψ = Ψ_s + Ψ_p at ~3 × 10⁹ molecules per second.',
+    text: 'Water crosses in both directions. Unequal total water potentials favour net transfer; the moving markers illustrate exchange, not a calibrated molecular rate.',
   },
   rbc_osmosis: {
-    text: 'Animal red blood cell lacks a cell wall: swells and lyses in hypotonic water, stays biconcave in 0.15 M isotonic saline, and shrivels (crenates) in hypertonic brine.',
+    text: 'Animal red blood cell lacks a cell wall: swells and lyses in hypotonic water, stays biconcave in approximately 0.15 M saline in the classroom example, and shrivels (crenates) in hypertonic brine.',
   },
   plant_osmosis: {
     text: 'Walled plant cell: inelastic cellulose wall builds positive turgor pressure Ψ_p in pure water; in hypertonic brine the protoplast peels away from the wall (plasmolysis).',
     facts: s => [['RBC', s.wp.rbcState], ['Plant', s.wp.plantState]],
   },
   atpase_carrier: {
-    text: 'Jens Christian Skou’s conformational ion pump: switches between E₁ (high affinity facing dilute soil) and phosphorylated E₂ (releasing ions inside the root hair against a 10× gradient).',
+    text: 'An invented ATP-dependent carrier model illustrates energy coupling. The chosen 10× concentration ratio omits electrical forces and does not identify a real root nitrate pump; the chapter explains the actual proton relay.',
     facts: s => [['Pump rate', `${s.pump.vPump.toFixed(0)}% V_max`], ['Uphill ΔG', `+${s.pump.deltaGKj.toFixed(1)} kJ/mol`]],
   },
   atp_site: {
-    text: 'Cytoplasmic ATP-binding domain: without O₂ and respiratory ATP (or in cyanide/waterlogged soil), active uptake halts and only passive diffusion remains.',
+    text: 'Cytoplasmic ATP-binding domain: a sustained ATP shortage can prevent gradient maintenance. Stored gradients may continue to drive secondary transport for a while; ATP loss does not instantly stop every crossing.',
   },
 };
 
@@ -95,6 +95,9 @@ export const CHAPTER = {
     { id: 'atpLevel', label: 'Cellular ATP supply', min: 0.0, max: 5.0, step: 0.5, value: 3.0, unit: 'mM' },
   ],
   lessons: {
+    'ch03-bilayer-3d': { page: 0 },
+    'ch03-osmosis-3d': { page: 2 },
+    'ch03-nak-pump-3d': { page: 3 },
     'ch03-diffusion-3d': { page: 0, params: { permRate: 0.5 } },
     'ch03-aquaporin-3d': { page: 1, params: { extMolarity: 0.05 } },
     'ch03-osmosis-cells-3d': { page: 2, params: { extMolarity: 0.35 } },
@@ -115,15 +118,15 @@ export const CHAPTER = {
   },
   readout(s, page, pageIdx) {
     if (pageIdx === 0) {
-      return `<b>Permeability k = ${s.permRate.toFixed(1)} s⁻¹</b> · Left chamber: <b>${(s.fick.fracLeft * 100).toFixed(1)}%</b> · Right chamber: <b>${(s.fick.fracRight * 100).toFixed(1)}%</b> · Relaxing exponentially to 50/50 equilibrium.`;
+      return `<b>Invented equal-volume model · Permeability k = ${s.permRate.toFixed(1)} s⁻¹</b> · Left chamber: <b>${(s.fick.fracLeft * 100).toFixed(1)}%</b> · Right chamber: <b>${(s.fick.fracRight * 100).toFixed(1)}%</b> · Relaxing exponentially to 50/50 equilibrium.`;
     }
     if (pageIdx === 1) {
-      return `<b>Aquaporin-1 Channel</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
+      return `<b>Schematic aquaporin · chosen water-potential example</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
     }
     if (pageIdx === 2) {
-      return `<b>External salt = ${s.extMolarity.toFixed(2)} M</b> · Animal RBC: <b>${s.wp.rbcState}</b> · Walled plant cell: <b>${s.wp.plantState}</b> (Ψ_p = ${s.wp.turgorMPa.toFixed(2)} MPa).`;
+      return `<b>Chosen qualitative cell-state model · External salt = ${s.extMolarity.toFixed(2)} M</b> · Animal RBC: <b>${s.wp.rbcState}</b> · Walled plant cell: <b>${s.wp.plantState}</b> (Ψ_p = ${s.wp.turgorMPa.toFixed(2)} MPa).`;
     }
-    return `<b>ATP = ${s.atpLevel.toFixed(1)} mM</b> · Active carrier turnover = <b>${s.pump.vPump.toFixed(0)}% V_max</b> · ${s.pump.uphillPossible ? 'Pumping nitrate/K⁺ uphill against 10× gradient' : 'No ATP → active pump stalled'}.`;
+    return `<b>ATP = ${s.atpLevel.toFixed(1)} mM</b> · Chosen carrier activity = <b>${s.pump.vPump.toFixed(0)}% V_max</b> · ${s.pump.uphillPossible ? 'Illustrative carrier operating against chosen 10× concentration ratio' : 'Chosen ATP-dependent carrier inactive; stored gradients may remain'}.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -137,23 +140,23 @@ export const CHAPTER = {
     const gateAsm = asm('bilayer_gate', root, { title: 'Permeable lipid bilayer', sub: 'Brownian solute crossing' });
     gateAsm.position.set(-0.9, 0, 0);
     buildBilayer(gateAsm, { cols: 2, rows: 5, x0: 0, y0: 1.3, z0: 0 });
-    const soluteCloud = prims.particles(gateAsm, { count: 48, r: 0.055, pal: 'blue' });
+    const soluteCloud = prims.particles(gateAsm, 48, { radius: 0.055, color: 'blue' });
 
     const curveAsm = asm('fick_curve', root, { title: 'Fick relaxation curve', sub: 'N_L(t)/N → 0.5' });
     curveAsm.position.set(0.6, 0.25, -0.3);
     const ax0 = prims.axes(curveAsm, { x: [0, 10], y: [0, 1], size: [2.0, 1.7, 0.6] });
-    const plot0 = prims.plot(ax0, x => M.fickRelaxation(x, 0.4).fracLeft, { samples: 40, pal: 'red', r: 0.03 });
+    const plot0 = prims.plot(curveAsm, x => M.fickRelaxation(x, 0.4).fracLeft, { axes: ax0, samples: 40, color: 'red', width: 0.06 });
     label('board', 'Lipid bilayer', () => V(-0.9, 2.35, 0));
     label('board', 'N_L(t)/N → 0.5', () => V(1.6, 2.15, -0.3));
 
     // Station 1 (x = 14): Aquaporin Hourglass Channel
-    const aqpAsm = asm('aquaporin_pore', root, { title: 'Aquaporin-1 hourglass pore', sub: '0.28 nm NPA selectivity filter' });
+    const aqpAsm = asm('aquaporin_pore', root, { title: 'Aquaporin-1 hourglass pore', sub: 'Schematic water-selective pore' });
     aqpAsm.position.set(14, 1.35, 0);
     buildBilayer(aqpAsm, { cols: 7, rows: 3, x0: 0, y0: 0, z0: 0, skipCenter: true });
     part(aqpAsm, cyl(0.45, 0.55, 24, 0.24), { pal: 'blue', tone: 'hi', pos: [0, 0.3, 0], mat: shadeMat('blue', { opacity: 0.68 }), ex: [0, 0.45, 0], name: 'Upper vestibule' });
     part(aqpAsm, cyl(0.24, 0.55, 24, 0.45), { pal: 'blue', tone: 'hi', pos: [0, -0.3, 0], mat: shadeMat('blue', { opacity: 0.68 }), ex: [0, -0.45, 0], name: 'Lower vestibule' });
 
-    const h2oAsm = asm('single_file_water', root, { title: 'Single-file H₂O stream', sub: '3 × 10⁹ molecules/s' });
+    const h2oAsm = asm('single_file_water', root, { title: 'Single-file H₂O stream', sub: 'Exchange markers, not a rate' });
     h2oAsm.position.set(14, 1.35, 0);
     const h2oSpheres = [];
     for (let i = 0; i < 7; i++) {
@@ -179,9 +182,9 @@ export const CHAPTER = {
     buildBilayer(pumpAsm, { cols: 7, rows: 3, x0: 0, y0: 0, z0: 0, skipCenter: true });
     const jawL = part(pumpAsm, capsule(0.18, 0.65, 8, 16), { pal: 'ochre', tone: 'lit', pos: [-0.2, 0, 0], ex: [-0.45, 0.3, 0], name: 'Carrier lobe A' });
     const jawR = part(pumpAsm, capsule(0.18, 0.65, 8, 16), { pal: 'ochre', tone: 'lit', pos: [0.2, 0, 0], ex: [0.45, 0.3, 0], name: 'Carrier lobe B' });
-    const ionBall = part(pumpAsm, sphere(0.11, 16), { pal: 'green', tone: 'lit', pos: [0, 0, 0], name: 'Mineral ion (NO₃⁻ / K⁺)' });
+    const ionBall = part(pumpAsm, sphere(0.11, 16), { pal: 'green', tone: 'lit', pos: [0, 0, 0], name: 'Illustrative uncharged solute' });
 
-    const atpSiteAsm = asm('atp_site', root, { title: 'ATP phosphorylation domain', sub: 'Couples 30.5 kJ/mol to conformational flip' });
+    const atpSiteAsm = asm('atp_site', root, { title: 'ATP phosphorylation domain', sub: 'Illustrative coupling, not fixed work per ATP' });
     atpSiteAsm.position.set(42, 0.72, 0.25);
     const atpOrb = part(atpSiteAsm, sphere(0.14, 16), { pal: 'red', tone: 'lit', ex: [0, -0.4, 0.35], name: 'Bound ATP/Pi' });
     label('board', 'E₁/E₂ carrier pump', () => V(42, 2.35, 0));
@@ -200,12 +203,13 @@ export const CHAPTER = {
           const z = -0.6 + 1.2 * ((i * 0.27) % 1);
           pts.push([x, y, z]);
         }
-        soluteCloud.set(pts);
+        pts.forEach((xyz, i) => soluteCloud.set(i, xyz));
 
         // Single-file water motion in Aquaporin
-        const dir = s.wp.netPsiDrive >= 0 ? 1 : -1;
+        const netDirection = Math.sign(s.wp.netPsiDrive);
         h2oSpheres.forEach((m, idx) => {
-          const u = ((idx / 7) + dir * s.t * 0.25 + 10) % 1;
+          const dir = idx % 2 === 0 ? 1 : -1;
+          const u = ((idx / 7) + (dir + 0.25 * netDirection) * s.t * 0.25 + 10) % 1;
           m.position.y = (u - 0.5) * 1.65;
         });
 
@@ -218,7 +222,7 @@ export const CHAPTER = {
         const rock = s.pump.uphillPossible ? Math.sin(s.t * (1.2 + s.pump.vPump * 0.03)) * 0.32 : -0.25;
         jawL.rotation.z = rock;
         jawR.rotation.z = -rock;
-        ionBall.position.y = Math.sin(s.t * (1.2 + s.pump.vPump * 0.03)) * 0.48;
+        ionBall.position.y = s.pump.uphillPossible ? Math.sin(s.t * (1.2 + s.pump.vPump * 0.03)) * 0.48 : -0.48;
         atpOrb.visible = s.pump.uphillPossible;
       },
     };

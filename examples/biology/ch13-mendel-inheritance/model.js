@@ -7,7 +7,7 @@ export function mendelCrossAccount(crossType = 'f1_self', sampleN = 400) {
     return { crossType, pDominant: 0.5, pRecessive: 0.5, genoTT: 0, genoTt: 0.5, genott: 0.5, stdError: se, ratioLabel: '1 : 1 test cross' };
   }
   if (crossType === 'test_homo') {
-    return { crossType, pDominant: 1.0, pRecessive: 0.0, genoTT: 0, genoTt: 1.0, genott: 0, stdError: 0, ratioLabel: '100% dominant (TT verified)' };
+    return { crossType, pDominant: 1.0, pRecessive: 0.0, genoTT: 0, genoTt: 1.0, genott: 0, stdError: 0, ratioLabel: '100% dominant (known TT parent)' };
   }
   // Default F1 self: Tt x Tt -> 0.25 TT, 0.50 Tt, 0.25 tt (75% dominant : 25% recessive)
   const se = Math.sqrt((0.75 * 0.25) / n);
@@ -17,10 +17,10 @@ export function mendelCrossAccount(crossType = 'f1_self', sampleN = 400) {
 export function aboPhenotypeAccount(allele1 = 'IA', allele2 = 'IB') {
   const set = new Set([allele1, allele2]);
   const hasA = set.has('IA'), hasB = set.has('IB');
-  if (hasA && hasB) return { genotype: 'I^A I^B', bloodGroup: 'AB', antigens: 'Both A & B (Codominant)', antibodies: 'None (universal plasma recipient)' };
-  if (hasA) return { genotype: allele1 === allele2 ? 'I^A I^A' : 'I^A i', bloodGroup: 'A', antigens: 'Antigen A only', antibodies: 'Anti-B' };
-  if (hasB) return { genotype: allele1 === allele2 ? 'I^B I^B' : 'I^B i', bloodGroup: 'B', antigens: 'Antigen B only', antibodies: 'Anti-A' };
-  return { genotype: 'ii', bloodGroup: 'O', antigens: 'Neither A nor B (H-antigen)', antibodies: 'Anti-A & Anti-B' };
+  if (hasA && hasB) return { genotype: 'I^A I^B', bloodGroup: 'AB', antigens: 'Both A & B (Codominant)', antibodies: 'No anti-A or anti-B' };
+  if (hasA) return { genotype: allele1 === allele2 ? 'I^A I^A' : 'I^A I^O', bloodGroup: 'A', antigens: 'Antigen A only', antibodies: 'Anti-B' };
+  if (hasB) return { genotype: allele1 === allele2 ? 'I^B I^B' : 'I^B I^O', bloodGroup: 'B', antigens: 'Antigen B only', antibodies: 'Anti-A' };
+  return { genotype: 'I^O I^O', bloodGroup: 'O', antigens: 'Neither A nor B (H-antigen)', antibodies: 'Anti-A & Anti-B' };
 }
 
 export function xLinkedCarrierAccount(motherCarrier = true, fatherAffected = false) {

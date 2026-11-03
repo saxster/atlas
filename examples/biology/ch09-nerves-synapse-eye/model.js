@@ -4,15 +4,22 @@ export function actionPotentialWave(tMs = 2.0, stimUa = 12, ttxBlockPct = 0) {
   const thresholdReached = stimUa * gNaScale >= 8.0;
   if (!thresholdReached) {
     const subV = -70 + stimUa * gNaScale * 1.6 * Math.exp(-Math.max(0, tMs - 1) / 1.5);
-    return { tMs, vMv: subV, gNa: 0.5, gK: 1.0, fired: false, phase: 'Subthreshold (resting −70 mV)' };
+    return { tMs, vMv: subV, gNa: 0.5 * gNaScale, gK: 1.0, fired: false, phase: 'Subthreshold (resting −70 mV)' };
   }
   const u = Math.max(0, tMs - 1.0);
-  const depol = 110 * Math.pow(u / 0.8, 2) * Math.exp(-u / 0.55) * gNaScale;
-  const hyper = -18 * Math.pow(u / 2.2, 3) * Math.exp(-u / 1.1);
-  const vMv = Math.max(-82, Math.min(40, -70 + depol + hyper));
+  // Chosen schematic waveform, not an integration of Hodgkin–Huxley equations.
+  // A surviving action potential regenerates its amplitude; blockade changes whether it fires.
+  const knots = [[0,-70],[0.5,-55],[1,30],[2,-70],[3,-75],[5,-70]];
+  let vMv = -70;
+  for (let i=1; i<knots.length; i++) {
+    if (u >= knots[i-1][0] && u <= knots[i][0]) {
+      const [a,va]=knots[i-1], [b,vb]=knots[i];
+      vMv=va+(vb-va)*(u-a)/(b-a); break;
+    }
+  }
   const gNa = 35 * Math.pow(u / 0.7, 2) * Math.exp(-u / 0.48) * gNaScale;
   const gK = 1 + 24 * Math.pow(u / 1.8, 3) * Math.exp(-u / 0.95);
-  const phase = u < 0.9 ? 'Depolarisation (Na⁺ rush in)' : u < 2.2 ? 'Repolarisation (K⁺ rush out)' : u < 3.8 ? 'Refractory hyperpolarisation' : 'Resting (−70 mV)';
+  const phase = u < 1 ? 'Depolarisation (Na⁺ rush in)' : u < 2 ? 'Repolarisation (K⁺ rush out)' : u < 3.8 ? 'Refractory hyperpolarisation' : 'Resting (−70 mV)';
   return { tMs, vMv, gNa, gK, fired: true, phase };
 }
 
@@ -26,7 +33,7 @@ export function eyeOpticsAccount(objectDistM = 0.35, luxLevel = 50, retinaDistMm
 }
 
 export function auxinTropismAccount(lightAngleDeg = 30) {
-  const shadedFraction = 0.5 + 0.32 * Math.sin((lightAngleDeg * Math.PI) / 180);
+  const shadedFraction = 0.5 + 0.32 * Math.abs(Math.sin((lightAngleDeg * Math.PI) / 180));
   const bendAngleDeg = lightAngleDeg * 0.78;
   return { lightAngleDeg, shadedFraction, illuminatedFraction: 1 - shadedFraction, bendAngleDeg };
 }

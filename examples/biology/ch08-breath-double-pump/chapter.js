@@ -1,7 +1,7 @@
 import { SUBJECT } from '../subject.js';
 import {
   THREE, part, box, cyl, sphere, capsule, torus, rod,
-  prims, K, studioGrid, playTone, V
+  prims, K, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
@@ -9,9 +9,9 @@ export const PAGES = [
   {
     tab: 'Thorax & alveolus',
     fig: 'Figure 8.1–8.3 · 3D Thoracic ribcage, doming diaphragm & capillary-wrapped alveolus',
-    title: 'Boyle’s Law & Alveolar Exchange',
+    title: 'Ventilation & Alveolar Exchange',
     alt: '3D ribcage and diaphragm dome expanding thoracic volume alongside a thin-walled alveolus wrapped in pulmonary capillaries.',
-    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 10.0 },
     lit: 'diaphragm_dome',
     parts: ['ribcage_bell', 'diaphragm_dome', 'alveolus_sac'],
     look: { xray: 0.25, section: 0 },
@@ -21,17 +21,17 @@ export const PAGES = [
     fig: 'Figure 8.4–8.5 · Harvey’s one-way venous valves & figure-eight double circulation',
     title: 'Double Circulation & Venous Valves',
     alt: '3D figure-eight pulmonary (25 mmHg) and systemic (120 mmHg) circuits with one-way pocket valves inside a vein.',
-    cam: { target: [14, 1.35, 0], az: -22, el: 22, dist: 7.4 },
+    cam: { target: [14, 1.35, 0], az: -22, el: 22, dist: 10.0 },
     lit: 'double_figure8',
     parts: ['double_figure8', 'venous_valve'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: '3D Heart cutaway',
-    fig: 'Figure 8.6 & 8.9 · 3D Four-chambered heart cutaway: thick LV wall, septum & valves',
-    title: 'The Four-Chambered Double Pump',
-    alt: '3D cutaway of the human heart showing right and left atria, thick left ventricle wall, interventricular septum, and one-way valves.',
-    cam: { target: [28, 1.35, 0], az: 18, el: 20, dist: 7.2 },
+    fig: 'Figure 8.6 & 8.9 · Four hollow chamber symbols: thicker LV rim, septum & valve markers',
+    title: 'The Four-Chambered Double Pump Schematic',
+    alt: 'Schematic hollow chamber symbols for two atria and two ventricles, a thicker left ventricular rim, and valve and septum symbols; not a reconstructed anatomical heart.',
+    cam: { target: [28, 1.35, 0], az: 18, el: 20, dist: 10.2 },
     lit: 'left_ventricle',
     parts: ['right_ventricle', 'left_ventricle', 'septum_valves'],
     look: { xray: 0.22, section: 0 },
@@ -41,7 +41,7 @@ export const PAGES = [
     fig: 'Figure 8.7–8.8 · Artery vs vein vs capillary walls & antagonistic biceps/triceps lever',
     title: 'Blood Vessels & Antagonistic Biomechanics',
     alt: '3D cross-sections of thick-walled artery, valved vein, and single-cell capillary alongside an interactive 3D biceps/triceps forearm lever.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.6 },
+    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 12.6 },
     lit: 'arm_linkage',
     parts: ['vessel_trio', 'arm_linkage'],
     look: { xray: 0, section: 0 },
@@ -50,17 +50,17 @@ export const PAGES = [
 
 export const PLATES = {
   ribcage_bell: {
-    text: 'External intercostal muscles swing the ribs up and out while ciliated goblet epithelium sweeps trapped dust upward on the mucociliary escalator.',
+    text: 'External intercostal muscles swing the ribs up and out while goblet cells secrete mucus and separate ciliated cells sweep trapped dust upward on the mucociliary escalator.',
   },
   diaphragm_dome: {
-    text: 'Muscular diaphragm sheet: contracts downward to increase thoracic volume V, dropping alveolar pressure P below atmospheric (Boyle’s law P₁V₁ = P₂V₂) so air rushes in.',
+    text: 'Muscular diaphragm sheet: contracts downward to increase thoracic volume V, lowering alveolar pressure below atmospheric so air enters. The displayed ±1 mmHg pressure swing is illustrative for an open airway.',
     facts: s => [['V_lung', `${s.boyle.volL.toFixed(2)} L`], ['ΔP_alv', `${s.boyle.pAlveolarMmHg.toFixed(1)} mmHg`]],
   },
   alveolus_sac: {
-    text: '300 million moist, one-cell-thick (0.5 µm) squamous alveoli wrapped in a dense capillary basket—maximising Fick’s diffusion area A and minimising barrier thickness Δx.',
+    text: 'Hundreds of millions of adult alveoli with a thin (~0.5 µm) exchange barrier wrapped in a dense capillary basket—maximising Fick’s diffusion area A and minimising barrier thickness Δx.',
   },
   double_figure8: {
-    text: 'Mammalian figure-eight double circulation: right heart sends deoxygenated blood at gentle pressure (25/8 mmHg) to protect delicate alveolar capillaries; left heart re-boosts oxygenated blood to 120/80 mmHg for the whole body.',
+    text: 'Mammalian figure-eight double circulation: right heart supplies a lower-pressure lung circuit; left heart supplies a higher-pressure body circuit. Arterial pressures are about 25/8 and 120/80 mmHg; pressure falls before capillaries.',
   },
   venous_valve: {
     text: 'William Harvey’s 1628 proof: semilunar pocket valves inside veins open toward the heart and snap shut against backflow when pressed distally.',
@@ -73,13 +73,13 @@ export const PLATES = {
     facts: s => [['CO', `${s.dp.coLPerMin.toFixed(2)} L/min`], ['Sys / Pulm', `${s.dp.sysPeakMmHg} / ${s.dp.pulmPeakMmHg.toFixed(0)} mmHg`]],
   },
   septum_valves: {
-    text: 'Muscular interventricular septum separating oxygenated and deoxygenated blood, plus AV (tricuspid/mitral) and semilunar (pulmonary/aortic) valves preventing regurgitation.',
+    text: 'Septum and four valve symbols. A smaller septum marker represents a shunt in this connection diagram, not a measured defect shape. Hollow chamber rims and valve rings are schematic, not anatomical reconstructions.',
   },
   vessel_trio: {
     text: 'Artery (narrow lumen, thick elastic & smooth-muscle wall withstanding 120 mmHg surges), Vein (wide lumen, thin wall, one-way pocket valves), and Capillary (single endothelial cell wall for tissue exchange).',
   },
   arm_linkage: {
-    text: 'Antagonistic muscles pull only—never push: biceps brachii contracts (while triceps relaxes) across a 4 cm insertion lever arm to lift a load at 32 cm (8× force amplification by triceps/biceps).',
+    text: 'Antagonistic muscles pull only—never push: biceps brachii contracts (while triceps relaxes) across a 4 cm insertion lever arm to lift a load at 32 cm (the short insertion arm requires greater muscle force).',
     facts: s => [['Elbow θ', `${s.lev.elbowDeg}°`], ['Biceps pull', `${s.lev.bicepTensionN.toFixed(0)} N`]],
   },
 };
@@ -100,7 +100,7 @@ export const CHAPTER = {
     { id: 'vsdShuntPct', label: 'Septal defect shunt (VSD)', min: 0, max: 50, step: 5, value: 0, unit: '%' },
     { id: 'elbowDeg', label: 'Forearm elbow angle θ', min: 35, max: 145, step: 5, value: 85, unit: '°' },
   ],
-  sensor: { type: 'mic', label: 'Use mic breath sensor', param: 'heartRateBpm', min: 55, max: 155 },
+  // Microphone loudness cannot measure heart rate or breathing volume; no sensor mapping.
   lessons: {
     'ch08-airway-alveoli-3d': { page: 0 },
     'ch08-harvey-double-3d': { page: 1 },
@@ -122,18 +122,25 @@ export const CHAPTER = {
   },
   readout(s, page, pageIdx) {
     if (pageIdx === 0) {
-      return `<b>Thoracic Boyle’s Law</b> · Lung volume = <b>${s.boyle.volL.toFixed(2)} L</b> · Alveolar ΔP = <b>${s.boyle.pAlveolarMmHg >= 0 ? '+' : ''}${s.boyle.pAlveolarMmHg.toFixed(1)} mmHg</b> (${s.boyle.inspiring ? 'Inspiration' : 'Expiration'}).`;
+      return `<b>Open-air ventilation schematic</b> · Lung volume = <b>${s.boyle.volL.toFixed(2)} L</b> · Alveolar ΔP = <b>${s.boyle.pAlveolarMmHg >= 0 ? '+' : ''}${s.boyle.pAlveolarMmHg.toFixed(1)} mmHg</b> (${s.boyle.inspiring ? 'Inspiration' : 'Expiration'}).`;
     }
     if (pageIdx === 1) {
       return `<b>Double Circulation & Harvey’s Valves</b> · Pulmonary loop: 25/8 mmHg · Systemic loop: 120/80 mmHg · Venous pocket valves enforce one-way return.`;
     }
     if (pageIdx === 2) {
-      return `<b>HR = ${s.heartRateBpm} bpm · Cardiac output = ${s.dp.coLPerMin.toFixed(2)} L/min</b> · LV/RV wall ratio = 3:1 · VSD shunt = ${s.vsdShuntPct}% (Pulm peak = ${s.dp.pulmPeakMmHg.toFixed(0)} mmHg, O₂ sat = ${s.dp.systemicO2SatPct.toFixed(1)}%).`;
+      return `<b>HR = ${s.heartRateBpm} bpm · Cardiac output = ${s.dp.coLPerMin.toFixed(2)} L/min</b> · Hollow symbols: four chambers, LV rim ≈3× RV · VSD shunt = ${s.vsdShuntPct}% (chosen pulmonary peak ${s.dp.pulmPeakMmHg.toFixed(0)} mmHg; lung flow ${s.dp.pulmonaryFlowLPerMin.toFixed(2)} L/min; systemic O₂ ${s.dp.systemicO2SatPct.toFixed(1)}%).`;
     }
     return `<b>Vessel Mechanics & Antagonistic Lever</b> · Elbow θ = ${s.elbowDeg}° · Hand load = 40 N (at 32 cm) → Biceps tension = <b>${s.lev.bicepTensionN.toFixed(0)} N</b> (at 4 cm insertion).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
+    // Hollow chamber symbols make the cavity and wall distinct in solid and section views.
+    const chamberWall = (outer, inner, depth = 0.48) => {
+      const shape = new THREE.Shape(); shape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+      const hole = new THREE.Path(); hole.absarc(0, 0, inner, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 28 });
+    };
     const root = new THREE.Group();
     scene.add(root);
     studioGrid(root, { x0: -4, x1: 48 });
@@ -158,8 +165,8 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       part(alvAsm, torus(0.61, 0.045, 10, 24), { pal: i < 2 ? 'red' : 'blue', tone: 'hi', rot: [i * 0.78, i * 0.5, 0], ex: [0.35, 0, 0], name: 'Pulmonary capillary loop' });
     }
-    label('board', 'Thorax & diaphragm', () => V(-0.9, 2.4, 0));
-    label('board', 'Alveolus + capillaries', () => V(1.15, 2.25, 0));
+    label('board', 'Thorax & diaphragm', () => V(-0.9, 0.15, 0));
+    label('board', 'Alveolus + capillaries', () => V(1.15, 0.10, 0));
 
     // Station 1 (x = 14): Double Circulation Figure-8 & Venous Pocket Valve
     const fig8Asm = asm('double_figure8', root, { title: 'Figure-eight double circulation', sub: 'Pulmonary (top) & Systemic (bottom) loops' });
@@ -178,17 +185,25 @@ export const CHAPTER = {
     // Station 2 (x = 28): 3D Four-Chambered Heart Cutaway
     const rvAsm = asm('right_ventricle', root, { title: 'Right atrium & right ventricle', sub: 'Deoxygenated pump to lungs (25 mmHg)' });
     rvAsm.position.set(27.55, 1.35, 0);
-    const rvMesh = part(rvAsm, capsule(0.42, 0.65, 12, 20), { pal: 'blue', tone: 'hi', rot: [0, 0, 0.22], ex: [-0.55, 0, 0], name: 'Right heart chambers' });
+    const rvMesh = part(rvAsm, chamberWall(0.42, 0.373), { pal: 'blue', tone: 'hi', rot: [0, 0, 0.22], ex: [-0.55, 0, 0], name: 'Right heart chambers' });
+
+    part(rvAsm, chamberWall(0.25, 0.22, 0.28), { pal: 'blue', tone: 'hi', pos: [0, 0.86, 0], name: 'Right atrium cavity and thin wall' });
 
     const lvAsm = asm('left_ventricle', root, { title: 'Thick-walled left ventricle & atrium', sub: 'Oxygenated systemic pump (120 mmHg)' });
     lvAsm.position.set(28.35, 1.35, 0);
-    const lvMesh = part(lvAsm, capsule(0.54, 0.75, 12, 20), { pal: 'red', tone: 'lit', rot: [0, 0, -0.18], ex: [0.55, 0, 0], name: 'Thick-walled left ventricle' });
+    const lvMesh = part(lvAsm, chamberWall(0.54, 0.40), { pal: 'red', tone: 'lit', rot: [0, 0, -0.18], ex: [0.55, 0, 0], name: 'Thick-walled left ventricle' });
+
+    part(lvAsm, chamberWall(0.25, 0.22, 0.28), { pal: 'red', tone: 'hi', pos: [0, 0.96, 0], name: 'Left atrium cavity and thin wall' });
 
     const sepAsm = asm('septum_valves', root, { title: 'Interventricular septum & valves', sub: 'Separates O₂-rich and O₂-poor blood' });
     sepAsm.position.set(27.95, 1.35, 0);
     const sepWall = part(sepAsm, box(0.14, 1.25, 0.68, 0.03), { pal: 'ochre', tone: 'hi', ex: [0, 0.55, 0.35], name: 'Interventricular septum' });
-    label('board', 'RV (25 mmHg)', () => V(27.3, 2.4, 0));
-    label('board', 'Thick LV (120 mmHg)', () => V(28.6, 2.4, 0));
+    for (const x of [-0.4, 0.4]) {
+      part(sepAsm, torus(0.12, 0.035), { pal: 'ochre', tone: 'hi', pos: [x, 0.54, 0.55], name: x < 0 ? 'Tricuspid valve symbol' : 'Mitral valve symbol' });
+      part(sepAsm, torus(0.09, 0.03), { pal: 'ochre', tone: 'hi', pos: [x, 0.30, 0.60], name: x < 0 ? 'Pulmonary valve symbol' : 'Aortic valve symbol' });
+    }
+    label('board', 'RA → RV (25 mmHg peak)', () => V(26.9, 0.4, 0.2));
+    label('board', 'LA → LV (120 mmHg peak)', () => V(29.1, 0.4, 0.2));
 
     // Station 3 (x = 42): Artery/Vein/Capillary Trio + Antagonistic Arm Lever
     const vesAsm = asm('vessel_trio', root, { title: 'Artery, Vein & Capillary walls', sub: 'Cross-sectional wall-to-lumen ratios' });
@@ -228,7 +243,7 @@ export const CHAPTER = {
         const th = (s.elbowDeg * Math.PI) / 180;
         const elbow = V(0, 0, 0);
         const shoulder = V(0, 1.35, 0);
-        const insertPt = V(0.24 * Math.sin(th), 0.24 * Math.cos(th), 0);
+        const insertPt = V(0.15625 * Math.sin(th), 0.15625 * Math.cos(th), 0);
         const wrist = V(1.25 * Math.sin(th), 1.25 * Math.cos(th), 0);
         humerus.set(elbow, shoulder);
         radiusBone.set(elbow, wrist);

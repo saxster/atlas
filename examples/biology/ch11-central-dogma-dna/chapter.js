@@ -50,7 +50,7 @@ export const PAGES = [
 
 export const PLATES = {
   bdna_helix: {
-    text: 'Watson, Crick, Wilkins & Franklin’s B-DNA double helix: two antiparallel deoxyribose-phosphate backbones outside, purine–pyrimidine rungs inside (A=T with 2 H-bonds, G≡C with 3 H-bonds, 10 bp per 3.4 nm turn).',
+    text: 'Watson, Crick, Wilkins & Franklin’s B-DNA double helix: two antiparallel deoxyribose-phosphate backbones outside, purine–pyrimidine rungs inside (A=T with 2 H-bonds, G≡C with 3 H-bonds, about 10.5 bp per relaxed turn).',
     facts: s => [['G≡C share', `${(s.dna.gcFraction * 100).toFixed(0)}%`], ['H-bonds (30 bp)', `${s.dna.totalHBonds}`]],
   },
   photo51_cross: {
@@ -72,10 +72,10 @@ export const PLATES = {
     text: 'Cloverleaf / L-shaped transfer RNA (tRNA) adaptors: carry a 3-base anticodon at one end and the matching specific amino acid covalently attached at the 3′ CCA stem.',
   },
   hba_normal_rbc: {
-    text: 'Wild-type β-globin (codon 6 GAG → hydrophilic Glutamate) or silent mutation (CTT→CTC → still Leucine): haemoglobin tetramers stay soluble and red blood cells remain flexible biconcave discs.',
+    text: 'Wild-type β-globin (codon 6 GAG → hydrophilic Glutamate) or synonymous change (CTG→CTT, mRNA CUG→CUU, still Leucine): the amino-acid sequence is unchanged; normal RNA processing and function are assumed here.',
   },
   hbs_sickle_rbc: {
-    text: 'Vernon Ingram’s sickle-cell proof: a single A→T transversion (GAG→GUG) replaces charged Glu6 with hydrophobic Val6, creating a sticky patch on deoxy-HbS that polymerises into rigid 14-strand rods.',
+    text: 'Vernon Ingram’s sickle-cell proof: a single A→T transversion (DNA GAG→GTG; RNA GAG→GUG) replaces charged Glu6 with hydrophobic Val6, creating a sticky patch on deoxy-HbS that polymerises into rigid 14-strand rods.',
     facts: s => [['Codon 6', s.mut.codon6], ['Residue 6', s.mut.amino6], ['Cell shape', s.mut.rbcShape]],
   },
 };
@@ -97,10 +97,15 @@ export const CHAPTER = {
     { id: 'mutationMode', label: 'β-globin allele (0=WT, 1=HbS, 2=Silent)', min: 0, max: 2, step: 1, value: 1, unit: '' },
   ],
   lessons: {
-    'ch11-avery-photo51-3d': { page: 0, params: { gcPct: 55 } },
-    'ch11-khorana-transcription-3d': { page: 1, params: { codonStep: 3 } },
-    'ch11-ribosome-3d': { page: 2, params: { codonStep: 4 } },
-    'ch11-sickle-silent-3d': { page: 3, params: { mutationMode: 1 } },
+    'ch11-helix-3d-avery': { page: 0 },
+    'ch11-helix-3d': { page: 0 },
+    'ch11-ribosome-3d-codon': { page: 2 },
+    'ch11-transcription-3d': { page: 1 },
+    'ch11-ribosome-3d': { page: 2 },
+    'ch11-transcription-3d-ledger': { page: 1 },
+    'ch11-sickle-3d': { page: 3 },
+    'ch11-sickle-3d-outcomes': { page: 3 },
+    'ch11-ribosome-3d-silent': { page: 3, params: { mutationMode: 2 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 220 + s.codonStep * 65, dur: 0.055, type: 'triangle', gain: 0.03 });
@@ -134,8 +139,8 @@ export const CHAPTER = {
     const label = (cls, html, at, opts = {}) => labels.push({ cls, html, at, ...opts });
 
     // Station 0 (x = 0): 3D B-DNA Double Helix & Photo 51 Cross
-    const dnaAsm = asm('bdna_helix', root, { title: '3D Antiparallel B-DNA Double Helix', sub: '0.34 nm rise, 10 bp per 3.4 nm turn' });
-    const helixGroup = buildHelix(dnaAsm, { turns: 1.8, rungs: 16, radius: 0.58, height: 2.5, x0: -0.7, y0: 1.35, z0: 0 });
+    const dnaAsm = asm('bdna_helix', root, { title: '3D Antiparallel B-DNA Double Helix', sub: '0.34 nm rise, about 10.5 bp per relaxed turn' });
+    const helixGroup = buildHelix(dnaAsm, { turns: -16 / 10.5, rungs: 16, radius: 0.58, height: 2.5, x0: -0.7, y0: 1.35, z0: 0 });
 
     const p51Asm = asm('photo51_cross', root, { title: 'Franklin’s Photo 51 X-ray cross', sub: 'Helical Bessel diffraction pattern' });
     p51Asm.position.set(1.25, 1.35, 0);
@@ -187,12 +192,16 @@ export const CHAPTER = {
     hbaAsm.position.set(40.8, 1.35, 0);
     part(hbaAsm, rbcGeo(0.76, 0), { pal: 'red', tone: 'lit', rot: [0.45, 0.2, 0], ex: [-0.45, 0.3, 0], name: 'Biconcave HbA red blood cell' });
 
-    const hbsAsm = asm('hbs_sickle_rbc', root, { title: 'Mutant HbS (Val6) RBC & polymer rods', sub: 'GAG→GTG sticky hydrophobic patch' });
+    const hbsAsm = asm('hbs_sickle_rbc', root, { title: 'Selected beta-globin cell outcome', sub: 'WT/synonymous disc or HbS with deoxygenated fibres' });
     hbsAsm.position.set(43.0, 1.35, 0);
-    const mutRbc = part(hbsAsm, rbcGeo(0.78, 1.0), { pal: 'ochre', tone: 'lit', rot: [0.45, -0.2, 0], ex: [0.45, 0.3, 0], name: 'Mutant RBC' });
+    // Keep both geometries in the scene graph for normal resource cleanup;
+    // an affine scale cannot unbend an already sickled surface.
+    const normalRbc = part(hbsAsm, rbcGeo(0.78, 0), { pal: 'red', tone: 'lit', rot: [0.45, -0.2, 0], ex: [0.45, 0.3, 0], name: 'Selected normal RBC' });
+    const sickleRbc = part(hbsAsm, rbcGeo(0.78, 1), { pal: 'ochre', tone: 'lit', rot: [0.45, -0.2, 0], ex: [0.45, 0.3, 0], name: 'Selected sickled RBC' });
+    normalRbc.visible = false;
     const fibreRod = part(hbsAsm, cyl(0.08, 1.65, 14), { pal: 'ink', tone: 'lit', rot: [0, 0, 1.15], ex: [0.45, -0.35, 0.35], name: 'Polymerised HbS rod fibre' });
     label('board', 'Soluble HbA disc', () => V(40.8, 2.35, 0));
-    label('board', 'HbS sickle / Silent', () => V(43.0, 2.35, 0));
+    label('board', 'Selected cell outcome', () => V(43.0, 2.35, 0));
 
     return {
       labels,
@@ -202,7 +211,9 @@ export const CHAPTER = {
           m.visible = idx <= s.codonStep;
         });
         const isSickle = s.mut.polymerisesDeoxy;
-        mutRbc.scale.set(isSickle ? 1.25 : 1.0, 1.0, isSickle ? 0.68 : 1.0);
+        normalRbc.visible = !isSickle;
+        sickleRbc.visible = isSickle;
+        sickleRbc.scale.set(1.25, 1, 0.68);
         fibreRod.visible = isSickle;
       },
     };

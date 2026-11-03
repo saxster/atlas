@@ -1,6 +1,6 @@
 // Chapter 11 pure model: B-DNA Chargaff geometry & H-bonds, Khorana triplet codon translation, and beta-globin point mutations.
 export const BP_RISE_NM = 0.34;
-export const BP_PER_TURN = 10.0;
+export const BP_PER_TURN = 10.5;
 
 export function chargaffHelixAccount(gcFraction = 0.5, lengthBp = 30) {
   const gc = Math.max(0, Math.min(1, gcFraction));
@@ -17,7 +17,7 @@ export function betaGlobinMutationAccount(mode = 'wildtype') {
   if (mode === 'sickle') {
     return {
       mode,
-      dnaCoding: 'CAC GTG GAC TGA GGA CTC CTC',
+      dnaCoding: 'GTG CAC CTG ACT CCT GTG GAG',
       mrna: 'GUG CAC CUG ACU CCU GUG GAG',
       codon6: 'GUG',
       amino6: 'Val (hydrophobic)',
@@ -28,17 +28,17 @@ export function betaGlobinMutationAccount(mode = 'wildtype') {
   if (mode === 'silent') {
     return {
       mode,
-      dnaCoding: 'CAC GTG GAC TGA GGA GAA CTC',
-      mrna: 'GUG CAC CUG ACU CCU GAG GAG',
-      codon6: 'GAG (Leu CUC silent)',
-      amino6: 'Glu (hydrophilic, silent CUC=Leu unchanged)',
+      dnaCoding: 'GTG CAC CTT ACT CCT GAG GAG',
+      mrna: 'GUG CAC CUU ACU CCU GAG GAG',
+      codon6: 'GAG (unchanged; codon 3 CUU still specifies Leu)',
+      amino6: 'Glu (hydrophilic, synonymous codon 3 CUU=Leu unchanged)',
       polymerisesDeoxy: false,
       rbcShape: 'Normal biconcave disc (degenerate code)',
     };
   }
   return {
     mode: 'wildtype',
-    dnaCoding: 'CAC GTG GAC TGA GGA CTC CTC',
+    dnaCoding: 'GTG CAC CTG ACT CCT GAG GAG',
     mrna: 'GUG CAC CUG ACU CCU GAG GAG',
     codon6: 'GAG',
     amino6: 'Glu (hydrophilic)',

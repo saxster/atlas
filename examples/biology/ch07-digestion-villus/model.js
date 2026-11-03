@@ -12,8 +12,7 @@ export function bileEmulsificationAccount(splitFactor = 4, r0Um = 120) {
   const dropletRadiusUm = r0Um / k;
   const dropletCount = k * k * k;
   const areaMultiplier = k; // total volume constant => total area scales as R0 / r = k
-  const lipaseRelativeRate = 12 * areaMultiplier;
-  return { splitFactor: k, dropletRadiusUm, dropletCount, areaMultiplier, lipaseRelativeRate };
+  return { splitFactor: k, dropletRadiusUm, dropletCount, areaMultiplier };
 }
 
 export function villusAbsorptionFlux(microvilliFold = 20, portalFlowMlMin = 250) {
