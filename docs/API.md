@@ -158,7 +158,7 @@ Kym textbook `:::live` widget. It follows the book's light, sepia or dark theme 
 atlas repo, `node tools/vendor.mjs <book>/source/live/atlas <subject/chapter>` copies the figure and the engine files
 it needs into the book. The adapter turns on two `createStage` options that default off: `frameParts` (each frame
 the camera pulls back until every assembly the page names fits, and `board` labels are spread apart with leader
-lines; `framing.js`) and `retainContext` (destroy keeps the WebGL context, so the next figure reuses the canvas, since
+lines, kept below `labelTopInset()` px, default 24; `framing.js`) and `retainContext` (destroy keeps the WebGL context, so the next figure reuses the canvas, since
 WebKit is slow to free lost contexts).
 
 ## The `atlas` command

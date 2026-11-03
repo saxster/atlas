@@ -260,6 +260,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
         theme: readTheme(stage),
         dprCap: 2,
         frameParts: true,
+        labelTopInset: () => title.offsetHeight || 24,
         retainContext: true,
       });
       S.clock = clock;

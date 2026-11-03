@@ -147,7 +147,7 @@ export function draggable(target, opts = {}) {
 // chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), forceLook?(selected, look), clock0? }
 // opts: { reduced, touch, theme (see parts.js applyTheme), dprCap }
 // hooks (assign after creating): onHover(key | null), onSelect(key | null), onPointerDown(), onDrag(spec, pt)
-export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, dprCap, frameParts = false, retainContext = false } = {}) {
+export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
   const { PAGES } = chapter;
   const N = PAGES.length;
   const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme, retainContext });
@@ -235,8 +235,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     if (frameParts) {
       const rootBox = labelsEl.getBoundingClientRect();
       const measured = shown.map(([L]) => { const b = L.el.getBoundingClientRect();return { x: b.left - rootBox.left, y: b.top - rootBox.top, width: b.width, height: b.height, fixed: !L.el.classList.contains('board') }; });
-      const titleHeight = labelsEl.parentElement?.querySelector('.atlas-title')?.offsetHeight || 24;
-      const offsets = separateLabels(measured, h, titleHeight + 20);
+      const offsets = separateLabels(measured, h, labelTopInset() + 20);
       shown.forEach(([L, x, y, ax, ay], index) => {
         const placedY = y + offsets[index];L.el.style.top = `${placedY}px`;
         if (L.line) {
