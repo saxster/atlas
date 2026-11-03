@@ -38,6 +38,8 @@ const CSS = `
 `;
 let styled = false;
 let activeAtlasStage = null;
+// Reuse one canvas/context: WebKit can retain explicitly lost contexts until GC.
+let idleCanvas = null;
 const style = () => {
   if (styled) return;
   styled = true;
@@ -83,7 +85,10 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   };
   updateAria();
 
-  let canvas = document.createElement('canvas');
+  const cachedCanvas = idleCanvas;idleCanvas = null;
+  const cachedContext = cachedCanvas?.getContext('webgl2');
+  let canvas = cachedContext && !cachedContext.isContextLost() ? cachedCanvas : document.createElement('canvas');
+  canvas.classList.remove('pointing', 'draggable-hover', 'dragging');
   canvas.dataset.logicalWidth = '680';
   canvas.style.aspectRatio = '680 / 420';
   const labels = document.createElement('div');
@@ -92,7 +97,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   labels.className = 'atlas-labels';
   title.className = 'atlas-title';
   badge.className = 'atlas-badge';
-  title.textContent = P.fig;
+  title.textContent = P.tab || P.fig;
   badge.textContent = '3D Atlas · Drag to orbit · Click part to explode';
   wrap.append(canvas, labels, title, badge);
   stage.appendChild(wrap);
@@ -111,6 +116,8 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   let sonifyOn = false;
   let lastSonifyAt = 0;
   let sensorCleanup = null;
+  let destroyed = false;
+  const canvasWakes = [];
   let sliderInputs = new Map();
 
   const describe = k => {
@@ -163,22 +170,44 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
         chapter.drawFallback2D(ctx, w, h, state, page, { bg, ink, muted, accent, warm, cutMode });
       } else {
         // Generic schematic 2D orthographic fallback with parts & live state
+        const writeLines = (text, x, y, width, maxLines, lineHeight) => {
+          if (maxLines < 1 || width <= 0) return 0;
+          const rows = [];let line = '';
+          for (const word of String(text).trim().split(/\s+/)) {
+            const joined = line ? line + ' ' + word : word;
+            if (ctx.measureText(joined).width <= width) { line = joined;continue; }
+            if (line) { rows.push(line);line = ''; }
+            for (const letter of word) {
+              if (line && ctx.measureText(line + letter).width > width) { rows.push(line);line = letter; }
+              else line += letter;
+            }
+          }
+          if (line) rows.push(line);
+          if (rows.length > maxLines) {
+            rows.length = maxLines;let last = rows[maxLines - 1];
+            while (last && ctx.measureText(last + '…').width > width) last = [...last].slice(0, -1).join('');
+            rows[maxLines - 1] = last.trimEnd() + '…';
+          }
+          rows.forEach((row, index) => ctx.fillText(row, x, y + index * lineHeight));
+          return rows.length;
+        };
         ctx.strokeStyle = muted;
         ctx.lineWidth = 1;
         ctx.strokeRect(16, 16, w - 32, h - 32);
         ctx.fillStyle = ink;
         ctx.font = 'bold 15px system-ui, sans-serif';
-        ctx.fillText(P.title || P.fig || 'Atlas 3D View (2D Schematic Fallback)', 28, 44);
+        writeLines(P.title || P.fig || 'Interactive schematic', 28, 50, w - 56, 2, 17);
         ctx.fillStyle = muted;
         ctx.font = '13px Georgia, serif';
         const bodyTxt = (P.body?.[0] || '').replace(/<[^>]+>/g, '');
-        ctx.fillText(bodyTxt.slice(0, 88) + (bodyTxt.length > 88 ? '…' : ''), 28, 68);
+        writeLines(bodyTxt, 28, 86, w - 56, 1, 15);
         const parts = P.parts || (P.lit ? [P.lit] : Object.keys(chapter.PLATES || {}).slice(0, 4));
+        const rows = Math.ceil(parts.length / 2), startY = 104, footerY = h - 60;
+        const bh = Math.min(100, (footerY - 18 - startY - Math.max(0, rows - 1) * 10) / Math.max(1, rows));
         parts.forEach((pk, idx) => {
           const bx = 28 + (idx % 2) * ((w - 72) / 2);
-          const by = 92 + Math.floor(idx / 2) * 86;
+          const by = startY + Math.floor(idx / 2) * (bh + 10);
           const bw = (w - 84) / 2;
-          const bh = 72;
           const active = S?.selected === pk;
           ctx.fillStyle = active ? accent + '22' : bg;
           ctx.strokeStyle = active ? warm : accent;
@@ -189,17 +218,18 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
           ctx.stroke();
           ctx.fillStyle = ink;
           ctx.font = 'bold 13px system-ui, sans-serif';
-          ctx.fillText(pk.replace(/_/g, ' ').toUpperCase(), bx + 12, by + 24);
+          const headingY = Math.min(20, bh - 8), headingLines = writeLines(pk.replace(/_/g, ' ').toUpperCase(), bx + 12, by + headingY, bw - 24, Math.max(1, Math.min(2, Math.floor((bh - 10) / 14))), 14);
           const pText = (chapter.PLATES?.[pk]?.text || '').replace(/<[^>]+>/g, '');
           ctx.fillStyle = muted;
           ctx.font = '12px system-ui, sans-serif';
-          ctx.fillText(pText.slice(0, 46) + (pText.length > 46 ? '…' : ''), bx + 12, by + 46);
+          const descriptionY = headingY + headingLines * 14 + 6;
+          writeLines(pText, bx + 12, by + descriptionY, bw - 24, Math.min(4, Math.max(0, Math.floor((bh - 9 - descriptionY) / 13) + 1)), 13);
         });
         // Live state bar at bottom
-        const readPlain = (chapter.readout ? chapter.readout(state, P) : '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const readPlain = (opts.readout ? opts.readout(state, P, page) : chapter.readout(state, P, page)).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         ctx.fillStyle = accent;
         ctx.font = '12px ui-monospace, monospace';
-        ctx.fillText(readPlain.slice(0, 96), 28, h - 30);
+        writeLines(readPlain, 28, footerY, w - 56, 3, 14);
       }
       ctx.restore();
     }
@@ -218,15 +248,10 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   }
 
   function build() {
+    if (destroyed) return;
     if (S && !fallback2D) {
       clock = S.clock;
       S.destroy();
-      const fresh = document.createElement('canvas');
-      fresh.dataset.logicalWidth = '680';
-      fresh.style.aspectRatio = '680 / 420';
-      canvas.replaceWith(fresh);
-      canvas = fresh;
-      listen();
     }
     try {
       S = createStage(canvas, labels, chapter, {
@@ -234,6 +259,8 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
         touch: matchMedia('(pointer: coarse)').matches,
         theme: readTheme(stage),
         dprCap: 2,
+        frameParts: true,
+        retainContext: true,
       });
       S.clock = clock;
       S.hooks.onPointerDown = kick;
@@ -257,6 +284,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   }
 
   function draw(dt, running) {
+    if (destroyed) return;
     if (fallback2D) {
       drawFallback(dt, running);
       return;
@@ -304,11 +332,13 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
 
   // Our own frames for a moment after a touch, page switch, slider change, or cutaway change when the book is paused
   function kick() {
+    if (destroyed) return;
     kickUntil = performance.now() + 1600;
     if (!raf) raf = requestAnimationFrame(own);
   }
   let ownLast = 0;
   function own(ts) {
+    if (destroyed) return;
     raf = 0;
     const dt = ownLast ? Math.min((ts - ownLast) / 1000, 0.05) : 1 / 60;
     ownLast = ts;
@@ -322,11 +352,24 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
 
   function listen() {
     for (const ev of ['pointermove', 'wheel']) {
-      canvas.addEventListener(ev, e => { if (e.buttons || ev === 'wheel') kick(); }, { passive: true });
+      const target = canvas, wake = e => { if (e.buttons || ev === 'wheel') kick(); };
+      target.addEventListener(ev, wake, { passive: true });
+      canvasWakes.push(() => target.removeEventListener(ev, wake));
     }
   }
   listen();
   build();
+
+  // The host owns paused drawing. Engine resize updates render targets, which
+  // clears the canvas; schedule still frames after layout or visibility changes.
+  // own() calls draw(dt, false), so this never advances the model clock.
+  const resizeObs = new ResizeObserver(kick);
+  resizeObs.observe(wrap);
+  const visibilityObs = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) kick();
+  });
+  visibilityObs.observe(wrap);
+  window.addEventListener('resize', kick, { passive: true });
 
   const themeObs = new MutationObserver(() => {
     build();
@@ -360,7 +403,7 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   function setPage(idx) {
     page = Math.min(Math.max(idx | 0, 0), chapter.PAGES.length - 1);
     P = chapter.PAGES[page];
-    title.textContent = P.fig;
+    title.textContent = P.tab || P.fig;
     updateAria();
     pageButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(i === page)));
     if (S && S.selected) S.select(null);
@@ -682,14 +725,24 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
       else kick();
     },
     destroy() {
+      if (destroyed) return;destroyed = true;
       if (activeAtlasStage === stage) activeAtlasStage = null;
       cancelAnimationFrame(raf);
+      canvasWakes.forEach(remove => remove());
       if (sensorCleanup) {
         try { sensorCleanup(); } catch (_) { /* ignore */ }
       }
       themeObs.disconnect();
-      if (S) {
-        S.destroy();
+      resizeObs.disconnect();
+      visibilityObs.disconnect();
+      window.removeEventListener('resize', kick);
+      if (S) S.destroy();
+      if (!fallback2D) {
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        if (gl && !gl.isContextLost()) {
+          if (!idleCanvas) idleCanvas = canvas;
+          else gl.getExtension('WEBGL_lose_context')?.loseContext();
+        }
       }
       wrap.remove();
     },
