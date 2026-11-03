@@ -366,8 +366,8 @@ export function particles(parent, count, { radius = 0.05, color = 'red', axes, n
   const m4 = new THREE.Matrix4(), p = V();
   return {
     object, labels: [],
-    set(i, xyz) { point(to, xyz, p); object.setMatrixAt(i, m4.makeTranslation(p.x, p.y, p.z)); object.instanceMatrix.needsUpdate = true; object.boundingSphere = null; },
-    show(n) { object.count = Math.max(0, Math.min(count, n)); },
+    set(i, xyz) { point(to, xyz, p); object.setMatrixAt(i, m4.makeTranslation(p.x, p.y, p.z)); object.instanceMatrix.needsUpdate = true; object.boundingSphere = null; object.boundingBox = null; },
+    show(n) { object.count = Math.max(0, Math.min(count, n)); object.boundingSphere = null; object.boundingBox = null; },
   };
 }
 

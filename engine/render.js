@@ -111,12 +111,13 @@ export function createAssemblyController(ASM = {}) {
 }
 
 // theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
-export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null } = {}) {
+export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null, retainContext = false } = {}) {
   const th = applyTheme(theme);
   // themed: the scene is drawn into a linear buffer and OutputPass encodes it to sRGB once, so the clear colour goes in
   // already linear or the paper comes out lifted (kym_physics found dark paper turning grey)
   if (th) bg = new THREE.Color(th.sheet).convertSRGBToLinear();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
+  renderer.resetState();
   renderer.setClearColor(bg);
   renderer.localClippingEnabled = true;
   const scene = new THREE.Scene();
@@ -289,10 +290,11 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
 
   // free the GPU: a book page may open and close many figures, and browsers cap live WebGL contexts
   function dispose() {
-    scene.traverse(o => { if (o.geometry) o.geometry.dispose(); const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach(x => x.dispose()); });
+    scene.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.geometry) o.geometry.dispose(); const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach(x => x.dispose()); });
     for (const m of nmats.values()) m.dispose();
     normalRT.dispose(); colorRT.dispose(); composer.dispose?.();
-    renderer.dispose(); renderer.forceContextLoss();
+    renderer.setRenderTarget(null);renderer.dispose();
+    if (!retainContext && !renderer.getContext().isContextLost()) renderer.forceContextLoss();
   }
 
   return { THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, setCutaway, setXray, setIsolate, setExplode, warm, pick, stepExplode, placeCamera, distFor, toScreen, theme: th, dispose };

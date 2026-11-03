@@ -156,7 +156,10 @@ mountFigure(document.querySelector('#cell'), CHAPTER, { page: 2, height: 420 });
 `mountAtlas(stage, params, api, chapter, { page, height, readout })` (`adapters/kym-live.js`) mounts a book page as a
 Kym textbook `:::live` widget. It follows the book's light, sepia or dark theme and stays still until asked. In the
 atlas repo, `node tools/vendor.mjs <book>/source/live/atlas <subject/chapter>` copies the figure and the engine files
-it needs into the book.
+it needs into the book. The adapter turns on two `createStage` options that default off: `frameParts` (each frame
+the camera pulls back until every assembly the page names fits, and `board` labels are spread apart with leader
+lines; `framing.js`) and `retainContext` (destroy keeps the WebGL context, so the next figure reuses the canvas, since
+WebKit is slow to free lost contexts).
 
 ## The `atlas` command
 

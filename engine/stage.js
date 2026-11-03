@@ -3,6 +3,7 @@
 // drag turns the camera, shift-drag pans. The book (book.js) puts pages, text and controls around it; a textbook's
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
 import { createEngine } from './render.js';
+import { frameAssemblies, separateLabels } from './framing.js';
 import { themeScene } from './parts.js';
 import {
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
@@ -146,10 +147,10 @@ export function draggable(target, opts = {}) {
 // chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), forceLook?(selected, look), clock0? }
 // opts: { reduced, touch, theme (see parts.js applyTheme), dprCap }
 // hooks (assign after creating): onHover(key | null), onSelect(key | null), onPointerDown(), onDrag(spec, pt)
-export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, dprCap } = {}) {
+export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, dprCap, frameParts = false, retainContext = false } = {}) {
   const { PAGES } = chapter;
   const N = PAGES.length;
-  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme });
+  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme, retainContext });
   E.draggable = draggable;
   const W = chapter.buildWorld(E);
   themeScene(E.scene, E.theme);                 // a host theme: the chapter's greys become this paper's ink
@@ -180,7 +181,8 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     const textFn = typeof L.text === 'function' ? L.text : null;
     const el = document.createElement('div'); el.className = 'lbl ' + L.cls; el.innerHTML = initHtml; labelsEl.appendChild(el);
     let line = null, dot = null;
-    if (L.leader) {
+    const autoLeader = frameParts && L.cls.split(/\s+/).includes('board') && !L.leader;
+    if (L.leader || autoLeader) {
       line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
       line.setAttribute('fill', 'none');
       line.setAttribute('stroke', 'var(--muted, #86868c)');
@@ -191,7 +193,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       dot.setAttribute('fill', 'var(--muted, #86868c)');
       leaderSvg.appendChild(dot);
     }
-    return { el, line, dot, leader: L.leader || null, anchor: L.anchor || null, at: L.at, text: textFn, last: initHtml };   // text: optional () => html for live values
+    return { el, line, dot, autoLeader, leader: L.leader || null, anchor: L.anchor || null, at: L.at, text: textFn, last: initHtml };   // text: optional () => html for live values
   });
   function placeLabels(w, h) {
     const shown = [];
@@ -221,7 +223,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
         }
       }
       if (L.text) { const h = L.text(); if (h !== L.last) { L.el.innerHTML = h; L.last = h; } }
-      if (on) shown.push([L, x]);
+      if (on) shown.push([L, x, y, ax, ay]);
     }
     // a label whose anchor is near an edge slides in, so its words stay inside the figure (one layout read for all)
     if (!shown.length) return;
@@ -230,6 +232,23 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       const over = boxes[i].right - left - (w - 6), under = 6 - (boxes[i].left - left);
       if (over > 0) L.el.style.left = `${x - over}px`; else if (under > 0) L.el.style.left = `${x + under}px`;
     });
+    if (frameParts) {
+      const rootBox = labelsEl.getBoundingClientRect();
+      const measured = shown.map(([L]) => { const b = L.el.getBoundingClientRect();return { x: b.left - rootBox.left, y: b.top - rootBox.top, width: b.width, height: b.height, fixed: !L.el.classList.contains('board') }; });
+      const titleHeight = labelsEl.parentElement?.querySelector('.atlas-title')?.offsetHeight || 24;
+      const offsets = separateLabels(measured, h, titleHeight + 20);
+      shown.forEach(([L, x, y, ax, ay], index) => {
+        const placedY = y + offsets[index];L.el.style.top = `${placedY}px`;
+        if (L.line) {
+          const placedX = parseFloat(L.el.style.left), elbowX = ax + (placedX - ax) * .65;
+          L.line.setAttribute('points', `${ax},${ay} ${elbowX},${placedY} ${placedX},${placedY}`);
+          if (L.autoLeader) {
+            const shifted = Math.abs(placedX - ax) > 1 || Math.abs(placedY - ay) > 1;
+            L.line.style.opacity = shifted ? .65 : 0;L.dot.style.opacity = shifted ? .8 : 0;
+          }
+        }
+      });
+    }
   }
 
   // ---------- hover / click / direct 3D drag ----------
@@ -471,6 +490,10 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     W.update(state, look);
     E.stepExplode(dt);
 
+    if (frameParts) {
+      const keys = selected ? [selected] : PAGES[page].parts || [PAGES[page].lit];
+      E.placeCamera(frameAssemblies(E.THREE, E.camera, cam, keys.map(key => E.ASM[key]), { pan: orbit.pan }));
+    }
     hoverAt(false);
     E.render();
     placeLabels(rect.width, rect.height);
