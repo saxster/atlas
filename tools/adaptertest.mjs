@@ -46,7 +46,7 @@ for (let i = 1; i <= 12; i++) await p.mouse.move(box.x + box.width / 2 - i * 12,
 await p.mouse.up(); await wait(500);
 check('dragging while paused turns the camera', before !== await shot());
 check('…and leaves the physics where it stopped', r3 === await readout());
-const partBtn = await p.$('button.live-ctl:not(.live-play)');
+const partBtn = await p.$('.atlas-parts button.live-ctl:first-child');
 check('each part of the page is a button', !!partBtn, partBtn ? await partBtn.evaluate(b => b.textContent) : '');
 if (partBtn) {
   await partBtn.click(); await wait(900);
