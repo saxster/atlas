@@ -9,7 +9,14 @@ import { part, box, gearGeo, gear, rack, spring, TONE } from './parts.js';
 import { createAssemblyController } from './render.js';
 import { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
 import { draggable } from './stage.js';
-import { TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease, phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases, hash, rand as motionRand, rrange, loopNoise, planArea, planBounds, planPose, logFovLerp, glide } from './motion.js';
+import {
+  TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
+  phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases,
+  hash, rand as motionRand, rrange, loopNoise,
+  planArea, planBounds, planPose, logFovLerp, glide,
+  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
+} from './motion.js';
 import { auditDeliverable } from './mesh-audit.js';
 import {
   RectSolid,
@@ -309,6 +316,39 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && smooth(0, 1, 0.5) === 0.5 && smoothstep(2, 4, 3) === 0.5 && ease(0.5) === 0.5
     && near(phase(1.5, 6), 0.25, 1e-12) && win(0.5, 0, 1) === 0.5 && near(win(0.25, 0, 1, u => u * u), 0.0625, 1e-12)
     && hash(42) === hash(42) && motionRand(7) >= 0 && motionRand(7) < 1 && rrange(7, 10, 20) >= 10 && rrange(7, 10, 20) <= 20);
+
+  const bz = cubicBezier(0.16, 1, 0.3, 1);
+  const bzAlias = bez(0.34, 1.56, 0.64, 1);
+  const bzOk = bz(0) === 0 && bz(1) === 1 && bz(0.5) > 0.8 && bzAlias(0) === 0 && bzAlias(1) === 1 && bzAlias(0.6) > 1.01;
+  const stgOk = stagger(0, 0, 4, 0.5) === 0 && stagger(1, 3, 4, 0.5) === 1
+    && stagger(0.3, 0, 4, 0.5) > stagger(0.3, 2, 4, 0.5) && stagger(0.5, 0, 1) === ease(0.5);
+  const dwOk = dwell(0) === 0 && dwell(0.5) === 1 && dwell(1) === 0 && dwell(0.12) > 0 && dwell(0.12) < 1;
+  const ppOk = pingPong(0) === 0 && near(pingPong(0.5, 0.2), 1, 1e-9) && pingPong(1) === 0;
+  const antDip = Math.min(...Array.from({ length: 20 }, (_, i) => anticipate(i / 20)));
+  const antPeak = Math.max(...Array.from({ length: 40 }, (_, i) => anticipate(i / 40, 0.14, 0.28, 1.1)));
+  const antOk = anticipate(0) === 0 && near(anticipate(1), 1, 1e-6) && antDip < -0.05 && antPeak > 1.02;
+  const ftPeak = Math.max(...Array.from({ length: 40 }, (_, i) => Math.abs(followThrough(i / 40))));
+  const ftOk = followThrough(0) === 0 && followThrough(1) === 0 && ftPeak > 0.05;
+  const pbOk = near(pulseBeat(0, 2, 4), 0, 1e-9) && near(pulseBeat(0.5, 1, 4), 1, 1e-9) && pulseBeat(0.25, 2, 4) > 0.7 && near(pulseBeat(1, 2, 4), 0, 1e-9);
+  const ptOk = posterizeTime(0, 4) === 0 && posterizeTime(0.49, 4) === 0.25 && posterizeTime(1, 4) === 1;
+  const basePose = { target: [0, 1, 0], dist: 10, az: 20, el: 15, fov: 28 };
+  const dl0 = camDolly(basePose, 0, 0.6), dl1 = camDolly(basePose, 1, 0.6);
+  const zm0 = camZoom(basePose, 0, 0.5), zm1 = camZoom(basePose, 1, 0.5);
+  const tanHalf = fov => Math.tan((fov * Math.PI) / 360);
+  const ob1 = camOrbit(basePose, 1, 45, 10);
+  const cr1 = camCrane(basePose, 1, { dY: 2, dEl: 12, dDist: 1 });
+  const dz0 = camDollyZoom(basePose, 0, 50), dzMid = camDollyZoom(basePose, 0.5, 50), dz1 = camDollyZoom(basePose, 1, 50);
+  const halfHeight = p => p.dist * tanHalf(p.fov);
+  const dzHeightOk = near(halfHeight(dz0), halfHeight(dzMid), 1e-9) && near(halfHeight(dz0), halfHeight(dz1), 1e-9) && near(dz1.fov, 50, 1e-9);
+  const hhA = camHandheld(basePose, 1.37, { period: 8, seed: 3 }), hhB = camHandheld(basePose, 9.37, { period: 8, seed: 3 });
+  const hhPeriodic = near(hhA.az, hhB.az, 1e-12) && near(hhA.el, hhB.el, 1e-12) && near(hhA.target[1], hhB.target[1], 1e-12);
+  C.check('motion.js choreography & camera moves: cubicBezier, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime & cam* helpers are pure and exact',
+    bzOk && stgOk && dwOk && ppOk && antOk && ftOk && pbOk && ptOk
+    && near(dl0.dist, 10, 1e-9) && near(dl1.dist, 6, 1e-9)
+    && near(zm0.fov, 28, 1e-9) && near(tanHalf(zm1.fov), 0.5 * tanHalf(zm0.fov), 1e-9)
+    && near(ob1.az, 65, 1e-9) && near(ob1.el, 25, 1e-9)
+    && near(cr1.target[1], 3, 1e-9) && near(cr1.el, 27, 1e-9) && near(cr1.dist, 11, 1e-9)
+    && dzHeightOk && hhPeriodic);
 }
 { // 3D Deliverable Mesh Audit (engine/mesh-audit.js)
   const cleanRoot = new THREE.Group();
@@ -496,5 +536,22 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && lay.layerMeshes.length === 2 && lay.sheet.measurements[0].text === '300 µm'
     && cont.surfaceMesh.isMesh && cont.constraintMesh.isMesh
     && stemAudit.pass, stemAudit.errors.join('; '));
+}
+{ // Dynamic part.position mutation preserved across stepExplode / setExplode / resetExplode
+  const ctl = createAssemblyController({});
+  const root = new THREE.Group();
+  const g = ctl.asm('dyn', root, { title: 'Dynamic assembly' });
+  const m = part(g, box(0.2, 0.2, 0.2), { pos: [1, 0.5, 0], ex: [0.4, 0.3, 0], name: 'Moving part' });
+  m.position.y = 1.25;
+  ctl.stepExplode(0.016);
+  const unexplodedOk = near(m.position.x, 1, 1e-6) && near(m.position.y, 1.25, 1e-6);
+  ctl.setExplode(1, ['dyn'], true);
+  const explodedOk = near(m.position.x, 1.4, 1e-6) && near(m.position.y, 1.55, 1e-6);
+  ctl.resetExplode();
+  m.position.y = 0.8;
+  ctl.stepExplode(0.016);
+  const updatedExplodedOk = near(m.position.x, 1.4, 1e-6) && near(m.position.y, 1.1, 1e-6);
+  C.check('stepExplode & resetExplode preserve dynamic part.position updates alongside explode offsets',
+    unexplodedOk && explodedOk && updatedExplodedOk);
 }
 C.report();

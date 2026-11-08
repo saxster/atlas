@@ -356,3 +356,177 @@ export function glide(keyframes = []) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Motion Prompt choreography & 3D cinematography primitives
+// Ported from Motion Prompt (#002, #027-#034, #121-#128, #169) · MIT License (c) 2026 Shohei Ohtaki
+// https://showheyohtaki.github.io/motion-prompt/
+// Adapted for @saxster/atlas pure stateless u in [0, 1] / time t and 3D { target, az, el, fov, dist } poses.
+// ---------------------------------------------------------------------------
+
+// Arbitrary CSS cubic-bezier(x1, y1, x2, y2) solver via 40-step bisection.
+// Pinned to exact 0 at u <= 0 and exact 1 at u >= 1 so bisection residuals (~1e-12) never fire early.
+export function cubicBezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sampleX = t => ((ax * t + bx) * t + cx) * t;
+  const sampleY = t => ((ay * t + by) * t + cy) * t;
+  return u => {
+    if (u <= 0) return 0;
+    if (u >= 1) return 1;
+    let lo = 0, hi = 1, t = u;
+    for (let i = 0; i < 40; i++) {
+      if (sampleX(t) < u) lo = t;
+      else hi = t;
+      t = 0.5 * (lo + hi);
+    }
+    return sampleY(t);
+  };
+}
+export const bez = cubicBezier;
+
+// #002 Stagger: maps overall progress u in [0, 1] to item `index` of `count` items.
+// `overlap` in [0, 0.95] controls how much adjacent items overlap in time (0 = sequential, 0.5 = half-overlap).
+// Guaranteed 0 at u <= 0 and 1 at u >= 1 for every item.
+export function stagger(u, index, count, overlap = 0.5, fn = ease) {
+  const n = Math.max(1, count | 0);
+  const i = clamp(index | 0, 0, n - 1);
+  if (u <= 0) return 0;
+  if (u >= 1) return 1;
+  if (n === 1) return fn ? fn(clamp01(u)) : clamp01(u);
+  const ov = clamp(overlap, 0, 0.95);
+  const step = (1 - ov) / (n - 1 + (1 - ov));
+  const dur = 1 - step * (n - 1);
+  const t0 = i * step;
+  const local = clamp01((u - t0) / Math.max(1e-9, dur));
+  return fn ? fn(local) : local;
+}
+
+// Enter -> Hold -> Exit envelope over u in [0, 1]: ramps 0 -> 1 over [0, inEnd], holds 1 on [inEnd, outStart],
+// and ramps 1 -> 0 over [outStart, 1]. Pinned to 0 at u <= 0 and u >= 1.
+export function dwell(u, inEnd = 0.25, outStart = 0.75, fnIn = eases.outCubic, fnOut = eases.inCubic) {
+  if (u <= 0 || u >= 1) return 0;
+  const a = clamp(inEnd, 1e-6, 0.999);
+  const b = clamp(outStart, a, 0.9999);
+  if (u < a) return win(u, 0, a, fnIn);
+  if (u <= b) return 1;
+  return 1 - win(u, b, 1, fnOut);
+}
+
+// #127 Ping-pong loop: symmetric 0 -> 1 -> 0 out-and-back excursion over u in [0, 1] with optional peak hold.
+export function pingPong(u, hold = 0, fn = ease) {
+  const h = clamp(hold, 0, 0.9);
+  const half = 0.5 * (1 - h);
+  return dwell(u, half, half + h, fn, fn);
+}
+
+// #121 Anticipation: pulls back to -pullback over [0, split] to wind up, then launches to 1 over [split, 1]
+// with slight overshoot. Pinned to 0 at u <= 0 and 1 at u >= 1.
+export function anticipate(u, pullback = 0.14, split = 0.28, overshoot = 1.1) {
+  if (u <= 0) return 0;
+  if (u >= 1) return 1;
+  const s = clamp(split, 0.05, 0.85);
+  if (u < s) {
+    const w = u / s;
+    // Smooth wind-up curve that reaches -pullback at u = s with zero velocity
+    return -pullback * Math.sin(w * (Math.PI / 2)) ** 2;
+  }
+  const launchU = (u - s) / (1 - s);
+  return lerp(-pullback, 1, eases.outBack(launchU, overshoot));
+}
+
+// #122 Follow-through: secondary-motion whip/lag offset for an appendage, label, or indicator that trails behind
+// a primary move stopping at `stopAt` in (0, 1), then rings with damped harmonic oscillation and settles to 0 at u = 1.
+export function followThrough(u, stopAt = 0.55, amp = 0.22, freq = 3.5, decay = 5.0) {
+  if (u <= 0 || u >= 1) return 0;
+  const s = clamp(stopAt, 0.1, 0.9);
+  if (u < s) {
+    const p = u / s;
+    return -amp * Math.sin(p * Math.PI * 0.5);
+  }
+  const tau = (u - s) / (1 - s);
+  const env = Math.exp(-decay * tau) * (1 - smooth(0.75, 1, tau));
+  return -amp * env * Math.cos(TAU * freq * tau);
+}
+
+// #125 Pulse: N-beat heartbeat/throb excursion in [0, 1] that starts and ends at 0.
+export function pulseBeat(u, beats = 2, sharpness = 4) {
+  if (u <= 0 || u >= 1) return 0;
+  const b = Math.max(1, beats | 0);
+  const s = Math.pow(Math.max(0, Math.sin(u * b * Math.PI)), sharpness);
+  const env = Math.sin(u * Math.PI);
+  return s * env;
+}
+
+// #128 Stop-motion style: quantizes u in [0, 1] into `steps` discrete holds while pinning 0 at u <= 0 and 1 at u >= 1.
+export function posterizeTime(u, steps = 8) {
+  if (u <= 0) return 0;
+  if (u >= 1) return 1;
+  const n = Math.max(2, steps | 0);
+  return Math.floor(u * n) / n;
+}
+
+// #027 Dolly in / out: moves camera distance along the view ray from pose.dist to pose.dist * factor while keeping FOV fixed.
+export function camDolly(pose, u, factor = 0.6, fn = ease) {
+  const k = fn ? fn(clamp01(u)) : clamp01(u);
+  const d0 = pose.dist ?? 10;
+  return { ...pose, dist: lerp(d0, d0 * factor, k) };
+}
+
+// #028 Optical zoom: scales focal length (via tan(fov/2) * factor) while keeping camera distance fixed.
+export function camZoom(pose, u, factor = 0.5, fn = ease) {
+  const k = fn ? fn(clamp01(u)) : clamp01(u);
+  const fov0 = pose.fov ?? 18;
+  const tan0 = Math.tan((fov0 * DEG) / 2);
+  const tan1 = tan0 * Math.max(0.02, factor);
+  const fov = (2 * Math.atan(lerp(tan0, tan1, k))) / DEG;
+  return { ...pose, fov };
+}
+
+// #030 Orbit (Arc shot): sweeps azimuth by dAz degrees and elevation by dEl degrees around pose.target.
+export function camOrbit(pose, u, dAz = 45, dEl = 0, fn = ease) {
+  const k = fn ? fn(clamp01(u)) : clamp01(u);
+  return {
+    ...pose,
+    az: (pose.az ?? 0) + dAz * k,
+    el: (pose.el ?? 20) + dEl * k,
+  };
+}
+
+// #031 Crane up & #169 Pedestal: shifts target vertical height by dY while tilting elevation by dEl (dEl = 0 is pure pedestal).
+export function camCrane(pose, u, { dY = 1.5, dEl = 16, dDist = 0 } = {}, fn = ease) {
+  const k = fn ? fn(clamp01(u)) : clamp01(u);
+  const tgt = pose.target || [0, 0, 0];
+  return {
+    ...pose,
+    target: [tgt[0], tgt[1] + dY * k, tgt[2]],
+    el: (pose.el ?? 18) + dEl * k,
+    dist: (pose.dist ?? 10) + dDist * k,
+  };
+}
+
+// #032 Dolly zoom (Vertigo): changes FOV to targetFov while counter-scaling distance in log space so the subject stays the same size.
+export function camDollyZoom(pose, u, targetFov = 42, fn = ease) {
+  const k = fn ? fn(clamp01(u)) : clamp01(u);
+  const fov0 = pose.fov ?? 18;
+  const dist0 = pose.dist ?? 10;
+  const tan0 = Math.tan((fov0 * DEG) / 2);
+  const tan1 = Math.tan(( clamp(targetFov, 1, 120) * DEG) / 2);
+  const endPose = { ...pose, fov: targetFov, dist: (dist0 * tan0) / tan1 };
+  return logFovLerp(pose, endPose, k);
+}
+
+// #034 Handheld / #173 Steadicam: adds exact-period seamless loopNoise sway to a camera pose.
+export function camHandheld(pose, t, { ampAz = 0.45, ampEl = 0.3, ampY = 0.02, period = 12, seed = 1, octaves = 2 } = {}) {
+  const tgt = pose.target || [0, 0, 0];
+  const nAz = loopNoise(t, seed, period, octaves);
+  const nEl = loopNoise(t, seed + 17, period, octaves);
+  const nY = loopNoise(t, seed + 37, period, octaves);
+  return {
+    ...pose,
+    target: [tgt[0], tgt[1] + ampY * nY, tgt[2]],
+    az: (pose.az ?? 0) + ampAz * nAz,
+    el: (pose.el ?? 18) + ampEl * nEl,
+  };
+}
+
+

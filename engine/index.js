@@ -5,6 +5,8 @@ export {
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
+  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 } from './stage.js';
 export { auditDeliverable } from './mesh-audit.js';
 export { mountFigure } from './mount.js';

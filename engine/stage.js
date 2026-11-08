@@ -10,6 +10,8 @@ import {
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
   planArea, planBounds, planPose, logFovLerp, glide,
+  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 } from './motion.js';
 
 export {
@@ -17,6 +19,8 @@ export {
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
   planArea, planBounds, planPose, logFovLerp, glide,
+  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 };
 
 export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syncUrl = null) {
