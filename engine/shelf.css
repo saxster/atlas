@@ -10,9 +10,11 @@ header a { color: inherit; text-decoration: none; } header span a:hover { color:
 .hero p { font: italic 400 clamp(19px, 2.2vw, 24px)/1.4 var(--serif); color: var(--muted); margin-top: 16px; }
 .shelf { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 22px; }
 .section { max-width: 1180px; margin: 56px auto 18px; padding: 0 4px; font: 500 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.card { position: relative; background: var(--card); border-radius: 14px; box-shadow: var(--lift); padding: 18px 20px 20px; text-decoration: none; display: flex; flex-direction: column; min-height: 360px; transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s; }
-@media (hover: hover) { a.card:hover { transform: translateY(-4px) rotate(-.4deg); } }
-a.card:focus-visible { transform: translateY(-4px) rotate(-.4deg); }
+.card { position: relative; background: var(--card); border-radius: 6px 14px 14px 6px; box-shadow: var(--lift), 2px 1px 0 0 #e6e1d6, 4px 2px 0 0 #dad3c5, 6px 3px 0 0 #cec6b6; padding: 18px 20px 20px 26px; text-decoration: none; display: flex; flex-direction: column; min-height: 360px; transform-origin: 0% 50%; transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s; }
+.card:not(.soon)::before { content: ''; position: absolute; top: 0; bottom: 0; left: 12px; width: 2px; background: linear-gradient(180deg, rgba(184,52,58,.35) 0 14px, rgba(0,0,0,.07) 14px calc(100% - 14px), rgba(184,52,58,.35) calc(100% - 14px) 100%); pointer-events: none; }
+a.card::after { content: ''; position: absolute; top: -1px; right: 24px; width: 10px; height: 16px; background: var(--red-ink, #b8343a); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%); opacity: .72; transform: translateY(0); transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .35s; pointer-events: none; }
+@media (hover: hover) { a.card:hover { transform: perspective(1400px) translateY(-4px) rotateY(-4deg) rotate(-.35deg); } a.card:hover::after { transform: translateY(3px); opacity: .95; } }
+a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-4deg) rotate(-.35deg); }
 .card .no { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
 .card h2 { font: 400 30px/1.05 var(--serif); color: var(--strong); margin-top: 18px; }
 .card h2 + i { font: italic 400 20px/1.2 var(--serif); color: var(--muted); }

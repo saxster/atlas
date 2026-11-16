@@ -39,6 +39,11 @@
   position: absolute; top: 0; bottom: 0; left: calc(41% - 0px); width: 60px; transform: translateX(-50%); pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(0,0,0,.035) 45%, rgba(0,0,0,.07) 49.5%, rgba(255,255,255,.75) 50.5%, rgba(0,0,0,.025) 56%, transparent);
 }
+.spine::after {
+  content: ''; position: absolute; top: -4px; left: calc(50% - 6px); width: 11px; height: 26px;
+  background: var(--red-ink, #b8343a); opacity: .82;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
 
 /* ---- left page: the text ---- */
 .sheet { max-width: 520px; }
