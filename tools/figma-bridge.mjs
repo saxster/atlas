@@ -633,6 +633,268 @@ export function buildBookRedesignSvgSheet() {
 </svg>`;
 }
 
+export function buildComicBookendsSvgSheet() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <defs>
+    <pattern id="riso-dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.1" fill="#D8CFC0"/>
+    </pattern>
+    <pattern id="moebius-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#D8CFC0" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="1200" fill="#F7F4EC"/>
+  <text x="48" y="54" font-family="New York, EB Garamond, Georgia, serif" font-size="28" font-weight="600" fill="#1F1B16">Curious Atelier — Ligne-Claire Sequential Bookends (Intro · Opener · Closer)</text>
+  <text x="48" y="80" font-family="SF Mono, JetBrains Mono, monospace" font-size="12" fill="#5E584F">Moebius / Herge Bande-Dessinee Craft · Upright Stays-Wash Captions · Paivio Inline Leader Callouts · 390 / 744 / 1024 Responsive</text>
+
+  <!-- 1. BOOK INTRODUCTION PROLOGUE (4-Panel 2x2 Grid, x=48..1108, y=104..456) -->
+  <g id="Book-Introduction-Prologue-4Panel">
+    <rect x="48" y="104" width="1060" height="352" rx="14" fill="#F1EADC" stroke="#D8CFC0"/>
+    <text x="68" y="132" font-family="New York, EB Garamond, Georgia, serif" font-size="18" font-weight="600" fill="#1F1B16">How to Read This Book — A Four-Panel Field Guide</text>
+    <text x="902" y="131" font-family="SF Mono, JetBrains Mono, monospace" font-size="10" fill="#5E584F">BOOK INTRODUCTION · 4 PANELS</text>
+
+    <!-- Panel 1 (Top-Left) -->
+    <g transform="translate(68, 146)">
+      <rect width="502" height="142" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="502" height="30" fill="#F8EACB"/>
+      <line x1="0" y1="30" x2="502" y2="30" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="6" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="19" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">1</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12" fill="#1F1B16">Start small: one concrete object on a real table — never jargon.</text>
+      <rect x="1" y="31" width="500" height="110" fill="url(#riso-dots)"/>
+      <line x1="40" y1="114" x2="260" y2="114" stroke="#1F1B16" stroke-width="2"/>
+      <rect x="114" y="68" width="64" height="46" rx="6" fill="#23519C" stroke="#1F1B16" stroke-width="2"/>
+      <line x1="178" y1="82" x2="214" y2="60" stroke="#1F1B16" stroke-width="1.4"/>
+      <rect x="214" y="46" width="128" height="22" rx="5" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.2"/>
+      <text x="278" y="61" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" fill="#23519C">Given: 5 kg kettle</text>
+    </g>
+
+    <!-- Panel 2 (Top-Right) -->
+    <g transform="translate(586, 146)">
+      <rect width="502" height="142" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="502" height="30" fill="#F8EACB"/>
+      <line x1="0" y1="30" x2="502" y2="30" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="6" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="19" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">2</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12" fill="#1F1B16">Three Oliver Byrne inks lock prose directly to the stage geometry.</text>
+      <rect x="1" y="31" width="500" height="110" fill="url(#riso-dots)"/>
+      <circle cx="96" cy="86" r="22" fill="#DCE4F2" stroke="#23519C" stroke-width="2.2" stroke-dasharray="5 3"/>
+      <text x="96" y="126" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" fill="#23519C">Given (Blue)</text>
+      <rect x="224" y="64" width="44" height="44" rx="6" fill="#E2A41C" stroke="#1F1B16" stroke-width="2"/>
+      <text x="246" y="126" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" fill="#1F1B16">Stays Fixed (Ochre)</text>
+      <line x1="376" y1="104" x2="424" y2="62" stroke="#AE2B20" stroke-width="3"/>
+      <polygon points="428,58 415,62 423,70" fill="#AE2B20"/>
+      <text x="402" y="126" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" fill="#AE2B20">Moves (Vermilion)</text>
+    </g>
+
+    <!-- Panel 3 (Bottom-Left) -->
+    <g transform="translate(68, 300)">
+      <rect width="502" height="142" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="502" height="30" fill="#F8EACB"/>
+      <line x1="0" y1="30" x2="502" y2="30" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="6" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="19" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">3</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12" fill="#1F1B16">Bet first — then toggle the Counterfactual World to test hunches.</text>
+      <rect x="1" y="31" width="500" height="110" fill="url(#riso-dots)"/>
+      <rect x="24" y="54" width="356" height="68" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.3"/>
+      <text x="38" y="72" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#686259">READER · THOUGHT EXPERIMENT</text>
+      <text x="38" y="96" font-family="New York, Georgia, serif" font-style="italic" font-size="12.5" fill="#1F1B16">“If wood never bends, how can it push upward?”</text>
+      <circle cx="434" cy="88" r="24" fill="#F6DCD5" stroke="#AE2B20" stroke-width="2" stroke-dasharray="4 3"/>
+    </g>
+
+    <!-- Panel 4 (Bottom-Right) -->
+    <g transform="translate(586, 300)">
+      <rect width="502" height="142" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="502" height="30" fill="#F8EACB"/>
+      <line x1="0" y1="30" x2="502" y2="30" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="6" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="19" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">4</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12" fill="#1F1B16">Explain the mechanism in your own words to lock proof across 2 days.</text>
+      <rect x="1" y="31" width="500" height="110" fill="url(#riso-dots)"/>
+      <circle cx="118" cy="86" r="22" fill="#E1E8D8" stroke="#45613B" stroke-width="2.2"/>
+      <line x1="146" y1="86" x2="236" y2="86" stroke="#45613B" stroke-width="2.2"/>
+      <rect x="242" y="66" width="216" height="40" rx="8" fill="#E1E8D8" stroke="#45613B" stroke-width="1.5"/>
+      <text x="350" y="90" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="600" fill="#45613B">Proven → Secure across 2 days</text>
+    </g>
+  </g>
+
+  <!-- 2. CHAPTER OPENER DIPTYCH (Asymmetric 2fr : 1fr, x=48..1108, y=478..786) -->
+  <g id="Chapter-Opener-Diptych-2Panel">
+    <rect x="48" y="478" width="1060" height="308" rx="14" fill="#F1EADC" stroke="#D8CFC0"/>
+    <text x="68" y="506" font-family="New York, EB Garamond, Georgia, serif" font-size="18" font-weight="600" fill="#1F1B16">Chapter 2 Opener — The Silent Scale Inside Solid Teak</text>
+    <text x="952" y="505" font-family="SF Mono, JetBrains Mono, monospace" font-size="10" fill="#5E584F">OPENING SCENE · 2fr : 1fr</text>
+
+    <!-- Opener Panel 1 (Wide 2fr = 668px) -->
+    <g transform="translate(68, 520)">
+      <rect width="668" height="248" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.8"/>
+      <rect width="668" height="32" fill="#F8EACB"/>
+      <line x1="0" y1="32" x2="668" y2="32" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="7" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="20" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">1</text>
+      <text x="34" y="21" font-family="New York, Georgia, serif" font-size="13.5" fill="#1F1B16">Set a 5 kg brass kettle on a teak plank: Earth pulls down with 49 N, yet speed stays 0 m/s.</text>
+      <rect x="1" y="33" width="666" height="145" fill="url(#riso-dots)"/>
+      <rect x="1" y="144" width="666" height="34" fill="url(#moebius-hatch)" opacity="0.55"/>
+      <line x1="64" y1="144" x2="604" y2="144" stroke="#1F1B16" stroke-width="2.5"/>
+      <rect x="256" y="84" width="116" height="60" rx="8" fill="#23519C" stroke="#1F1B16" stroke-width="2"/>
+      <line x1="314" y1="144" x2="314" y2="172" stroke="#AE2B20" stroke-width="3"/>
+      <line x1="372" y1="104" x2="424" y2="76" stroke="#1F1B16" stroke-width="1.4"/>
+      <rect x="424" y="62" width="166" height="24" rx="5" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.2"/>
+      <text x="507" y="78" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" fill="#AE2B20">Downward pull = 49 N</text>
+      <!-- Balloon -->
+      <rect x="20" y="184" width="628" height="52" rx="9" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.3"/>
+      <text x="34" y="201" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#686259">OBSERVATION · DOCUMENTED FACT</text>
+      <text x="34" y="222" font-family="New York, Georgia, serif" font-style="italic" font-size="13.5" fill="#1F1B16">“Nothing has switches or sensors inside the wood — yet the kettle hangs dead still.”</text>
+    </g>
+
+    <!-- Opener Panel 2 (1fr = 336px) -->
+    <g transform="translate(752, 520)">
+      <rect width="336" height="248" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.8"/>
+      <rect width="336" height="46" fill="#F8EACB"/>
+      <line x1="0" y1="46" x2="336" y2="46" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">2</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Pour in 1 kg of water: upward push</text>
+      <text x="34" y="37" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">rises automatically to 58.8 N.</text>
+      <rect x="1" y="47" width="334" height="128" fill="url(#riso-dots)"/>
+      <circle cx="168" cy="110" r="32" fill="#E2A41C" stroke="#1F1B16" stroke-width="2" stroke-dasharray="5 3"/>
+      <text x="168" y="117" text-anchor="middle" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#1F1B16">?</text>
+      <rect x="16" y="184" width="304" height="52" rx="9" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.3"/>
+      <text x="28" y="201" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#686259">WONDER HANDOFF · THOUGHT EXPERIMENT</text>
+      <text x="28" y="222" font-family="New York, Georgia, serif" font-style="italic" font-size="13" fill="#1F1B16">“How does timber measure the load?”</text>
+    </g>
+  </g>
+
+  <!-- 3. CHAPTER CLOSER & CLIFFHANGER STRIP (3-Panel 1fr:1fr:1fr, x=48..1108, y=808..1160) -->
+  <g id="Chapter-Closer-Strip-3Panel">
+    <rect x="48" y="808" width="1060" height="352" rx="14" fill="#F1EADC" stroke="#D8CFC0"/>
+    <text x="68" y="836" font-family="New York, EB Garamond, Georgia, serif" font-size="18" font-weight="600" fill="#1F1B16">Chapter 2 Closer — Mystery Resolved &amp; Next Horizon</text>
+    <text x="896" y="835" font-family="SF Mono, JetBrains Mono, monospace" font-size="10" fill="#5E584F">CHAPTER RESOLUTION · 3 PANELS</text>
+
+    <!-- Closer Panel 1 -->
+    <g transform="translate(68, 850)">
+      <rect width="330" height="254" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="330" height="44" fill="#F8EACB"/>
+      <line x1="0" y1="44" x2="330" y2="44" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">1</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">X-ray cutaway: compressed wood</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">bonds act as microscopic springs.</text>
+      <rect x="1" y="45" width="328" height="136" fill="url(#riso-dots)"/>
+      <path d="M 76 112 L 90 144 L 106 112 L 122 144 L 138 112 M 192 112 L 206 144 L 222 112 L 238 144 L 254 112" fill="none" stroke="#E2A41C" stroke-width="3"/>
+      <line x1="165" y1="146" x2="165" y2="74" stroke="#AE2B20" stroke-width="3"/>
+      <polygon points="165,66 159,78 171,78" fill="#AE2B20"/>
+      <rect x="16" y="190" width="298" height="50" rx="8" fill="#E1E8D8" stroke="#45613B" stroke-width="1.2"/>
+      <text x="28" y="210" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#45613B">SETTLED INVARIANT</text>
+      <text x="28" y="228" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">More squash → larger upward force.</text>
+    </g>
+
+    <!-- Closer Panel 2 -->
+    <g transform="translate(413, 850)">
+      <rect width="330" height="254" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="330" height="44" fill="#F8EACB"/>
+      <line x1="0" y1="44" x2="330" y2="44" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">2</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Trap foiled: balanced forces on one</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">kettle are not a Third-Law pair.</text>
+      <rect x="1" y="45" width="328" height="136" fill="url(#riso-dots)"/>
+      <path d="M 64 128 Q 165 66 266 128" fill="none" stroke="#AE2B20" stroke-width="2.4" stroke-dasharray="6 4"/>
+      <line x1="153" y1="88" x2="177" y2="112" stroke="#AE2B20" stroke-width="3"/>
+      <line x1="177" y1="88" x2="153" y2="112" stroke="#AE2B20" stroke-width="3"/>
+      <rect x="16" y="190" width="298" height="50" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.3"/>
+      <text x="28" y="208" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#686259">WAIT A MINUTE · THOUGHT EXPERIMENT</text>
+      <text x="28" y="228" font-family="New York, Georgia, serif" font-style="italic" font-size="12.5" fill="#1F1B16">“Pull the table away — gravity stays.”</text>
+    </g>
+
+    <!-- Closer Panel 3 -->
+    <g transform="translate(758, 850)">
+      <rect width="330" height="254" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="330" height="44" fill="#F8EACB"/>
+      <line x1="0" y1="44" x2="330" y2="44" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">3</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Next horizon: what happens when</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">upward push exceeds weight?</text>
+      <rect x="1" y="45" width="328" height="136" fill="url(#riso-dots)"/>
+      <circle cx="96" cy="118" r="20" fill="#45613B" stroke="#1F1B16" stroke-width="2"/>
+      <path d="M 124 118 C 166 82, 204 82, 244 98" fill="none" stroke="#23519C" stroke-width="2.5" stroke-dasharray="5 3"/>
+      <polygon points="264,98 240,86 244,108" fill="#E2A41C" stroke="#1F1B16" stroke-width="1.8"/>
+      <rect x="16" y="190" width="298" height="50" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.3"/>
+      <text x="28" y="208" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#23519C">UNLOCKS NEXT CHAPTER</text>
+      <text x="28" y="228" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Net force &amp; acceleration →</text>
+    </g>
+
+    <!-- Hairline Continuation CTA (Preserves Rule 6: zero second BrassButton) -->
+    <rect x="866" y="1116" width="222" height="32" rx="8" fill="none" stroke="#1F1B16" stroke-width="1.2"/>
+    <text x="977" y="1136" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#1F1B16">Turn to Ch 3 · Laws of Motion →</text>
+  </g>
+
+  <!-- 4. COMPACT 390PT IPHONE STACKED COMIC PREVIEW (x=1148..1538, y=104..1160) -->
+  <g id="Compact-390pt-iPhone-Comic-Preview">
+    <rect x="1148" y="104" width="390" height="1056" rx="30" fill="#FFFDF7" stroke="#1F1B16" stroke-width="2"/>
+    <rect x="1170" y="128" width="346" height="34" rx="8" fill="#F1EADC"/>
+    <text x="1186" y="149" font-family="SF Mono, monospace" font-size="10" font-weight="600" fill="#7A5112">390PT COMPACT · 1-COLUMN SEQUENTIAL STACK</text>
+
+    <!-- Stacked Panel 1 -->
+    <g transform="translate(1170, 178)">
+      <rect width="346" height="214" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="346" height="42" fill="#F8EACB"/>
+      <line x1="0" y1="42" x2="346" y2="42" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">1</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">5 kg brass kettle on teak: downward</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">pull is 49 N, yet speed stays 0 m/s.</text>
+      <rect x="1" y="43" width="344" height="110" fill="url(#riso-dots)"/>
+      <line x1="36" y1="126" x2="310" y2="126" stroke="#1F1B16" stroke-width="2"/>
+      <rect x="134" y="78" width="78" height="48" rx="6" fill="#23519C" stroke="#1F1B16" stroke-width="2"/>
+      <rect x="14" y="160" width="318" height="42" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.2"/>
+      <text x="26" y="185" font-family="New York, Georgia, serif" font-style="italic" font-size="12.5" fill="#1F1B16">“No dial or sensor — yet it holds steady.”</text>
+    </g>
+
+    <!-- Stacked Panel 2 -->
+    <g transform="translate(1170, 406)">
+      <rect width="346" height="202" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="346" height="42" fill="#F8EACB"/>
+      <line x1="0" y1="42" x2="346" y2="42" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">2</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Add 1 kg of water: upward push climbs</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">instantly from 49 N to 58.8 N.</text>
+      <rect x="1" y="43" width="344" height="100" fill="url(#riso-dots)"/>
+      <circle cx="173" cy="94" r="26" fill="#E2A41C" stroke="#1F1B16" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="173" y="101" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#1F1B16">?</text>
+      <rect x="14" y="150" width="318" height="40" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.2"/>
+      <text x="26" y="175" font-family="New York, Georgia, serif" font-style="italic" font-size="12.5" fill="#1F1B16">“How does dead wood measure the load?”</text>
+    </g>
+
+    <!-- Wonder Question Handoff Below Stacked Opener -->
+    <rect x="1170" y="624" width="346" height="84" rx="10" fill="#F8EACB" stroke="#1F1B16" stroke-width="1.4"/>
+    <text x="1186" y="648" font-family="SF Mono, monospace" font-size="9.5" font-weight="600" fill="#7A5112">1. WONDER QUESTION</text>
+    <text x="1186" y="672" font-family="New York, Georgia, serif" font-style="italic" font-size="14.5" fill="#1F1B16">How can a solid wooden plank adjust its</text>
+    <text x="1186" y="692" font-family="New York, Georgia, serif" font-style="italic" font-size="14.5" fill="#1F1B16">upward push to match whatever rests on it?</text>
+
+    <!-- Stacked Closer Summary Card -->
+    <g transform="translate(1170, 726)">
+      <rect width="346" height="224" rx="8" fill="#FFFDF7" stroke="#1F1B16" stroke-width="1.6"/>
+      <rect width="346" height="42" fill="#F8EACB"/>
+      <line x1="0" y1="42" x2="346" y2="42" stroke="#1F1B16" stroke-width="1"/>
+      <rect x="8" y="8" width="18" height="18" rx="4" fill="#1F1B16"/>
+      <text x="17" y="21" text-anchor="middle" font-family="SF Mono, monospace" font-size="10" font-weight="700" fill="#FFFDF7">3</text>
+      <text x="34" y="20" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">Chapter Closer stacks all 3 panels at</text>
+      <text x="34" y="36" font-family="New York, Georgia, serif" font-size="12.5" fill="#1F1B16">full 346pt width — zero horizontal scroll.</text>
+      <rect x="1" y="43" width="344" height="118" fill="url(#riso-dots)"/>
+      <path d="M 88 106 L 104 134 L 120 106 L 136 134 L 152 106 M 194 106 L 210 134 L 226 106 L 242 134 L 258 106" fill="none" stroke="#E2A41C" stroke-width="2.8"/>
+      <rect x="14" y="170" width="318" height="40" rx="8" fill="none" stroke="#1F1B16" stroke-width="1.2"/>
+      <text x="173" y="194" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#1F1B16">Turn to Ch 3 · Laws of Motion →</text>
+    </g>
+
+    <text x="1170" y="984" font-family="SF Mono, monospace" font-size="10" fill="#45613B">WCAG AAA Captions (&gt;12:1 on #F8EACB)</text>
+    <text x="1170" y="1006" font-family="SF Mono, monospace" font-size="10" fill="#45613B">Zero skewed boxes · Zero clip-art · 6 Themes</text>
+  </g>
+</svg>`;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [cmd, arg1, arg2] = process.argv.slice(2);
   if (cmd === 'tokens') {
@@ -660,12 +922,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const svg = buildBookRedesignSvgSheet();
     if (arg1) { fs.writeFileSync(arg1, svg); console.log(`Wrote Book Redesign SVG sheet -> ${arg1}`); }
     else console.log(svg);
+  } else if (cmd === 'comic-bookends-sheet') {
+    const svg = buildComicBookendsSvgSheet();
+    if (arg1) { fs.writeFileSync(arg1, svg); console.log(`Wrote Comic Bookends SVG sheet -> ${arg1}`); }
+    else console.log(svg);
   } else {
     console.log(`Usage:
   node tools/figma-bridge.mjs tokens                     emit 8-mode Figma Variables JSON
   node tools/figma-bridge.mjs audit <vars.json>          verify WCAG AA contrast on Figma variable modes or get_variable_defs JSON
   node tools/figma-bridge.mjs bundle <figure> [out-dir]  stage self-contained Code Layer bundle for send_code_to_figma
   node tools/figma-bridge.mjs svg-sheet [out.svg]        emit editable SVG Vector & 8-Voice Swatch Sheet for upload_assets
-  node tools/figma-bridge.mjs book-redesign-sheet [out]  emit editable SVG Curious Atelier Book Redesign Sheet for upload_assets`);
+  node tools/figma-bridge.mjs book-redesign-sheet [out]  emit editable SVG Curious Atelier Book Redesign Sheet for upload_assets
+  node tools/figma-bridge.mjs comic-bookends-sheet [out] emit editable SVG Ligne-Claire Comic Bookends Sheet for upload_assets`);
   }
 }

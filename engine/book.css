@@ -1,4 +1,5 @@
 @import url("labels.css");
+@import url("comic.css");
 /* The open book. The document scrolls; the book stays put and turns its pages. */
 .book-body { overflow-x: hidden; }
 .scroll-space { width: 1px; }

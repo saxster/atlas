@@ -6,6 +6,7 @@
 import { createStage, smooth, ease, clamp01, mountShareButton } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
+import { renderComicStripHTML } from './comic.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -156,7 +157,10 @@ export function startBook(chapter) {
   }
   // small screens: the page ends with a way on to the next (book.css shows it there)
   const turnHtml = i => i < N - 1 ? `<button type="button" class="turn" data-turn="${i + 1}"><span class="kicker">Next page</span>${PAGES[i + 1].title} →</button>` : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `<div class="kicker">${p.kicker}</div><h1>${p.title}</h1><div class="sub">${p.sub}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${turnHtml(i)}`; };
+  const prologueHtml = i => (i === 0 && chapter.PROLOGUE_STRIP) ? renderComicStripHTML(chapter.PROLOGUE_STRIP) : '';
+  const openerHtml = i => PAGES[i].openerStrip ? renderComicStripHTML(PAGES[i].openerStrip) : '';
+  const closerHtml = i => PAGES[i].closerStrip ? renderComicStripHTML(PAGES[i].closerStrip) : '';
+  const sheetHtml = i => { const p = PAGES[i]; return `${prologueHtml(i)}<div class="kicker">${p.kicker}</div><h1>${p.title}</h1>${openerHtml(i)}<div class="sub">${p.sub}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${closerHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice, check a numeric answer, or check a dragged 3D target position
   const markRight = (q, item) => {
     q.classList.add('done');

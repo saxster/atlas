@@ -10,6 +10,7 @@ export {
 } from './stage.js';
 export { auditDeliverable } from './mesh-audit.js';
 export { mountFigure } from './mount.js';
+export { renderComicStripHTML, renderComicPanelSVG, renderByrneInlineHTML, mountComicStrip } from './comic.js';
 export { startBook } from './book.js';
 export { startMachine, speedLabel } from './machine.js';
 export { startExplorer } from './explorer.js';

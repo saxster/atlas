@@ -1054,4 +1054,53 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     fs.rmSync(tmpHeadless, { recursive: true, force: true });
   }
 }
+{
+  const { renderComicStripHTML, renderComicPanelSVG, renderByrneInlineHTML } = await import('./comic.js');
+  const { buildComicBookendsSvgSheet } = await import('../tools/figma-bridge.mjs');
+  const byrneHTML = renderByrneInlineHTML('Set {given:5 kg} on teak: {moves:49 N} balances so speed stays {stays:0 m/s}.');
+  const openerHTML = renderComicStripHTML({
+    id: 'ch2-opener',
+    role: 'chapterOpener',
+    title: 'The Silent Scale Inside Solid Teak',
+    panels: [
+      {
+        id: 'p1',
+        panelNumber: 1,
+        span: 'wide',
+        captionRich: 'Set a {given:5 kg} brass kettle on teak: Earth pulls with {moves:49 N}.',
+        calloutLabel: '49 N downward',
+        scenePreset: 'anomalySetup',
+        balloon: {
+          speaker: 'Observation',
+          textRich: 'Speed stays {stays:0 m/s} without any switch.',
+          tailDirection: 'bottomLeft',
+          sourceBasis: 'documentedFact',
+        },
+      },
+      {
+        id: 'p2',
+        panelNumber: 2,
+        span: 'half',
+        captionRich: 'Pour in {given:1 kg} of water: upward push climbs to {moves:58.8 N}.',
+        scenePreset: 'intuitionBreak',
+      },
+    ],
+  }, { nextLabel: 'Turn to Ch 3' });
+  const comicSheet = buildComicBookendsSvgSheet();
+  const comicCss = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'comic.css'), 'utf8');
+  C.check('engine/comic.js & comic-bookends-sheet: renders Ligne-Claire Byrne inline tags, upright captions (zero skew(-15deg)), container queries, source-basis badges, and editable Figma SVG sheet',
+    byrneHTML.includes('atlas-comic-byrne-given')
+    && byrneHTML.includes('atlas-comic-byrne-moves')
+    && byrneHTML.includes('atlas-comic-byrne-stays')
+    && openerHTML.includes('data-role="chapterOpener"')
+    && openerHTML.includes('Documented fact')
+    && openerHTML.includes('49 N downward')
+    && openerHTML.includes('Turn to Ch 3 →')
+    && comicCss.includes('@container (min-width: 430px)')
+    && !comicCss.includes('skew(-15deg)')
+    && comicSheet.includes('Book-Introduction-Prologue-4Panel')
+    && comicSheet.includes('Chapter-Opener-Diptych-2Panel')
+    && comicSheet.includes('Chapter-Closer-Strip-3Panel')
+    && !comicSheet.includes('skew(-15deg)'));
+}
 C.report();

@@ -1,0 +1,206 @@
+/* Curious Atelier Ligne-Claire Sequential Bookends (Book Introduction, Chapter Opener, Chapter Closer).
+   Zero skewed action boxes, zero radial superhero bursts: crisp ink borders, upright stays-wash narrator boxes,
+   Moebius hatch & Risograph dot plates, and container-responsive grids across 390 / 520 / 744 / 1024 widths. */
+
+.atlas-comic-strip {
+  container-type: inline-size;
+  margin: 18px 0 24px;
+  padding: 14px;
+  background: var(--margin, var(--card, #F1EADC));
+  border: 1px solid var(--faint, #D8CFC0);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.atlas-comic-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.atlas-comic-title {
+  margin: 0;
+  font: 600 15px/1.25 var(--serif, Georgia, serif);
+  color: var(--ink, var(--strong, #1F1B16));
+  letter-spacing: -0.01em;
+}
+
+.atlas-comic-role-tag {
+  font: 500 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted, #686259);
+}
+
+.atlas-comic-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@container (min-width: 430px) {
+  .atlas-comic-strip[data-role="bookPrologue"] .atlas-comic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .atlas-comic-strip[data-role="chapterOpener"] .atlas-comic-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+  .atlas-comic-strip[data-role="chapterCloser"] .atlas-comic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .atlas-comic-strip[data-role="chapterCloser"] .atlas-comic-panel:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (min-width: 660px) {
+  .atlas-comic-strip[data-role="chapterOpener"] .atlas-comic-grid {
+    grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+  }
+  .atlas-comic-strip[data-role="chapterCloser"] .atlas-comic-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .atlas-comic-strip[data-role="chapterCloser"] .atlas-comic-panel:nth-child(3) {
+    grid-column: auto;
+  }
+}
+
+.atlas-comic-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 176px;
+  background: var(--surface, var(--sheet, #FFFDF7));
+  border: 1.5px solid var(--ink, var(--strong, #1F1B16));
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.atlas-comic-caption {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--stays-wash, #F8EACB);
+  border-bottom: 1px solid var(--ink, var(--strong, #1F1B16));
+  font: 400 13px/1.38 var(--serif, Georgia, serif);
+  color: var(--ink, var(--strong, #1F1B16));
+}
+
+.atlas-comic-num {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--ink, var(--strong, #1F1B16));
+  color: var(--surface, var(--sheet, #FFFDF7));
+  font: 600 10px/1 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.atlas-comic-art {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+}
+
+.atlas-comic-art svg {
+  display: block;
+  width: 100%;
+  height: 118px;
+}
+
+.atlas-comic-balloon-wrap {
+  position: relative;
+  z-index: 2;
+  padding: 0 10px 9px;
+}
+
+.atlas-comic-balloon {
+  position: relative;
+  padding: 7px 10px;
+  background: var(--surface, var(--sheet, #FFFDF7));
+  border: 1.25px solid var(--ink, var(--strong, #1F1B16));
+  border-radius: 10px;
+  font: italic 400 12.5px/1.35 var(--serif, Georgia, serif);
+  color: var(--ink, var(--strong, #1F1B16));
+}
+
+.atlas-comic-balloon::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 18px;
+  width: 10px;
+  height: 7px;
+  background: var(--surface, var(--sheet, #FFFDF7));
+  border-left: 1.25px solid var(--ink, var(--strong, #1F1B16));
+  border-top: 1.25px solid var(--ink, var(--strong, #1F1B16));
+  transform: skewX(-24deg);
+}
+
+.atlas-comic-balloon[data-tail="bottomRight"]::after {
+  left: auto;
+  right: 18px;
+  transform: skewX(24deg);
+}
+
+.atlas-comic-speaker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+  font: 600 10px/1 var(--mono, ui-monospace, monospace);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #686259);
+}
+
+.atlas-comic-basis {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--page, var(--paper, #F7F4EC));
+  border: 1px solid var(--faint, #D8CFC0);
+  font-size: 9px;
+}
+
+.atlas-comic-byrne-given { color: var(--given, var(--blue, #23519C)); font-weight: 600; }
+.atlas-comic-byrne-moves { color: var(--moves, var(--red, #AE2B20)); font-weight: 600; }
+.atlas-comic-byrne-stays {
+  background: var(--stays-wash, #F8EACB);
+  color: var(--ink, var(--strong, #1F1B16));
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.atlas-comic-footer {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.atlas-comic-turn-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--ink, var(--strong, #1F1B16));
+  border-radius: 8px;
+  font: 500 12px/1.2 var(--mono, ui-monospace, monospace);
+  color: var(--ink, var(--strong, #1F1B16));
+  cursor: pointer;
+}
+.atlas-comic-turn-btn:hover {
+  background: var(--stays-wash, #F8EACB);
+}
