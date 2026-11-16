@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { EXAMPLES, subjects } from './chapters.mjs';
+import { XREFS } from '../examples/xrefs.js';
+import { THREADS } from '../examples/concepts/threads.js';
 
 const CHECK = process.argv.includes('--check');
 // the shelf's order and the subjects still in preparation, so the root page shows the whole plan
@@ -96,17 +98,18 @@ ${body}
 
 async function searchIndexJs(all) {
   const entries = [];
+  const conceptShownIn = new Map();
   for (const s of all) {
     if (s.id === 'minimal') continue;
     const subjName = s.name.replace(/^Atlas of /, '');
     for (const c of s.chapters || []) {
       const card = s.cards?.[c] || {};
-      entries.push({ kind: 'chapter', subject: subjName, title: card.title || c, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${c}/` });
+      entries.push({ id: `${s.id}/${c}`, kind: 'chapter', subject: subjName, title: card.title || c, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${c}/` });
       const pFile = path.join(EXAMPLES, s.id, c, 'pages.js');
       if (fs.existsSync(pFile)) {
         const src = fs.readFileSync(pFile, 'utf8');
         [...src.matchAll(/kicker:\s*'([^']*)',\s*title:\s*'([^']*)'/g)].forEach(([, k, t], i) => {
-          entries.push({ kind: 'page', subject: subjName, title: t, sub: `${card.title || c} · ${k}`, href: `${s.id}/${c}/#${i}` });
+          entries.push({ id: `${s.id}/${c}/${i}`, kind: 'page', subject: subjName, title: t, sub: `${card.title || c} · ${k}`, href: `${s.id}/${c}/#${i}` });
         });
       }
       const qFile = path.join(EXAMPLES, s.id, c, 'practice.js');
@@ -114,17 +117,17 @@ async function searchIndexJs(all) {
         try {
           const { PRACTICE } = await import(pathToFileURL(qFile).href);
           for (const [pg, qs] of Object.entries(PRACTICE || {})) {
-            for (const q of qs) {
+            (qs || []).forEach((q, qi) => {
               const qText = strip(q.q || '');
-              if (qText) entries.push({ kind: 'practice', subject: subjName, title: qText.slice(0, 110), sub: `${card.title || c} · p.${+pg + 1}`, text: qText, href: `${s.id}/${c}/#${pg}` });
-            }
+              if (qText) entries.push({ id: `${s.id}/${c}/${pg}/q${qi}`, kind: 'practice', subject: subjName, title: qText.slice(0, 110), sub: `${card.title || c} · p.${+pg + 1}`, text: qText, href: `${s.id}/${c}/#${pg}` });
+            });
           }
         } catch {}
       }
     }
     for (const f of s.figures || []) {
       const card = s.cards?.[f] || {};
-      entries.push({ kind: card.grammar || 'figure', subject: subjName, title: card.title || f, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${f}/` });
+      entries.push({ id: `${s.id}/${f}`, kind: card.grammar || 'figure', subject: subjName, title: card.title || f, sub: card.sub || '', text: card.alt || '', href: `${s.id}/${f}/` });
     }
   }
   const cDir = path.join(EXAMPLES, 'concepts');
@@ -135,14 +138,67 @@ async function searchIndexJs(all) {
       const subjName = subjId === 'maths' ? 'Mathematics' : subjId[0].toUpperCase() + subjId.slice(1);
       const { CONCEPTS } = await import(pathToFileURL(path.join(cDir, file)).href);
       for (const c of CONCEPTS) {
+        conceptShownIn.set(c.id, c.shownIn || []);
         const firstRef = c.shownIn?.[0];
         let href = `concepts/#${c.id}`;
         if (firstRef) {
           const parts = firstRef.split('/');
           href = parts.length === 3 ? `${parts[0]}/${parts[1]}/#${parts[2]}` : `${parts[0]}/${parts[1]}/`;
         }
-        entries.push({ kind: 'concept', subject: subjName, title: c.name, formula: strip(c.formula || ''), formulaHtml: c.formula || '', href });
+        entries.push({ id: `concept:${c.id}`, kind: 'concept', subject: subjName, title: c.name, formula: strip(c.formula || ''), formulaHtml: c.formula || '', href });
       }
+    }
+  }
+  for (const t of THREADS) {
+    entries.push({
+      id: `thread:${t.id}`,
+      kind: 'thread',
+      subject: 'Across subjects',
+      title: t.name,
+      sub: 'Thread',
+      text: t.idea,
+      href: `concepts/#thread-${t.id}`,
+    });
+  }
+  const byId = new Map(entries.map(e => [e.id, e]));
+  const addLink = (fromId, toId, why) => {
+    if (!fromId || !toId || fromId === toId || !byId.has(fromId) || !byId.has(toId)) return;
+    const src = byId.get(fromId);
+    src.links ||= [];
+    if (!src.links.some(l => l.to === toId)) src.links.push({ to: toId, why });
+  };
+  for (const [a, , b, , whyHtml] of XREFS) {
+    const why = `Compare · ${strip(whyHtml)}`;
+    addLink(a, b, why);
+    addLink(b, a, why);
+  }
+  for (const t of THREADS) {
+    const why = `Thread · ${t.name}`;
+    const threadId = `thread:${t.id}`;
+    const threadRefs = [];
+    for (const cid of t.concepts) {
+      const cEntryId = `concept:${cid}`;
+      addLink(threadId, cEntryId, why);
+      addLink(cEntryId, threadId, why);
+      for (const otherCid of t.concepts) addLink(cEntryId, `concept:${otherCid}`, why);
+      for (const ref of conceptShownIn.get(cid) || []) {
+        addLink(threadId, ref, why);
+        addLink(ref, threadId, why);
+        addLink(cEntryId, ref, why);
+        addLink(ref, cEntryId, why);
+        threadRefs.push(ref);
+      }
+    }
+    for (const r1 of threadRefs) {
+      for (const r2 of threadRefs) addLink(r1, r2, why);
+    }
+  }
+  for (const [cid, refs] of conceptShownIn.entries()) {
+    const cEntry = byId.get(`concept:${cid}`);
+    const why = `Concept · ${cEntry?.title || cid}`;
+    for (const ref of refs) {
+      addLink(`concept:${cid}`, ref, why);
+      addLink(ref, `concept:${cid}`, why);
     }
   }
   return `// written by tools/site.mjs — do not edit by hand\nexport const SEARCH_INDEX = ${JSON.stringify(entries, null, 2)};\n`;

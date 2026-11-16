@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, subjects, everything as chapters, key } from './chapters.mjs';
+import { auditFigureDir } from '../cli/check.mjs';
 
 const only = process.argv.slice(2).map(key);
 const run = file => {
@@ -14,7 +15,13 @@ const run = file => {
 if (!only.length && !run(path.join(ROOT, 'engine', 'selftest.mjs'))) { console.log('FAIL engine/selftest.mjs'); process.exit(1); }
 let n = 0;
 for (const c of only.length ? only : await chapters()) {
-  if (!run(path.join(ROOT, c, 'checks.mjs'))) { console.log(`FAIL ${c}`); process.exit(1); }
+  const res = auditFigureDir(path.join(ROOT, c), { runChecks: true });
+  if (!res.ok) {
+    for (const err of res.errors) console.log('  ' + err);
+    if (res.stderr) process.stderr.write(res.stderr);
+    console.log(`FAIL ${c}`);
+    process.exit(1);
+  }
   n++;
 }
 console.log(`${n} chapters and figures: all checks pass`);

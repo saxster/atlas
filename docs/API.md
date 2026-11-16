@@ -185,7 +185,9 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 | Command | Does |
 |---|---|
 | `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown\|blueprint` | copies a working minimal example to start from |
-| `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
+| `npx atlas boot [<grammar\|kit\|task>] [--list] [--json]` | assembles a boot package (contract, verified exports, working minimal skeleton) for a grammar or kit |
+| `npx atlas check [dir]` | audits `model.js` purity and runs every `checks.mjs` under the folder |
+| `npx atlas gate [<file>] [--transcript <jsonl>]` | verifies the Model-First & Read-Before-Write gate (CLI or `PreToolUse` stdin hook) |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
 | `npx atlas critic <figure…> [--intersections]` | frames that jump, labels that overlap or hide, 3D framing/occlusion/mesh clashes, and staged SVG/page clipping |
 | `npx atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent]` | an MP4 drawn frame by frame (BT.709, QA-gated) with a soundtrack at −14 LUFS (needs ffmpeg) |

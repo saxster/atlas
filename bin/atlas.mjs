@@ -3,7 +3,9 @@
 // Figures are folders relative to the current one (biology/heart). The browser commands need Chrome (CHROME=… if it
 // isn't at the usual place); record also needs ffmpeg.
 const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown|blueprint]   start a figure from a working example
-atlas check [dir]                                          run every checks.mjs under dir (default: here)
+atlas boot [<grammar|kit|task>] [--list] [--json]          assemble a grammar or kit boot package (contract, exports, working skeleton)
+atlas check [dir]                                          audit model.js purity and run every checks.mjs under dir (default: here)
+atlas gate [<file>] [--transcript <jsonl>]                 verify Model-First & Read-Before-Write gate (CLI or PreToolUse stdin hook)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
 atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
 atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack`;
@@ -15,7 +17,19 @@ const figures = () => args.map(a => a.replace(/\/$/, ''));
 
 const COMMANDS = {
   async new() { const grammar = opt('--grammar', 'book'); await (await import('../cli/new.mjs')).create(args[0], { grammar }); return 0; },
+  async boot() {
+    const list = flag('--list');
+    const json = flag('--json');
+    const query = args.join(' ');
+    const res = (await import('../cli/boot.mjs')).boot(query, { list, json });
+    console.log(json ? JSON.stringify(res, null, 2) : res.markdown);
+    return { exitCode: res.exitCode ?? 0 };
+  },
   async check() { return (await import('../cli/check.mjs')).check(args[0] || '.'); },
+  async gate() {
+    const transcriptPath = opt('--transcript', null);
+    return (await import('../cli/gate.mjs')).gateCli(args[0] || '', { transcriptPath });
+  },
   async stills() { const [out, ...rest] = figures(); if (!rest.length) throw usage(); return (await import('../cli/stills.mjs')).stills(out, rest); },
   async critic() {
     const intersections = flag('--intersections');
@@ -44,7 +58,11 @@ const COMMANDS = {
 const usage = () => Object.assign(new Error(USAGE), { usage: true });
 
 if (!COMMANDS[cmd]) { console.log(USAGE); process.exit(cmd && cmd !== 'help' && cmd !== '--help' ? 1 : 0); }
-try { process.exit(await COMMANDS[cmd]() ? 1 : 0); }
+try {
+  const out = await COMMANDS[cmd]();
+  const code = (out && typeof out === 'object' && typeof out.exitCode === 'number') ? out.exitCode : (out ? 1 : 0);
+  process.exit(code);
+}
 catch (e) {
   if (e.usage) { console.error(e.message); process.exit(2); }
   if (e.code === 'ERR_MODULE_NOT_FOUND' && /puppeteer/.test(e.message)) { console.error('The browser commands need puppeteer-core: npm install -D puppeteer-core'); process.exit(1); }

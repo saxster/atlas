@@ -67,8 +67,25 @@ if (specBtn) {
   await wait(300);
   check('specimen: clicking button mounts audited 3D specimen canvas in panel', await p.evaluate(() => !!document.querySelector('.specpanel .molview canvas') && document.querySelector('.specpanel .molsrc')?.textContent.includes('audit pass')));
   await p.click('.specpanel .close'); await wait(250);
-  check('specimen: Close button closes panel, disposes viewer, and restores focus to .specbtn', await p.evaluate(() => !document.querySelector('.specpanel') && document.activeElement?.classList.contains('specbtn')));
+  check('specimen: Close button closes panel, disposes viewer, and restores focus to .specbtn', await p.evaluate(() => !document.getElementById('specpanel') && !document.querySelector('.specpanel') && document.activeElement?.classList.contains('specbtn')));
 }
+
+// Instant search modal & 1-hop XREFS analogy spreading on /examples/
+await p.goto(base + '/examples/', { waitUntil: 'networkidle0' });
+await p.waitForSelector('.search-trigger');
+await p.click('.search-trigger');
+await p.waitForSelector('#atlas-search-input');
+await p.type('#atlas-search-input', 'LC oscillations');
+await wait(250);
+const searchState = await p.evaluate(() => {
+  const titles = [...document.querySelectorAll('#atlas-search-results .sr-title')].map(e => e.textContent);
+  const whys = [...document.querySelectorAll('#atlas-search-results .sr-why')].map(e => e.textContent);
+  return { titles, whys };
+});
+check('search: modal opens on /examples/ and surfaces both direct LC oscillations hit and 1-hop SHM analogy (.sr-why)',
+  searchState.titles.includes('LC oscillations') && searchState.titles.includes('The SHM equation') && searchState.whys.some(w => w.startsWith('Compare ·')));
+await p.keyboard.press('Escape');
+await wait(100);
 
 // the top bar fits phones, for every chapter at the narrowest width
 const narrow = [];

@@ -18,8 +18,8 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
 - Examples import the library by its package name (`@saxster/atlas/stage.js`), never by relative path, so they read
   like user code: node resolves it by package self-reference, the browser by the importmap in each index.html.
 - `atlas new <subject>/<id> --grammar …` copies `examples/minimal/<grammar>/` (`book`, `machine`, `explorer`, `sandbox`, `teardown`, `blueprint`): keep those six working and small.
-- `cli/` is shipped: the browser harness (`render.mjs`), stills, jumps, labels, record and score as functions over the
-  current folder, behind `bin/atlas.mjs` (`atlas check | stills | critic | record`). `tools/` wraps them for the
+- `cli/` is shipped: the browser harness (`render.mjs`), boot packages (`boot.mjs`), model-first gate (`gate.mjs`), stills, jumps, labels, clip, record and score as functions over the
+  current folder, behind `bin/atlas.mjs` (`atlas new | boot | check | gate | stills | critic | record`). `tools/` wraps them for the
   atlas's own examples (all, or `physics/newton`-style names). Run tools from the repo root: they serve the current
   folder.
 - The `atlas` skill (`~/.agents/skills/atlas/SKILL.md`) is how Claude in another repo learns this library; keep it
@@ -65,7 +65,7 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
 - `node tools/scene.mjs [chapters] [--intersections]`: camera framing clipping/empty-frame checks, active-subject
   occlusion along the camera ray, and optional pairwise 3D mesh intersections (`sceneReport`).
 - `node tools/clip.mjs [chapters] [--selftest]`: horizontal page overflow, collapsed SVGs, and staged overflow-release pixel-diff clipping (`cli/clip.mjs`, at 1440×900 and 390×844).
-- `node tools/style.mjs`: checks `CLAUDE.md` (<32 KiB) and `SKILL.md` (<2,500 words) context budgets and verifies all referenced repo paths.
+- `node tools/style.mjs`: checks `CLAUDE.md` (<32 KiB) and `SKILL.md` (<2,500 words) context budgets, verifies all referenced repo paths and `@saxster/atlas/*` package exports via live `import()`, and runs the `cli/boot.mjs` router self-check.
 
 ## Generated pages (`npm run site` writes them; `npm run check` fails when one is stale)
 - `tools/site.mjs`: the examples' shelf (`examples/index.html`) and each subject's contents page, from `subject.js` (`cards`, `hero`, `tagline`,

@@ -7,6 +7,7 @@
 // showSpecimen(el, spec, { background }) -> Promise<{ audit, source, destroy() }>
 import * as THREE from 'three';
 import { auditDeliverable } from '../engine/mesh-audit.js';
+export { auditDeliverable };
 
 async function loadGLTF(url) {
   const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');

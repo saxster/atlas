@@ -728,4 +728,110 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && wfSvg.includes('class="wf-up"') && wfSvg.includes('class="wf-down"') && wfBadCaught
     && sk.total === 100 && sk.ribbons.length === 4 && skTangentsHorizontal && skSvg.includes('class="sk-ribbon focal"') && skBadCaught);
 }
+{ // Root @saxster/atlas barrel export (engine/index.js) & 3-stage Graph-Spread Search (engine/search.js)
+  const rootPkg = await import('./index.js');
+  C.check('engine/index.js: root barrel imports cleanly with both 3D spring and scalar motionSpring',
+    typeof rootPkg.spring === 'function' && typeof rootPkg.motionSpring === 'function' && rootPkg.spring !== rootPkg.motionSpring);
+
+  const { tokenizeQuery, buildIdf, scoreItem, rankSearch } = await import('./search.js');
+  const { SEARCH_INDEX } = await import('../examples/search-index.js');
+  const idfMap = buildIdf(SEARCH_INDEX, ['inductance', 'physics']);
+  const rareOutweighsCommon = idfMap.get('inductance').idf > idfMap.get('physics').idf * 2;
+
+  const lcHits = rankSearch(SEARCH_INDEX, 'LC oscillations', { limit: 15, spread: true });
+  const lcDirect = lcHits.find(h => h.id === 'physics/induction/9');
+  const lcSpread = lcHits.find(h => h.id === 'physics/oscillations/8');
+
+  const indHits = rankSearch(SEARCH_INDEX, 'inductance', { limit: 15, spread: true });
+  const indDirect = indHits.find(h => h.id === 'physics/induction/7');
+  const indSpread = indHits.find(h => h.id === 'physics/energy/3');
+
+  const pegHits = rankSearch(SEARCH_INDEX, 'pegboard', { limit: 15, spread: true });
+  const pegThread = pegHits.find(h => h.id === 'thread:bell');
+  const pegDiffusion = pegHits.find(h => h.id === 'concept:diffusion');
+
+  const cltHits = rankSearch(SEARCH_INDEX, 'central limit', { limit: 15, spread: true });
+  const cltDirect = cltHits.find(h => h.id === 'concept:clt');
+  const cltThread = cltHits.find(h => h.id === 'thread:bell');
+  const cltSibling = cltHits.find(h => h.id === 'concept:diffusion' || h.id === 'concept:measurement-error');
+
+  C.check('search.js: corpus-IDF weighting, 1-hop XREFS analogy spreading (LC ↔ SHM, inductance ↔ kinetic energy), and 1-hop THREADS spreading',
+     tokenizeQuery('  LC, Oscillations! ').length === 2
+    && scoreItem({ kind: 'chapter', title: 'Test' }, []) === 10
+    && rareOutweighsCommon
+    && Boolean(lcDirect) && Boolean(lcSpread) && lcSpread.matchWhy?.startsWith('Compare ·')
+    && Boolean(indDirect) && Boolean(indSpread) && indSpread.matchWhy?.startsWith('Compare ·')
+    && Boolean(pegThread) && Boolean(pegDiffusion) && pegDiffusion.matchWhy?.startsWith('Thread ·')
+    && Boolean(cltDirect) && Boolean(cltThread) && Boolean(cltSibling) && cltSibling.matchWhy?.startsWith('Thread ·'));
+}
+{ // Programmatic boot package assembler & strict router (cli/boot.mjs)
+  const { TARGETS, boot } = await import('../cli/boot.mjs');
+  const allTargetsOk = TARGETS.length === 11 && TARGETS.every(t => {
+    const res = boot(t.slug);
+    const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
+    return res.matched && res.exitCode === 0 && res.slug === t.slug && hasTemplates;
+  });
+  const trigExplorer = boot('interactive experiment with what if sliders');
+  const trigBlueprint = boot('2d to 3d architectural blueprint with section cut');
+  const abstainRes = boot('create a lesson tracker doc for the course');
+  const noMatchRes = boot('underwater basketweaving');
+  const listRes = boot('', { list: true });
+
+  C.check('cli/boot.mjs: all 6 grammars & 5 kits assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+    allTargetsOk
+    && trigExplorer.matched && trigExplorer.slug === 'explorer'
+    && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
+    && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
+    && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 11);
+}
+{ // Model-First structural audit (cli/check.mjs) & PreToolUse gate (cli/gate.mjs)
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { auditFigureDir } = await import('../cli/check.mjs');
+  const { evaluateGate } = await import('../cli/gate.mjs');
+
+  const minBookOk = auditFigureDir('examples/minimal/book').ok;
+  const minBlueprintOk = auditFigureDir('examples/minimal/blueprint').ok;
+
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-gate-test-'));
+  try {
+    // 1. Missing model.js and checks.mjs -> blocks world.js write
+    const denyMissing = evaluateGate(path.join(tmpRoot, 'world.js'));
+    // Writing model.js itself is always allowed
+    const allowModelWrite = evaluateGate(path.join(tmpRoot, 'model.js'));
+
+    // 2. Impure model.js (imports three) -> blocks world.js write
+    fs.writeFileSync(path.join(tmpRoot, 'model.js'), `import * as THREE from 'three';\nexport const f = x => x * 2;\n`);
+    fs.writeFileSync(path.join(tmpRoot, 'checks.mjs'), `import { f } from './model.js';\nif (f(2) === 4) console.log('PASS f(2)=4'); else process.exit(1);\n`);
+    const denyImpure = evaluateGate(path.join(tmpRoot, 'world.js'));
+
+    // 3. Pure model.js, but checks.mjs prints 0 PASS rows -> blocks world.js write
+    fs.writeFileSync(path.join(tmpRoot, 'model.js'), `export const f = x => x * 2;\n`);
+    fs.writeFileSync(path.join(tmpRoot, 'checks.mjs'), `import { f } from './model.js';\n`);
+    const denyZeroPass = evaluateGate(path.join(tmpRoot, 'world.js'));
+
+    // 4. Pure model.js + passing checks.mjs, but unread protocol in transcript -> blocks brand-new world.js
+    fs.writeFileSync(path.join(tmpRoot, 'checks.mjs'), `import { f } from './model.js';\nif (f(3) === 6) console.log('PASS f(3)=6'); else process.exit(1);\n`);
+    const transcriptFile = path.join(tmpRoot, 'transcript.jsonl');
+    fs.writeFileSync(transcriptFile, `{"type":"tool_use","name":"Read","input":{"file_path":"README.md"}}\n`);
+    const denyUnread = evaluateGate(path.join(tmpRoot, 'world.js'), { transcriptPath: transcriptFile });
+
+    // 5. Transcript includes atlas boot -> allows brand-new world.js
+    fs.appendFileSync(transcriptFile, `{"type":"tool_use","name":"Bash","input":{"command":"npx atlas boot book"}}\n`);
+    const allowAfterBoot = evaluateGate(path.join(tmpRoot, 'world.js'), { transcriptPath: transcriptFile });
+
+    C.check('cli/check.mjs & cli/gate.mjs: enforce Model-First purity, non-empty checks.mjs PASS rows, and Read-Before-Write protocol gate',
+      minBookOk && minBlueprintOk
+      && allowModelWrite.allowed
+      && !denyMissing.allowed && denyMissing.gate === 'model-first'
+      && !denyImpure.allowed && denyImpure.reason.includes('pure')
+      && !denyZeroPass.allowed && denyZeroPass.reason.includes('0 PASS')
+      && !denyUnread.allowed && denyUnread.gate === 'read-before-write'
+      && allowAfterBoot.allowed && allowAfterBoot.pass === 1);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+}
 C.report();

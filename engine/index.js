@@ -3,7 +3,7 @@
 export {
   createStage, draggable,
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
-  phase, win, warpTime, spring, settleShake, squashStretch, eases,
+  phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
   cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
