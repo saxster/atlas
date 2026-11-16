@@ -14,7 +14,7 @@
 //   - Optional user-initiated HTML5 sensor bridge (camera photometer, mic spirometer, device tilt)
 //   - Automatic 2D Canvas paper-and-ink fallback when WebGL is disabled
 import { createStage } from '../engine/stage.js';
-import { readTheme } from '../engine/theme.js';
+import { readTheme, srgbLuminance } from '../engine/theme.js';
 
 const CSS = `
 .atlas-stage { position: relative; width: 100%; border-radius: 6px; overflow: hidden; background: var(--sheet); touch-action: pan-y; box-sizing: border-box; }
@@ -159,11 +159,14 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
       ctx.save();
       ctx.scale(dpr, dpr);
       const th = readTheme(stage);
-      const bg = th === 'dark' ? '#171c1b' : th === 'light' ? '#f9f7f2' : '#f2e8d5';
-      const ink = th === 'dark' ? '#e8e4da' : '#1d2422';
-      const muted = th === 'dark' ? '#9aa5a1' : '#5d6c66';
-      const accent = th === 'dark' ? '#68b0d8' : '#2f6d8f';
-      const warm = th === 'dark' ? '#e07a5f' : '#b8432f';
+      const explicitTheme = stage.closest('[data-theme]')?.dataset.theme;
+      const mode = explicitTheme === 'dark' || (th?.sheet && srgbLuminance(th.sheet) < 0.2) ? 'dark'
+        : explicitTheme === 'light' || (th?.sheet && srgbLuminance(th.sheet) > 0.9) ? 'light' : 'sepia';
+      const bg = th?.sheet || (mode === 'dark' ? '#171c1b' : mode === 'light' ? '#f9f7f2' : '#f2e8d5');
+      const ink = th?.ink || (mode === 'dark' ? '#e8e4da' : '#1d2422');
+      const muted = mode === 'dark' ? '#9aa5a1' : '#586660';
+      const accent = th?.blue || (mode === 'dark' ? '#68b0d8' : '#2b6180');
+      const warm = th?.red || (mode === 'dark' ? '#e07a5f' : '#a33b29');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
       if (chapter.drawFallback2D) {

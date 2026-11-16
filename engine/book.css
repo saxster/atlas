@@ -50,10 +50,22 @@
 .chart .frame { fill: none; stroke: var(--faint); stroke-width: 1; }
 .chart .grid { stroke: var(--faint); stroke-width: .6; stroke-dasharray: 2 3; }
 .chart .zero { stroke: var(--lo); stroke-width: .8; }
+.chart .area { fill: #ecece8; stroke: none; }
 .chart .curve { fill: none; stroke: var(--hi); stroke-width: 1.6; }
+.chart .total { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 3; }
 .chart .trend { fill: none; stroke: var(--hi); stroke-width: 1; stroke-dasharray: 3 3; }
 .chart .bar { fill: #ecece8; stroke: var(--mid); stroke-width: .8; }
+.chart .mask { fill: var(--card); }
+.chart .mark { fill: var(--hi); }
 .chart .cursor { fill: var(--lit); stroke: var(--card); stroke-width: 2; }
+.chart .wf-total { fill: #ecece8; stroke: var(--hi); stroke-width: 1; }
+.chart .wf-up { fill: #eef7f1; stroke: var(--green-ink); stroke-width: 1; }
+.chart .wf-down { fill: #fcefef; stroke: var(--red-ink); stroke-width: 1; }
+.chart .wf-carry { stroke: var(--mid); stroke-width: .9; stroke-dasharray: 3 2; }
+.chart .sk-node { fill: var(--hi); }
+.chart .sk-node.focal { fill: var(--red-ink); }
+.chart .sk-ribbon { fill: rgba(38, 38, 42, .16); stroke: none; }
+.chart .sk-ribbon.focal { fill: rgba(184, 52, 58, .22); stroke: none; }
 .chart text { font: 10.5px var(--mono); fill: var(--muted); }
 .chart .lab { fill: var(--hi); font-size: 11.5px; }
 .folio {
@@ -187,10 +199,10 @@
 .choices button:hover:not(:disabled) { border-color: var(--mid); color: var(--strong); }
 .choices button:disabled { cursor: default; }
 .choices .letter { font: 500 12px var(--mono); color: var(--muted); }
-.choices button.right { border-color: #2f8f5b; background: #eef7f1; color: var(--strong); }
-.choices button.right .letter { color: #2f8f5b; }
-.choices button.wrong { border-color: var(--red); background: #fcefef; }
-.choices button.wrong .letter { color: var(--red); }
+.choices button.right { border-color: var(--green-ink); background: #eef7f1; color: var(--strong); }
+.choices button.right .letter { color: var(--green-ink); }
+.choices button.wrong { border-color: var(--red-ink); background: #fcefef; }
+.choices button.wrong .letter { color: var(--red-ink); }
 .practice .reveal {
   margin-top: 6px; border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer;
   font: 500 12px var(--mono); letter-spacing: .06em; padding: 8px 12px; border-radius: 999px;
@@ -201,16 +213,16 @@
 .practice .why .eq { font-size: 20px; }
 .numrow, .targetrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 6px; }
 .numin { width: 130px; padding: 7px 10px; border: 1px solid var(--faint); border-radius: 8px; background: var(--card); font: 500 13px var(--mono); color: var(--strong); }
-.numin.right { border-color: #2f8f5b; background: #eef7f1; }
-.numin.wrong { border-color: var(--red); background: #fcefef; }
+.numin.right { border-color: var(--green-ink); background: #eef7f1; }
+.numin.wrong { border-color: var(--red-ink); background: #fcefef; }
 .numunit { font: 12px var(--mono); color: var(--muted); }
 .numcheck, .targetcheck { border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer; font: 500 12px var(--mono); letter-spacing: .04em; padding: 7px 12px; border-radius: 999px; }
 .numcheck:hover, .targetcheck:hover { border-color: var(--mid); }
-.targetcheck.right { border-color: #2f8f5b; background: #eef7f1; color: #2f8f5b; }
-.targetcheck.wrong { border-color: var(--red); background: #fcefef; color: var(--red); }
+.targetcheck.right { border-color: var(--green-ink); background: #eef7f1; color: var(--green-ink); }
+.targetcheck.wrong { border-color: var(--red-ink); background: #fcefef; color: var(--red-ink); }
 .numstatus, .targetstatus { font: 12px var(--mono); color: var(--muted); }
-.numstatus.right, .targetstatus.right { color: #2f8f5b; font-weight: 500; }
-.numstatus.wrong, .targetstatus.wrong { color: var(--red); }
+.numstatus.right, .targetstatus.right { color: var(--green-ink); font-weight: 500; }
+.numstatus.wrong, .targetstatus.wrong { color: var(--red-ink); }
 
 /* ---- small screens: on to the next page from the end of this one ---- */
 .turn { display: none; }

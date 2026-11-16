@@ -1,11 +1,15 @@
 // node engine/selftest.mjs — the shared checks toolkit and seeded RNG against known values, and the building blocks'
 // geometry (prims.js, built in node: no browser).
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial, checkLinkLengths } from './checks.js';
 import { rng } from './rng.js';
-import { scale, samples } from './chart.js';
+import { scale, samples, chart, textAdvanceEm, waterfallWalk, waterfallChart, sankeyLayout, sankeyChart } from './chart.js';
 import * as THREE from 'three';
 import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule, linkage } from './prims.js';
-import { part, box, gearGeo, gear, rack, spring, TONE } from './parts.js';
+import { part, box, gearGeo, gear, rack, spring, TONE, PALETTE, applyTheme } from './parts.js';
+import { parseColor, compositeOver, srgbLuminance, wcagContrast, auditTheme } from './theme.js';
 import { createAssemblyController } from './render.js';
 import { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
 import { draggable } from './stage.js';
@@ -553,5 +557,175 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const updatedExplodedOk = near(m.position.x, 1.4, 1e-6) && near(m.position.y, 1.1, 1e-6);
   C.check('stepExplode & resetExplode preserve dynamic part.position updates alongside explode offsets',
     unexplodedOk && explodedOk && updatedExplodedOk);
+}
+{ // WCAG 2.x contrast auditor (engine/theme.js), CSS token audit, kym-live 2D fallbacks & applyTheme presets
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const atlasCss = fs.readFileSync(path.join(dir, 'atlas.css'), 'utf8');
+  const tok = name => {
+    const m = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{3,8})`).exec(atlasCss);
+    return m ? m[1] : null;
+  };
+  const page = tok('--page'), card = tok('--card'), text = tok('--text'), strong = tok('--strong');
+  const muted = tok('--muted'), hi = tok('--hi'), mid = tok('--mid'), red = tok('--red');
+  const redInk = tok('--red-ink'), greenInk = tok('--green-ink');
+
+  // Active semantic text and non-text pairs across atlas.css, book.css, figure.css, labels.css, shelf.css, concepts.css.
+  // WCAG 1.4.3 inactive/disabled states (:disabled, .card.soon, .none, li.unshown, .chip:not(.on) .v) are exempt by spec.
+  const cssAudit = auditTheme([
+    { role: 'atlas/book/figure strong on card', fg: strong, bg: card, kind: 'text' },
+    { role: 'atlas/shelf/concepts strong on page', fg: strong, bg: page, kind: 'text' },
+    { role: 'atlas/book/figure hi on card', fg: hi, bg: card, kind: 'text' },
+    { role: 'atlas/book/figure text on card', fg: text, bg: card, kind: 'text' },
+    { role: 'atlas/shelf/concepts text on page', fg: text, bg: page, kind: 'text' },
+    { role: 'atlas/book/figure/labels/concepts muted on card (.kicker, .chart text, .lbl.mark, .n .home)', fg: muted, bg: card, kind: 'text' },
+    { role: 'atlas/shelf/concepts muted on page (.topbar, .scroll-cue, .search-trigger kbd)', fg: muted, bg: page, kind: 'text' },
+    { role: 'atlas/book/figure mid stroke on card', fg: mid, bg: card, kind: 'mark' },
+    { role: 'atlas/book/figure mid stroke on page', fg: mid, bg: page, kind: 'mark' },
+    { role: 'atlas/parts red vector/ring mark on card', fg: red, bg: card, kind: 'mark' },
+    { role: 'book/figure/labels red-ink text on card (.numstatus.wrong, .again.strong, .lbl.vec.red)', fg: redInk, bg: card, kind: 'text' },
+    { role: 'book/figure red-ink text on wrong fill #fcefef', fg: redInk, bg: '#fcefef', kind: 'text' },
+    { role: 'figure red-ink text on wrong fill #fdf0f0', fg: redInk, bg: '#fdf0f0', kind: 'text' },
+    { role: 'figure .speed card text on red-ink badge', fg: card, bg: redInk, kind: 'text' },
+    { role: 'book/figure green-ink text on card (.numstatus.right)', fg: greenInk, bg: card, kind: 'text' },
+    { role: 'book/figure green-ink text on right fill #eef7f1', fg: greenInk, bg: '#eef7f1', kind: 'text' },
+    { role: 'labels .lbl.vec.blue on card', fg: '#3d63a8', bg: card, kind: 'text' },
+    // kym-live.js 2D fallback themes (light, sepia, dark)
+    { role: 'kym-live fallback light ink', fg: '#1d2422', bg: '#f9f7f2', kind: 'text' },
+    { role: 'kym-live fallback light muted', fg: '#586660', bg: '#f9f7f2', kind: 'text' },
+    { role: 'kym-live fallback light accent', fg: '#2b6180', bg: '#f9f7f2', kind: 'text' },
+    { role: 'kym-live fallback light warm', fg: '#a33b29', bg: '#f9f7f2', kind: 'text' },
+    { role: 'kym-live fallback sepia ink', fg: '#1d2422', bg: '#f2e8d5', kind: 'text' },
+    { role: 'kym-live fallback sepia muted', fg: '#586660', bg: '#f2e8d5', kind: 'text' },
+    { role: 'kym-live fallback sepia accent', fg: '#2b6180', bg: '#f2e8d5', kind: 'text' },
+    { role: 'kym-live fallback sepia warm', fg: '#a33b29', bg: '#f2e8d5', kind: 'text' },
+    { role: 'kym-live fallback dark ink', fg: '#e8e4da', bg: '#171c1b', kind: 'text' },
+    { role: 'kym-live fallback dark muted', fg: '#9aa5a1', bg: '#171c1b', kind: 'text' },
+    { role: 'kym-live fallback dark accent', fg: '#68b0d8', bg: '#171c1b', kind: 'text' },
+    { role: 'kym-live fallback dark warm', fg: '#e07a5f', bg: '#171c1b', kind: 'text' },
+  ]);
+
+  // applyTheme() Kym textbook presets (tools/kymhost/index.html: light, sepia, dark)
+  const kymPresets = [
+    { name: 'light', sheet: '#fbfaf5', ink: '#1d332d', red: '#a94730', ochre: '#936022', blue: '#356d83', green: '#2e604a' },
+    { name: 'sepia', sheet: '#f8f0e0', ink: '#3a2e22', red: '#a3452c', ochre: '#87581b', blue: '#3c687a', green: '#456446' },
+    { name: 'dark',  sheet: '#18211e', ink: '#e6e3d6', red: '#e0896f', ochre: '#d4a35f', blue: '#78b3cb', green: '#7cbf9c' },
+  ];
+  const kymEntries = [];
+  for (const p of kymPresets) {
+    const out = applyTheme(p);
+    kymEntries.push({ role: `kym ${p.name} ink`, fg: out.ink, bg: out.sheet, kind: 'text' });
+    kymEntries.push({ role: `kym ${p.name} inks[4]`, fg: out.inks[4], bg: out.sheet, kind: 'mark' });
+    for (const hue of ['red', 'blue', 'green', 'ochre']) {
+      kymEntries.push({ role: `kym ${p.name} PALETTE.${hue}[1]`, fg: PALETTE[hue][1], bg: out.sheet, kind: 'mark' });
+      kymEntries.push({ role: `kym ${p.name} PALETTE.${hue}[2]`, fg: PALETTE[hue][2], bg: out.sheet, kind: 'mark' });
+    }
+  }
+  applyTheme(null);
+  const kymAudit = auditTheme(kymEntries);
+
+  // Adversarial negative checks (low-contrast hex and translucent rgba must fail)
+  const negAudit = auditTheme([
+    { role: 'stale muted #8c8c90 on page', fg: '#8c8c90', bg: '#f2f2ef', kind: 'text' },
+    { role: 'faint translucent rgba on white', fg: 'rgba(24,24,26,0.25)', bg: '#fbfbfa', kind: 'text' },
+  ]);
+
+  C.check('theme.js & CSS contrast gate: all active CSS tokens, kym-live 2D fallbacks, and applyTheme Kym presets clear WCAG AA (4.5:1 text / 3:1 marks) and reject low-contrast pairs',
+    cssAudit.ok && kymAudit.ok && !negAudit.ok && negAudit.findings.length === 2
+    && near(wcagContrast('#000000', '#ffffff'), 21, 1e-6)
+    && near(srgbLuminance('#ffffff'), 1, 1e-6)
+    && near(compositeOver('rgba(0,0,0,0.5)', '#ffffff').r, 127.5, 1e-6),
+    [...cssAudit.findings, ...kymAudit.findings].map(f => `${f.role}: ${f.ratio}:1 < ${f.min}:1`).join('; '));
+}
+{ // Deepened 2D charts (engine/chart.js): paper-masked callouts, empty-mark guard, clamping, waterfallChart & sankeyChart
+  const advMono = textAdvanceEm('A1', true), advCjk = textAdvanceEm('注文\u0301', false);
+  const svgMarked = chart({
+    x0: 0, x1: 10, y0: -2, y1: 10, w: 420, h: 170,
+    xlabel: 't (s)', ylabel: 'v & <y>', label: 'Velocity <v>', desc: 'Test description & bounds', id: 'vel-test',
+    series: [{ cls: 'curve', fill: true, pts: [[0, 0], [5, 8], [10, 9.9]], tag: [9.9, 9.9, 'peak > 9', true] }],
+    marks: [[0.1, 9.9, 'top-left'], [5, 4, '']],
+    cursors: ['c1'],
+  });
+  // Paint order: curve path before mask rect, mask rect before tag/callout text; empty mark produces circle without extra mask
+  const idxCurve = svgMarked.indexOf('class="curve"'), idxMask = svgMarked.indexOf('class="mask"'), idxLab = svgMarked.indexOf('peak &gt; 9');
+  const maskCount = (svgMarked.match(/class="mask"/g) || []).length;
+  const markCircleCount = (svgMarked.match(/class="mark"/g) || []).length;
+  const svgNoId = chart({ x0: 0, x1: 1, y0: 0, y1: 1, series: [{ pts: [[0, 0], [1, 1]] }], xlabel: 'x', ylabel: 'y', label: 'Plain' });
+
+  // Waterfall conservation & geometry
+  const wf = waterfallWalk([
+    { name: 'Start', value: 100, role: 'start' },
+    { name: 'Gain', value: 35, role: 'delta' },
+    { name: 'Mid', value: 135, role: 'subtotal' },
+    { name: 'Loss', value: -25, role: 'delta' },
+    { name: 'End', value: 110, role: 'end' },
+  ]);
+  const wfSvg = waterfallChart({
+    steps: [
+      { name: 'Start', value: 100, role: 'start' },
+      { name: 'Gain', value: 35, role: 'delta' },
+      { name: 'Loss', value: -25, role: 'delta' },
+      { name: 'End', value: 110, role: 'end' },
+    ],
+    ylabel: 'M$',
+    label: 'Budget bridge',
+  });
+  let wfBadCaught = false;
+  try {
+    waterfallWalk([
+      { name: 'Start', value: 100, role: 'start' },
+      { name: 'Gain', value: 35, role: 'delta' },
+      { name: 'End', value: 120, role: 'end' },
+    ]);
+  } catch (_) { wfBadCaught = true; }
+
+  // Sankey conservation, shared scale & horizontal Bezier midline tangents
+  const sk = sankeyLayout({
+    stages: [
+      [{ id: 'solar', name: 'Solar', value: 100, focal: true }],
+      [{ id: 'grid', name: 'Grid', value: 70, focal: true }, { id: 'heat', name: 'Heat loss', value: 30 }],
+      [{ id: 'work', name: 'Useful work', value: 70, focal: true }, { id: 'waste', name: 'Exhaust', value: 30 }],
+    ],
+    links: [
+      { from: 'solar', to: 'grid', value: 70, focal: true },
+      { from: 'solar', to: 'heat', value: 30 },
+      { from: 'grid', to: 'work', value: 70, focal: true },
+      { from: 'heat', to: 'waste', value: 30 },
+    ],
+  });
+  const skSvg = sankeyChart({
+    stages: [
+      [{ id: 'solar', name: 'Solar', value: 100, focal: true }],
+      [{ id: 'work', name: 'Work', value: 70, focal: true }, { id: 'loss', name: 'Loss', value: 30 }],
+    ],
+    links: [
+      { from: 'solar', to: 'work', value: 70, focal: true },
+      { from: 'solar', to: 'loss', value: 30 },
+    ],
+    unit: 'J',
+  });
+  // Verify every ribbon's cubic Bezier control points sit on the corridor midline (midX = (x0 + x1) / 2)
+  const skTangentsHorizontal = sk.ribbons.every(r => near(r.midX, (r.x0 + r.x1) / 2, 1e-9) && r.d.includes(`C ${r.midX.toFixed(1)},${r.y0Top.toFixed(1)} ${r.midX.toFixed(1)},${r.y1Top.toFixed(1)}`));
+  let skBadCaught = false;
+  try {
+    sankeyLayout({
+      stages: [[{ id: 'a', name: 'A' }], [{ id: 'b', name: 'B' }]],
+      links: [{ from: 'a', to: 'b', value: 50 }],
+    });
+    // Now break conservation across 3 stages:
+    sankeyLayout({
+      stages: [[{ id: 'a', name: 'A' }], [{ id: 'b', name: 'B' }], [{ id: 'c', name: 'C' }]],
+      links: [{ from: 'a', to: 'b', value: 50 }, { from: 'b', to: 'c', value: 40 }],
+    });
+  } catch (_) { skBadCaught = true; }
+
+  C.check('chart.js: paper-masked callouts, empty-mark guard, XML escaping, and conservation-verified waterfallChart & sankeyChart',
+    near(advMono, 1.24, 1e-9) && near(advCjk, 2.0, 1e-9)
+    && idxCurve > 0 && idxMask > idxCurve && idxLab > idxMask
+    && maskCount === 2 && markCircleCount === 2
+    && svgMarked.includes('aria-labelledby="vel-test-title vel-test-desc"')
+    && !svgNoId.includes('id="') && svgNoId.includes('role="img" aria-label="Plain"')
+    && wf.bars.length === 5 && wf.carries.length === 4 && wf.bars[1].text === '+35' && wf.bars[3].text === '−25'
+    && wfSvg.includes('class="wf-up"') && wfSvg.includes('class="wf-down"') && wfBadCaught
+    && sk.total === 100 && sk.ribbons.length === 4 && skTangentsHorizontal && skSvg.includes('class="sk-ribbon focal"') && skBadCaught);
 }
 C.report();

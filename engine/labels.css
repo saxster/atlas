@@ -3,12 +3,12 @@
 #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .lbl { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; transition: opacity .25s; }
 .lbl.vec { font: italic 22px/1 var(--serif); color: var(--hi); }
-.lbl.vec.red { color: var(--red); }
+.lbl.vec.red { color: var(--red-ink, #b8343a); }
 .lbl.tick { font: 11px/1 var(--mono); color: var(--muted); transform: translate(-100%, -50%); }
 .lbl.board { font: italic 17px/1 var(--serif); color: var(--hi); transform: translate(0, -50%); }
 .lbl.axis { font: italic 15px/1 var(--serif); color: var(--muted); transform: translate(-100%, -50%); }
 .lbl.vec.blue { color: #3d63a8; }
-.lbl.vec.grey { color: var(--mid); }
-.lbl.mark { font: 15px/1 var(--serif); color: #86868c; }
+.lbl.vec.grey { color: var(--muted); }
+.lbl.mark { font: 15px/1 var(--serif); color: var(--muted); }
 .lbl.tag { font: 500 12px/1.2 var(--mono); color: var(--strong); background: rgba(251, 251, 250, .9); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--faint); transform: translate(0, -50%); }
-.lbl.sound { font: italic 600 19px/1 var(--serif); color: var(--red); letter-spacing: .02em; transform: translate(-50%, -100%) rotate(-6deg); }
+.lbl.sound { font: italic 600 19px/1 var(--serif); color: var(--red-ink, #b8343a); letter-spacing: .02em; transform: translate(-50%, -100%) rotate(-6deg); }

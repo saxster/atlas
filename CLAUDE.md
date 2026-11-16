@@ -64,6 +64,7 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
 - `node tools/labels.mjs [chapters]`: labels overlapping each other, or anchored behind a solid.
 - `node tools/scene.mjs [chapters] [--intersections]`: camera framing clipping/empty-frame checks, active-subject
   occlusion along the camera ray, and optional pairwise 3D mesh intersections (`sceneReport`).
+- `node tools/clip.mjs [chapters] [--selftest]`: horizontal page overflow, collapsed SVGs, and staged overflow-release pixel-diff clipping (`cli/clip.mjs`, at 1440×900 and 390×844).
 - `node tools/style.mjs`: checks `CLAUDE.md` (<32 KiB) and `SKILL.md` (<2,500 words) context budgets and verifies all referenced repo paths.
 
 ## Generated pages (`npm run site` writes them; `npm run check` fails when one is stale)

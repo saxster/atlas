@@ -115,6 +115,8 @@ Bridges 2D technical drawings, floorplans, and STEM/Economics textbook diagrams 
 
 - `auditDeliverable(root, { maxTris = 50000, requireUV = false, checkScale = true, clampNonMetal = false })` (`@saxster/atlas/mesh-audit.js`): traverses a Three.js `Object3D` hierarchy and checks triangle budget, non-empty geometries, finite coordinates, normal presence, negative-scale inside-out winding (`matrixWorld.determinant() < 0`), UV presence on textured meshes, and optionally clamps dielectric `metalness`.
 - `showSpecimen(el, spec, { background })` (`@saxster/atlas/adapters/specimen.js`): mounts an on-demand 3-point-lit turntable viewer for a `.glb`/`.gltf` URL or Three.js builder function and audits it with `auditDeliverable`. Book pages with `specimen: { src | build | object, source }` get a "See the real specimen" button automatically.
+- `chart`, `scale`, `samples`, `moveCursor`, `textAdvanceEm`, `waterfallWalk`, `waterfallChart`, `sankeyLayout`, `sankeyChart` (`@saxster/atlas/chart.js`): 2D left-page and explorer/sandbox SVG charts with paper-masked callout plates (`6px` clearance, clamped to plot frame), collision-free accessible `<title>`/`<desc>` naming, and conservation-verified waterfall bridges and Sankey flow diagrams (horizontal midline cubic Bezier tangents).
+- `readTheme`, `KYM`, `parseColor`, `compositeOver`, `srgbLuminance`, `wcagContrast`, `auditTheme` (`@saxster/atlas/theme.js`): host CSS theme reader plus pure IEC 61966-2-1 relative luminance, alpha compositing, and WCAG 2.x contrast verification (`4.5:1` text, `3.0:1` large text & essential marks).
 
 ## Four grammars
 
@@ -185,7 +187,7 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 | `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown\|blueprint` | copies a working minimal example to start from |
 | `npx atlas check [dir]` | runs every `checks.mjs` under the folder |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
-| `npx atlas critic <figure…> [--intersections]` | frames that jump, labels that overlap or hide, and 3D framing/occlusion/mesh clashes |
+| `npx atlas critic <figure…> [--intersections]` | frames that jump, labels that overlap or hide, 3D framing/occlusion/mesh clashes, and staged SVG/page clipping |
 | `npx atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent]` | an MP4 drawn frame by frame (BT.709, QA-gated) with a soundtrack at −14 LUFS (needs ffmpeg) |
 
 The browser commands need Chrome; set `CHROME` if it isn't at the usual place.
@@ -193,5 +195,5 @@ The browser commands need Chrome; set `CHROME` if it isn't at the usual place.
 ## Tools in this repo
 
 `npm run check` runs every model's checks, the link checks, and `tools/style.mjs`. `npm run test:browser` drives the grammars in Chrome.
-`tools/stills.mjs`, `tools/jumps.mjs`, `tools/labels.mjs` and `tools/scene.mjs` are the visual and geometric critics. `tools/record.mjs` makes a
+`tools/stills.mjs`, `tools/jumps.mjs`, `tools/labels.mjs`, `tools/scene.mjs` and `tools/clip.mjs` are the visual and geometric critics. `tools/record.mjs` makes a
 1080p60 MP4 with a soundtrack. `CLAUDE.md` and `docs/decisions.md` describe each.

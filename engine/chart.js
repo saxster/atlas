@@ -1,8 +1,58 @@
-// Small SVG charts for the left page, shared by chapters of every subject (the physics chapters keep their own
-// copies, which grew apart). chart() returns markup; a chart's live cursor is a <circle data-cursor="key"> that
-// moveCursor() places each frame from the same model values the figure uses.
+// Small SVG charts for the left page and explorer/sandbox figures, shared by chapters of every subject (the 15 legacy
+// physics chapters keep their own local copies). chart() returns markup; a chart's live cursor is a <circle data-cursor="key">
+// that moveCursor() places each frame from the same model values the figure uses.
+// Includes paper-masked callout plates, collision-free SVG naming, and conservation-verified waterfall & Sankey builders.
 const P = { l: 44, r: 14, t: 16, b: 30 };
 const num = v => String(v).replace('-', '−');
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+
+// Per-character width budget in em: 0.62em mono, 0.60em sans, 1.0em East Asian Wide/Fullwidth & astral symbols, 0 combining marks.
+export function textAdvanceEm(str, mono = true) {
+  const base = mono ? 0.62 : 0.60;
+  let em = 0;
+  for (const ch of String(str ?? '')) {
+    const cp = ch.codePointAt(0);
+    if ((cp >= 0x0300 && cp <= 0x036F) || (cp >= 0x1AB0 && cp <= 0x1AFF) || (cp >= 0x1DC0 && cp <= 0x1DFF) || (cp >= 0x20D0 && cp <= 0x20FF) || (cp >= 0xFE20 && cp <= 0xFE2F)) continue;
+    const wide = cp >= 0x1100 && (
+      cp <= 0x115F || cp === 0x2329 || cp === 0x232A ||
+      (cp >= 0x2E80 && cp <= 0xA4CF && cp !== 0x303F) ||
+      (cp >= 0xAC00 && cp <= 0xD7A3) || (cp >= 0xF900 && cp <= 0xFAFF) ||
+      (cp >= 0xFE10 && cp <= 0xFE19) || (cp >= 0xFE30 && cp <= 0xFE6F) ||
+      (cp >= 0xFF00 && cp <= 0xFF60) || (cp >= 0xFFE0 && cp <= 0xFFE6) || cp >= 0x1F000
+    );
+    em += wide ? 1.0 : base;
+  }
+  return em;
+}
+
+function svgHeader({ w, h, label = '', desc = '', id = '' }) {
+  const cleanLabel = esc(label), cleanDesc = esc(desc), cleanId = esc(id);
+  const aria = cleanId
+    ? `aria-labelledby="${cleanId}-title${cleanDesc ? ` ${cleanId}-desc` : ''}"`
+    : `aria-label="${cleanLabel}${cleanDesc ? `. ${cleanDesc}` : ''}"`;
+  const titleEl = cleanId ? `<title id="${cleanId}-title">${cleanLabel}</title>` : `<title>${cleanLabel}</title>`;
+  const descEl = cleanDesc ? (cleanId ? `<desc id="${cleanId}-desc">${cleanDesc}</desc>` : `<desc>${cleanDesc}</desc>`) : '';
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" ${aria}>${titleEl}${descEl}`;
+}
+
+function calloutPlate(px, py, rawText, { alignEnd = false, above = true, fontSize = 11, cls = 'lab', w = 420, h = 170 } = {}) {
+  const text = String(rawText ?? '').trim();
+  if (!text) return { mask: '', text: '' };
+  const textW = Math.ceil(textAdvanceEm(text, true) * fontSize);
+  const maskW = Math.max(16, textW + 6), maskH = 13;
+  // 6px stroke clearance gap above or below the point/curve, clamped inside the plot frame
+  const rawY = above ? py - 6 - maskH : py + 6;
+  const maskY = clamp(rawY, P.t + 1, h - P.b - maskH - 1);
+  const rawX = alignEnd ? px - 4 - maskW + 3 : px + 4 - 3;
+  const maskX = clamp(rawX, P.l + 1, w - P.r - maskW - 1);
+  const tx = alignEnd ? maskX + maskW - 3 : maskX + 3;
+  const ty = maskY + 10;
+  return {
+    mask: `<rect class="mask" x="${maskX.toFixed(1)}" y="${maskY.toFixed(1)}" width="${maskW}" height="${maskH}" rx="2"/>`,
+    text: `<text class="${cls}" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}"${alignEnd ? ' text-anchor="end"' : ''}>${esc(text)}</text>`,
+  };
+}
 
 // the page coordinates of a value on a chart of this size and range
 export function scale({ x0, x1, y0, y1, w = 420, h = 170 }) {
@@ -11,21 +61,36 @@ export function scale({ x0, x1, y0, y1, w = 420, h = 170 }) {
 
 // series: [{ pts: [[x, y], …], cls?, fill? (shade down to y = 0), tag?: [x, y, text, alignEnd?] }]
 // marks: [[x, y, text]]; cursors: keys for moveCursor
-export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel, marks = [], cursors = [], label }) {
+export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel, marks = [], cursors = [], label, desc = '', id = '' }) {
   const { sx, sy } = scale({ x0, x1, y0, y1, w, h });
   const d = pts => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join('');
   const base = sy(Math.min(Math.max(0, y0), y1)).toFixed(1);
-  const paths = series.map(s => (s.fill ? `<path class="area" d="${d(s.pts)}L${sx(s.pts.at(-1)[0]).toFixed(1)},${base}L${sx(s.pts[0][0]).toFixed(1)},${base}Z"/>` : '') +
-    `<path class="${s.cls || 'curve'}" d="${d(s.pts)}"/>` +
-    (s.tag ? `<text class="lab" x="${sx(s.tag[0]) + (s.tag[3] ? -4 : 4)}" y="${sy(s.tag[1]) - 6}"${s.tag[3] ? ' text-anchor="end"' : ''}>${s.tag[2]}</text>` : '')).join('');
+  const masks = [], labels = [];
+  const paths = series.map(s => {
+    if (s.tag && String(s.tag[2] ?? '').trim()) {
+      const c = calloutPlate(sx(s.tag[0]), sy(s.tag[1]), s.tag[2], { alignEnd: !!s.tag[3], above: true, fontSize: 11.5, cls: 'lab', w, h });
+      masks.push(c.mask); labels.push(c.text);
+    }
+    return (s.fill ? `<path class="area" d="${d(s.pts)}L${sx(s.pts.at(-1)[0]).toFixed(1)},${base}L${sx(s.pts[0][0]).toFixed(1)},${base}Z"/>` : '') +
+      `<path class="${s.cls || 'curve'}" d="${d(s.pts)}"/>`;
+  }).join('');
   const zero = y0 < 0 && y1 > 0 ? `<line class="zero" x1="${P.l}" x2="${w - P.r}" y1="${sy(0)}" y2="${sy(0)}"/>` : '';
-  const mk = marks.map(([x, y, t]) => `<circle class="mark" cx="${sx(x)}" cy="${sy(y)}" r="3.5"/><text class="ax" x="${sx(x) + 6}" y="${sy(y) + 14}">${t}</text>`).join('');
-  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}">
-    <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${zero}${paths}${mk}
-    <text class="ax" x="${P.l - 6}" y="${sy(y1) + 4}" text-anchor="end">${num(y1)}</text><text class="ax" x="${P.l - 6}" y="${sy(y0) + 4}" text-anchor="end">${num(y0)}</text>
-    <text class="ax" x="${P.l}" y="${h - 9}">${num(x0)}</text><text class="ax" x="${w - P.r}" y="${h - 9}" text-anchor="end">${num(x1)}</text>
-    <text class="lab" x="${P.l + 6}" y="${P.t + 13}">${ylabel}</text><text class="ax" x="${(P.l + w - P.r) / 2}" y="${h - 9}" text-anchor="middle">${xlabel}</text>
-    ${cursors.map(c => `<circle class="cursor" r="4.5" data-cursor="${c}"/>`).join('')}
+  const dots = marks.map(([x, y, t]) => {
+    const px = sx(x), py = sy(y);
+    if (String(t ?? '').trim()) {
+      const above = py > h - P.b - 20;
+      const alignEnd = px > w - P.r - 48;
+      const c = calloutPlate(px, py, t, { alignEnd, above, fontSize: 10.5, cls: 'ax', w, h });
+      masks.push(c.mask); labels.push(c.text);
+    }
+    return `<circle class="mark" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.5"/>`;
+  }).join('');
+  return `${svgHeader({ w, h, label, desc, id })}
+    <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${zero}${paths}${masks.join('')}${dots}${labels.join('')}
+    <text class="ax" x="${P.l - 6}" y="${sy(y1) + 4}" text-anchor="end">${esc(num(y1))}</text><text class="ax" x="${P.l - 6}" y="${sy(y0) + 4}" text-anchor="end">${esc(num(y0))}</text>
+    <text class="ax" x="${P.l}" y="${h - 9}">${esc(num(x0))}</text><text class="ax" x="${w - P.r}" y="${h - 9}" text-anchor="end">${esc(num(x1))}</text>
+    <text class="lab" x="${P.l + 6}" y="${P.t + 13}">${esc(ylabel)}</text><text class="ax" x="${(P.l + w - P.r) / 2}" y="${h - 9}" text-anchor="middle">${esc(xlabel)}</text>
+    ${cursors.map(c => `<circle class="cursor" r="4.5" data-cursor="${esc(c)}"/>`).join('')}
   </svg>`;
 }
 
@@ -36,4 +101,157 @@ export const samples = (a, b, n, fn) => Array.from({ length: n + 1 }, (_, i) => 
 export function moveCursor(sheets, key, range, x, y) {
   const { sx, sy } = scale(range);
   for (const el of sheets) el.querySelectorAll(`circle[data-cursor="${key}"]`).forEach(c => { c.setAttribute('cx', sx(x)); c.setAttribute('cy', sy(y)); });
+}
+
+// ---------- Waterfall chart (conservation-verified running-total bridge) ----------
+// steps: [{ name, value, role?: 'start' | 'delta' | 'subtotal' | 'end' }]
+export function waterfallWalk(steps) {
+  if (!Array.isArray(steps) || steps.length < 3) throw new Error('waterfallWalk requires at least 3 steps (start, delta, end)');
+  if ((steps[0].role || 'start') !== 'start' || !(steps[0].value > 0)) throw new Error('waterfallWalk: first step must be a positive start total');
+  if ((steps.at(-1).role || 'end') !== 'end') throw new Error('waterfallWalk: last step must have role "end"');
+  let running = 0, minV = 0, maxV = 0;
+  const bars = [], carries = [];
+  steps.forEach((s, i) => {
+    const role = s.role || (i === 0 ? 'start' : i === steps.length - 1 ? 'end' : 'delta');
+    const val = Number(s.value);
+    if (!Number.isFinite(val)) throw new Error(`waterfallWalk: non-finite value at "${s.name}"`);
+    let from, to, text;
+    if (role === 'start') {
+      from = 0; to = val; running = val; text = num(val);
+    } else if (role === 'delta') {
+      if (Math.abs(val) < 1e-12) throw new Error(`waterfallWalk: zero delta at "${s.name}" occupies a column with no bridge`);
+      from = running; to = running + val; running = to;
+      text = val > 0 ? `+${num(val)}` : `−${num(Math.abs(val))}`;
+    } else if (role === 'subtotal' || role === 'end') {
+      if (Math.abs(running - val) > 1e-6) throw new Error(`waterfallWalk conservation failed at "${s.name}": running=${running}, declared=${val}`);
+      from = 0; to = running; text = num(val);
+    } else {
+      throw new Error(`waterfallWalk: unknown role "${role}"`);
+    }
+    const bottom = Math.min(from, to), top = Math.max(from, to);
+    minV = Math.min(minV, bottom); maxV = Math.max(maxV, top);
+    bars.push({ name: String(s.name), role, value: val, from, to, bottom, top, text });
+    if (i < steps.length - 1) carries.push({ fromIndex: i, toIndex: i + 1, value: running });
+  });
+  return { bars, carries, y0: Math.min(0, minV), y1: maxV * 1.15 };
+}
+
+export function waterfallChart({ steps, w = 420, h = 180, ylabel = '', label = 'Waterfall bridge', desc = '', id = '' }) {
+  const { bars, carries, y0, y1 } = waterfallWalk(steps);
+  const { sy } = scale({ x0: 0, x1: 1, y0, y1, w, h });
+  const plotW = w - P.l - P.r, n = bars.length, slotW = plotW / n, barW = Math.min(38, slotW * 0.62);
+  const xCenter = i => P.l + (i + 0.5) * slotW;
+  const carrySvg = carries.map(c => {
+    const x1 = xCenter(c.fromIndex) + barW / 2, x2 = xCenter(c.toIndex) - barW / 2, y = sy(c.value).toFixed(1);
+    return `<line class="wf-carry" data-carry="${c.value}" x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}"/>`;
+  }).join('');
+  const masks = [], texts = [];
+  const barSvg = bars.map((b, i) => {
+    const cx = xCenter(i), x = cx - barW / 2, yTop = sy(b.top), yBot = sy(b.bottom), bh = Math.max(1.5, yBot - yTop);
+    const cls = b.role === 'delta' ? (b.value > 0 ? 'wf-up' : 'wf-down') : 'wf-total';
+    const mw = Math.max(20, Math.ceil(textAdvanceEm(b.text, true) * 10.5) + 6), mh = 12;
+    const my = clamp(yTop - 5 - mh, P.t + 1, h - P.b - mh - 1);
+    const mx = clamp(cx - mw / 2, P.l + 1, w - P.r - mw - 1);
+    masks.push(`<rect class="mask" x="${mx.toFixed(1)}" y="${my.toFixed(1)}" width="${mw}" height="${mh}" rx="2"/>`);
+    texts.push(`<text class="lab" x="${cx.toFixed(1)}" y="${(my + 9.5).toFixed(1)}" text-anchor="middle">${esc(b.text)}</text>`);
+    texts.push(`<text class="ax" x="${cx.toFixed(1)}" y="${h - 9}" text-anchor="middle">${esc(b.name)}</text>`);
+    return `<rect class="${cls}" data-role="${b.role}" data-value="${b.value}" data-name="${esc(b.name)}" x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="2"/>`;
+  }).join('');
+  const zero = `<line class="zero" x1="${P.l}" x2="${w - P.r}" y1="${sy(0).toFixed(1)}" y2="${sy(0).toFixed(1)}"/>`;
+  return `${svgHeader({ w, h, label, desc, id })}
+    <rect class="frame" x="${P.l}" y="${P.t}" width="${plotW}" height="${h - P.t - P.b}"/>${zero}${carrySvg}${barSvg}${masks.join('')}${texts.join('')}
+    <text class="ax" x="${P.l - 6}" y="${sy(bMax(bars)) + 4}" text-anchor="end">${esc(num(bMax(bars)))}</text><text class="ax" x="${P.l - 6}" y="${sy(0) + 4}" text-anchor="end">0</text>
+    ${ylabel ? `<text class="lab" x="${P.l + 6}" y="${P.t + 13}">${esc(ylabel)}</text>` : ''}
+  </svg>`;
+}
+const bMax = bars => Math.max(...bars.map(b => b.top));
+
+// ---------- Sankey diagram (conservation-verified volume ribbons with midline horizontal Bezier tangents) ----------
+// stages: [[{ id, name, value?, focal? }, ...], ...], links: [{ from, to, value, focal? }]
+export function sankeyLayout({ stages, links, w = 420, h = 190, nodeW = 10, pad = 12 }) {
+  if (!Array.isArray(stages) || stages.length < 2) throw new Error('sankeyLayout requires at least 2 stage columns');
+  if (!Array.isArray(links) || !links.length) throw new Error('sankeyLayout requires at least 1 link');
+  const nodeMap = new Map();
+  stages.forEach((col, cIdx) => {
+    if (!Array.isArray(col) || !col.length) throw new Error(`sankeyLayout: empty stage column ${cIdx}`);
+    col.forEach(n => {
+      if (!n?.id || nodeMap.has(n.id)) throw new Error(`sankeyLayout: missing or duplicate node id "${n?.id}"`);
+      nodeMap.set(n.id, { ...n, col: cIdx, inSum: 0, outSum: 0 });
+    });
+  });
+  for (const l of links) {
+    const val = Number(l.value);
+    if (!(val > 0)) throw new Error(`sankeyLayout: link ${l.from}->${l.to} must have positive value`);
+    const u = nodeMap.get(l.from), v = nodeMap.get(l.to);
+    if (!u || !v) throw new Error(`sankeyLayout: unresolved endpoint in ${l.from}->${l.to}`);
+    if (v.col !== u.col + 1) throw new Error(`sankeyLayout: link ${l.from}->${l.to} must connect adjacent stages (${u.col} -> ${v.col})`);
+    u.outSum += val; v.inSum += val;
+  }
+  const colTotals = stages.map((col, cIdx) => {
+    let sum = 0;
+    for (const raw of col) {
+      const n = nodeMap.get(raw.id);
+      const vol = cIdx === 0 ? n.outSum : cIdx === stages.length - 1 ? n.inSum : n.inSum;
+      if (!(vol > 0)) throw new Error(`sankeyLayout: node "${n.id}" carries zero volume`);
+      if (cIdx > 0 && cIdx < stages.length - 1 && Math.abs(n.inSum - n.outSum) > 1e-6) {
+        throw new Error(`sankeyLayout conservation failed at node "${n.id}": in=${n.inSum}, out=${n.outSum}`);
+      }
+      if (n.value !== undefined && Math.abs(Number(n.value) - vol) > 1e-6) {
+        throw new Error(`sankeyLayout value mismatch at "${n.id}": declared=${n.value}, flow=${vol}`);
+      }
+      n.volume = vol; sum += vol;
+    }
+    return sum;
+  });
+  for (let c = 1; c < colTotals.length; c++) {
+    if (Math.abs(colTotals[c] - colTotals[0]) > 1e-6) {
+      throw new Error(`sankeyLayout stage total mismatch: stage 0=${colTotals[0]}, stage ${c}=${colTotals[c]}`);
+    }
+  }
+  const maxNodes = Math.max(...stages.map(c => c.length));
+  const availH = (h - P.t - P.b) - Math.max(0, maxNodes - 1) * pad;
+  const scaleY = availH / colTotals[0];
+  const plotW = w - P.l - P.r;
+  const colStep = (plotW - nodeW) / (stages.length - 1);
+  const nodes = [];
+  stages.forEach((col, cIdx) => {
+    const x = P.l + cIdx * colStep;
+    const totalH = colTotals[cIdx] * scaleY + (col.length - 1) * pad;
+    let y = P.t + ((h - P.t - P.b) - totalH) / 2;
+    for (const raw of col) {
+      const n = nodeMap.get(raw.id), nh = n.volume * scaleY;
+      Object.assign(n, { x, y, w: nodeW, h: nh, inY: y, outY: y });
+      nodes.push(n);
+      y += nh + pad;
+    }
+  });
+  // Ribbons: both Bezier controls sit on the corridor midline so B'(0) and B'(1) are strictly horizontal.
+  const ribbons = links.map(l => {
+    const u = nodeMap.get(l.from), v = nodeMap.get(l.to), thick = l.value * scaleY;
+    const x0 = u.x + u.w, x1 = v.x, midX = (x0 + x1) / 2;
+    const y0Top = u.outY, y0Bot = y0Top + thick; u.outY += thick;
+    const y1Top = v.inY, y1Bot = y1Top + thick; v.inY += thick;
+    const d = `M ${x0.toFixed(1)},${y0Top.toFixed(1)} C ${midX.toFixed(1)},${y0Top.toFixed(1)} ${midX.toFixed(1)},${y1Top.toFixed(1)} ${x1.toFixed(1)},${y1Top.toFixed(1)} ` +
+              `L ${x1.toFixed(1)},${y1Bot.toFixed(1)} C ${midX.toFixed(1)},${y1Bot.toFixed(1)} ${midX.toFixed(1)},${y0Bot.toFixed(1)} ${x0.toFixed(1)},${y0Bot.toFixed(1)} Z`;
+    return { from: l.from, to: l.to, value: l.value, focal: !!l.focal, x0, x1, midX, y0Top, y0Bot, y1Top, y1Bot, thick, d };
+  });
+  return { nodes, ribbons, total: colTotals[0], scaleY };
+}
+
+export function sankeyChart({ stages, links, w = 420, h = 190, nodeW = 10, pad = 12, unit = '', label = 'Sankey flow diagram', desc = '', id = '' }) {
+  const { nodes, ribbons } = sankeyLayout({ stages, links, w, h, nodeW, pad });
+  const lastCol = stages.length - 1;
+  const ribbonSvg = ribbons.map(r => `<path class="sk-ribbon${r.focal ? ' focal' : ''}" data-from="${esc(r.from)}" data-to="${esc(r.to)}" data-value="${r.value}" d="${r.d}"/>`).join('');
+  const masks = [], texts = [];
+  const nodeSvg = nodes.map(n => {
+    const rightSide = n.col === lastCol;
+    const txt = `${n.name} (${num(n.volume)}${unit ? ' ' + unit : ''})`;
+    const px = rightSide ? n.x - 2 : n.x + n.w + 2, py = n.y + n.h / 2 + 4;
+    const c = calloutPlate(px, py, txt, { alignEnd: rightSide, above: true, fontSize: 10.5, cls: 'lab', w, h });
+    masks.push(c.mask); texts.push(c.text);
+    return `<rect class="sk-node${n.focal ? ' focal' : ''}" data-node="${esc(n.id)}" data-value="${n.volume}" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)}" width="${n.w}" height="${n.h.toFixed(1)}" rx="2"/>`;
+  }).join('');
+  return `${svgHeader({ w, h, label, desc, id })}
+    <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${ribbonSvg}${nodeSvg}${masks.join('')}${texts.join('')}
+  </svg>`;
 }

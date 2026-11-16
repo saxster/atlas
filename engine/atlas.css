@@ -1,8 +1,8 @@
 /* Atlas of Physics: shared tokens (Anatomy light theme). */
 :root {
-  --page: #f2f2ef; --card: #fbfbfa; --text: #57575a; --strong: #18181a; --muted: #8c8c90;
+  --page: #f2f2ef; --card: #fbfbfa; --text: #57575a; --strong: #18181a; --muted: #68686d;
   --hi: #26262a; --mid: #8a8a8f; --lo: #b4b4b8; --faint: #d4d4d6; --lit: #000;
-  --red: #e5484d;
+  --red: #e5484d; --red-ink: #b8343a; --green-ink: #236b43;
   --serif: 'EB Garamond', Georgia, serif; --sans: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
   --lift: inset 0 1px 0 0 #fff, 0 0 0 1px #0000000f, 0 1px 1px -.5px #0000000a, 0 3px 3px -1.5px #0000000a, 0 6px 6px -3px #0000000a, 0 12px 12px -6px #0000000a, 0 24px 24px -12px #0000000a;
 }

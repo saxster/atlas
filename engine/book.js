@@ -201,6 +201,7 @@ export function startBook(chapter) {
   });
   let shown = -1, leafFor = -1;
   // the leaf's back is the next left page: the same folio at its foot
+  $('leaf')?.setAttribute('aria-hidden', 'true');
   const leafFolio = $('folio').parentNode.cloneNode(true); leafFolio.lastElementChild.removeAttribute('id');
   document.querySelector('.leaf-back').append(leafFolio);
   function showPage(i) {
@@ -322,7 +323,14 @@ export function startBook(chapter) {
     showPage(flip > 0.999 ? j : (narrow() ? Math.round(s) : i));
     const leaf = $('leaf');
     if (flip > 0.001 && flip < 0.999) {
-      if (leafFor !== j) { leafFor = j; $('leafsheet').innerHTML = sheetHtml(j); $('leafnext').textContent = PAGES[j].fig; leafFolio.lastElementChild.textContent = j + 1; }
+      if (leafFor !== j) {
+        leafFor = j;
+        $('leafsheet').innerHTML = sheetHtml(j);
+        $('leafsheet').querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+        $('leafsheet').querySelectorAll('[aria-labelledby]').forEach(e => e.removeAttribute('aria-labelledby'));
+        $('leafnext').textContent = PAGES[j].fig;
+        leafFolio.lastElementChild.textContent = j + 1;
+      }
       leaf.style.visibility = 'visible';
       leaf.style.transform = `rotateY(${-180 * flip}deg)`;
       leaf.querySelector('.leaf-front').style.opacity = 0.25 + 0.6 * smooth(0.15, 0.5, flip);

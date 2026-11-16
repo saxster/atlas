@@ -5,7 +5,7 @@
 const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown|blueprint]   start a figure from a working example
 atlas check [dir]                                          run every checks.mjs under dir (default: here)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
-atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh clashes
+atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
 atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack`;
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -24,7 +24,8 @@ const COMMANDS = {
     const j = await (await import('../cli/jumps.mjs')).jumps(list);
     const l = await (await import('../cli/labels.mjs')).labels(list);
     const s = await (await import('../cli/scene.mjs')).scene(list, { intersections });
-    return j + l + s;
+    const c = await (await import('../cli/clip.mjs')).clip(list);
+    return j + l + s + c;
   },
   async record() {
     const o = {
