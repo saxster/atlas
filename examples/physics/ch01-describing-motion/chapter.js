@@ -11,37 +11,37 @@ export const PAGES = [
     fig: 'Figure 1.1 · Platform observer vs moving-train carriage reference frame',
     title: 'Two Observers, Two Reference Frames',
     alt: '3D railway platform with a stationary origin triad and a moving Mumbai local carriage carrying its own origin triad and a walking passenger.',
-    cam: { target: [0, 1.3, 0], az: 22, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 20, dist: 10.6 },
     lit: 'train_frame',
     parts: ['platform_frame', 'train_frame'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Four-car strobe',
-    fig: 'Figure 1.3 · Equal-time strobe snapshots comparing steady, fast, accelerating, and braking cars',
+    fig: 'Figure 1.3 · Equal-time strobe tracks: steady, fast, accelerating, and braking',
     title: 'Stroboscopic Motion Tracks',
     alt: 'Four parallel 3D lanes with strobe ghost spheres showing slow constant speed, fast constant speed, uniform acceleration, and uniform deceleration.',
-    cam: { target: [14, 1.2, 0], az: 16, el: 28, dist: 7.6 },
+    cam: { target: [14, 1.15, 0], az: 16, el: 28, dist: 10.8 },
     lit: 'accel_lane',
     parts: ['steady_lanes', 'accel_lane'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Galileo ramp',
-    fig: 'Figure 1.4 · Galileo’s grooved brass incline with 1 : 3 : 5 : 7 odd-number bell gates',
+    fig: 'Figure 1.4 · Galileo’s grooved incline with 1 : 3 : 5 : 7 odd-number bell gates',
     title: 'Galileo’s Inclined Plane & Odd-Number Law',
     alt: '3D tilted wooden and brass ramp with a rolling bronze sphere and musical bell gates spaced at 1, 4, 9, and 16 units so they ring at equal time beats.',
-    cam: { target: [28, 1.3, 0], az: -20, el: 22, dist: 7.2 },
+    cam: { target: [28, 1.25, 0], az: -20, el: 22, dist: 10.5 },
     lit: 'galileo_groove',
     parts: ['galileo_groove', 'bell_gates'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Vertical toss',
-    fig: 'Figure 1.6 · Vertical ball toss showing v = 0 and a = −g at the highest point',
+    fig: 'Figure 1.6 · Vertical ball toss showing v = 0 and a = −g at the apex',
     title: 'Vertical Toss: Position, Velocity & Acceleration',
-    alt: '3D vertical launch tower with a rising and falling ball carrying live velocity (green) and downward gravity acceleration (red) vectors alongside x-t, v-t, and a-t columns.',
-    cam: { target: [42, 1.5, 0], az: 24, el: 18, dist: 7.4 },
+    alt: '3D vertical launch tower with a rising and falling ball carrying live velocity (green) and downward gravity acceleration (red) vectors alongside y(t), v(t), and a(t) columns.',
+    cam: { target: [42, 1.4, 0], az: 24, el: 18, dist: 10.6 },
     lit: 'toss_column',
     parts: ['toss_column', 'kinematic_bars'],
     look: { xray: 0, section: 0 },
@@ -51,7 +51,7 @@ export const PAGES = [
     fig: 'Figure 1.7 · Relative velocity of two Mumbai local trains on parallel tracks',
     title: 'Relative Velocity of Passing Trains',
     alt: 'Two 3D railway carriages moving along parallel tracks with ground velocity vectors v_A and v_B and relative velocity vector v_AB = v_A − v_B.',
-    cam: { target: [56, 1.3, 0], az: 22, el: 22, dist: 7.6 },
+    cam: { target: [56, 1.25, 0], az: 22, el: 22, dist: 10.8 },
     lit: 'train_b',
     parts: ['train_a', 'train_b'],
     look: { xray: 0.1, section: 0 },
@@ -189,8 +189,11 @@ export const CHAPTER = {
     part(carAsm, box(2.1, 0.85, 0.85, 0.04), { pal: 'blue', tone: 'mid', pos: [0, 0.3, 0], mat: shadeMat('blue', { opacity: 0.45 }), ex: [0, 0.5, 0], name: 'Train carriage shell' });
     vectorTriad(carAsm, { pos: [-0.7, 0.05, 0], len: 0.55 });
     const walker = part(carAsm, sphere(0.14, 16), { pal: 'red', tone: 'hi', pos: [0, 0.22, 0], ex: [0, 0.35, 0.3], name: 'Passenger in carriage' });
+    const vTrainVec = arrow(carAsm, { pal: 'blue', r: 0.024 });
+    setArrow(vTrainVec, V(-0.4, 0.82, 0), V(0.55, 0.82, 0));
+    const vWalkVec = arrow(carAsm, { pal: 'red', r: 0.022 });
     label('board', 'Frame S (Platform)', () => V(-1.4, 1.2, 1.0));
-    label('board', 'Frame S′ (Train)', () => V(carAsm.position.x, 2.0, -0.45), { leader: [0, -20] });
+    label('board', 'Frame S′: v_ground = v_train + v′', () => V(carAsm.position.x, 2.0, -0.45), { leader: [0, -20] });
 
     // Station 1 (x = 14): 4-Car Strobe Tracks
     const steadyAsm = asm('steady_lanes', root, { title: 'Constant-speed strobe lanes', sub: 'Equal gaps Δx = v Δt' });
@@ -207,8 +210,18 @@ export const CHAPTER = {
     for (let i = 0; i < 5; i++) {
       const u = (i * i) / 16;
       const uBrake = 1 - Math.pow(4 - i, 2) / 16;
-      part(accelAsm, sphere(0.095, 14), { pal: 'red', tone: 'hi', pos: [-1.6 + u * 3.2, 0.15, -0.32], ex: [0, 0.4, 0], name: 'Accelerating strobe' });
-      part(accelAsm, sphere(0.095, 14), { pal: 'ochre', tone: 'hi', pos: [-1.6 + uBrake * 3.2, 0.15, 0.32], ex: [0, 0.3, 0], name: 'Braking strobe' });
+      const xAcc = -1.6 + u * 3.2;
+      const xBrk = -1.6 + uBrake * 3.2;
+      part(accelAsm, sphere(0.095, 14), { pal: 'red', tone: 'hi', pos: [xAcc, 0.15, -0.32], ex: [0, 0.4, 0], name: 'Accelerating strobe' });
+      part(accelAsm, sphere(0.095, 14), { pal: 'ochre', tone: 'hi', pos: [xBrk, 0.15, 0.32], ex: [0, 0.3, 0], name: 'Braking strobe' });
+      if (i > 0) {
+        const vAcc = arrow(accelAsm, { pal: 'green', r: 0.018 });
+        setArrow(vAcc, V(xAcc, 0.28, -0.32), V(xAcc + i * 0.14, 0.28, -0.32));
+      }
+      if (i < 4) {
+        const vBrk = arrow(accelAsm, { pal: 'green', r: 0.018 });
+        setArrow(vBrk, V(xBrk, 0.28, 0.32), V(xBrk + (4 - i) * 0.14, 0.28, 0.32));
+      }
     }
     label('board', '1 : 3 : 5 : 7 strobe gaps', () => V(14, 1.15, 0.8), { leader: [0, -22] });
 
@@ -220,25 +233,30 @@ export const CHAPTER = {
 
     const bellsAsm = asm('bell_gates', root, { title: 'Odd-number bell gates (1, 4, 9, 16)', sub: 'Equal-time acoustic beats' });
     bellsAsm.position.set(28, 0.9, 0);
+    const bellMeshes = [];
     for (const k of [1, 4, 9, 16]) {
       const bx = -1.6 + (k / 16) * 3.2;
-      part(bellsAsm, cyl(0.04, 0.38, 12), { pal: 'green', tone: 'hi', pos: [bx, 0.26, 0.22], ex: [0, 0.45, 0.2], name: `Bell gate at d = ${k}` });
+      bellMeshes.push({
+        uGate: Math.sqrt(k / 16),
+        mesh: part(bellsAsm, cyl(0.045, 0.38, 12), { pal: 'green', tone: 'hi', pos: [bx, 0.26, 0.22], ex: [0, 0.45, 0.2], name: `Bell gate at d = ${k}` }),
+      });
     }
-    label('board', 'Bells at 1, 4, 9, 16', () => V(28, 2.05, 0), { leader: [20, -22] });
+    label('board', 'Bells at 1, 4, 9, 16 (Δd = 1:3:5:7)', () => V(28, 2.05, 0), { leader: [20, -22] });
 
     // Station 3 (x = 42): Vertical Ball Toss + v & a Vectors
     const tossAsm = asm('toss_column', root, { title: 'Vertical toss launch tower', sub: 'v = 0, a = −g at peak' });
     tossAsm.position.set(41.2, 0.1, 0);
     part(tossAsm, cyl(0.05, 2.4, 12), { pal: 'dark', tone: 'mid', pos: [-0.35, 1.2, 0], name: 'Height guide mast' });
+    const apexRing = part(tossAsm, cyl(0.24, 0.03, 20), { pal: 'blue', tone: 'mid', pos: [0, 1.5, 0], mat: shadeMat('blue', { opacity: 0.4 }), name: 'Apex height marker (y_max)' });
     const tossBall = part(tossAsm, sphere(0.16, 20), { pal: 'ochre', tone: 'hi', pos: [0, 1.0, 0], ex: [0, 0.35, 0], name: 'Tossed ball' });
     const vVec = arrow(tossAsm, { pal: 'green', r: 0.028 });
     const aVec = arrow(tossAsm, { pal: 'red', r: 0.028 });
 
-    const barsAsm = asm('kinematic_bars', root, { title: 'y(t), v(t), a(t) columns', sub: 'Live state meters' });
+    const barsAsm = asm('kinematic_bars', root, { title: 'y(t), |v(t)|, |a| columns', sub: 'Live state meters' });
     barsAsm.position.set(42.8, 0.1, 0);
-    const yBar = part(barsAsm, box(0.32, 1.0, 0.32, 0.03), { pal: 'blue', tone: 'hi', pos: [-0.5, 0.5, 0], ex: [0, 0.3, 0], name: 'Height y(t)' });
-    const vBar = part(barsAsm, box(0.32, 1.0, 0.32, 0.03), { pal: 'green', tone: 'hi', pos: [0.0, 0.5, 0], ex: [0, 0.3, 0], name: 'Speed |v(t)|' });
-    part(barsAsm, box(0.32, 0.98, 0.32, 0.03), { pal: 'red', tone: 'hi', pos: [0.5, 0.49, 0], ex: [0, 0.3, 0], name: 'Constant |a| = g' });
+    const yBar = part(barsAsm, box(0.32, 1.0, 0.32, 0.03), { pal: 'blue', tone: 'hi', pos: [-0.5, 0.5, 0], ex: [-0.25, 0, 0], name: 'Height y(t)' });
+    const vBar = part(barsAsm, box(0.32, 1.0, 0.32, 0.03), { pal: 'green', tone: 'hi', pos: [0.0, 0.5, 0], ex: [0, 0, 0.25], name: 'Speed |v(t)|' });
+    part(barsAsm, box(0.32, 0.98, 0.32, 0.03), { pal: 'red', tone: 'hi', pos: [0.5, 0.49, 0], ex: [0.25, 0, 0], name: 'Constant |a| = g' });
     label('board', 'a = −g even at apex!', () => V(41.2, 2.55, 0), { leader: [0, -20] });
 
     // Station 4 (x = 56): Passing Trains Relative Velocity
@@ -261,6 +279,7 @@ export const CHAPTER = {
         const cyc = (s.t % 2.4) / 2.4 - 0.5;
         carAsm.position.x = cyc * 1.6;
         walker.position.x = cyc * 0.7;
+        setArrow(vWalkVec, V(walker.position.x, 0.42, 0), V(walker.position.x + 0.42, 0.42, 0));
 
         // Station 2: tilt Galileo ramp & roll ball
         const rad = -(s.rampDeg * Math.PI) / 180;
@@ -268,16 +287,22 @@ export const CHAPTER = {
         bellsAsm.rotation.z = rad;
         const uRoll = (s.t * 0.55) % 1;
         bronzeBall.position.x = -1.6 + uRoll * uRoll * 3.2;
+        for (const b of bellMeshes) {
+          const hit = Math.max(0, 1 - Math.abs(uRoll - b.uGate) * 16);
+          b.mesh.scale.set(1 + hit * 0.45, 1 + hit * 0.2, 1 + hit * 0.45);
+        }
 
-        // Station 3: vertical toss ball & vectors
-        const yNorm = Math.min(2.1, (s.toss.yM / Math.max(1, s.toss.yApex)) * 1.85 + 0.25);
-        tossBall.position.y = yNorm;
-        const vLen = (s.toss.vMps / 16) * 0.75;
-        setArrow(vVec, V(0.22, yNorm, 0), V(0.22, yNorm + vLen, 0));
-        setArrow(aVec, V(-0.22, yNorm, 0), V(-0.22, yNorm - 0.55, 0));
-        yBar.scale.y = Math.max(0.08, yNorm * 0.8);
+        // Station 3: vertical toss ball & vectors (height scales directly with yM and yApex)
+        const yApexScene = 0.25 + (s.toss.yApex / 13.5) * 1.9;
+        apexRing.position.y = yApexScene;
+        const yScene = 0.25 + (s.toss.yM / 13.5) * 1.9;
+        tossBall.position.y = yScene;
+        const vLen = (s.toss.vMps / 16) * 0.78;
+        setArrow(vVec, V(0.22, yScene, 0), V(0.22, yScene + vLen, 0));
+        setArrow(aVec, V(-0.22, yScene, 0), V(-0.22, yScene - 0.55, 0));
+        yBar.scale.y = Math.max(0.08, yScene * 0.85);
         yBar.position.y = yBar.scale.y * 0.5;
-        vBar.scale.y = Math.max(0.08, Math.abs(vLen) * 1.6);
+        vBar.scale.y = Math.max(0.08, Math.abs(vLen) * 1.7);
         vBar.position.y = vBar.scale.y * 0.5;
 
         // Station 4: passing trains

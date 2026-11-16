@@ -1,0 +1,10 @@
+import * as M from './model.js';
+let bad = 0;
+const check = (name, ok) => { if (ok) console.log(`PASS  ${name}`); else { bad++; console.log(`FAIL  ${name}`); } };
+const br = M.bisectorRhombus(2.0, 0.8);
+check('Rhombus bisector with AB=2, r=1.6 has halfPQ = sqrt(1.6^2 - 1^2) = 1.249', Math.abs(br.halfPQ - Math.sqrt(1.56)) < 1e-9 && br.angleDeg === 90);
+const bb = M.backBearing(65);
+check('Bearing 065° has back-bearing 245°', bb.fwdStr === '065' && bb.backStr === '245');
+const eu = M.eulerPolyhedra();
+check('Euler V - E + F = 2 holds for Tetrahedron, Cube, and Octahedron', eu.every(p => p.chi === 2));
+process.exit(bad ? 1 : 0);

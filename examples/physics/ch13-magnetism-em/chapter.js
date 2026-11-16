@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Magnetic domains',
-    fig: 'Figure 13.1 · Ferromagnetic domains aligning with an external B-field & randomizing when heated',
+    fig: 'Figure 13.1 · Ferromagnetic domains aligning with B_ext',
     title: 'Ferromagnetic Domains & Curie Alignment',
     alt: '3D iron bar cutaway showing an array of internal magnetic domain dipole arrows rotating into alignment as external magnetic field B rises.',
-    cam: { target: [0, 1.25, 0], az: 20, el: 24, dist: 7.2 },
+    cam: { target: [0, 1.2, 0], az: 20, el: 24, dist: 10.4 },
     lit: 'domain_arrows',
     parts: ['iron_bar', 'domain_arrows'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'DC motor & commutator',
-    fig: 'Figure 13.4 · DC motor armature coil (F = I L × B) & split-ring commutator reversal',
+    fig: 'Figure 13.4 · DC motor coil (F = I L × B) & split-ring commutator',
     title: 'DC Motor Lorentz Force & Split-Ring Commutator',
     alt: '3D rotating copper armature coil between North and South magnet poles with a brass split-ring commutator and carbon brushes that flip coil current every 180° so torque stays in one direction.',
-    cam: { target: [14, 1.3, 0], az: 26, el: 22, dist: 7.4 },
+    cam: { target: [14, 1.25, 0], az: 26, el: 22, dist: 10.6 },
     lit: 'armature_coil',
     parts: ['stator_magnets', 'armature_coil', 'split_commutator'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Maxwell EM wave',
-    fig: 'Figure 13.6 · Maxwell’s transverse electromagnetic wave: E ⊥ B ⊥ direction of propagation c',
+    fig: 'Figure 13.6 · Maxwell’s transverse electromagnetic wave (E ⊥ B ⊥ c)',
     title: 'Propagating Electromagnetic Wave (E ⊥ B)',
     alt: '3D mutually perpendicular electric field (vertical red arrows) and magnetic field (horizontal blue arrows) regenerating each other at speed c = 1/√(μ₀ε₀).',
-    cam: { target: [28, 1.3, 0], az: 24, el: 22, dist: 7.6 },
+    cam: { target: [28, 1.25, 0], az: 24, el: 22, dist: 10.6 },
     lit: 'em_vectors',
     parts: ['wave_axis', 'em_vectors'],
     look: { xray: 0, section: 0 },
@@ -118,6 +118,7 @@ export const CHAPTER = {
     const barAsm = asm('iron_bar', root, { title: 'Soft iron specimen bar', sub: 'Cutaway reveals internal domains' });
     barAsm.position.set(0, 1.05, 0);
     part(barAsm, box(3.0, 0.9, 0.9, 0.04), { pal: 'paper', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('paper', { opacity: 0.36 }), name: 'Iron bar casing' });
+    const bExtVec = arrow(barAsm, { pal: 'blue', r: 0.026 });
 
     const domAsm = asm('domain_arrows', root, { title: 'Microscopic magnetic domain dipoles', sub: 'Rotate into alignment with B_ext' });
     domAsm.position.set(0, 1.05, 0);
@@ -136,6 +137,8 @@ export const CHAPTER = {
     statAsm.position.set(14, 1.15, 0);
     part(statAsm, box(0.45, 0.95, 1.1, 0.03), { pal: 'red', tone: 'hi', pos: [-1.25, 0, 0], ex: [-0.4, 0, 0], name: 'North pole (N)' });
     part(statAsm, box(0.45, 0.95, 1.1, 0.03), { pal: 'blue', tone: 'hi', pos: [1.25, 0, 0], ex: [0.4, 0, 0], name: 'South pole (S)' });
+    const bStatVec = arrow(statAsm, { pal: 'blue', r: 0.02 });
+    setArrow(bStatVec, V(-0.95, -0.38, 0), V(0.95, -0.38, 0));
 
     const armAsm = asm('armature_coil', root, { title: 'Rotating copper armature loop', sub: 'F = I L × B Lorentz couple' });
     armAsm.position.set(14, 1.15, 0);
@@ -147,7 +150,10 @@ export const CHAPTER = {
 
     const commAsm = asm('split_commutator', root, { title: 'Split-ring commutator & carbon brushes', sub: 'Swaps polarity every 180°' });
     commAsm.position.set(14, 1.15, 0.85);
-    const commRing = part(commAsm, torus(0.24, 0.055, 12, 24), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], ex: [0, 0, 0.45], name: 'Split brass commutator' });
+    const commRing = new THREE.Group();
+    commAsm.add(commRing);
+    part(commRing, torus(0.24, 0.055, 12, 16, Math.PI * 0.82), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], rot: [0, 0, Math.PI * 0.09], ex: [0, 0.15, 0.45], name: 'Upper brass half-ring' });
+    part(commRing, torus(0.24, 0.055, 12, 16, Math.PI * 0.82), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], rot: [0, 0, Math.PI * 1.09], ex: [0, -0.15, 0.45], name: 'Lower brass half-ring' });
     part(commAsm, box(0.16, 0.14, 0.16, 0.01), { pal: 'dark', tone: 'hi', pos: [-0.32, 0, 0], ex: [-0.3, 0, 0.45], name: 'Left carbon brush' });
     part(commAsm, box(0.16, 0.14, 0.16, 0.01), { pal: 'dark', tone: 'hi', pos: [0.32, 0, 0], ex: [0.3, 0, 0.45], name: 'Right carbon brush' });
     label('board', 'Split-ring flips I every 180°', () => V(14, 2.05, 0.85), { leader: [0, -20] });
@@ -172,6 +178,8 @@ export const CHAPTER = {
       labels,
       update(s) {
         // Station 0: Align domains with bExtT
+        const bLen = Math.max(0.15, s.bExtT * 2.2);
+        setArrow(bExtVec, V(-bLen / 2, 0.62, 0), V(bLen / 2, 0.62, 0));
         for (const d of domVecs) {
           const ang = d.a0 * (1 - s.align);
           const dx = 0.24 * Math.cos(ang), dy = 0.24 * Math.sin(ang);

@@ -8,40 +8,40 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Charged comb',
-    fig: 'Figure 12.1 · Rubbing transfers electrons: how a negatively charged comb lifts neutral paper',
+    fig: 'Figure 12.1 · Triboelectric comb & induced paper dipoles',
     title: 'Triboelectric Charge & Induced Paper Dipoles',
     alt: '3D negatively charged plastic comb hovering above neutral paper scraps whose internal positive charges shift upward toward the comb while negative charges shift downward, creating a net upward attraction.',
-    cam: { target: [0, 1.3, 0], az: 22, el: 20, dist: 7.2 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 20, dist: 10.4 },
     lit: 'paper_dipoles',
     parts: ['charged_comb', 'paper_dipoles'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Closed circuit loop',
-    fig: 'Figure 12.2 · Why a circuit needs a complete closed loop: battery pump & circulating electrons',
+    fig: 'Figure 12.2 · Closed circuit loop: battery pump & electron drift',
     title: 'Closed Conducting Loop vs Water-Pump Analogy',
     alt: '3D closed copper wire torus containing mobile conduction electrons driven continuously around the loop by a 1.5 V cell potential step.',
-    cam: { target: [14, 1.3, 0], az: 20, el: 24, dist: 7.4 },
+    cam: { target: [14, 1.25, 0], az: 20, el: 24, dist: 10.6 },
     lit: 'conducting_loop',
     parts: ['battery_cell', 'conducting_loop'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'I–V curves',
-    fig: 'Figure 12.4 · Current–voltage (I–V) curves for an Ohmic resistor, hot filament bulb, and LED diode',
+    fig: 'Figure 12.4 · I–V curves: Ohmic resistor, hot bulb & LED diode',
     title: 'Ohmic Resistor vs Filament Bulb vs Semiconductor Diode',
     alt: 'Three 3D I-V characteristic tubes: a straight line for an Ohmic resistor (I = V/R), a flattening S-curve for a self-heating tungsten filament, and a threshold knee curve for an LED.',
-    cam: { target: [28, 1.3, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 24, el: 20, dist: 10.6 },
     lit: 'iv_tubes',
     parts: ['iv_tubes', 'operating_markers'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Earth pin & fuse',
-    fig: 'Figure 12.6 · Why the top Earth pin on an Indian 3-pin plug is longer and thicker',
+    fig: 'Figure 12.6 · Indian 3-pin plug: longer, thicker Earth pin & fuse',
     title: 'Three-Pin Plug Earth Wire & Fuse Fault Protection',
     alt: '3D cutaway metal-cased kettle and 3-pin Indian plug showing the longer, thicker top brass Earth pin diverting a live-wire casing fault safely into the ground to blow the fuse.',
-    cam: { target: [42, 1.3, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [42, 1.25, 0], az: 24, el: 20, dist: 10.6 },
     lit: 'three_pin_plug',
     parts: ['three_pin_plug', 'kettle_casing'],
     look: { xray: 0.25, section: 0 },
@@ -152,6 +152,8 @@ export const CHAPTER = {
       part(bit, sphere(0.07, 12), { pal: 'blue', tone: 'hi', pos: [0, -0.11, 0.16], name: 'Repelled −q bottom layer' });
       paperBits.push(bit);
     }
+    const fAttVec = arrow(paperBits[1], { pal: 'red', r: 0.024 });
+    const fRepVec = arrow(paperBits[1], { pal: 'blue', r: 0.022 });
     label('board', 'Closer +q attraction > farther −q repulsion', () => V(0, 2.15, 0), { leader: [0, -20] });
 
     // Station 1 (x = 14): Closed Loop & Electron Drift
@@ -169,6 +171,10 @@ export const CHAPTER = {
     // Station 2 (x = 28): 3D I-V Curves (Ohmic, Filament, Diode)
     const ivAsm = asm('iv_tubes', root, { title: 'Ohmic, Filament & LED I–V curves', sub: 'Linear vs thermal vs threshold' });
     ivAsm.position.set(28, 0.2, 0);
+    const vAxis = arrow(ivAsm, { pal: 'dark', r: 0.018 });
+    setArrow(vAxis, V(-1.55, 0, 0), V(1.65, 0, 0));
+    const iAxis = arrow(ivAsm, { pal: 'dark', r: 0.018 });
+    setArrow(iAxis, V(-1.5, 0, 0), V(-1.5, 1.85, 0));
     const ptsOhmic = [], ptsBulb = [], ptsDiode = [];
     for (let i = 0; i <= 10; i++) {
       const v = (i / 10) * 5.0;
@@ -201,20 +207,26 @@ export const CHAPTER = {
     const ketAsm = asm('kettle_casing', root, { title: 'Earthed metal kettle & fuse', sub: '115 A surge blows fuse safely' });
     ketAsm.position.set(42.9, 1.0, 0);
     part(ketAsm, cyl(0.68, 1.25, 24), { pal: 'ochre', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('ochre', { opacity: 0.45 }), ex: [0.35, 0.3, 0], name: 'Metal kettle shell' });
+    const fuseLink = part(ketAsm, cyl(0.045, 0.42, 12), { pal: 'red', tone: 'hi', pos: [-0.85, -0.35, 0.22], rot: [0, 0, Math.PI / 2], name: '15 A cartridge fuse' });
     const earthWireRod = rod(root, { r: 0.028, pal: 'green', tone: 'hi', name: 'Low-resistance green Earth wire' });
     earthWireRod.set(V(41.65, 1.36, 0), V(42.9, 1.36, 0));
+    const faultVec = arrow(root, { pal: 'green', r: 0.026 });
     label('board', 'Longer, thicker Earth pin → 115 A trips fuse!', () => V(42.0, 2.15, 0), { leader: [0, -20] });
 
     return {
       labels,
       update(s) {
-        // Station 0: Comb height & paper lift
+        // Station 0: Comb height, paper lift, and 1/r^2 dipole Coulomb forces
         const hComb = 0.85 + (s.combGapCm / 5.0) * 1.1;
         combAsm.position.y = hComb;
         const lift = Math.max(0, (5.2 - s.combGapCm) * 0.12);
         for (let i = 0; i < 3; i++) {
           paperBits[i].position.y = lift + 0.04 * Math.sin(s.t * 3 + i);
         }
+        const fUp = 0.28 + (5.2 - s.combGapCm) * 0.08;
+        const fDn = Math.max(0.12, fUp * 0.55);
+        setArrow(fAttVec, V(0, 0.12, 0.16), V(0, 0.12 + fUp, 0.16));
+        setArrow(fRepVec, V(0, -0.12, 0.16), V(0, -0.12 - fDn, 0.16));
 
         // Station 1: Circulating electrons around loop
         const pts = [];
@@ -229,6 +241,11 @@ export const CHAPTER = {
         mOhm.position.set(xV, s.iv.iOhmicA * 3.2, -0.45);
         mBulb.position.set(xV, s.iv.iFilamentA * 3.2, 0);
         mLed.position.set(xV, Math.min(1.8, s.iv.iDiodeA * 1.1), 0.45);
+
+        // Station 3: Earth fault current vector & fuse state
+        const iLen = Math.min(1.15, (s.ef.faultCurrentEarthA / 115) * 0.95);
+        setArrow(faultVec, V(42.85, 1.52, 0), V(42.85 - iLen, 1.52, 0));
+        fuseLink.scale.y = s.ef.fuseTrips ? 0.35 : 1.0;
       },
     };
   },

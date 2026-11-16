@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, rod,
+  THREE, part, box, cyl, sphere, capsule, torus, rod,
   prims, buildHelix, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -92,15 +92,15 @@ export const CHAPTER = {
     { id: 'anaphasePull', label: 'Spindle anaphase separation', min: 0, max: 100, step: 5, value: 55, unit: '%' },
   ],
   lessons: {
-    'ch12-fork-3d': { page: 0 },
-    'ch12-mitosis-3d-chromatids': { page: 1 },
-    'ch12-mitosis-3d': { page: 1 },
-    'ch12-mitosis-3d-crops': { page: 1 },
-    'ch12-stem-3d': { page: 2 },
-    'ch12-stem-3d-gurdon': { page: 2 },
-    'ch12-meiosis-3d': { page: 3 },
-    'ch12-meiosis-3d-compare': { page: 3 },
-    'ch12-meiosis-3d-triploid': { page: 3 },
+    'ch12-fork-3d': { page: 0, lit: 'replication_fork' },
+    'ch12-mitosis-3d-chromatids': { page: 1, lit: 'sister_chromatids', params: { anaphasePull: 10 } },
+    'ch12-mitosis-3d': { page: 1, lit: 'spindle_poles', params: { anaphasePull: 65 } },
+    'ch12-mitosis-3d-crops': { page: 1, lit: 'sister_chromatids', params: { anaphasePull: 85 } },
+    'ch12-stem-3d': { page: 2, lit: 'waddington_surface' },
+    'ch12-stem-3d-gurdon': { page: 2, lit: 'reprogram_vector' },
+    'ch12-meiosis-3d': { page: 3, lit: 'bivalent_chiasma' },
+    'ch12-meiosis-3d-compare': { page: 3, lit: 'haploid_gametes' },
+    'ch12-meiosis-3d-triploid': { page: 3, lit: 'bivalent_chiasma' },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 240 + s.ms.generation * 90, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -141,6 +141,7 @@ export const CHAPTER = {
 
     const forkAsm = asm('replication_fork', root, { title: 'Semi-conservative replication fork', sub: '1 old strand + 1 new strand per daughter' });
     buildHelix(forkAsm, { turns: -12 / 10.5, rungs: 12, radius: 0.5, height: 2.1, x0: 1.15, y0: 1.35, z0: 0, palA: 'ink', palB: 'ochre' });
+    part(forkAsm, torus(0.54, 0.06, 10, 22), { pal: 'green', tone: 'lit', pos: [1.15, 2.35, 0], rot: [Math.PI / 2, 0, 0], ex: [0.35, 0.35, 0], name: 'Helicase unwinding ring' });
     label('board', 'CsCl density bands', () => V(-0.9, 2.35, 0));
     label('board', '¹⁵N/¹⁴N hybrid duplex', () => V(1.15, 2.55, 0));
 
@@ -149,6 +150,7 @@ export const CHAPTER = {
     poleAsm.position.set(14.0, 1.35, 0);
     part(poleAsm, sphere(0.2, 16), { pal: 'ochre', tone: 'lit', pos: [-1.45, 0, 0], ex: [-0.45, 0, 0], name: 'Left centrosome pole' });
     part(poleAsm, sphere(0.2, 16), { pal: 'ochre', tone: 'lit', pos: [1.45, 0, 0], ex: [0.45, 0, 0], name: 'Right centrosome pole' });
+    part(poleAsm, torus(0.72, 0.018, 10, 24), { pal: 'paper', tone: 'mid', rot: [0, Math.PI / 2, 0], ex: [0, 0.35, 0], name: 'Metaphase equatorial plate' });
     for (const sy of [-0.45, 0, 0.45]) {
       const f = rod(poleAsm, { r: 0.018, pal: 'dark', tone: 'mid', name: 'Spindle microtubule' });
       f.set(V(-1.45, 0, 0), V(1.45, sy * 1.4, 0));
@@ -161,7 +163,9 @@ export const CHAPTER = {
     sisAsm.add(sisLeft, sisRight);
     for (const [idx, sy, pal] of [[0, -0.42, 'blue'], [1, 0, 'red'], [2, 0.42, 'green']]) {
       part(sisLeft, capsule(0.09, 0.32, 8, 14), { pal, tone: 'lit', pos: [0, sy, 0], rot: [0, 0, 0.3], ex: [-0.35, sy * 0.5, 0], name: `Left daughter chromosome ${idx + 1}` });
+      part(sisLeft, sphere(0.055, 10), { pal: 'ochre', tone: 'lit', pos: [-0.05, sy, 0.08], ex: [-0.35, sy * 0.5, 0.15], name: 'Centromere kinetochore complex' });
       part(sisRight, capsule(0.09, 0.32, 8, 14), { pal, tone: 'lit', pos: [0, sy, 0], rot: [0, 0, -0.3], ex: [0.35, sy * 0.5, 0], name: `Right daughter chromosome ${idx + 1}` });
+      part(sisRight, sphere(0.055, 10), { pal: 'ochre', tone: 'lit', pos: [0.05, sy, 0.08], ex: [0.35, sy * 0.5, 0.15], name: 'Centromere kinetochore complex' });
     }
     label('board', 'Mitotic spindle (2n → 2n)', () => V(14.0, 2.35, 0));
 
@@ -170,6 +174,12 @@ export const CHAPTER = {
     wadAsm.position.set(27.0, 0.25, -0.6);
     const axW = prims.axes(wadAsm, { x: [-1.2, 1.2], y: [-1.2, 1.2], z: [0, 2.2], size: [2.2, 1.8, 1.6] });
     prims.surface(wadAsm, (x, y) => M.waddingtonLandscapeHeight(x, y), { axes: axW, n: 24, pal: 'green' });
+    const topPos = axW.to(0, -1.1, M.waddingtonLandscapeHeight(0, -1.1) + 0.1);
+    part(wadAsm, sphere(0.09, 14), { pal: 'ochre', tone: 'lit', pos: [topPos.x, topPos.y, topPos.z], ex: [0, 0.35, 0], name: 'Pluripotent stem cell' });
+    for (const [vx, pal, lName] of [[-0.75, 'blue', 'Neurone lineage'], [0, 'red', 'Muscle lineage'], [0.75, 'ochre', 'β-cell lineage']]) {
+      const vp = axW.to(vx, 0.9, M.waddingtonLandscapeHeight(vx, 0.9) + 0.09);
+      part(wadAsm, sphere(0.075, 12), { pal, tone: 'lit', pos: [vp.x, vp.y, vp.z], ex: [vx * 0.25, 0.25, 0.2], name: lName });
+    }
 
     const repAsm = asm('reprogram_vector', root, { title: 'Yamanaka iPSC reprogramming vector', sub: 'Pushes adult somatic cell back to pluripotency' });
     repAsm.position.set(27.0, 0.25, -0.6);
@@ -181,6 +191,9 @@ export const CHAPTER = {
     bivAsm.position.set(41.2, 1.35, 0);
     part(bivAsm, capsule(0.13, 0.95, 10, 16), { pal: 'blue', tone: 'lit', pos: [-0.24, 0, 0], rot: [0, 0, -0.22], ex: [-0.4, 0.3, 0], name: 'Paternal homologue' });
     part(bivAsm, capsule(0.13, 0.95, 10, 16), { pal: 'red', tone: 'lit', pos: [0.24, 0, 0], rot: [0, 0, 0.22], ex: [0.4, 0.3, 0], name: 'Maternal homologue' });
+    // Swapped recombinant chromatid tips showing reciprocal exchange across the chiasma
+    part(bivAsm, sphere(0.135, 14), { pal: 'red', tone: 'lit', pos: [-0.13, 0.48, 0.04], ex: [-0.4, 0.45, 0.15], name: 'Swapped maternal segment on paternal chromatid' });
+    part(bivAsm, sphere(0.135, 14), { pal: 'blue', tone: 'lit', pos: [0.13, 0.48, 0.04], ex: [0.4, 0.45, 0.15], name: 'Swapped paternal segment on maternal chromatid' });
     part(bivAsm, sphere(0.16, 16), { pal: 'ochre', tone: 'lit', pos: [0, 0.08, 0.12], ex: [0, 0, 0.45], name: 'Chiasma crossover point' });
 
     const gamAsm = asm('haploid_gametes', root, { title: 'Four haploid products (sperm model)', sub: 'Independent assortment + recombination' });
@@ -188,7 +201,10 @@ export const CHAPTER = {
     const gamPals = ['blue', 'red', 'green', 'ochre'];
     for (let i = 0; i < 4; i++) {
       const a = (i * Math.PI) / 2 + 0.4;
-      part(gamAsm, sphere(0.28, 18), { pal: gamPals[i], tone: 'hi', pos: [0.48 * Math.cos(a), 0.48 * Math.sin(a), 0], ex: [0.35 * Math.cos(a), 0.35 * Math.sin(a), 0], name: `Haploid sorting product ${i + 1}` });
+      const gx = 0.48 * Math.cos(a), gy = 0.48 * Math.sin(a);
+      part(gamAsm, sphere(0.28, 18), { pal: gamPals[i], tone: 'hi', pos: [gx, gy, 0], ex: [0.35 * Math.cos(a), 0.35 * Math.sin(a), 0], name: `Haploid sorting product ${i + 1}` });
+      const tail = rod(gamAsm, { r: 0.018, pal: gamPals[i], tone: 'mid', name: 'Sperm flagellum tail' });
+      tail.set(V(gx, gy, -0.15), V(gx * 1.35, gy * 1.35 - 0.18, -0.45));
     }
     label('board', 'Chiasma bivalent', () => V(41.2, 2.35, 0));
     label('board', '4 Haploid (n) cells', () => V(43.0, 2.35, 0));

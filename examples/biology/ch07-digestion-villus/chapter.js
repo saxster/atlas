@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, torus, shadeMat,
+  THREE, part, box, cyl, sphere, capsule, torus, rod, shadeMat,
   prims, studioGrid, playTone, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -96,19 +96,19 @@ export const CHAPTER = {
     { id: 'bileSplit', label: 'Bile emulsification split factor k', min: 1, max: 6, step: 1, value: 4, unit: '×' },
   ],
   lessons: {
-    'ch07-villus-3d-boundary': { page: 3 },
-    'ch07-peristalsis-3d-bolus': { page: 0 },
-    'ch07-peristalsis-3d-mucus': { page: 1 },
-    'ch07-hepatic-3d-proteases': { page: 1 },
-    'ch07-micelle-3d': { page: 2 },
-    'ch07-micelle-3d-lipase': { page: 2 },
-    'ch07-hepatic-3d': { page: 3 },
-    'ch07-canal-3d': { page: 0 },
-    'ch07-boundary-3d': { page: 0 },
-    'ch07-peristalsis-3d': { page: 0 },
-    'ch07-ph-mucus-3d': { page: 1, params: { lumenPh: 1.8 } },
-    'ch07-bile-lipase-3d': { page: 2, params: { lumenPh: 8.0, bileSplit: 5 } },
-    'ch07-villus-3d': { page: 3, params: { lumenPh: 8.0, bileSplit: 4 } },
+    'ch07-villus-3d-boundary': { page: 3, lit: 'villus_epithelium' },
+    'ch07-peristalsis-3d-bolus': { page: 0, lit: 'food_bolus' },
+    'ch07-peristalsis-3d-mucus': { page: 1, lit: 'mucus_shield' },
+    'ch07-hepatic-3d-proteases': { page: 1, lit: 'ph_curves' },
+    'ch07-micelle-3d': { page: 2, lit: 'bile_droplets' },
+    'ch07-micelle-3d-lipase': { page: 2, lit: 'lipase_enzyme' },
+    'ch07-hepatic-3d': { page: 3, lit: 'capillary_bed' },
+    'ch07-canal-3d': { page: 0, lit: 'circular_muscle' },
+    'ch07-boundary-3d': { page: 0, lit: 'circular_muscle' },
+    'ch07-peristalsis-3d': { page: 0, lit: 'circular_muscle' },
+    'ch07-ph-mucus-3d': { page: 1, lit: 'mucus_shield', params: { lumenPh: 1.8 } },
+    'ch07-bile-lipase-3d': { page: 2, lit: 'bile_droplets', params: { lumenPh: 8.0, bileSplit: 5 } },
+    'ch07-villus-3d': { page: 3, lit: 'central_lacteal', params: { lumenPh: 8.0, bileSplit: 4 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 160 + s.em.areaMultiplier * 55, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -149,6 +149,10 @@ export const CHAPTER = {
       const m = part(musAsm, torus(0.48, 0.065, 12, 24), { pal: 'red', tone: 'hi', pos: [i * 0.34, 0, 0], rot: [0, Math.PI / 2, 0], ex: [0, 0.35, 0], name: 'Circular muscle ring' });
       rings.push(m);
     }
+    for (const ang of [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2]) {
+      const lm = rod(musAsm, { r: 0.024, pal: 'ochre', tone: 'mid', ex: [0, 0.45 * Math.sin(ang), 0.45 * Math.cos(ang)], name: 'Outer longitudinal muscle layer' });
+      lm.set(V(-1.42, 0.56 * Math.sin(ang), 0.56 * Math.cos(ang)), V(1.42, 0.56 * Math.sin(ang), 0.56 * Math.cos(ang)));
+    }
     const bolAsm = asm('food_bolus', root, { title: 'Lubricated food bolus', sub: 'Propelled along gut lumen' });
     bolAsm.position.set(0, 1.35, 0);
     const bolusMesh = part(bolAsm, sphere(0.36, 20), { pal: 'ochre', tone: 'lit', ex: [0, -0.45, 0], name: 'Chyme bolus' });
@@ -167,6 +171,9 @@ export const CHAPTER = {
     mucAsm.position.set(15.5, 1.1, 0);
     part(mucAsm, box(0.95, 0.35, 0.95, 0.04), { pal: 'red', tone: 'hi', pos: [0, -0.25, 0], ex: [0, -0.35, 0], name: 'Gastric mucosa epithelium' });
     part(mucAsm, box(0.95, 0.28, 0.95, 0.05), { pal: 'green', tone: 'lit', pos: [0, 0.1, 0], ex: [0, 0.35, 0], name: 'Mucus–bicarbonate barrier' });
+    for (const [hx, hz] of [[-0.25, 0.15], [0.05, -0.18], [0.28, 0.12]]) {
+      part(mucAsm, sphere(0.065, 12), { pal: 'red', tone: 'lit', pos: [hx, 0.42, hz], ex: [0, 0.55, 0], name: 'Lumen H⁺ acid blocked by mucus' });
+    }
     label('board', 'Pepsin · Amylase · Lipase', () => V(13.7, 2.15, -0.3));
     label('board', 'Mucus barrier', () => V(15.5, 1.85, 0));
 
@@ -183,7 +190,8 @@ export const CHAPTER = {
 
     const lipAsm = asm('lipase_enzyme', root, { title: 'Pancreatic lipase at interface', sub: 'Hydrolyses ester bonds at water-oil boundary' });
     lipAsm.position.set(29.1, 1.35, 0);
-    prims.blob(lipAsm, { r: 0.62, subdiv: 3, seed: 23, pal: 'blue', cleft: { dir: [-1, 0, 0], depth: 0.5, width: 0.48 }, name: 'Pancreatic lipase' });
+    lipAsm.rotation.y = Math.PI;
+    prims.blob(lipAsm, { r: 0.62, subdiv: 3, seed: 23, pal: 'blue', cleft: 0.55, name: 'Pancreatic lipase' });
     label('board', 'Fat droplets', () => V(27.3, 2.35, 0));
     label('board', 'Pancreatic lipase', () => V(29.1, 2.35, 0));
 
@@ -191,12 +199,14 @@ export const CHAPTER = {
     const epAsm = asm('villus_epithelium', root, { title: 'One-cell-thick brush-border epithelium', sub: 'Microvilli & goblet cells' });
     epAsm.position.set(42, 1.3, 0);
     part(epAsm, capsule(0.78, 1.25, 14, 24), { pal: 'ochre', tone: 'mid', mat: shadeMat('ochre', { opacity: 0.36 }), ex: [0, 0.55, 0], name: 'Columnar enterocyte wall' });
+    part(epAsm, torus(0.42, 0.04, 10, 24), { pal: 'ochre', tone: 'lit', pos: [0, 1.15, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.72, 0], name: 'Microvilli brush-border crown' });
 
     const capAsm = asm('capillary_bed', root, { title: 'Fenestrated capillary meshwork', sub: 'Glucose & amino acids → Hepatic portal vein' });
     capAsm.position.set(42, 1.25, 0);
     for (const ang of [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2]) {
       part(capAsm, cyl(0.065, 1.55, 14), { pal: 'red', tone: 'hi', pos: [0.36 * Math.cos(ang), 0, 0.36 * Math.sin(ang)], ex: [0.45 * Math.cos(ang), 0, 0.45 * Math.sin(ang)], name: 'Portal capillary loop' });
     }
+    part(capAsm, torus(0.36, 0.055, 10, 24), { pal: 'blue', tone: 'hi', pos: [0, -0.75, 0], rot: [Math.PI / 2, 0, 0], ex: [0, -0.35, 0], name: 'Hepatic portal venule collector' });
 
     const lacAsm = asm('central_lacteal', root, { title: 'Central lymphatic lacteal', sub: 'Chylomicron fats → Thoracic duct' });
     lacAsm.position.set(42, 1.2, 0);

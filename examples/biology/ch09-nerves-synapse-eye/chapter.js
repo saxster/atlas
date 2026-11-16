@@ -103,12 +103,21 @@ export const CHAPTER = {
   ],
   sensor: { type: 'tilt', label: 'Use device tilt for tropism', param: 'lightAngleDeg', min: -45, max: 45 },
   lessons: {
-    'ch09-nerves-hormones-3d': { page: 0, params: { ttxBlockPct: 0 } },
-    'ch09-action-potential-3d': { page: 0, params: { ttxBlockPct: 0 } },
-    'ch09-ttx-case-3d': { page: 0, params: { ttxBlockPct: 90 } },
-    'ch09-synapse-latency-3d': { page: 1 },
-    'ch09-eye-optics-3d': { page: 2, params: { objectDistM: 0.3 } },
-    'ch09-tropism-auxin-3d': { page: 3, params: { lightAngleDeg: 35 } },
+    'ch09-synapse-3d-endocrine': { page: 0, lit: 'nav_channel', params: { ttxBlockPct: 0 } },
+    'ch09-neurone-3d-reflex': { page: 0, lit: 'hh_trace', params: { ttxBlockPct: 0 } },
+    'ch09-neurone-3d': { page: 0, lit: 'nav_channel', params: { ttxBlockPct: 0 } },
+    'ch09-synapse-3d': { page: 1, lit: 'synaptic_vesicles' },
+    'ch09-neurone-3d-latency': { page: 1, lit: 'postsynaptic_receptors' },
+    'ch09-eye-3d-anatomy': { page: 2, lit: 'retina_fovea', params: { objectDistM: 0.35 } },
+    'ch09-eye-3d': { page: 2, lit: 'crystalline_lens', params: { objectDistM: 0.3 } },
+    'ch09-auxin-3d': { page: 3, lit: 'coleoptile_shoot', params: { lightAngleDeg: 35 } },
+    'ch09-neurone-3d-ttx': { page: 0, lit: 'nav_channel', params: { ttxBlockPct: 90 } },
+    'ch09-nerves-hormones-3d': { page: 0, lit: 'nav_channel', params: { ttxBlockPct: 0 } },
+    'ch09-action-potential-3d': { page: 0, lit: 'hh_trace', params: { ttxBlockPct: 0 } },
+    'ch09-ttx-case-3d': { page: 0, lit: 'nav_channel', params: { ttxBlockPct: 90 } },
+    'ch09-synapse-latency-3d': { page: 1, lit: 'synaptic_vesicles' },
+    'ch09-eye-optics-3d': { page: 2, lit: 'crystalline_lens', params: { objectDistM: 0.3 } },
+    'ch09-tropism-auxin-3d': { page: 3, lit: 'coleoptile_shoot', params: { lightAngleDeg: 35 } },
   },
   sonify(ctx, s, page) {
     // Action potential spike click/pitch
@@ -151,10 +160,12 @@ export const CHAPTER = {
     part(navAsm, cyl(0.28, 0.95, 20), { pal: 'red', tone: 'lit', pos: [0, 0, 0], ex: [-0.35, 0.35, 0], name: 'Na_V pore barrel' });
     const hBall = part(navAsm, sphere(0.14, 16), { pal: 'ochre', tone: 'lit', pos: [0, -0.62, 0], ex: [0, -0.45, 0], name: 'Inactivation h-ball' });
     const ttxPlug = part(navAsm, sphere(0.18, 16), { pal: 'ink', tone: 'lit', pos: [0, 0.62, 0], ex: [0, 0.55, 0], name: 'Tetrodotoxin (TTX) pore plug' });
+    const naIon = part(navAsm, sphere(0.08, 12), { pal: 'red', tone: 'lit', pos: [0, 0.45, 0.12], name: 'Inward Na⁺ ion' });
 
     const kvAsm = asm('kv_channel', root, { title: 'Delayed-rectifier K⁺ channel (K_V)', sub: 'Repolarises membrane to −70 mV' });
     kvAsm.position.set(-0.2, 1.35, 0);
     part(kvAsm, cyl(0.25, 0.92, 20), { pal: 'blue', tone: 'hi', pos: [0, 0, 0], ex: [0.35, 0.35, 0], name: 'K_V pore barrel' });
+    const kIon = part(kvAsm, sphere(0.08, 12), { pal: 'blue', tone: 'lit', pos: [0, -0.42, 0.12], name: 'Outward K⁺ ion' });
 
     const hhAsm = asm('hh_trace', root, { title: 'Schematic V_m(t) trace', sub: 'Depolarisation, repolarisation & refractory dip' });
     hhAsm.position.set(0.6, 0.25, -0.3);
@@ -206,6 +217,10 @@ export const CHAPTER = {
     const cornea = part(retAsm, sphere(0.62, 20), {pal:'blue', mat:shadeMat('blue',{opacity:0.18}), pos:[-1,0,0], name:'Transparent cornea'});
     cornea.scale.set(0.27,1,1);
     part(retAsm, sphere(0.10, 16), {pal:'red',pos:[0.9,0,0],name:'Fovea marker (enlarged)'});
+    const eyeRayUp = rod(retAsm, { r: 0.015, pal: 'ochre', tone: 'lit', name: 'Refracted upper light ray to fovea' });
+    eyeRayUp.set(V(-0.65, 0.25, 0), V(0.9, 0, 0));
+    const eyeRayDn = rod(retAsm, { r: 0.015, pal: 'ochre', tone: 'lit', name: 'Refracted lower light ray to fovea' });
+    eyeRayDn.set(V(-0.65, -0.25, 0), V(0.9, 0, 0));
     label('board', 'Iris & elastic lens', () => V(27.2, 2.55, 0));
     label('board', 'Retina & fovea', () => V(28.8, 2.55, 0));
 
@@ -230,6 +245,8 @@ export const CHAPTER = {
         vDot.position.copy(axH.to(s.tMs, s.ap.vMv, 0));
         ttxPlug.visible = s.ttxBlockPct > 5;
         hBall.position.y = s.ap.gK > 8 ? -0.38 : -0.68;
+        naIon.position.y = 0.45 - Math.min(1, s.ap.gNa / 25) * 0.85;
+        kIon.position.y = -0.42 + Math.min(1, s.ap.gK / 20) * 0.85;
 
         // Neurotransmitter diffusion across synaptic cleft
         const nPts = [];

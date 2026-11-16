@@ -8,20 +8,20 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Clay dent (v²)',
-    fig: 'Figure 7.2 · Dropping steel spheres into soft clay: doubling speed v quadruples dent depth 4d',
+    fig: 'Figure 7.2 · Dropping steel spheres into clay: doubling speed v quadruples dent depth 4d',
     title: 'Kinetic Energy & the v² Clay Dent Test',
-    alt: '3D clay trough struck by steel spheres at speed v and 2v, carving craters of depth d and 4d because work W = F_clay · d = ½mv².',
-    cam: { target: [0, 1.25, 0], az: 22, el: 22, dist: 7.2 },
+    alt: '3D clay trough struck by steel spheres at speed v₀ and v, carving craters whose depth scales as v² because work W = F_clay · d = ½mv².',
+    cam: { target: [0, 1.2, 0], az: 22, el: 22, dist: 10.4 },
     lit: 'clay_bed',
     parts: ['drop_spheres', 'clay_bed'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Inelastic bounce',
-    fig: 'Figure 7.4 · Bouncing ball losing mechanical height into microscopic thermal agitation',
+    fig: 'Figure 7.4 · Bouncing ball converting mechanical height into thermal agitation',
     title: 'Inelastic Bounce & Thermal Energy Bloom',
     alt: '3D succession of decaying bounce arcs (h₀, e²h₀, e⁴h₀) with a glowing infrared thermal bloom ring warming the floor at each impact.',
-    cam: { target: [14, 1.25, 0], az: 20, el: 20, dist: 7.4 },
+    cam: { target: [14, 1.2, 0], az: 20, el: 20, dist: 10.6 },
     lit: 'bounce_arcs',
     parts: ['bounce_arcs', 'thermal_floor'],
     look: { xray: 0, section: 0 },
@@ -31,17 +31,17 @@ export const PAGES = [
     fig: 'Figure 7.5 · Household kilowatt-hour (kWh) rotating-disc meter & appliance load',
     title: 'Power vs Energy: The Household kWh Meter',
     alt: '3D cutaway electricity meter with a spinning aluminum eddy-current disc whose rotation speed is proportional to power P (watts) while total turns count energy E = P·t (kWh).',
-    cam: { target: [28, 1.35, 0], az: 24, el: 20, dist: 7.0 },
+    cam: { target: [28, 1.3, 0], az: 24, el: 20, dist: 10.4 },
     lit: 'meter_disc',
     parts: ['meter_casing', 'meter_disc'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'City Sankey flow',
-    fig: 'Figure 7.6 · Metropolitan energy Sankey manifold: primary fuel input vs useful work & waste heat',
+    fig: 'Figure 7.6 · City energy Sankey manifold: primary fuel input vs useful work & waste heat',
     title: 'City-Scale Sankey Energy Manifold',
     alt: '3D branching Sankey conduit splitting primary power input into useful mechanical/lighting work and a wide red exhaust plume of low-grade ambient heat.',
-    cam: { target: [42, 1.3, 0], az: 26, el: 22, dist: 7.6 },
+    cam: { target: [42, 1.25, 0], az: 26, el: 22, dist: 10.8 },
     lit: 'sankey_branches',
     parts: ['primary_inlet', 'sankey_branches'],
     look: { xray: 0, section: 0 },
@@ -139,13 +139,13 @@ export const CHAPTER = {
     const clayAsm = asm('clay_bed', root, { title: 'Soft potter’s clay block', sub: 'Work W = F_clay · d = ½mv²' });
     clayAsm.position.set(0, 0.45, 0);
     part(clayAsm, box(2.8, 0.85, 1.1, 0.04), { pal: 'ochre', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('ochre', { opacity: 0.5 }), name: 'Clay block' });
-    const dentPlug1 = part(clayAsm, cyl(0.22, 0.3, 18), { pal: 'red', tone: 'hi', pos: [-0.65, 0.28, 0], ex: [0, 0.35, 0], name: 'Reference crater (v₀)' });
-    const dentPlug2 = part(clayAsm, cyl(0.22, 0.6, 18), { pal: 'red', tone: 'hi', pos: [0.65, 0.15, 0], ex: [0, 0.45, 0], name: 'Test crater (v)' });
+    const dentPlug1 = part(clayAsm, cyl(0.22, 0.16, 18), { pal: 'red', tone: 'hi', pos: [-0.65, 0.425 - 0.08, 0], ex: [-0.35, 0, 0], name: 'Reference crater (v₀ = 2 m/s, d₀ = 1 cm)' });
+    const dentPlug2 = part(clayAsm, cyl(0.22, 1.0, 18), { pal: 'red', tone: 'hi', pos: [0.65, 0.15, 0], ex: [0.35, 0, 0], name: 'Test crater (v, d ∝ v²)' });
 
     const sphAsm = asm('drop_spheres', root, { title: 'Steel impact spheres', sub: 'Doubling v quadruples crater depth' });
-    sphAsm.position.set(0, 1.25, 0);
-    part(sphAsm, sphere(0.18, 20), { pal: 'dark', tone: 'hi', pos: [-0.65, 0, 0], ex: [0, 0.4, 0], name: 'Reference sphere' });
-    const testSphere = part(sphAsm, sphere(0.18, 20), { pal: 'blue', tone: 'hi', pos: [0.65, 0, 0], ex: [0, 0.5, 0], name: 'Variable-speed sphere' });
+    sphAsm.position.set(0, 0.45, 0);
+    part(sphAsm, sphere(0.18, 20), { pal: 'dark', tone: 'hi', pos: [-0.65, 0.425 - 0.16 + 0.18, 0], ex: [0, 0.4, 0], name: 'Reference sphere (v₀ = 2 m/s)' });
+    const testSphere = part(sphAsm, sphere(0.18, 20), { pal: 'blue', tone: 'hi', pos: [0.65, 0.2, 0], ex: [0, 0.5, 0], name: 'Variable-speed sphere (v)' });
     label('board', 'd ∝ v² (2× speed → 4× dent)', () => V(0, 2.05, 0), { leader: [0, -20] });
 
     // Station 1 (x = 14): Inelastic Bounce & Thermal Bloom
@@ -154,15 +154,16 @@ export const CHAPTER = {
     part(floorAsm, box(3.8, 0.12, 1.2, 0.02), { pal: 'paper', tone: 'mid', pos: [0, 0, 0], name: 'Floor slab' });
     const heatRings = [];
     for (let k = 0; k < 3; k++) {
-      heatRings.push(part(floorAsm, torus(0.28, 0.03, 10, 28), { pal: 'red', tone: 'hi', pos: [-0.9 + k * 0.95, 0.08, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.25, 0], name: `Thermal bloom ${k + 1}` }));
+      heatRings.push(part(floorAsm, torus(0.28, 0.03, 10, 28), { pal: 'red', tone: 'hi', pos: [-0.925 + k * 0.95, 0.08, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.25, 0], name: `Thermal bloom ${k + 1}` }));
     }
 
     const bAsm = asm('bounce_arcs', root, { title: 'Decaying bounce peaks (h_n = e²ⁿ h₀)', sub: 'Peak height drops by e² per bounce' });
-    bAsm.position.set(14, 0.15, 0);
+    bAsm.position.set(14, 0.12, 0);
     const peakColumns = [];
     for (let k = 0; k < 4; k++) {
-      peakColumns.push(part(bAsm, cyl(0.08, 1.0, 14), { pal: 'green', tone: 'hi', pos: [-1.4 + k * 0.95, 0.5, 0], ex: [0, 0.35, 0], name: `Bounce peak h_${k}` }));
+      peakColumns.push(part(bAsm, cyl(0.08, 1.0, 14), { pal: 'green', tone: 'hi', pos: [-1.4 + k * 0.95, 0.5, 0], ex: [0, 0, 0.35], name: `Bounce peak h_${k}` }));
     }
+    const bounceBall = part(bAsm, sphere(0.13, 18), { pal: 'ochre', tone: 'hi', pos: [-1.4, 1.2, 0], name: 'Bouncing ball' });
     label('board', 'h_{n+1} = e² h_n + Heat Q', () => V(14, 2.15, 0), { leader: [0, -20] });
 
     // Station 2 (x = 28): Household kWh Meter
@@ -173,8 +174,10 @@ export const CHAPTER = {
 
     const discAsm = asm('meter_disc', root, { title: 'Eddy-current aluminum rotor disc', sub: 'Spin speed ∝ Watts; turns ∝ kWh' });
     discAsm.position.set(28, 1.0, 0);
-    const rotorDisc = part(discAsm, cyl(0.55, 0.06, 28), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], ex: [0, 0, 0.5], name: 'Aluminum rotor disc' });
-    part(discAsm, box(0.18, 0.08, 0.14, 0.01), { pal: 'red', tone: 'hi', pos: [0.42, 0.02, 0], ex: [0, 0, 0.6], name: 'Index mark on disc rim' });
+    const rotorGroup = new THREE.Group();
+    discAsm.add(rotorGroup);
+    part(rotorGroup, cyl(0.55, 0.06, 28), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], ex: [0, 0, 0.5], name: 'Aluminum rotor disc' });
+    part(rotorGroup, box(0.18, 0.08, 0.14, 0.01), { pal: 'red', tone: 'hi', pos: [0.42, 0.02, 0], ex: [0, 0, 0.6], name: 'Index mark on disc rim' });
     label('board', 'Speed ∝ Power (W); Turns ∝ Energy (kWh)', () => V(28, 2.35, 0), { leader: [0, -20] });
 
     // Station 3 (x = 42): City Sankey Power Flow
@@ -192,24 +195,43 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Station 0: Clay dent depth scales as v^2
-        const dScale = Math.min(1.3, (s.dent.depthCm / 8.0) * 1.1 + 0.12);
-        dentPlug2.scale.y = dScale;
-        dentPlug2.position.y = 0.42 - dScale * 0.25;
-        testSphere.position.y = -0.55 - dScale * 0.25;
+        // Station 0: Clay dent depth scales as v^2 relative to v0 = 2 m/s (d0 = 1.0 cm)
+        const hDent2 = Math.min(0.80, Math.max(0.04, 0.16 * (s.dent.depthCm / 1.0)));
+        dentPlug2.scale.y = hDent2;
+        dentPlug2.position.y = 0.425 - hDent2 * 0.5;
+        testSphere.position.y = 0.425 - hDent2 + 0.18;
 
-        // Station 1: Bounce peak columns & thermal rings
+        // Station 1: Bounce peak columns, bouncing ball & thermal rings
         const heights = [s.bounce.h0, s.bounce.h1, s.bounce.h2, s.bounce.h3];
         for (let k = 0; k < 4; k++) {
           const hCol = Math.max(0.08, heights[k] * 1.1);
           peakColumns[k].scale.y = hCol;
           peakColumns[k].position.y = hCol * 0.5;
         }
+        const uBounce = (s.t * 0.45) % 3;
+        const seg = Math.min(2, Math.floor(uBounce));
+        const fSeg = uBounce - seg;
+        const xStart = -1.4 + seg * 0.95;
+        const xImpact = xStart + 0.475;
+        const xEnd = xStart + 0.95;
+        const hStart = heights[seg] * 1.1;
+        const hEnd = heights[seg + 1] * 1.1;
+        let bx, by;
+        if (fSeg < 0.5) {
+          const uFall = fSeg * 2;
+          bx = xStart + uFall * (xImpact - xStart);
+          by = hStart * (1 - uFall * uFall) + 0.13;
+        } else {
+          const uRise = (fSeg - 0.5) * 2;
+          bx = xImpact + uRise * (xEnd - xImpact);
+          by = hEnd * (1 - (1 - uRise) * (1 - uRise)) + 0.13;
+        }
+        bounceBall.position.set(bx, by, 0.22);
         const heatScale = 0.6 + s.bounce.thermalFractionFirstBounce * 0.9;
         for (const hr of heatRings) hr.scale.setScalar(heatScale);
 
-        // Station 2: Spin kWh disc at angular velocity proportional to powerWatts
-        rotorDisc.rotation.y = s.t * (s.powerWatts / 400);
+        // Station 2: Spin kWh disc + index mark at angular velocity proportional to powerWatts
+        rotorGroup.rotation.y = s.t * (s.powerWatts / 400);
       },
     };
   },

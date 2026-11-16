@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, rod,
+  THREE, part, box, cyl, sphere, torus, capsule, rod,
   prims, rbcGeo, buildHelix, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -102,13 +102,13 @@ export const CHAPTER = {
     { id: 'cristaeFolds', label: 'Mitochondrial cristae folds', min: 1, max: 10, step: 1, value: 6, unit: 'folds' },
   ],
   lessons: {
-    'ch02-plant-cell-3d': { page: 0 },
-    'ch02-sav-3d': { page: 2 },
-    'ch02-endomembrane-3d': { page: 3 },
-    'ch02-cell-nanocity-3d': { page: 0 },
-    'ch02-endosymbiosis-3d': { page: 1, params: { cristaeFolds: 8 } },
-    'ch02-sav-geometry-3d': { page: 2, params: { cellSideUm: 60 } },
-    'ch02-specialist-cells-3d': { page: 3 },
+    'ch02-plant-cell-3d': { page: 0, lit: 'cell_wall_vacuole' },
+    'ch02-sav-3d': { page: 2, lit: 'sav_cubes' },
+    'ch02-endomembrane-3d': { page: 0, lit: 'nucleus_asm' },
+    'ch02-cell-nanocity-3d': { page: 0, lit: 'nucleus_asm' },
+    'ch02-endosymbiosis-3d': { page: 1, lit: 'cristae_folds', params: { cristaeFolds: 8 } },
+    'ch02-sav-geometry-3d': { page: 2, lit: 'sav_cubes', params: { cellSideUm: 60 } },
+    'ch02-specialist-cells-3d': { page: 3, lit: 'rbc_specialist' },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 200 + s.geo.savPerUm * 450, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -146,10 +146,13 @@ export const CHAPTER = {
     part(wallAsm, box(2.5, 2.1, 2.1, 0.14), { pal: 'green', tone: 'mid', mat: shadeMat('green', { opacity: 0.35 }), ex: [0, -0.45, -0.45], name: 'Cellulose cell wall' });
     part(wallAsm, box(1.15, 1.25, 1.15, 0.18), { pal: 'blue', tone: 'mid', pos: [-0.38, -0.1, 0], mat: shadeMat('blue', { opacity: 0.55 }), ex: [-0.55, 0.35, 0], name: 'Central sap vacuole' });
 
-    const nucAsm = asm('nucleus_asm', root, { title: 'Nucleus & nucleolus', sub: 'Double-envelope genome vault' });
+    const nucAsm = asm('nucleus_asm', root, { title: 'Nucleus, nucleolus & rough ER', sub: 'Double-envelope genome vault & endomembranes' });
     nucAsm.position.set(0.55, 1.55, 0.15);
     part(nucAsm, sphere(0.46, 24), { pal: 'red', tone: 'hi', ex: [0.55, 0.45, 0.3], name: 'Nuclear envelope' });
     part(nucAsm, sphere(0.2, 16), { pal: 'ink', tone: 'lit', pos: [0.08, 0.05, 0.12], ex: [0.75, 0.65, 0.45], name: 'Nucleolus' });
+    for (let k = 0; k < 2; k++) {
+      part(nucAsm, torus(0.54 + k * 0.09, 0.032, 10, 24, Math.PI * 0.95), { pal: 'ochre', tone: 'hi', rot: [0.35, 0.4, -0.5], ex: [0.65, 0.35, 0.35], name: 'Rough ER cisterna' });
+    }
 
     const mitoAsm = asm('mito_organelle', root, { title: 'Mitochondria', sub: 'Aerobic ATP powerhouses' });
     mitoAsm.position.set(0.55, 0.85, -0.35);
@@ -162,25 +165,30 @@ export const CHAPTER = {
     label('board', 'Sap vacuole', () => V(-0.55, 1.35, 0.75), { leader: [-34, 18] });
 
     // Station 1 (x = 14): Endosymbiosis (Mitochondrion Cristae & Chloroplast Grana)
-    const crisAsm = asm('cristae_folds', root, { title: 'Mitochondrial cristae & inherited DNA', sub: 'Folded inner membrane' });
+    const crisAsm = asm('cristae_folds', root, { title: 'Mitochondrial cristae & inherited DNA', sub: 'Folded inner membrane & mtDNA ring' });
     crisAsm.position.set(13.0, 1.35, 0);
     part(crisAsm, capsule(0.55, 1.1, 12, 24), { pal: 'ochre', tone: 'mid', rot: [0, 0, Math.PI / 2], mat: shadeMat('ochre', { opacity: 0.42 }), ex: [-0.4, 0, 0], name: 'Outer mitochondrial membrane' });
+    part(crisAsm, torus(0.15, 0.025, 10, 24), { pal: 'blue', tone: 'lit', pos: [-0.32, 0.14, 0.16], rot: [0.4, 0.3, 0], ex: [-0.3, 0.55, 0.25], name: 'Circular mtDNA plasmid ring' });
+    for (const [rx, ry, rz] of [[0.25, -0.18, 0.18], [-0.1, 0.2, -0.18]]) {
+      part(crisAsm, sphere(0.045, 12), { pal: 'ink', tone: 'lit', pos: [rx, ry, rz], ex: [0, 0.5, 0], name: 'Mitochondrial 70S ribosome' });
+    }
     const cristaSlabs = [];
     for (let i = 0; i < 10; i++) {
       const m = part(crisAsm, box(0.08, 0.68, 0.65, 0.02), { pal: 'red', tone: 'hi', pos: [-0.55 + i * (1.1 / 9), 0, 0], ex: [0, 0.45, 0], name: 'Crista fold' });
       cristaSlabs.push(m);
     }
 
-    const granAsm = asm('thylakoid_grana', root, { title: 'Chloroplast grana stacks', sub: 'Thylakoid solar discs' });
+    const granAsm = asm('thylakoid_grana', root, { title: 'Chloroplast grana stacks & cpDNA', sub: 'Thylakoid solar discs & plastid DNA' });
     granAsm.position.set(15.2, 1.35, 0);
     part(granAsm, capsule(0.6, 1.15, 12, 24), { pal: 'green', tone: 'mid', rot: [0, 0, Math.PI / 2], mat: shadeMat('green', { opacity: 0.38 }), ex: [0.4, 0, 0], name: 'Double chloroplast envelope' });
+    part(granAsm, torus(0.16, 0.025, 10, 24), { pal: 'ochre', tone: 'lit', pos: [0.22, 0.22, 0.18], rot: [0.5, -0.3, 0], ex: [0.3, 0.55, 0.25], name: 'Circular cpDNA plastid ring' });
     for (const sx of [-0.38, 0.0, 0.38]) {
       for (let k = -2; k <= 2; k++) {
         part(granAsm, cyl(0.18, 0.06, 18), { pal: 'green', tone: 'lit', pos: [sx, k * 0.09, 0], ex: [0, k * 0.14 + 0.3, 0], name: 'Thylakoid disc' });
       }
     }
-    label('board', 'Cristae folds', () => V(13.0, 2.2, 0));
-    label('board', 'Thylakoid grana', () => V(15.2, 2.2, 0));
+    label('board', 'Cristae & mtDNA', () => V(13.0, 2.2, 0));
+    label('board', 'Grana & cpDNA', () => V(15.2, 2.2, 0));
 
     // Station 2 (x = 28): SA/V Cubes + Starved Core + 3D Hyperbola Plot
     const cubesAsm = asm('sav_cubes', root, { title: 'Chosen surface layer and inner core', sub: 'Geometric layer, not oxygen data' });
@@ -193,6 +201,7 @@ export const CHAPTER = {
     const ax = prims.axes(chartAsm, { x: [10, 100], y: [0, 0.65], size: [2.0, 1.7, 0.8] });
     prims.plot(chartAsm, L => 6 / L, { axes: ax, samples: 48, color: 'green', width: 0.064 });
     const cursorDot = part(chartAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: 'Current cell size' });
+    const cursorDrop = rod(chartAsm, { r: 0.014, pal: 'red', tone: 'mid', name: 'SA/V coordinate drop line' });
     label('board', 'Chosen inner core', () => V(27.0, 2.3, 0));
     label('board', 'SA/V = 6/L', () => V(29.6, 2.15, -0.4));
 
@@ -205,12 +214,19 @@ export const CHAPTER = {
     rhAsm.position.set(42.0, 1.2, 0);
     part(rhAsm, box(0.62, 0.9, 0.55, 0.05), { pal: 'green', tone: 'mid', pos: [0, 0, 0], ex: [0, 0.3, 0], name: 'Epidermal soma' });
     part(rhAsm, cyl(0.11, 1.35, 16), { pal: 'ochre', tone: 'hi', pos: [0.75, -0.1, 0], rot: [0, 0, Math.PI / 2], ex: [0.45, 0, 0], name: 'Root hair projection' });
+    for (const [wx, wy, wz] of [[0.95, 0.08, 0.14], [1.18, -0.24, -0.12]]) {
+      part(rhAsm, sphere(0.065, 12), { pal: 'blue', tone: 'lit', pos: [wx, wy, wz], ex: [0.55, 0.15, 0], name: 'Soil water droplet' });
+    }
 
     const neuAsm = asm('neurone_specialist', root, { title: 'Myelinated motor axon', sub: 'Saltatory conduction' });
     neuAsm.position.set(43.6, 1.35, 0);
+    part(neuAsm, sphere(0.2, 16), { pal: 'red', tone: 'hi', pos: [0, 0.92, 0], ex: [0, 0.45, 0], name: 'Neurone cell body (soma)' });
     part(neuAsm, cyl(0.05, 1.8, 12), { pal: 'ink', tone: 'hi', pos: [0, 0, 0], ex: [0, 0.25, 0], name: 'Axon core' });
     for (const sy of [-0.55, 0, 0.55]) {
       part(neuAsm, capsule(0.13, 0.26, 8, 14), { pal: 'blue', tone: 'hi', pos: [0, sy, 0], ex: [0.35, 0, 0], name: 'Myelin internode sheath' });
+    }
+    for (const sx of [-0.12, 0.12]) {
+      part(neuAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'lit', pos: [sx, -0.92, 0], ex: [sx * 2, -0.35, 0], name: 'Synaptic terminal bouton' });
     }
     label('board', 'Biconcave RBC', () => V(40.5, 2.25, 0));
     label('board', 'Root hair', () => V(42.2, 2.25, 0));
@@ -225,7 +241,10 @@ export const CHAPTER = {
         const coreRatio = Math.max(0, (s.geo.sideUm - 10) / s.geo.sideUm);
         starvedCore.visible = s.geo.sideUm > 10;
         starvedCore.scale.setScalar(coreRatio * sc * 2);
-        cursorDot.position.copy(ax.to(s.geo.sideUm, s.geo.savPerUm, 0));
+        const ptTop = ax.to(s.geo.sideUm, s.geo.savPerUm, 0);
+        const ptBot = ax.to(s.geo.sideUm, 0, 0);
+        cursorDot.position.copy(ptTop);
+        cursorDrop.set(ptBot, ptTop);
 
         // Cristae fold density
         cristaSlabs.forEach((m, idx) => {

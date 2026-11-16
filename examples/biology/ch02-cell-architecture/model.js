@@ -6,7 +6,8 @@ export function cubeGeometry(sideUm = 20, dO2Um2PerSec = 2000) {
   const savPerUm = surfaceUm2 / volumeUm3; // 6 / L
   const rCoreUm = L / 2;
   const diffusionTimeSec = (rCoreUm * rCoreUm) / (6 * dO2Um2PerSec);
-  const wellFedFraction = Math.min(1, Math.pow(Math.min(L, 30) / L, 3) + (L > 30 ? (1 - Math.pow((L - 30) / L, 3)) : 0));
+  const innerCoreSide = Math.max(0, L - 10);
+  const wellFedFraction = 1 - Math.pow(innerCoreSide / L, 3);
   return { sideUm: L, surfaceUm2, volumeUm3, savPerUm, diffusionTimeSec, wellFedFraction };
 }
 

@@ -8,50 +8,50 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Photoelectric leaf',
-    fig: 'Figure 15.1 · Photoelectric gold-leaf electroscope: UV photons eject electrons (hf > φ) while bright red light cannot',
+    fig: 'Figure 15.1 · Photoelectric electroscope: UV ejects electrons (hf > φ)',
     title: 'Einstein’s Photoelectric Effect (K_max = hf − φ)',
     alt: '3D zinc-plate gold-leaf electroscope illuminated by tuneable light packets; below the threshold wavelength λ₀, individual photons kick out electrons and collapse the gold leaf.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 7.2 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 20, dist: 10.6 },
     lit: 'zinc_electroscope',
     parts: ['zinc_electroscope', 'photon_stream'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Single-photon fringes',
-    fig: 'Figure 15.2 · Double-slit camera exposure: individual photon clicks building wave interference bands',
+    fig: 'Figure 15.2 · Double-slit exposure: single-photon interference fringes',
     title: 'Wave–Particle Duality: Single-Photon Accumulation',
     alt: '3D double-slit barrier and detector screen accumulating discrete single-photon arrival dots into bright and dark interference fringes.',
-    cam: { target: [14, 1.3, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [14, 1.25, 0], az: 24, el: 20, dist: 10.6 },
     lit: 'detector_screen',
     parts: ['double_slit', 'detector_screen'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Solar p–p fusion',
-    fig: 'Figure 15.3 · Four protons fusing into Helium-4: the 0.7% mass defect (E = Δm c²)',
+    fig: 'Figure 15.3 · Solar p–p fusion: 0.7% mass defect (E = Δm c²)',
     title: 'Solar Core Fusion & Mass-Defect Balance',
     alt: '3D precision balance comparing four hydrogen protons (4.031 u) against one fused Helium-4 nucleus (4.003 u), with the missing 0.029 u released as 26.7 MeV gamma photons.',
-    cam: { target: [28, 1.3, 0], az: 20, el: 22, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 20, el: 22, dist: 10.6 },
     lit: 'helium_product',
     parts: ['four_protons', 'helium_product'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Stellar barcode',
-    fig: 'Figure 15.4 · Atomic absorption barcode lines & cosmological redshift (1 + z)',
+    fig: 'Figure 15.4 · Atomic absorption barcode & cosmological redshift',
     title: 'Quantized Spectral Barcodes & Redshift',
     alt: '3D Bohr-rungs energy ladder alongside a starlight spectrum ribbon crossed by dark Fraunhofer absorption lines that shift toward the red as galaxy recession redshift z increases.',
-    cam: { target: [42, 1.3, 0], az: 22, el: 20, dist: 7.4 },
+    cam: { target: [42, 1.25, 0], az: 22, el: 20, dist: 10.6 },
     lit: 'spectral_barcode',
     parts: ['bohr_rungs', 'spectral_barcode'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Chandrasekhar limit',
-    fig: 'Figure 15.6 · S. Chandrasekhar’s 1.4 M_☉ white-dwarf limit: adding mass shrinks the star!',
+    fig: 'Figure 15.6 · Chandrasekhar’s 1.44 M_☉ white-dwarf limit',
     title: 'Chandrasekhar’s White-Dwarf Limit (1.44 M_☉)',
     alt: '3D comparison of Earth against a hyper-dense electron-degenerate white dwarf sphere that shrinks as its mass climbs toward the 1.44 M_☉ Chandrasekhar collapse limit.',
-    cam: { target: [56, 1.3, 0], az: 24, el: 22, dist: 7.4 },
+    cam: { target: [56, 1.25, 0], az: 24, el: 22, dist: 10.6 },
     lit: 'white_dwarf_core',
     parts: ['earth_ref', 'white_dwarf_core'],
     look: { xray: 0.2, section: 0 },
@@ -166,6 +166,8 @@ export const CHAPTER = {
 
     const photAsm = asm('photon_stream', root, { title: 'Incident photon quanta & photoelectrons', sub: 'K_max = hf − φ' });
     photAsm.position.set(0, 1.8, 0);
+    const incBeam = arrow(photAsm, { pal: 'blue', r: 0.024 });
+    setArrow(incBeam, V(-1.1, 0.55, 0), V(-0.1, 0.05, 0));
     const ejectedCloud = prims.particles(photAsm, { count: 14, r: 0.045, pal: 'green' });
     label('board', 'hf > φ ejects electrons!', () => V(0, 2.35, 0), { leader: [0, -20] });
 
@@ -183,7 +185,8 @@ export const CHAPTER = {
     // Station 2 (x = 28): Solar p-p Fusion Mass Defect Scale
     const p4Asm = asm('four_protons', root, { title: 'Four hydrogen protons (4.0313 u)', sub: 'Heavier initial reactants' });
     p4Asm.position.set(27.0, 1.05, 0);
-    part(p4Asm, box(2.4, 0.08, 0.35, 0.02), { pal: 'dark', tone: 'hi', pos: [1.0, -0.35, 0], rot: [0, 0, -0.14], name: 'Mass-defect balance beam' });
+    part(p4Asm, box(2.4, 0.08, 0.35, 0.02), { pal: 'dark', tone: 'hi', pos: [1.0, -0.35, 0], rot: [0, 0, 0.14], name: 'Mass-defect balance beam' });
+    part(p4Asm, cyl(0.24, 0.35, 3), { pal: 'ochre', tone: 'mid', pos: [1.0, -0.58, 0], rot: [Math.PI / 2, 0, 0], name: 'Balance fulcrum knife-edge' });
     for (let k = 0; k < 4; k++) {
       part(p4Asm, sphere(0.15, 16), { pal: 'red', tone: 'hi', pos: [(k % 2 - 0.5) * 0.28, (k >> 1) * 0.28, 0], ex: [-0.35, 0.3, 0], name: `Proton ${k + 1}` });
     }

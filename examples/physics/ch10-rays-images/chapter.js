@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'How we see',
-    fig: 'Figure 10.1 · Luminous source scattering off a non-luminous page into the observer’s eye',
+    fig: 'Figure 10.1 · Luminous source scattering off a page into the eye',
     title: 'How We See Non-Luminous Objects',
     alt: '3D overhead lamp emitting incident rays onto a rough textbook page that scatters diffuse rays in all directions, with a bundle entering the observer’s pupil.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 7.2 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 20, dist: 10.4 },
     lit: 'book_surface',
     parts: ['lamp_source', 'book_surface'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Pinhole camera',
-    fig: 'Figure 10.2 · Pinhole camera ray-crossing geometry: sharpness vs brightness trade-off',
+    fig: 'Figure 10.2 · Pinhole camera ray-crossing & blur circles',
     title: 'Pinhole Camera: Inverted Rays & Blur Circles',
     alt: '3D cutaway pinhole camera box with a glowing candle flame in front; straight light rays cross through the pinhole to paint an inverted image on the translucent back screen.',
-    cam: { target: [14, 1.3, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [14, 1.25, 0], az: 24, el: 20, dist: 10.6 },
     lit: 'camera_box',
     parts: ['candle_object', 'camera_box'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Rømer’s Io clock',
-    fig: 'Figure 10.6 · Rømer’s 1676 measurement of light speed using Jupiter’s moon Io',
+    fig: 'Figure 10.6 · Rømer’s 1676 light-speed delay via Jupiter’s moon Io',
     title: 'Rømer’s Jupiter–Io Eclipse Light Clock',
     alt: '3D heliocentric model showing Earth orbiting between near opposition and far conjunction while Jupiter’s moon Io ducks in and out of Jupiter’s shadow cone.',
-    cam: { target: [28, 1.25, 0], az: 20, el: 28, dist: 7.6 },
+    cam: { target: [28, 1.2, 0], az: 20, el: 28, dist: 10.8 },
     lit: 'jupiter_io',
     parts: ['earth_orbit_clock', 'jupiter_io'],
     look: { xray: 0, section: 0 },
@@ -148,9 +148,10 @@ export const CHAPTER = {
     const camHousing = part(boxAsm, box(1.8, 1.35, 1.2, 0.04), { pal: 'dark', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('dark', { opacity: 0.4 }), name: 'Light-tight box' });
     const holeRing = part(boxAsm, torus(0.12, 0.03, 10, 24), { pal: 'ochre', tone: 'hi', pos: [-0.9, 0, 0], rot: [0, Math.PI / 2, 0], ex: [-0.45, 0, 0], name: 'Pinhole aperture' });
     const invFlame = part(boxAsm, cone(0.12, 0.32, 16), { pal: 'red', tone: 'hi', pos: [0.85, -0.22, 0], rot: [0, 0, Math.PI], ex: [0.45, 0, 0], name: 'Inverted flame image' });
+    const blurDisc = part(boxAsm, cyl(0.12, 0.02, 20), { pal: 'ochre', tone: 'mid', pos: [0.86, -0.22, 0], rot: [0, 0, Math.PI / 2], mat: shadeMat('ochre', { opacity: 0.38 }), ex: [0.45, 0, 0], name: 'Aperture blur circle' });
     const rayTop = rod(root, { r: 0.016, pal: 'ochre', tone: 'hi', name: 'Top-to-bottom crossing ray' });
     const rayBot = rod(root, { r: 0.016, pal: 'red', tone: 'hi', name: 'Bottom-to-top crossing ray' });
-    label('board', 'Rays cross → Inverted image', () => V(14.5, 1.95, 0), { leader: [0, -20] });
+    label('board', 'Rays cross strictly through pinhole → Inverted image', () => V(14.5, 1.95, 0), { leader: [0, -20] });
 
     // Station 2 (x = 28): Romer's Jupiter-Io Light Clock
     const earthOrb = asm('earth_orbit_clock', root, { title: 'Sun & Earth 1 AU orbit', sub: '2 AU diameter adds 16.6 min light time' });
@@ -162,6 +163,7 @@ export const CHAPTER = {
     const jupAsm = asm('jupiter_io', root, { title: 'Jupiter & eclipsing moon Io', sub: '42.5 h regular orbital clock' });
     jupAsm.position.set(29.5, 0.85, 0);
     part(jupAsm, sphere(0.32, 22), { pal: 'ochre', tone: 'mid', pos: [0, 0, 0], ex: [0, 0.35, 0], name: 'Jupiter' });
+    part(jupAsm, cyl(0.28, 0.95, 18), { pal: 'dark', tone: 'mid', pos: [0.55, 0, 0], rot: [0, 0, Math.PI / 2], mat: shadeMat('dark', { opacity: 0.38 }), name: 'Jupiter umbra shadow cylinder' });
     part(jupAsm, torus(0.58, 0.018, 10, 32), { pal: 'paper', tone: 'mid', rot: [Math.PI / 2, 0, 0], name: 'Io orbit' });
     const ioBall = part(jupAsm, sphere(0.08, 14), { pal: 'red', tone: 'hi', pos: [0.58, 0, 0], ex: [0, 0.5, 0], name: 'Moon Io' });
     const lightPulseRay = rod(root, { r: 0.018, pal: 'green', tone: 'hi', name: 'Light path from Io to Earth' });
@@ -170,18 +172,24 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Station 1: Pinhole box depth & aperture size
+        // Station 1: Pinhole box depth & aperture size (rays collinear through pinhole center)
         const dScale = s.boxDepthMm / 180;
         camHousing.scale.x = dScale;
         holeRing.position.x = -0.9 * dScale;
         holeRing.scale.setScalar(0.6 + (s.pinholeMm / 5.0) * 1.4);
-        invFlame.position.x = 0.85 * dScale;
-        invFlame.scale.setScalar(0.6 + dScale * 0.6);
         const holeWorldX = 14.5 - 0.9 * dScale;
         const screenWorldX = 14.5 + 0.85 * dScale;
-        rayTop.set(V(12.3, 1.35, 0), V(screenWorldX, 1.0 - 0.32 * dScale, 0));
-        rayBot.set(V(12.3, 0.65, 0), V(screenWorldX, 1.0 + 0.32 * dScale, 0));
-        void holeWorldX;
+        const doScene = Math.max(0.4, holeWorldX - 12.3);
+        const diScene = screenWorldX - holeWorldX;
+        const magScene = diScene / doScene;
+        const dyScreen = 0.35 * magScene;
+        invFlame.position.set(0.85 * dScale, -0.18 * magScene, 0);
+        invFlame.scale.setScalar(0.45 + 0.55 * magScene);
+        blurDisc.position.set(0.86 * dScale, -0.18 * magScene, 0);
+        const blurScale = 0.4 + (s.pin.blurCircleMm / 8.0) * 1.8;
+        blurDisc.scale.set(blurScale, 1, blurScale);
+        rayTop.set(V(12.3, 1.35, 0), V(screenWorldX, 1.0 - dyScreen, 0));
+        rayBot.set(V(12.3, 0.65, 0), V(screenWorldX, 1.0 + dyScreen, 0));
 
         // Station 2: Earth orbital position & Io eclipse light line
         const eRad = (s.earthAngleDeg * Math.PI) / 180;

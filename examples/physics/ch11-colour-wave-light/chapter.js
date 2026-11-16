@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Newton’s two prisms',
-    fig: 'Figure 11.1 · Newton’s experimentum crucis: dispersing white light and recombining with a second prism',
+    fig: 'Figure 11.1 · Newton’s dual-prism dispersion & recombination',
     title: 'Newton’s Dual-Prism Dispersion & Recombination',
     alt: 'Two 3D triangular glass prisms: the first splits a white sunbeam into a rainbow fan (violet bent most, red least), and an inverted second prism recombines the fan back into white light.',
-    cam: { target: [0, 1.3, 0], az: 20, el: 22, dist: 7.4 },
+    cam: { target: [0, 1.25, 0], az: 20, el: 22, dist: 10.6 },
     lit: 'prism_recombine',
     parts: ['prism_split', 'prism_recombine'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Brewster glare',
-    fig: 'Figure 11.4 · Brewster’s glare polarization angle (53.1° on water) & Polaroid sunglass filter',
+    fig: 'Figure 11.4 · Brewster’s glare polarization (53.1°) & Polaroid filter',
     title: 'Brewster’s Angle & Polarized Glare Blocking',
     alt: '3D water surface reflecting horizontally polarized glare at θ_B = 53.1° through a rotatable Polaroid analyser disc.',
-    cam: { target: [14, 1.3, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [14, 1.25, 0], az: 24, el: 20, dist: 10.4 },
     lit: 'polaroid_disc',
     parts: ['water_glare', 'polaroid_disc'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Raman scattering',
-    fig: 'Figure 11.6 · C. V. Raman’s 1928 molecular scattering apparatus & vibrational Stokes shift',
+    fig: 'Figure 11.6 · C. V. Raman’s molecular scattering & Stokes shift',
     title: 'C. V. Raman’s Molecular Light-Scattering Fingerprint',
     alt: '3D CCl₄ tetrahedral molecule illuminated by a violet light beam, scattering strong elastic Rayleigh light plus frequency-shifted Stokes and anti-Stokes spectral lines at 90°.',
-    cam: { target: [28, 1.3, 0], az: 26, el: 22, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 26, el: 22, dist: 10.6 },
     lit: 'raman_molecule',
     parts: ['raman_molecule', 'spectral_lines'],
     look: { xray: 0, section: 0 },
@@ -136,15 +136,23 @@ export const CHAPTER = {
     // Station 1 (x = 14): Brewster's Glare Angle & Polaroid Disc
     const watAsm = asm('water_glare', root, { title: 'Pond surface at θ_B = 53.1°', sub: 'Reflected glare is horizontally polarized' });
     watAsm.position.set(14, 0.15, 0);
-    part(watAsm, box(3.2, 0.12, 1.6, 0.02), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], name: 'Water pond surface' });
-    const incSun = rod(watAsm, { r: 0.022, pal: 'ochre', tone: 'hi', name: 'Unpolarized incident sunlight' });
-    incSun.set(V(-1.45, 1.35, 0), V(0, 0.08, 0));
-    const reflGlare = rod(watAsm, { r: 0.022, pal: 'red', tone: 'hi', name: 'Horizontally polarized glare' });
-    reflGlare.set(V(0, 0.08, 0), V(0.85, 0.85, 0));
+    part(watAsm, box(3.2, 0.12, 1.6, 0.02), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('blue', { opacity: 0.45 }), name: 'Water pond surface' });
+    const incSun = rod(watAsm, { r: 0.022, pal: 'ochre', tone: 'hi', name: 'Unpolarized incident sunlight (53.1°)' });
+    incSun.set(V(-1.28, 1.04, 0), V(0, 0.08, 0));
+    const reflGlare = rod(watAsm, { r: 0.022, pal: 'red', tone: 'hi', name: 'Horizontally polarized glare (53.1°)' });
+    reflGlare.set(V(0, 0.08, 0), V(0.85, 0.72, 0));
+    const refrRay = rod(watAsm, { r: 0.018, pal: 'blue', tone: 'hi', name: 'Refracted underwater ray (36.9°, ⊥ to glare)' });
+    refrRay.set(V(0, 0.06, 0), V(0.54, -0.66, 0));
 
     const polAsm = asm('polaroid_disc', root, { title: 'Rotatable Polaroid sunglass analyser', sub: 'I = I₀ cos² φ' });
-    polAsm.position.set(14.85, 1.0, 0);
-    const polWheel = part(polAsm, cyl(0.45, 0.06, 28), { pal: 'dark', tone: 'mid', pos: [0, 0, 0], rot: [0, 0, Math.PI / 2 - 0.65], mat: shadeMat('dark', { opacity: 0.55 }), ex: [0.35, 0.35, 0], name: 'Polaroid lens' });
+    polAsm.position.set(14.85, 0.87, 0);
+    const polMount = new THREE.Group();
+    polMount.rotation.z = Math.atan2(0.64, 0.85);
+    polAsm.add(polMount);
+    const polWheel = new THREE.Group();
+    polMount.add(polWheel);
+    part(polWheel, cyl(0.45, 0.06, 28), { pal: 'dark', tone: 'mid', pos: [0, 0, 0], rot: [0, 0, Math.PI / 2], mat: shadeMat('dark', { opacity: 0.55 }), ex: [0.35, 0.35, 0], name: 'Polaroid lens' });
+    part(polWheel, cyl(0.02, 0.82, 10), { pal: 'paper', tone: 'lit', pos: [0, 0, 0], rot: [Math.PI / 2, 0, 0], ex: [0.35, 0.35, 0], name: 'Transmission axis indicator' });
     const passedBeam = rod(polAsm, { r: 0.022, pal: 'green', tone: 'hi', name: 'Transmitted beam after filter' });
     label('board', 'θ_B = 53.1° · Vertical filter blocks glare', () => V(14, 2.0, 0), { leader: [0, -20] });
 
@@ -154,28 +162,32 @@ export const CHAPTER = {
     prims.molecule(molAsm, { atoms: MOLECULES.ccl4.atoms, bonds: MOLECULES.ccl4.bonds, scale: 0.28 });
     const vioBeam = rod(root, { r: 0.024, pal: 'blue', tone: 'hi', name: 'Incident filtered violet beam' });
     vioBeam.set(V(26.3, 1.15, 0), V(27.8, 1.15, 0));
+    const scatRayleigh = rod(root, { r: 0.018, pal: 'blue', tone: 'hi', name: '90° scattered Rayleigh ray' });
+    scatRayleigh.set(V(28, 1.15, 0.15), V(28, 0.85, 1.2));
+    const scatStokes = rod(root, { r: 0.016, pal: 'green', tone: 'hi', name: '90° frequency-shifted Stokes ray' });
 
     const specAsm = asm('spectral_lines', root, { title: 'Rayleigh, Stokes & anti-Stokes lines', sub: 'Chemical bond fingerprint Δν' });
     specAsm.position.set(28, 0.15, 1.25);
-    part(specAsm, box(0.14, 1.45, 0.14, 0.02), { pal: 'blue', tone: 'hi', pos: [0, 0.72, 0], ex: [0, 0.3, 0.3], name: 'Elastic Rayleigh line (ν₀)' });
-    const stokesBar = part(specAsm, box(0.14, 0.85, 0.14, 0.02), { pal: 'green', tone: 'hi', pos: [0.55, 0.42, 0], ex: [0.3, 0.3, 0.3], name: 'Inelastic Stokes line (ν₀ − Δν)' });
-    const antiBar = part(specAsm, box(0.14, 0.42, 0.14, 0.02), { pal: 'red', tone: 'hi', pos: [-0.55, 0.21, 0], ex: [-0.3, 0.3, 0.3], name: 'Anti-Stokes line (ν₀ + Δν)' });
+    part(specAsm, box(1.8, 0.04, 0.24, 0.01), { pal: 'dark', tone: 'mid', pos: [0, -0.02, 0], name: 'Spectrometer baseline' });
+    part(specAsm, box(0.14, 1.45, 0.14, 0.02), { pal: 'blue', tone: 'hi', pos: [0, 0.72, 0], ex: [0, 0, 0.35], name: 'Elastic Rayleigh line (ν₀)' });
+    const stokesBar = part(specAsm, box(0.14, 0.85, 0.14, 0.02), { pal: 'green', tone: 'hi', pos: [0.55, 0.42, 0], ex: [0.3, 0, 0.35], name: 'Inelastic Stokes line (ν₀ − Δν)' });
+    const antiBar = part(specAsm, box(0.14, 0.42, 0.14, 0.02), { pal: 'red', tone: 'hi', pos: [-0.55, 0.21, 0], ex: [-0.3, 0, 0.35], name: 'Anti-Stokes line (ν₀ + Δν)' });
     label('board', 'Stokes shift Δν = bond fingerprint', () => V(28, 2.15, 0), { leader: [0, -20] });
 
     return {
       labels,
       update(s) {
-        // Station 0: Spectral spread between prisms
-        const spread = (s.prismApexDeg / 60) * 0.24;
+        // Station 0: Spectral spread between prisms (red k=0 on top, violet k=3 bent steepest downward)
+        const spread = (s.prismApexDeg / 60) * 0.22;
         for (let k = 0; k < 4; k++) {
-          const dy = (k - 1.5) * spread;
-          spectralRods[k].set(V(-0.75, 1.1, 0), V(0.75, 0.9 + dy, 0));
+          const dy = (1.5 - k) * spread;
+          spectralRods[k].set(V(-0.72, 1.06 + (1.5 - k) * 0.03, 0), V(0.72, 0.88 + dy, 0));
         }
 
-        // Station 1: Polaroid rotation & transmitted beam intensity
+        // Station 1: Polaroid rotation around beam axis & transmitted beam intensity
         polWheel.rotation.x = (s.polaroidDeg * Math.PI) / 180;
-        const reach = 0.08 + s.br.transmittedGlareFraction * 0.95;
-        passedBeam.set(V(0, 0, 0), V(reach, reach * 0.8, 0));
+        const reach = 0.06 + s.br.transmittedGlareFraction * 0.95;
+        passedBeam.set(V(0, 0, 0), V(reach, reach * 0.75, 0));
 
         // Station 2: Vibrate CCl4 molecule & shift Stokes/Anti-Stokes bars
         const vibScale = 1 + 0.08 * Math.sin(s.t * 6);
@@ -183,6 +195,7 @@ export const CHAPTER = {
         const shiftX = 0.3 + (s.vibCmInv / 1600) * 0.75;
         stokesBar.position.x = shiftX;
         antiBar.position.x = -shiftX;
+        scatStokes.set(V(28, 1.15, 0.15), V(28 + shiftX, 0.65, 1.2));
       },
     };
   },

@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, cone, capsule, rod,
+  THREE, part, box, cyl, sphere, torus, cone, capsule, rod,
   prims, MOLECULES, buildAtpSynthase, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -100,15 +100,15 @@ export const CHAPTER = {
     { id: 'phageInject', label: 'Phage tail contraction', min: 0, max: 100, step: 5, value: 0, unit: '%' },
   ],
   lessons: {
-    'ch01-seed-flame-3d': { page: 1 },
-    'ch01-atp-coin-3d': { page: 2 },
-    'ch01-coupled-gears-3d': { page: 2 },
-    'ch01-seed-flame-3d-virus': { page: 3 },
-    'ch01-imbibition-3d': { page: 0, params: { imbibeHours: 9 } },
-    'ch01-staircase-3d': { page: 1, params: { atpYield: 32 } },
-    'ch01-atp-cycle-3d': { page: 2, params: { atpYield: 32 } },
-    'ch01-mrs-gren-3d': { page: 2, params: { phageInject: 15 } },
-    'ch01-virus-border-3d': { page: 3, params: { phageInject: 85 } },
+    'ch01-seed-flame-3d': { page: 1, lit: 'stepped_staircase' },
+    'ch01-atp-coin-3d': { page: 2, lit: 'atp_molecule' },
+    'ch01-coupled-gears-3d': { page: 2, lit: 'atp_synthase' },
+    'ch01-seed-flame-3d-virus': { page: 3, lit: 'phage_capsid' },
+    'ch01-imbibition-3d': { page: 0, lit: 'radicle_embryo', params: { imbibeHours: 9 } },
+    'ch01-staircase-3d': { page: 1, lit: 'stepped_staircase', params: { atpYield: 32 } },
+    'ch01-atp-cycle-3d': { page: 2, lit: 'atp_synthase', params: { atpYield: 32 } },
+    'ch01-mrs-gren-3d': { page: 2, lit: 'atp_synthase', params: { phageInject: 15 } },
+    'ch01-virus-border-3d': { page: 3, lit: 'phage_tail', params: { phageInject: 85 } },
   },
   sonify(ctx, s, page) {
     if (page === 2) playTone(ctx, { freq: 110 + s.ox.nAtp * 8, dur: 0.07, type: 'sawtooth', gain: 0.025 });
@@ -147,15 +147,18 @@ export const CHAPTER = {
     const testaAsm = asm('seed_testa', root, { title: 'Seed coat (testa)', sub: 'Protective outer hull' });
     testaAsm.position.set(0, 1.25, 0);
     const testaMesh = part(testaAsm, sphere(1.05, 28), { pal: 'ochre', tone: 'mid', mat: shadeMat('ochre', { opacity: 0.42 }), ex: [0, 0.45, 0.45], name: 'Testa coat' });
+    part(testaAsm, torus(0.14, 0.032, 10, 20), { pal: 'dark', tone: 'hi', pos: [0, -0.45, 0.92], rot: [0.45, 0, 0], ex: [0, 0.25, 0.55], name: 'Micropyle water-entry pore' });
 
     const cotAsm = asm('cotyledons', root, { title: 'Twin cotyledons', sub: 'Starch & protein reserves' });
     cotAsm.position.set(0, 1.25, 0);
     const cotL = part(cotAsm, sphere(0.78, 24), { pal: 'paper', tone: 'hi', pos: [-0.22, 0, 0], ex: [-0.55, 0, 0], name: 'Left cotyledon' });
     const cotR = part(cotAsm, sphere(0.78, 24), { pal: 'paper', tone: 'hi', pos: [0.22, 0, 0], ex: [0.55, 0, 0], name: 'Right cotyledon' });
 
-    const radAsm = asm('radicle_embryo', root, { title: 'Emerging radicle & plumule', sub: 'Embryonic root axis' });
+    const radAsm = asm('radicle_embryo', root, { title: 'Emerging radicle & plumule', sub: 'Embryonic root & shoot axis' });
     radAsm.position.set(0, 0.9, 0.65);
     const radMesh = part(radAsm, cone(0.22, 0.95, 20), { pal: 'green', tone: 'lit', pos: [0, -0.35, 0.2], rot: [Math.PI * 0.78, 0, 0], ex: [0, -0.5, 0.5], name: 'Radicle root tip' });
+    const plumuleL = part(radAsm, capsule(0.065, 0.22, 6, 12), { pal: 'green', tone: 'hi', pos: [-0.08, 0.28, -0.12], rot: [0.2, 0, -0.35], ex: [-0.15, 0.35, 0.2], name: 'Plumule embryonic shoot' });
+    const plumuleR = part(radAsm, capsule(0.065, 0.22, 6, 12), { pal: 'green', tone: 'hi', pos: [0.08, 0.28, -0.12], rot: [0.2, 0, 0.35], ex: [0.15, 0.35, 0.2], name: 'Plumule embryonic shoot' });
     label('board', 'Testa & micropyle', () => V(-0.9, 2.25, 0), { leader: [-24, -18] });
     label('board', 'Emerging radicle', () => V(0.55, 0.5, 0.85), { leader: [34, 18] });
 
@@ -163,25 +166,34 @@ export const CHAPTER = {
     const flameAsm = asm('flame_drop', root, { title: 'Conceptual flame account', sub: 'Fuel reactions release heat and light' });
     flameAsm.position.set(12.8, 0.2, 0);
     part(flameAsm, box(0.7, 2.2, 0.7, 0.04), { pal: 'red', tone: 'hi', pos: [0, 1.1, 0], ex: [-0.4, 0.3, 0], name: 'Combustion free-energy cliff' });
+    part(flameAsm, sphere(0.16, 16), { pal: 'ochre', tone: 'lit', pos: [0, 2.34, 0], ex: [-0.4, 0.5, 0], name: 'Reduced carbon fuel (glucose)' });
 
     const stairAsm = asm('stepped_staircase', root, { title: 'Enzymatic staircase', sub: 'Coupled ATP capture' });
     stairAsm.position.set(14.3, 0.2, 0);
     const stairBars = [];
+    const atpTokens = [];
     for (let i = 0; i < 6; i++) {
       const h = 2.2 - i * 0.32;
       const m = part(stairAsm, box(0.36, h, 0.65, 0.03), { pal: i % 2 === 0 ? 'green' : 'blue', tone: 'hi', pos: [i * 0.42, h / 2, 0], ex: [0, 0.25 * (6 - i), 0], name: `Coupled enzyme step ${i + 1}` });
       stairBars.push(m);
+      const tok = part(stairAsm, cyl(0.09, 0.06, 14), { pal: 'ochre', tone: 'lit', pos: [i * 0.42, h + 0.08, 0.16], ex: [0, 0.35 * (6 - i), 0.2], name: 'Coupled ATP token' });
+      atpTokens.push(tok);
     }
+    const stepOrb = part(stairAsm, sphere(0.12, 16), { pal: 'red', tone: 'lit', pos: [0, 2.34, -0.14], ex: [0, 0.55, 0], name: 'Stepping substrate state' });
     label('board', 'Conceptual flame account', () => V(12.8, 2.65, 0));
     label('board', 'Coupled ATP steps', () => V(15.2, 2.45, 0));
 
     // Station 2 (x = 28): Real ATP Molecule + Rotary F0F1 ATP Synthase
     const molAsm = asm('atp_molecule', root, { title: 'ATP triphosphate molecule', sub: 'Subbarow’s energy currency' });
     molAsm.position.set(26.5, 1.45, 0);
-    prims.molecule(molAsm, MOLECULES.atpCore.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.22, names: false, name: 'ATP core schematic' });
+    prims.molecule(molAsm, MOLECULES.atpCore.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.21, names: false, name: 'ATP core schematic' });
 
     const synthAsm = asm('atp_synthase', root, { title: 'F₀F₁ ATP Synthase turbine', sub: 'Rotary molecular generator' });
     const synth = buildAtpSynthase(synthAsm, { x0: 29.2, y0: 1.35, z0: 0, scale: 1.05 });
+    const hProtons = [];
+    for (let i = 0; i < 4; i++) {
+      hProtons.push(part(synth.group, sphere(0.065, 12), { pal: 'red', tone: 'lit', pos: [-0.45, -0.55, 0], ex: [0, -0.55, 0], name: 'Driving H⁺ proton' }));
+    }
     label('board', 'ATP core', () => V(26.8, 2.35, 0));
     label('board', 'ATP synthase', () => V(29.2, 2.55, 0));
 
@@ -189,6 +201,10 @@ export const CHAPTER = {
     const hostAsm = asm('host_bacterium', root, { title: 'Metabolising host bacterium', sub: 'Living MRS GREN cell' });
     hostAsm.position.set(42, 0.55, 0);
     part(hostAsm, capsule(0.65, 1.4, 12, 24), { pal: 'green', tone: 'mid', rot: [0, 0, Math.PI / 2], mat: shadeMat('green', { opacity: 0.48 }), ex: [0, -0.45, 0], name: 'Bacterial cell envelope' });
+    part(hostAsm, torus(0.32, 0.035, 10, 24), { pal: 'blue', tone: 'hi', pos: [-0.35, 0, 0], rot: [Math.PI / 2, 0.2, 0], ex: [-0.25, -0.35, 0], name: 'Bacterial chromosomal nucleoid' });
+    for (const [rx, ry, rz] of [[0.35, 0.16, 0.18], [0.52, -0.14, -0.15], [-0.55, -0.18, 0.16]]) {
+      part(hostAsm, sphere(0.06, 12), { pal: 'ochre', tone: 'lit', pos: [rx, ry, rz], ex: [0, -0.35, 0], name: 'Host 70S ribosome' });
+    }
 
     const capAsm = asm('phage_capsid', root, { title: 'Icosahedral phage capsid', sub: 'Crystalline protein shell' });
     capAsm.position.set(42, 2.35, 0);
@@ -197,6 +213,7 @@ export const CHAPTER = {
     const tailAsm = asm('phage_tail', root, { title: 'Contractile tail & fibres', sub: 'DNA injection syringe' });
     tailAsm.position.set(42, 1.55, 0);
     const sheath = part(tailAsm, cyl(0.14, 0.65, 16), { pal: 'ochre', tone: 'hi', pos: [0, 0.1, 0], ex: [0, 0.25, 0.3], name: 'Contractile tail sheath' });
+    part(tailAsm, cyl(0.22, 0.07, 6), { pal: 'dark', tone: 'hi', pos: [0, -0.22, 0], ex: [0, -0.15, 0.25], name: 'Hexagonal baseplate' });
     const dnaNeedle = part(tailAsm, cyl(0.04, 0.95, 12), { pal: 'red', tone: 'hi', pos: [0, -0.1, 0], ex: [0, -0.2, 0], name: 'Injected viral DNA core' });
     for (let i = 0; i < 6; i++) {
       const a = (i * Math.PI) / 3;
@@ -216,9 +233,24 @@ export const CHAPTER = {
         cotR.scale.setScalar(swell * 0.96);
         const radScale = 0.4 + (s.imb.waterUptakePct / 100) * 1.1;
         radMesh.scale.set(1, radScale, 1);
+        plumuleL.scale.setScalar(0.6 + (s.imb.waterUptakePct / 100) * 0.6);
+        plumuleR.scale.setScalar(0.6 + (s.imb.waterUptakePct / 100) * 0.6);
 
-        // Spin ATP synthase rotor
-        synth.rotor.rotation.y = s.t * (1.5 + s.ox.nAtp * 0.12);
+        // Stepped enzymatic staircase token visibility & stepping orb
+        const activeSteps = Math.max(1, Math.round((s.ox.nAtp / 36) * 6));
+        atpTokens.forEach((tok, idx) => { tok.visible = idx < activeSteps; });
+        const stepIdx = Math.floor((s.t * 1.4) % 6);
+        const stepH = 2.2 - stepIdx * 0.32;
+        stepOrb.position.set(stepIdx * 0.42, stepH + 0.14, -0.14);
+
+        // Spin ATP synthase rotor + proton stream
+        const omega = s.t * (1.5 + s.ox.nAtp * 0.12);
+        synth.rotor.rotation.y = omega;
+        hProtons.forEach((hp, i) => {
+          const u = ((s.t * 0.6 + i * 0.25) % 1);
+          const ang = u * Math.PI * 2 + omega * 0.3;
+          hp.position.set(0.46 * Math.cos(ang), -0.82 + u * 0.54, 0.46 * Math.sin(ang));
+        });
 
         // Phage injection kinematics
         const inj = s.phageInject;

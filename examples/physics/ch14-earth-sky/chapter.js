@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Spinning Earth boat',
-    fig: 'Figure 14.1 · Why the sky appears to wheel East-to-West: the turning-boat horizon model',
+    fig: 'Figure 14.1 · Why the sky wheels East-to-West: turning-boat horizon',
     title: 'Spinning Earth & the Local Horizon Plane',
     alt: '3D rotating Earth globe carrying a tangent horizon platform and observer at 19° N (Mumbai), showing how West-to-East Earth rotation makes the stationary Sun appear to rise in the East and set in the West.',
-    cam: { target: [0, 1.3, 0], az: 22, el: 22, dist: 7.4 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 22, dist: 10.6 },
     lit: 'horizon_deck',
     parts: ['spinning_globe', 'horizon_deck'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: '23.4° axial parallelism',
-    fig: 'Figure 14.2 · Earth’s 23.4° spin axis stays parallel in space all year around the Sun',
+    fig: 'Figure 14.2 · Earth’s 23.4° spin axis stays parallel all year',
     title: '23.4° Axial Parallelism & Seasonal Sun Angle',
     alt: '3D heliocentric orbit with four tilted Earth globes (June, September, December, March) whose North Pole axes all point parallel toward Polaris.',
-    cam: { target: [14, 1.25, 0], az: 24, el: 26, dist: 7.8 },
+    cam: { target: [14, 1.2, 0], az: 24, el: 26, dist: 11.0 },
     lit: 'tilted_earths',
     parts: ['central_sun', 'tilted_earths'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: '5.14° eclipse tilt',
-    fig: 'Figure 14.5 · Why eclipses don’t happen every month: the 5.14° tilted lunar orbit & line of nodes',
+    fig: 'Figure 14.5 · Why eclipses are rare: 5.14° lunar tilt & Line of Nodes',
     title: '5.14° Lunar Orbit Tilt & the Line of Nodes',
     alt: '3D ecliptic plane and a 5.14°-tilted lunar orbit hoop around Earth showing how the Moon usually passes above or below Earth’s shadow cone except at the two nodal crossings.',
-    cam: { target: [28, 1.3, 0], az: 22, el: 22, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 22, el: 22, dist: 10.6 },
     lit: 'lunar_hoop',
     parts: ['ecliptic_shadow', 'lunar_hoop'],
     look: { xray: 0.2, section: 0 },
@@ -152,10 +152,12 @@ export const CHAPTER = {
       g.position.set(1.65 * Math.cos(ang), 0, 1.65 * Math.sin(ang));
       earthsAsm.add(g);
       part(g, sphere(0.22, 20), { pal: 'blue', tone: 'hi', pos: [0, 0, 0], ex: [0, 0.35, 0], name: `Seasonal Earth ${k + 1}` });
+      part(g, torus(0.225, 0.012, 8, 24), { pal: 'paper', tone: 'lit', rot: [Math.PI / 2, 0, 0], ex: [0, 0.35, 0], name: 'Celestial equator band' });
       part(g, cyl(0.022, 0.72, 10), { pal: 'red', tone: 'hi', pos: [0, 0, 0], ex: [0, 0.55, 0], name: '23.4° spin axis' });
       seasonGlobes.push(g);
     }
-    const activeEarth = part(earthsAsm, sphere(0.12, 16), { pal: 'green', tone: 'hi', pos: [1.65, 0.35, 0], name: 'Selected orbital date marker' });
+    const activeEarth = part(earthsAsm, sphere(0.12, 16), { pal: 'green', tone: 'hi', pos: [0, 0.35, 1.65], name: 'Selected orbital date marker' });
+    const sunRaySeason = arrow(earthsAsm, { pal: 'ochre', r: 0.022 });
     label('board', 'All 4 axes stay parallel in space!', () => V(14, 2.05, 0), { leader: [0, -20] });
 
     // Station 2 (x = 28): 5.14 deg Tilted Lunar Orbit & Line of Nodes
@@ -170,7 +172,7 @@ export const CHAPTER = {
     const hoopPivot = new THREE.Group();
     hoopAsm.add(hoopPivot);
     part(hoopPivot, torus(1.55, 0.028, 12, 48), { pal: 'ochre', tone: 'hi', rot: [Math.PI / 2 + 0.22, 0, 0], ex: [0, 0.35, 0], name: 'Tilted lunar orbit hoop (exaggerated 5.14°)' });
-    const fullMoonBall = part(hoopPivot, sphere(0.14, 18), { pal: 'red', tone: 'hi', pos: [1.55, 0, 0], ex: [0, 0.5, 0], name: 'Full Moon' });
+    const fullMoonBall = part(hoopAsm, sphere(0.14, 18), { pal: 'red', tone: 'hi', pos: [1.55, 0, 0], ex: [0, 0.5, 0], name: 'Full Moon (anti-solar)' });
     const nodeLine = rod(hoopPivot, { r: 0.02, pal: 'green', tone: 'hi', name: 'Line of Nodes intersection' });
     nodeLine.set(V(-1.6, 0, 0), V(1.6, 0, 0));
     label('board', 'Line of Nodes (green) · 5.14° tilt', () => V(28, 2.05, 0), { leader: [0, -20] });
@@ -182,17 +184,22 @@ export const CHAPTER = {
         spinGroup.rotation.y = s.t * 1.1;
         deckRot.rotation.y = s.t * 1.1;
 
-        // Station 1: Parallel tilt on all 4 seasonal globes
+        // Station 1: Parallel tilt on all 4 seasonal globes (at 90° June = +Z, North Pole tilts toward -Z Sun)
         const tiltRad = (s.axialTiltDeg * Math.PI) / 180;
-        for (const g of seasonGlobes) g.rotation.z = tiltRad;
+        for (const g of seasonGlobes) g.rotation.x = -tiltRad;
         const sRad = (s.orbitSeasonDeg * Math.PI) / 180;
-        activeEarth.position.set(1.65 * Math.cos(sRad), 0.35, 1.65 * Math.sin(sRad));
+        const ex = 1.65 * Math.cos(sRad), ez = 1.65 * Math.sin(sRad);
+        activeEarth.position.set(ex, 0.35, ez);
+        setArrow(sunRaySeason, V(0.42 * Math.cos(sRad), 0, 0.42 * Math.sin(sRad)), V(ex * 0.84, 0, ez * 0.84));
 
-        // Station 2: Rotate lunar line of nodes relative to shadow axis
+        // Station 2: Rotate lunar Line of Nodes relative to +X anti-solar shadow axis
         const nRad = (s.nodeOffsetDeg * Math.PI) / 180;
         hoopPivot.rotation.y = nRad;
-        const yMiss = Math.sin(nRad) * 0.34;
-        fullMoonBall.position.set(1.55 * Math.cos(nRad), yMiss, -1.55 * Math.sin(nRad));
+        const inc = 0.22;
+        const phi = Math.atan2(Math.sin(nRad), Math.cos(nRad) * Math.cos(inc));
+        const xMoon = 1.55 * (Math.cos(phi) * Math.cos(nRad) + Math.sin(phi) * Math.cos(inc) * Math.sin(nRad));
+        const yMoon = 1.55 * Math.sin(phi) * Math.sin(inc);
+        fullMoonBall.position.set(xMoon, yMoon, 0);
       },
     };
   },

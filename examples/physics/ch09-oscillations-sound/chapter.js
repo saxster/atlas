@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Barton resonance',
-    fig: 'Figure 9.2 · Barton’s coupled pendulums & frequency-selective resonance peak',
+    fig: 'Figure 9.2 · Barton’s coupled pendulums & resonance',
     title: 'Barton’s Pendulums & Driven Resonance',
     alt: '3D horizontal cord supporting a heavy driver pendulum and four responder pendulums of different lengths; only the responder matching the driver’s length swings with huge resonant amplitude.',
-    cam: { target: [0, 1.4, 0], az: 22, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.3, 0], az: 22, el: 20, dist: 10.6 },
     lit: 'responder_array',
     parts: ['driver_pendulum', 'responder_array'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Aeroelastic flutter',
-    fig: 'Figure 9.3 · Self-excited torsional flutter of a suspension bridge deck in crosswind',
+    fig: 'Figure 9.3 · Self-excited torsional flutter of a bridge deck',
     title: 'Tacoma Narrows Torsional Flutter',
     alt: '3D suspension bridge deck twisting in an antisymmetric torsional wave as crosswind vortices feed energy into each half-cycle.',
-    cam: { target: [14, 1.3, 0], az: 26, el: 22, dist: 7.4 },
+    cam: { target: [14, 1.25, 0], az: 26, el: 22, dist: 10.6 },
     lit: 'bridge_deck',
     parts: ['suspension_cables', 'bridge_deck'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Sound compressions',
-    fig: 'Figure 9.5 · Longitudinal sound wave: local molecular oscillation vs travelling compression fronts',
+    fig: 'Figure 9.5 · Longitudinal sound wave & compression fronts',
     title: 'Longitudinal Compressions & Rarefactions',
     alt: '3D transparent acoustic Kundt tube with an oscillating speaker piston at the left and 3D molecular rings bunching into high-density compressions and spreading into low-density rarefactions.',
-    cam: { target: [28, 1.3, 0], az: 18, el: 20, dist: 7.4 },
+    cam: { target: [28, 1.25, 0], az: 18, el: 20, dist: 10.6 },
     lit: 'compression_rings',
     parts: ['speaker_tube', 'compression_rings'],
     look: { xray: 0.25, section: 0 },
@@ -130,13 +130,13 @@ export const CHAPTER = {
     part(drvAsm, box(3.4, 0.06, 0.08, 0.01), { pal: 'dark', tone: 'hi', pos: [1.35, 0, 0], name: 'Shared suspension bar' });
     const drvPivot = new THREE.Group();
     drvAsm.add(drvPivot);
-    part(drvPivot, cyl(0.02, 1.15, 10), { pal: 'ochre', tone: 'hi', pos: [0, -0.58, 0], name: 'Driver rod' });
-    part(drvPivot, sphere(0.19, 18), { pal: 'red', tone: 'hi', pos: [0, -1.15, 0], ex: [-0.35, 0, 0], name: 'Heavy driver bob' });
+    const drvRod = part(drvPivot, cyl(0.02, 1.0, 10), { pal: 'ochre', tone: 'hi', pos: [0, -0.5, 0], name: 'Driver rod' });
+    const drvBob = part(drvPivot, sphere(0.19, 18), { pal: 'red', tone: 'hi', pos: [0, -1.0, 0], ex: [-0.35, 0, 0], name: 'Heavy driver bob' });
 
     const respAsm = asm('responder_array', root, { title: 'Responder pendulums (1.0..2.5 Hz)', sub: 'Resonant peak at matching length' });
     respAsm.position.set(0, 2.1, 0);
     const respPivots = [];
-    const lengths = [1.45, 1.15, 0.85, 0.62];
+    const lengths = [1.45, 0.97, 0.72, 0.58];
     const pals = ['blue', 'green', 'ochre', 'blue'];
     for (let i = 0; i < 4; i++) {
       const piv = new THREE.Group();
@@ -144,7 +144,7 @@ export const CHAPTER = {
       respAsm.add(piv);
       const L = lengths[i];
       part(piv, cyl(0.016, L, 10), { pal: 'dark', tone: 'mid', pos: [0, -L / 2, 0], name: `Responder cord ${i + 1}` });
-      part(piv, sphere(0.12, 16), { pal: pals[i], tone: 'hi', pos: [0, -L, 0], ex: [0, -0.3, 0.25], name: `Responder bob ${i + 1}` });
+      part(piv, sphere(0.12, 16), { pal: pals[i], tone: 'hi', pos: [0, -L, 0], ex: [0, 0, 0.25], name: `Responder bob ${i + 1}` });
       respPivots.push(piv);
     }
     label('board', 'Matched length → resonance!', () => V(0.2, 2.4, 0), { leader: [0, -18] });
@@ -154,6 +154,8 @@ export const CHAPTER = {
     cabAsm.position.set(14, 0.1, 0);
     part(cabAsm, box(0.18, 2.1, 0.9, 0.02), { pal: 'dark', tone: 'mid', pos: [-1.5, 1.05, 0], name: 'West tower' });
     part(cabAsm, box(0.18, 2.1, 0.9, 0.02), { pal: 'dark', tone: 'mid', pos: [1.5, 1.05, 0], name: 'East tower' });
+    const windVec1 = arrow(cabAsm, { pal: 'green', r: 0.024 });
+    const windVec2 = arrow(cabAsm, { pal: 'green', r: 0.024 });
 
     const deckAsm = asm('bridge_deck', root, { title: 'Twisting roadway ribs', sub: 'Antisymmetric torsional flutter' });
     deckAsm.position.set(14, 1.05, 0);
@@ -176,7 +178,7 @@ export const CHAPTER = {
     const airRings = [];
     for (let i = 0; i < 15; i++) {
       const xEq = -1.35 + i * 0.20;
-      const rMesh = part(ringAsm, torus(0.46, 0.028, 10, 24), { pal: i === 7 ? 'red' : 'blue', tone: 'hi', pos: [xEq, 0, 0], rot: [0, Math.PI / 2, 0], ex: [0, 0.35, 0], name: i === 7 ? 'Tracked home molecule layer' : 'Air layer' });
+      const rMesh = part(ringAsm, torus(0.46, 0.028, 10, 24), { pal: i === 7 ? 'red' : 'blue', tone: 'hi', pos: [xEq, 0, 0], rot: [0, Math.PI / 2, 0], ex: [0, 0, 0.35], name: i === 7 ? 'Tracked home molecule layer' : 'Air layer' });
       airRings.push({ mesh: rMesh, xEq });
     }
     label('board', 'Red ring oscillates locally while compressions travel →', () => V(28, 2.0, 0), { leader: [0, -20] });
@@ -184,7 +186,11 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Station 0: Barton pendulums
+        // Station 0: Barton pendulums (driver length matches resonant responder at f_drive)
+        const lDrv = Math.max(0.52, Math.min(1.65, 1.45 / s.driveFreqHz));
+        drvRod.scale.y = lDrv;
+        drvRod.position.y = -lDrv / 2;
+        drvBob.position.y = -lDrv;
         const w = s.driveFreqHz * 2.5;
         drvPivot.rotation.x = 0.25 * Math.sin(s.t * w);
         for (let i = 0; i < 4; i++) {
@@ -193,7 +199,10 @@ export const CHAPTER = {
           respPivots[i].rotation.x = ampRad * Math.sin(s.t * w - lag);
         }
 
-        // Station 1: Torsional bridge flutter
+        // Station 1: Torsional bridge flutter & crosswind vectors
+        const wLen = 0.35 + (s.windSpeedMps / 25) * 0.75;
+        setArrow(windVec1, V(-0.65, 0.95, -1.25), V(-0.65, 0.95, -1.25 + wLen));
+        setArrow(windVec2, V(0.65, 0.95, -1.25), V(0.65, 0.95, -1.25 + wLen));
         const twistAmp = s.fl.unstable ? Math.min(0.65, 0.15 + (s.windSpeedMps - 14) * 0.05) : 0.06;
         for (const dp of deckPlanks) {
           dp.mesh.rotation.x = twistAmp * Math.sin(dp.u * Math.PI) * Math.sin(s.t * 3.2);

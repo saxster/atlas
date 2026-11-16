@@ -1,0 +1,10 @@
+import * as M from './model.js';
+let bad = 0;
+const check = (name, ok) => { if (ok) console.log(`PASS  ${name}`); else { bad++; console.log(`FAIL  ${name}`); } };
+const rp = M.ratioBarPartition(3, 5, 40);
+check('Ratio 3:5 with 1 unit = 40 gives 120, 200, total 320, diff 80', rp.shareA === 120 && rp.shareB === 200 && rp.total === 320 && rp.diff === 80);
+const ud = M.upDownMultiplier(20);
+check('+20% then -20% lands at 0.96 (4% net loss)', Math.abs(ud.net - 0.96) < 1e-12 && Math.abs(ud.lossPct - 4) < 1e-12);
+const cs = M.compoundVsSimple(1000, 8, 20);
+check('1000 at 8% for 20 yrs: simple = 2600, compound = 4660.96', Math.abs(cs.simpleTotal - 2600) < 1e-9 && Math.abs(cs.compoundTotal - 4660.9571438) < 1e-4);
+process.exit(bad ? 1 : 0);

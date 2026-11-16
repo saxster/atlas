@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule,
+  THREE, part, box, cyl, sphere, capsule, rod,
   prims, MOLECULES, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -96,16 +96,16 @@ export const CHAPTER = {
     { id: 'inhibMm', label: 'Competitive inhibitor [I]', min: 0.0, max: 4.0, step: 0.5, value: 0.0, unit: 'mM' },
   ],
   lessons: {
-    'ch04-water-3d': { page: 0 },
-    'ch04-glucose-3d': { page: 0 },
-    'ch04-protein-3d': { page: 1 },
-    'ch04-enzyme-3d': { page: 2 },
-    'ch04-enzyme-3d-denature': { page: 3 },
-    'ch04-glucose-3d-bench': { page: 3 },
-    'ch04-monomers-3d': { page: 0 },
-    'ch04-ramachandran-3d': { page: 1, params: { tempC: 37 } },
-    'ch04-enzyme-cleft-3d': { page: 2, params: { substrateMm: 3.5, tempC: 37, inhibMm: 0 } },
-    'ch04-denaturation-assays-3d': { page: 3, params: { tempC: 58 } },
+    'ch04-water-3d': { page: 0, lit: 'glucose_mol' },
+    'ch04-glucose-3d': { page: 0, lit: 'glucose_mol' },
+    'ch04-protein-3d': { page: 1, lit: 'folded_chain' },
+    'ch04-enzyme-3d': { page: 2, lit: 'enzyme_blob' },
+    'ch04-enzyme-3d-denature': { page: 3, lit: 'thermal_curve', params: { tempC: 58 } },
+    'ch04-glucose-3d-bench': { page: 3, lit: 'assay_rack' },
+    'ch04-monomers-3d': { page: 0, lit: 'peptide_mol' },
+    'ch04-ramachandran-3d': { page: 1, lit: 'rama_surface', params: { tempC: 37 } },
+    'ch04-enzyme-cleft-3d': { page: 2, lit: 'enzyme_blob', params: { substrateMm: 3.5, tempC: 37, inhibMm: 0 } },
+    'ch04-denaturation-assays-3d': { page: 3, lit: 'assay_rack', params: { tempC: 58 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: s.mm.denatured ? 110 : 180 + s.mm.v * 4.5, dur: 0.06, type: s.mm.denatured ? 'sawtooth' : 'sine', gain: 0.03 });
@@ -144,6 +144,7 @@ export const CHAPTER = {
     const pepAsm = asm('peptide_mol', root, { title: 'Peptide condensation bond', sub: '−CO−NH− backbone link' });
     pepAsm.position.set(1.2, 1.35, 0);
     prims.molecule(pepAsm, MOLECULES.peptide.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.28, names: false });
+    part(pepAsm, sphere(0.085, 14), { pal: 'blue', tone: 'lit', pos: [0.1, 0.58, 0.22], ex: [0, 0.35, 0.25], name: 'Condensation H₂O released' });
     label('board', 'α-D-Glucose', () => V(-1.1, 2.35, 0));
     label('board', 'Peptide bond', () => V(1.2, 2.35, 0));
 
@@ -152,14 +153,23 @@ export const CHAPTER = {
     ramaAsm.position.set(12.6, 0.25, -0.5);
     const axR = prims.axes(ramaAsm, { x: [-180, 180], y: [-180, 180], z: [0, 14], size: [1.9, 1.3, 1.6] });
     prims.surface(ramaAsm, (phi, psi) => M.ramachandranEnergy(phi, psi).energyKj, { axes: axR, n: 26, pal: 'blue' });
+    part(ramaAsm, sphere(0.065, 14), { pal: 'green', tone: 'lit', pos: axR.to(-60, -45, M.ramachandranEnergy(-60, -45).energyKj + 0.4).toArray(), name: 'α-helix conformational basin' });
+    part(ramaAsm, sphere(0.065, 14), { pal: 'ochre', tone: 'lit', pos: axR.to(-120, 125, M.ramachandranEnergy(-120, 125).energyKj + 0.4).toArray(), name: 'β-sheet conformational basin' });
 
     const chainAsm = asm('folded_chain', root, { title: '3D Polypeptide fold', sub: 'Chosen compact vs distorted shape' });
     chainAsm.position.set(15.3, 1.35, 0);
     const foldGroup = new THREE.Group();
     chainAsm.add(foldGroup);
+    const resPts = [];
     for (let i = 0; i < 8; i++) {
       const a = i * 0.85;
-      part(foldGroup, sphere(0.18, 16), { pal: i % 2 === 0 ? 'green' : 'ochre', tone: 'hi', pos: [0.35 * Math.cos(a), (i - 3.5) * 0.2, 0.35 * Math.sin(a)], ex: [0.3 * Math.cos(a), 0, 0.3 * Math.sin(a)], name: `Residue ${i + 1}` });
+      const p = V(0.35 * Math.cos(a), (i - 3.5) * 0.2, 0.35 * Math.sin(a));
+      resPts.push(p);
+      part(foldGroup, sphere(0.18, 16), { pal: i % 2 === 0 ? 'green' : 'ochre', tone: 'hi', pos: p.toArray(), ex: [0.3 * Math.cos(a), 0, 0.3 * Math.sin(a)], name: `Residue ${i + 1}` });
+      if (i > 0) {
+        const link = rod(foldGroup, { r: 0.038, pal: 'ink', tone: 'hi', name: 'Polypeptide backbone link' });
+        link.set(resPts[i - 1], p);
+      }
     }
     label('board', 'Ramachandran surface', () => V(13.5, 2.15, -0.5));
     label('board', '3D Folded chain', () => V(15.3, 2.35, 0));
@@ -179,6 +189,7 @@ export const CHAPTER = {
     const subAsm = asm('substrate_ligand', root, { title: 'Substrate & inhibitor ligands', sub: 'Drag substrate to adjust [S]' });
     subAsm.position.set(27.75, 1.5, 0);
     const subMesh = part(subAsm, capsule(0.16, 0.22, 8, 16), { pal: 'ochre', tone: 'lit', ex: [0.55, 0.3, 0], name: 'Substrate ligand' });
+    const inhibMesh = part(subAsm, box(0.22, 0.26, 0.22, 0.04), { pal: 'red', tone: 'lit', pos: [-0.32, -0.18, 0.14], ex: [0.35, -0.35, 0.25], name: 'Competitive inhibitor ligand' });
     if (draggable) {
       draggable(subMesh, {
         plane: 'xy',
@@ -201,6 +212,7 @@ export const CHAPTER = {
     // Station 3 (x = 42): 4 Biochemical Assay Cuvettes + Thermal Bell Curve
     const rackAsm = asm('assay_rack', root, { title: 'Biochemical assay cuvettes', sub: 'Iodine, Benedict, Biuret, Ethanol, DCPIP' });
     rackAsm.position.set(41.0, 0.2, 0);
+    part(rackAsm, box(2.85, 0.08, 0.52, 0.02), { pal: 'dark', tone: 'mid', pos: [0.3, 0.06, 0], ex: [0, -0.25, 0], name: 'Laboratory test-tube rack base' });
     const cuvetteSpecs = [
       { x: -0.9, pal: 'ink', name: 'Iodine + Starch (blue-black)' },
       { x: -0.3, pal: 'red', name: 'Benedict + Glucose (brick-red)' },
@@ -228,6 +240,12 @@ export const CHAPTER = {
         const den = s.mm.denatured ? 1.32 : 1.0;
         enzBlob.object.scale.set(den, 1 / Math.sqrt(den), den);
         foldGroup.scale.set(1 + (1 - s.mm.tFrac) * 0.65, 1, 1);
+
+        // Competitive inhibitor docking in active cleft when inhibMm > 0
+        inhibMesh.visible = s.inhibMm > 0.01;
+        const inhibFrac = Math.min(1, s.inhibMm / 4.0);
+        inhibMesh.position.set(-0.18 - inhibFrac * 0.22, -0.12, 0.08);
+        inhibMesh.scale.setScalar(0.75 + 0.35 * inhibFrac);
 
         // Update MM curve & operating cursor
         mmPlot.update(x => M.michaelisMenten(x, s.tempC, 7.0, s.inhibMm).v);

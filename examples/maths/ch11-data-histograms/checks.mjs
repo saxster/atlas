@@ -1,0 +1,10 @@
+import * as M from './model.js';
+let bad = 0;
+const check = (name, ok) => { if (ok) console.log(`PASS  ${name}`); else { bad++; console.log(`FAIL  ${name}`); } };
+const bins = M.histogramBins(25, 30);
+check('Wide bin width=25, freq=30 has frequency density 1.2 and area = 30', Math.abs(bins[2].density - 1.2) < 1e-12 && Math.abs(bins[2].density * bins[2].width - 30) < 1e-12);
+const tk = M.tukeySummary(98);
+check('Tukey upper fence = 64 + 1.5*22 = 97, so 98 is flagged as outlier', tk.iqr === 22 && tk.upperFence === 97 && tk.isOutlier === true);
+const sp = M.simpsonsParadox();
+check('Simpson paradox: A beats B in both Mild and Severe, yet B beats A when pooled', sp.reversed === true);
+process.exit(bad ? 1 : 0);

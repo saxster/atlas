@@ -97,11 +97,20 @@ export const CHAPTER = {
     { id: 'adhPct', label: 'Pituitary ADH level', min: 0, max: 100, step: 10, value: 65, unit: '%' },
   ],
   lessons: {
-    'ch10-feedback-glucose-3d': { page: 0, params: { insulinPct: 100 } },
-    'ch10-diabetes-renal-3d': { page: 0, params: { insulinPct: 15 } },
-    'ch10-skin-heat-3d': { page: 1 },
-    'ch10-liver-nephron-3d': { page: 2, params: { adhPct: 80 } },
-    'ch10-immunity-ors-3d': { page: 3 },
+    'ch10-islet-3d': { page: 0, lit: 'pancreas_islet', params: { insulinPct: 100 } },
+    'ch10-skin-3d': { page: 1, lit: 'sweat_gland' },
+    'ch10-skin-3d-mumbai': { page: 1, lit: 'dermal_arterioles' },
+    'ch10-nephron-3d-urea': { page: 0, lit: 'liver_glycogen', params: { insulinPct: 100 } },
+    'ch10-nephron-3d': { page: 2, lit: 'glomerulus_bowman', params: { adhPct: 80 } },
+    'ch10-nephron-3d-ors': { page: 2, lit: 'pct_henle_loop', params: { adhPct: 85 } },
+    'ch10-antibody-3d': { page: 3, lit: 'igg_antibody' },
+    'ch10-antibody-3d-passive': { page: 3, lit: 'vaccine_curves' },
+    'ch10-islet-3d-renal': { page: 0, lit: 'pancreas_islet', params: { insulinPct: 15 } },
+    'ch10-feedback-glucose-3d': { page: 0, lit: 'pancreas_islet', params: { insulinPct: 100 } },
+    'ch10-diabetes-renal-3d': { page: 0, lit: 'liver_glycogen', params: { insulinPct: 15 } },
+    'ch10-skin-heat-3d': { page: 1, lit: 'sweat_gland' },
+    'ch10-liver-nephron-3d': { page: 2, lit: 'glomerulus_bowman', params: { adhPct: 80 } },
+    'ch10-immunity-ors-3d': { page: 3, lit: 'igg_antibody' },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 180 + s.ne.urineOsmolarityMosm * 0.25, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -151,6 +160,9 @@ export const CHAPTER = {
     part(swAsm, box(2.2, 1.5, 1.3, 0.06), { pal: 'ochre', tone: 'mid', mat: shadeMat('ochre', { opacity: 0.35 }), ex: [0, -0.45, 0], name: 'Dermis & epidermis slab' });
     part(swAsm, torus(0.26, 0.07, 10, 20), { pal: 'blue', tone: 'lit', pos: [-0.45, -0.25, 0], ex: [-0.35, 0.35, 0], name: 'Coiled sweat gland base' });
     part(swAsm, cyl(0.055, 1.1, 14), { pal: 'blue', tone: 'lit', pos: [-0.45, 0.35, 0], ex: [-0.35, 0.55, 0], name: 'Sweat duct to surface pore' });
+    for (const [sx, sy] of [[-0.52, 0.88], [-0.38, 0.96]]) {
+      part(swAsm, sphere(0.055, 12), { pal: 'blue', tone: 'lit', pos: [sx, sy, 0], ex: [-0.35, 0.65, 0], name: 'Evaporating sweat droplet' });
+    }
 
     const artAsm = asm('dermal_arterioles', root, { title: 'Dermal arteriolar loops', sub: 'Vasodilate in heat, vasoconstrict in cold' });
     artAsm.position.set(14.45, 1.25, 0);
@@ -162,6 +174,8 @@ export const CHAPTER = {
     const glomAsm = asm('glomerulus_bowman', root, { title: 'Glomerulus & Bowman’s capsule', sub: 'Filtration (180 L/day across both kidneys)' });
     glomAsm.position.set(26.9, 1.85, 0);
     part(glomAsm, sphere(0.32, 20), { pal: 'red', tone: 'lit', ex: [-0.35, 0.35, 0], name: 'Glomerular capillary knot' });
+    part(glomAsm, cyl(0.085, 0.45, 14), { pal: 'red', tone: 'hi', pos: [-0.38, 0.16, 0], rot: [0, 0, Math.PI / 3], ex: [-0.55, 0.45, 0], name: 'Wide afferent arteriole' });
+    part(glomAsm, cyl(0.048, 0.45, 14), { pal: 'red', tone: 'mid', pos: [-0.38, -0.16, 0], rot: [0, 0, -Math.PI / 3], ex: [-0.55, 0.25, 0], name: 'Narrow efferent arteriole' });
     part(glomAsm, sphere(0.45, 22), { pal: 'ochre', tone: 'mid', mat: shadeMat('ochre', { opacity: 0.42 }), ex: [-0.55, 0.55, 0], name: 'Bowman’s cup' });
 
     const loopAsm = asm('pct_henle_loop', root, { title: 'PCT & hairpin Loop of Henle', sub: 'Glucose recovery & medullary salt gradient' });
@@ -172,6 +186,9 @@ export const CHAPTER = {
     const cdAsm = asm('collecting_duct_adh', root, { title: 'Collecting duct & ADH aquaporins', sub: 'Tunes final urine volume & osmolarity' });
     cdAsm.position.set(28.85, 1.15, 0);
     const cdTube = part(cdAsm, cyl(0.14, 1.75, 18), { pal: 'blue', tone: 'lit', ex: [0.45, 0, 0], name: 'Collecting duct' });
+    for (const sy of [-0.45, 0, 0.45]) {
+      part(cdAsm, torus(0.16, 0.025, 10, 20), { pal: 'ochre', tone: 'lit', pos: [0, sy, 0], rot: [Math.PI / 2, 0, 0], ex: [0.55, 0, 0.2], name: 'ADH-recruited Aquaporin-2 ring' });
+    }
     label('board', 'Glomerulus & Bowman', () => V(26.9, 2.55, 0));
     label('board', 'Loop of Henle & ADH duct', () => V(28.4, 2.35, 0));
 
@@ -179,9 +196,11 @@ export const CHAPTER = {
     const iggAsm = asm('igg_antibody', root, { title: 'Y-shaped IgG Antibody', sub: 'Heavy/light chains & antigen-binding paratopes' });
     iggAsm.position.set(40.9, 1.25, 0);
     part(iggAsm, cyl(0.11, 0.75, 16), { pal: 'blue', tone: 'hi', pos: [0, -0.25, 0], ex: [0, -0.35, 0], name: 'Fc constant stem' });
+    part(iggAsm, box(0.28, 0.06, 0.14, 0.01), { pal: 'ochre', tone: 'lit', pos: [0, 0.12, 0], ex: [0, 0.1, 0.25], name: 'Disulfide hinge region' });
     part(iggAsm, cyl(0.1, 0.72, 16), { pal: 'blue', tone: 'lit', pos: [-0.26, 0.35, 0], rot: [0, 0, 0.55], ex: [-0.35, 0.35, 0], name: 'Left Fab arm' });
     part(iggAsm, cyl(0.1, 0.72, 16), { pal: 'blue', tone: 'lit', pos: [0.26, 0.35, 0], rot: [0, 0, -0.55], ex: [0.35, 0.35, 0], name: 'Right Fab arm' });
     part(iggAsm, sphere(0.15, 16), { pal: 'red', tone: 'lit', pos: [-0.48, 0.72, 0], ex: [-0.5, 0.55, 0], name: 'Bound pathogen antigen' });
+    part(iggAsm, sphere(0.15, 16), { pal: 'red', tone: 'lit', pos: [0.48, 0.72, 0], ex: [0.5, 0.55, 0], name: 'Bound pathogen antigen' });
 
     const vacAsm = asm('vaccine_curves', root, { title: 'Primary vs Secondary vaccine curves', sub: 'Clonal memory B/T amplification' });
     vacAsm.position.set(42.2, 0.25, -0.3);

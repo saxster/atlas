@@ -96,15 +96,16 @@ export const CHAPTER = {
     { id: 'demandLevel', label: 'Animation activity (not measured metabolism)', min: 20, max: 100, step: 5, value: 60, unit: '%' },
   ],
   lessons: {
-    'ch06-glycolysis-3d': { page: 0, params: { o2Supply: 100 } },
-    'ch06-synthase-3d': { page: 1, params: { o2Supply: 100 } },
-    'ch06-mitochondrion-3d-mass': { page: 2, params: { o2Supply: 100 } },
-    'ch06-fermentation-3d': { page: 3, params: { o2Supply: 0 } },
-    'ch06-routes-3d': { page: 0, params: { o2Supply: 100 } },
-    'ch06-mitochondrion-3d': { page: 0, params: { o2Supply: 100, demandLevel: 75 } },
-    'ch06-etc-synthase-3d': { page: 1, params: { o2Supply: 100, demandLevel: 80 } },
-    'ch06-respirometer-3d': { page: 2, params: { o2Supply: 100 } },
-    'ch06-fermentation-roots-3d': { page: 3, params: { o2Supply: 0, demandLevel: 85 } },
+    'ch06-glycolysis-3d': { page: 0, lit: 'krebs_ring', params: { o2Supply: 100 } },
+    'ch06-synthase-3d': { page: 1, lit: 'f0f1_turbine', params: { o2Supply: 100 } },
+    'ch06-mitochondrion-3d-mass': { page: 2, lit: 'respirometer_chamber', params: { o2Supply: 100 } },
+    'ch06-fermentation-3d': { page: 3, lit: 'yeast_fermenter', params: { o2Supply: 0 } },
+    'ch06-routes-3d': { page: 0, lit: 'mito_cristae', params: { o2Supply: 100 } },
+    'ch06-mitochondrion-3d': { page: 0, lit: 'mito_cristae', params: { o2Supply: 100, demandLevel: 75 } },
+    'ch06-etc-synthase-3d': { page: 1, lit: 'etc_complexes', params: { o2Supply: 100, demandLevel: 80 } },
+    'ch06-respirometer-3d': { page: 2, lit: 'respirometer_chamber', params: { o2Supply: 100 } },
+    'ch06-fermentation-roots-3d': { page: 3, lit: 'aerenchyma_root', params: { o2Supply: 0, demandLevel: 85 } },
+    'ch06-fermentation-3d-roots': { page: 3, lit: 'aerenchyma_root', params: { o2Supply: 0, demandLevel: 85 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 95 + s.rel.animationRate * 180, dur: 0.07, type: 'sawtooth', gain: 0.028 });
@@ -144,6 +145,9 @@ export const CHAPTER = {
     const krebsAsm = asm('krebs_ring', root, { title: 'Matrix Krebs cycle', sub: 'Citric acid NADH/FADH₂ loader' });
     krebsAsm.position.set(0, 1.35, 0.45);
     const krebsWheel = part(krebsAsm, new THREE.TorusGeometry(0.32, 0.055, 12, 24), { pal: 'blue', tone: 'lit', ex: [0, 0, 0.55], name: 'Krebs cycle ring' });
+    for (const ang of [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]) {
+      part(krebsWheel, sphere(0.065, 12), { pal: 'ochre', tone: 'lit', pos: [0.32 * Math.cos(ang), 0.32 * Math.sin(ang), 0], name: 'Reduced carrier (NADH/FADH₂)' });
+    }
     label('board', 'Cristae folds', () => V(0, 2.35, 0));
     label('board', 'Krebs cycle', () => V(0, 0.55, 0.75));
 
@@ -154,6 +158,7 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       part(etcAsm, capsule(0.15, 0.45 + i * 0.05, 8, 14), { pal: i % 2 === 0 ? 'blue' : 'green', tone: 'hi', pos: [-0.65 + i * 0.44, -0.15, 0], ex: [0, 0.4, 0], name: `Complex ${['I', 'II', 'III', 'IV'][i]}` });
     }
+    const qShuttle = part(etcAsm, sphere(0.075, 14), { pal: 'ochre', tone: 'lit', pos: [-0.2, -0.15, 0.16], ex: [0, 0.25, 0.25], name: 'Mobile electron shuttle (Q / Cyt c)' });
     const protonCloud = prims.particles(etcAsm, 24, { radius: 0.045, color: 'red' });
 
     const turbAsm = asm('f0f1_turbine', root, { title: 'Rotary F₀F₁ ATP Synthase', sub: 'Proton-motive molecular rotor' });
@@ -167,6 +172,9 @@ export const CHAPTER = {
     part(respAsm, cyl(0.62, 1.5, 24), { pal: 'paper', tone: 'mid', pos: [0, 0.8, 0], mat: shadeMat('paper', { opacity: 0.4 }), name: 'Sealed glass chamber' });
     part(respAsm, cyl(0.52, 0.22, 20), { pal: 'blue', tone: 'hi', pos: [0, 0.2, 0], ex: [0, -0.25, 0], name: 'KOH CO₂-absorber base' });
     part(respAsm, box(0.75, 0.25, 0.45, 0.04), { pal: 'ochre', tone: 'hi', pos: [0, 0.65, 0], ex: [0, 0.35, 0], name: 'Respiring seeds on gauze' });
+    const manoPts = [V(0, 1.55, 0), V(0, 1.78, 0), V(0.72, 1.78, 0), V(0.72, 0.95, 0)];
+    part(respAsm, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(manoPts), 24, 0.04, 8, false), { pal: 'dark', tone: 'mid', ex: [0.25, 0.35, 0], name: 'Capillary manometer tube' });
+    const manoDrop = part(respAsm, cyl(0.052, 0.14, 12), { pal: 'red', tone: 'lit', pos: [0.72, 1.32, 0], ex: [0.35, 0.35, 0], name: 'Manometer fluid meniscus' });
 
     const barAsm = asm('atp_yield_bars', root, { title: 'Two ATP-supporting pathways', sub: 'Marker height does not encode ATP yield' });
     barAsm.position.set(29.0, 0.1, 0);
@@ -179,6 +187,7 @@ export const CHAPTER = {
     const yeastAsm = asm('yeast_fermenter', root, { title: 'Yeast & muscle fermentation', sub: 'Carrier recycling; distinct products' });
     yeastAsm.position.set(40.9, 0.2, 0);
     part(yeastAsm, cyl(0.58, 1.45, 22), { pal: 'ochre', tone: 'mid', pos: [0, 0.75, 0], ex: [-0.35, 0.25, 0], name: 'Anaerobic yeast vessel' });
+    part(yeastAsm, new THREE.TorusGeometry(0.16, 0.035, 10, 20, Math.PI * 1.3), { pal: 'blue', tone: 'hi', pos: [0, 1.58, 0], ex: [-0.35, 0.5, 0], name: 'Fermentation gas airlock' });
 
     const aerAsm = asm('aerenchyma_root', root, { title: 'Rice root aerenchyma pipes', sub: 'Longitudinal O₂ channels in flooded mud' });
     aerAsm.position.set(42.9, 1.15, 0);
@@ -196,6 +205,8 @@ export const CHAPTER = {
         const rate = s.rel.animationRate;
         krebsWheel.rotation.z = s.t * 2.2 * rate;
         synth.rotor.rotation.y = s.t * (rate * 6.0);
+        qShuttle.position.x = -0.65 + ((s.t * 0.7 * rate) % 1) * 1.32;
+        manoDrop.position.y = 1.15 + 0.25 * Math.sin(s.t * 0.8 * rate);
 
         // Proton cloud density in intermembrane space
         const pPts = [];

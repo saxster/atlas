@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Hull-down ship',
-    fig: 'Figure 0.1 · Ship disappearing hull-first over the curved Arabian Sea horizon',
+    fig: 'Figure 0.1 · Hull-down ship over the curved Arabian Sea horizon',
     title: 'Hull-Down Horizon & Earth Curvature',
     alt: '3D curved ocean arc with an observer tower on the shore, a tangent sightline grazing the horizon, and a tall-masted ship sinking hull-first beyond the tangent point.',
-    cam: { target: [0, 1.3, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 20, dist: 10.5 },
     lit: 'sailing_ship',
     parts: ['earth_arc', 'shore_observer', 'sailing_ship'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Rulers & parallax',
-    fig: 'Figure 0.2 · Coarse vs fine rulers & eye-angle parallax shift across scale thickness',
+    fig: 'Figure 0.2 · Coarse vs fine rulers & parallax shift across scale thickness',
     title: 'Resolution Uncertainty & Parallax Error',
     alt: '3D wooden desk with a pencil measured between a 1-cm ruler and a 1-mm ruler, plus an elevated glass scale showing an oblique sightline shifting the apparent reading.',
-    cam: { target: [14, 1.3, 0], az: -22, el: 22, dist: 7.0 },
+    cam: { target: [14, 1.25, 0], az: -20, el: 22, dist: 10.2 },
     lit: 'parallax_scale',
     parts: ['dual_rulers', 'parallax_scale'],
     look: { xray: 0.15, section: 0 },
   },
   {
     tab: 'Scale ladder',
-    fig: 'Figure 0.3 · Powers-of-ten scale tower from atomic nucleus to observable universe',
-    title: 'Powers-of-Ten Physical Scale Ladder',
-    alt: '3D logarithmic scale monument from a water molecule cluster and raindrop up to Earth and planetary orbits.',
-    cam: { target: [28, 1.4, 0], az: 28, el: 21, dist: 7.6 },
+    fig: 'Figure 0.3 · Powers-of-ten scale landmarks from molecule to planet',
+    title: 'Powers-of-Ten Physical Scale Landmarks',
+    alt: '3D scale monument comparing four physical size landmarks from a water molecule cluster (10⁻¹⁰ m) and raindrop (10⁻³ m) up to a child (10⁰ m) and Earth (10⁷ m).',
+    cam: { target: [28, 1.35, 0], az: 26, el: 21, dist: 10.6 },
     lit: 'scale_columns',
     parts: ['atomic_cluster', 'scale_columns'],
     look: { xray: 0, section: 0 },
@@ -41,7 +41,7 @@ export const PAGES = [
     fig: 'Figure 0.4 · Narrow and wide cylindrical rain gauges filling to identical depth',
     title: 'Rain-Gauge Depth Invariance',
     alt: 'Two 3D transparent cylindrical rain gauges of narrow and wide radius under falling monsoon raindrops, both filling to the exact same water height h while holding volumes proportional to area A.',
-    cam: { target: [42, 1.3, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [42, 1.25, 0], az: 22, el: 20, dist: 10.4 },
     lit: 'wide_gauge',
     parts: ['narrow_gauge', 'wide_gauge'],
     look: { xray: 0.2, section: 0 },
@@ -50,28 +50,28 @@ export const PAGES = [
 
 export const PLATES = {
   earth_arc: {
-    text: 'Curved ocean bulge: over a distance d beyond the tangent horizon, the surface drops by h_drop ≈ d² / (2R_Earth), hiding the lower hull before the masthead.',
+    text: 'Curved ocean bulge: beyond the horizon tangent point d_hz, the curved sea surface drops below the straight line of sight by h_drop ≈ (d − d_hz)² / (2R_Earth), hiding the hull before the masthead.',
   },
   shore_observer: {
-    text: 'Observer eye height h sets the horizon tangent distance d_hz = √(2 R_Earth h). Raising your eyes from the beach to a lighthouse pushes the horizon kilometers further out.',
+    text: 'Observer eye height h sets the horizon tangent distance d_hz = √(2 R_Earth h). Raising your eyes from the beach to a lighthouse pushes the tangent horizon kilometres further out.',
     facts: s => [['d_hz', `${s.dHzKm.toFixed(2)} km`], ['Eye h', `${s.eyeHeightM.toFixed(1)} m`]],
   },
   sailing_ship: {
-    text: 'Outbound vessel: on a flat sea the entire ship would merely shrink; on our curved Earth the hull drops below the tangent sightline while the upper sail remains lit.',
+    text: 'Outbound vessel: inside d_hz the entire hull sits above the tangent sightline; past d_hz the hull drops behind the ocean bulge while the upper topsail remains in view.',
     facts: s => [['Ship d', `${s.shipDistKm.toFixed(1)} km`], ['Hidden hull', `${s.hiddenM.toFixed(2)} m`]],
   },
   dual_rulers: {
     text: 'Coarse (1 cm) vs fine (1 mm) graduations: smaller divisions narrow the honest reading interval (± half the smallest division) without eliminating uncertainty.',
   },
   parallax_scale: {
-    text: 'Oblique viewing angle θ through a ruler of thickness t shifts the apparent mark by Δx = t tan θ. Looking straight down (θ = 0°) eliminates parallax.',
+    text: 'Oblique viewing angle θ through a ruler of thickness t shifts the apparent mark by Δx = t tan θ. Looking straight down along the normal (θ = 0°) eliminates parallax.',
     facts: s => [['View θ', `${s.viewAngleDeg.toFixed(0)}°`], ['Parallax Δx', `${s.parallaxMm.toFixed(2)} mm`]],
   },
   atomic_cluster: {
-    text: 'Sub-nanometre molecular reference (10⁻¹⁰ m): hydrogen-bonded H₂O molecules sit ten orders of magnitude below human height (10⁰ m).',
+    text: 'Sub-nanometre molecular landmark (~3 × 10⁻¹⁰ m O–O spacing): hydrogen-bonded H₂O molecules sit ten orders of magnitude below human height (10⁰ m).',
   },
   scale_columns: {
-    text: 'Logarithmic powers-of-ten pillars: each equal step upward multiplies physical length by ×10, compressing 41 orders of magnitude into one view.',
+    text: 'Schematic size-order columns across 17 orders of magnitude: 10⁻¹⁰ m (atom/molecule), 10⁻³ m (monsoon raindrop), 10⁰ m (human), and 10⁷ m (Earth diameter).',
   },
   narrow_gauge: {
     text: 'Narrow cylinder (radius r): catches fewer drops through its smaller mouth (πr²), but its smaller cross-section rises at the exact same rate h = V / A.',
@@ -149,7 +149,7 @@ export const CHAPTER = {
       return `<b>Viewing angle θ = ${s.viewAngleDeg}°</b> across 3.5 mm thick ruler → Parallax shift <b>Δx = ${s.parallaxMm >= 0 ? '+' : ''}${s.parallaxMm.toFixed(2)} mm</b> (0.00 mm when θ = 0°).`;
     }
     if (pageIdx === 2) {
-      return `<b>Powers-of-Ten Scale Ladder</b> · H₂O molecule (10⁻¹⁰ m) → Raindrop (10⁻³ m) → Child (10⁰ m) → Earth (10⁷ m) · Every equal step multiplies size by ×10.`;
+      return `<b>Powers-of-Ten Scale Landmarks</b> · H₂O molecule (~10⁻¹⁰ m) → Raindrop (10⁻³ m, ×10⁷) → Child (10⁰ m, ×10³) → Earth (10⁷ m, ×10⁷).`;
     }
     return `<b>Monsoon rain depth h = ${s.rainDepthMm} mm</b> in both cylinders · Narrow gauge (r = 25 mm) holds <b>${s.narrow.volumeMl.toFixed(0)} mL</b> · Wide gauge (r = 50 mm, 4× area) holds <b>${s.wide.volumeMl.toFixed(0)} mL</b>.`;
   },
@@ -164,7 +164,8 @@ export const CHAPTER = {
     // Station 0 (x = 0): Hull-down ship over curved ocean arc
     const earthAsm = asm('earth_arc', root, { title: 'Curved Arabian Sea arc', sub: 'R = 6,371 km sphere section' });
     earthAsm.position.set(0, -3.2, 0);
-    part(earthAsm, sphere(4.2, 36), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('blue', { opacity: 0.55 }), name: 'Curved ocean surface' });
+    part(earthAsm, sphere(4.2, 40), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('blue', { opacity: 0.55 }), name: 'Curved ocean surface' });
+    const hzDot = part(earthAsm, sphere(0.065, 14), { pal: 'green', tone: 'hi', pos: [0, 4.2, 0], name: 'Horizon tangent point (d_hz)' });
 
     const obsAsm = asm('shore_observer', root, { title: 'Shoreline observer tower', sub: 'Variable eye height h' });
     obsAsm.position.set(-1.55, 0.72, 0);
@@ -172,36 +173,58 @@ export const CHAPTER = {
     const eyeSphere = part(obsAsm, sphere(0.09, 14), { pal: 'dark', tone: 'hi', pos: [0, 0.7, 0], ex: [0, 0.55, 0], name: 'Observer eye' });
     const sightRay = rod(root, { r: 0.018, pal: 'red', tone: 'hi', name: 'Horizon tangent sightline' });
 
-    const shipAsm = asm('sailing_ship', root, { title: 'Tall-masted vessel', sub: 'Sinks hull-first over curve' });
+    const shipAsm = asm('sailing_ship', root, { title: 'Tall-masted vessel', sub: 'Sinks hull-first beyond d_hz' });
     shipAsm.position.set(1.1, 0.8, 0);
     part(shipAsm, box(0.58, 0.22, 0.26, 0.03), { pal: 'ochre', tone: 'hi', pos: [0, 0.11, 0], ex: [0, -0.25, 0], name: 'Wooden hull' });
     part(shipAsm, cyl(0.025, 0.85, 12), { pal: 'dark', tone: 'hi', pos: [0, 0.55, 0], ex: [0, 0.25, 0], name: 'Mainmast' });
     part(shipAsm, box(0.06, 0.55, 0.42, 0.01), { pal: 'paper', tone: 'lit', pos: [0.04, 0.62, 0], ex: [0.25, 0.35, 0], name: 'Topsail' });
     part(shipAsm, cone(0.08, 0.16, 12), { pal: 'red', tone: 'hi', pos: [0, 1.02, 0], ex: [0, 0.55, 0], name: 'Masthead pennant' });
     label('board', 'Observer eye (h)', () => V(-1.55, 1.9, 0));
-    label('board', 'Tangent sightline', () => V(0.0, 1.38, 0), { leader: [0, -22] });
+    label('board', 'Tangent sightline grazes d_hz', () => V(0.0, 1.38, 0), { leader: [0, -22] });
 
     // Station 1 (x = 14): Coarse/fine rulers & parallax sightline
     const rulersAsm = asm('dual_rulers', root, { title: 'Coarse (cm) & fine (mm) rulers', sub: 'Resolution & uncertainty interval' });
     rulersAsm.position.set(14, 0.55, 0);
     part(rulersAsm, box(3.2, 0.12, 0.45, 0.02), { pal: 'ochre', tone: 'mid', pos: [0, 0, -0.45], ex: [0, 0.3, -0.3], name: 'Centimetre ruler' });
     part(rulersAsm, box(3.2, 0.12, 0.45, 0.02), { pal: 'green', tone: 'mid', pos: [0, 0, 0.45], ex: [0, 0.3, 0.3], name: 'Millimetre ruler' });
+    const tickCoords = [];
+    for (let i = -5; i <= 5; i++) {
+      const tx = i * 0.28;
+      // Coarse cm ticks on back ruler (z = -0.45)
+      tickCoords.push(tx, 0.062, -0.23, tx, 0.062, -0.38);
+      // Fine mm ticks on front ruler (z = 0.45)
+      for (let m = 0; m < 5 && i < 5; m++) {
+        const mx = tx + (m / 5) * 0.28;
+        const tLen = m === 0 ? 0.16 : 0.08;
+        tickCoords.push(mx, 0.062, 0.23, mx, 0.062, 0.23 + tLen);
+      }
+    }
+    lines(rulersAsm, tickCoords, '#2c2c30');
     part(rulersAsm, cyl(0.07, 2.35, 16), { pal: 'red', tone: 'hi', pos: [-0.35, 0.14, 0], rot: [0, 0, Math.PI / 2], ex: [0, 0.5, 0], name: 'Measured pencil' });
 
     const paraAsm = asm('parallax_scale', root, { title: 'Thick ruler parallax stage', sub: 'Δx = t tan θ' });
     paraAsm.position.set(14, 1.25, 0);
     part(paraAsm, box(2.4, 0.36, 0.55, 0.02), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('blue', { opacity: 0.42 }), ex: [0, 0.35, 0], name: 'Thick glass scale' });
-    const eyeNode = part(paraAsm, sphere(0.11, 16), { pal: 'dark', tone: 'hi', pos: [0, 0.95, 0], ex: [0, 0.6, 0], name: 'Viewing eye position' });
+    const scaleTicks = [];
+    for (let i = -10; i <= 10; i++) {
+      const sx = i * 0.1;
+      scaleTicks.push(sx, -0.18, -0.22, sx, -0.18, i % 5 === 0 ? 0.22 : 0.05);
+    }
+    lines(paraAsm, scaleTicks, '#2c2c30');
+    part(paraAsm, sphere(0.05, 12), { pal: 'green', tone: 'hi', pos: [0, 0.18, 0], name: 'True fiducial mark (top face)' });
+    const trueRay = rod(paraAsm, { r: 0.01, pal: 'green', tone: 'mid', name: 'Perpendicular true reading (θ = 0°)' });
+    trueRay.set(V(0, 0.96, 0), V(0, -0.18, 0));
+    const eyeNode = part(paraAsm, sphere(0.11, 16), { pal: 'dark', tone: 'hi', pos: [0, 0.96, 0], ex: [0, 0.6, 0], name: 'Viewing eye position' });
     const paraRay = rod(paraAsm, { r: 0.02, pal: 'red', tone: 'hi', name: 'Oblique line of sight' });
-    const markDot = part(paraAsm, sphere(0.065, 12), { pal: 'red', tone: 'hi', pos: [0, -0.18, 0], name: 'Apparent reading on bottom face' });
+    const markDot = part(paraAsm, sphere(0.065, 12), { pal: 'red', tone: 'hi', pos: [0, -0.18, 0], name: 'Apparent reading on bottom scale' });
     label('board', 'Parallax Δx = t tan θ', () => V(14, 2.45, 0), { leader: [24, -20] });
 
-    // Station 2 (x = 28): Powers-of-Ten Scale Ladder
-    const atomAsm = asm('atomic_cluster', root, { title: 'Molecular scale anchor', sub: '10⁻¹⁰ m water cluster' });
+    // Station 2 (x = 28): Powers-of-Ten Scale Landmarks
+    const atomAsm = asm('atomic_cluster', root, { title: 'Molecular scale anchor', sub: '~3 × 10⁻¹⁰ m water cluster' });
     atomAsm.position.set(26.6, 1.25, 0);
     prims.molecule(atomAsm, { atoms: MOLECULES.waterCluster.atoms, bonds: MOLECULES.waterCluster.bonds, scale: 0.28 });
 
-    const colAsm = asm('scale_columns', root, { title: 'Log₁₀ physical scale pillars', sub: 'From 10⁻⁹ m to 10⁷ m' });
+    const colAsm = asm('scale_columns', root, { title: 'Schematic size-order columns', sub: '10⁻¹⁰ m · 10⁻³ m · 10⁰ m · 10⁷ m' });
     colAsm.position.set(28.7, 0.1, 0);
     const cols = [
       { x: -0.9, h: 0.48, pal: 'blue', name: 'Atom / Molecule (10⁻¹⁰ m)' },
@@ -210,21 +233,21 @@ export const CHAPTER = {
       { x: 0.9, h: 2.25, pal: 'red', name: 'Planet Earth (10⁷ m)' },
     ];
     for (const c of cols) {
-      part(colAsm, box(0.42, c.h, 0.42, 0.04), { pal: c.pal, tone: 'hi', pos: [c.x, c.h / 2, 0], ex: [0, c.h * 0.25, 0], name: c.name });
+      part(colAsm, box(0.42, c.h, 0.42, 0.04), { pal: c.pal, tone: 'hi', pos: [c.x, c.h / 2, 0], ex: [0, 0, 0.35], name: c.name });
     }
-    label('board', '10⁻¹⁰ m H₂O', () => V(26.6, 2.2, 0));
-    label('board', '×10 per step', () => V(28.7, 2.55, 0));
+    label('board', '~10⁻¹⁰ m H₂O', () => V(26.6, 2.2, 0));
+    label('board', '10⁻¹⁰ · 10⁻³ · 10⁰ · 10⁷ m', () => V(28.7, 2.55, 0));
 
     // Station 3 (x = 42): Narrow vs Wide Rain Gauges
     const narrowAsm = asm('narrow_gauge', root, { title: 'Narrow rain cylinder (r)', sub: 'Area A = πr²' });
     narrowAsm.position.set(41.1, 0.1, 0);
     part(narrowAsm, cyl(0.38, 1.9, 24), { pal: 'paper', tone: 'mid', pos: [0, 0.95, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Narrow glass tube' });
-    const waterNarrow = part(narrowAsm, cyl(0.34, 1.0, 24), { pal: 'blue', tone: 'hi', pos: [0, 0.5, 0], ex: [0, 0.4, 0], name: 'Collected rainwater (narrow)' });
+    const waterNarrow = part(narrowAsm, cyl(0.34, 1.0, 24), { pal: 'blue', tone: 'hi', pos: [0, 0.5, 0], ex: [-0.35, 0, 0], name: 'Collected rainwater (narrow)' });
 
     const wideAsm = asm('wide_gauge', root, { title: 'Wide rain cylinder (2r)', sub: 'Area 4A = 4πr², same depth h' });
     wideAsm.position.set(42.9, 0.1, 0);
     part(wideAsm, cyl(0.76, 1.9, 28), { pal: 'paper', tone: 'mid', pos: [0, 0.95, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Wide glass cylinder' });
-    const waterWide = part(wideAsm, cyl(0.72, 1.0, 28), { pal: 'blue', tone: 'hi', pos: [0, 0.5, 0], ex: [0, 0.4, 0], name: 'Collected rainwater (wide)' });
+    const waterWide = part(wideAsm, cyl(0.72, 1.0, 28), { pal: 'blue', tone: 'hi', pos: [0, 0.5, 0], ex: [0.35, 0, 0], name: 'Collected rainwater (wide)' });
     const rainDrops = prims.particles(root, { count: 22, r: 0.038, pal: 'blue' });
     const levelLine = rod(root, { r: 0.015, pal: 'red', tone: 'hi', name: 'Equal-depth reference line' });
     label('board', 'Same depth h in both!', () => V(42.0, 2.25, 0), { leader: [0, -22] });
@@ -232,37 +255,38 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Station 0: curve ship along ocean arc
+        // Station 0: curve ship along ocean arc so ship crosses tangent horizon at d === d_hz
         const R = 4.2;
         const obsAng = -0.36;
-        const hScale = 0.25 + (s.eyeHeightM / 25) * 0.55;
+        const hScale = 0.22 + (s.eyeHeightM / 25) * 0.52;
         obsAsm.position.set(R * Math.sin(obsAng), -3.2 + R * Math.cos(obsAng), 0);
         obsAsm.rotation.z = -obsAng;
         towerMesh.scale.y = hScale / 0.65;
         towerMesh.position.y = hScale * 0.5;
+        const rEye = R + hScale + 0.06;
         eyeSphere.position.y = hScale + 0.06;
 
-        const shipAng = obsAng + (s.shipDistKm / 22) * 0.78;
+        const deltaHzAng = Math.acos(R / rEye);
+        const hzAng = obsAng + deltaHzAng;
+        hzDot.position.set(R * Math.sin(hzAng), R * Math.cos(hzAng), 0);
+
+        const shipAng = Math.min(obsAng + 0.86, obsAng + deltaHzAng * (s.shipDistKm / Math.max(0.5, s.dHzKm)));
         shipAsm.position.set(R * Math.sin(shipAng), -3.2 + R * Math.cos(shipAng), 0);
         shipAsm.rotation.z = -shipAng;
 
-        const eyeWorld = V(
-          (R + hScale + 0.06) * Math.sin(obsAng),
-          -3.2 + (R + hScale + 0.06) * Math.cos(obsAng),
-          0
-        );
-        const hzAng = obsAng + Math.acos(R / (R + hScale + 0.06));
+        const eyeWorld = V(rEye * Math.sin(obsAng), -3.2 + rEye * Math.cos(obsAng), 0);
         const dirX = Math.cos(hzAng), dirY = -Math.sin(hzAng);
-        sightRay.set(eyeWorld, V(eyeWorld.x + dirX * 3.4, eyeWorld.y + dirY * 3.4, 0));
+        sightRay.set(eyeWorld, V(eyeWorld.x + dirX * 3.6, eyeWorld.y + dirY * 3.6, 0));
 
-        // Station 1: parallax viewing angle
+        // Station 1: collinear parallax sightline from eye through top fiducial mark (0, +0.18) to bottom scale (-0.18)
         const rad = (s.viewAngleDeg * Math.PI) / 180;
-        const ex = Math.sin(rad) * 0.95;
-        const ey = Math.cos(rad) * 0.95;
+        const yTop = 0.18, yBot = -0.18, rView = 0.78;
+        const ex = Math.sin(rad) * rView;
+        const ey = yTop + Math.cos(rad) * rView;
         eyeNode.position.set(ex, ey, 0);
-        const dxScene = -Math.tan(rad) * 0.36;
-        markDot.position.set(dxScene, -0.18, 0);
-        paraRay.set(V(ex, ey, 0), V(dxScene, -0.18, 0));
+        const dxScene = -Math.tan(rad) * (yTop - yBot);
+        markDot.position.set(dxScene, yBot, 0);
+        paraRay.set(V(ex, ey, 0), V(dxScene, yBot, 0));
 
         // Station 3: equal rain depth in narrow & wide cylinders
         const hWater = Math.max(0.12, (s.rainDepthMm / 60) * 1.65);

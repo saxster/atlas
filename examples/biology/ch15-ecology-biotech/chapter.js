@@ -99,18 +99,18 @@ export const CHAPTER = {
     { id: 'runoffLoad', label: 'Nitrate fertiliser runoff load', min: 0, max: 100, step: 10, value: 30, unit: '%' },
   ],
   lessons: {
-    'ch15-trophic-3d': { page: 0 },
-    'ch15-trophic-3d-budget': { page: 0 },
-    'ch15-carbon-3d': { page: 1 },
-    'ch15-carbon-3d-nitrogen': { page: 1 },
-    'ch15-eutrophication-3d': { page: 1 },
-    'ch15-carbon-3d-forest': { page: 1 },
-    'ch15-plasmid-crispr-3d-fermenter': { page: 2 },
-    'ch15-eutrophication-3d-creek': { page: 1 },
-    'ch15-pyramid-lv-3d': { page: 0, params: { trophicEtaPct: 10 } },
-    'ch15-nodule-eutrophication-3d': { page: 1, params: { runoffLoad: 85 } },
-    'ch15-fermenter-3d': { page: 2, params: { fermTempC: 37 } },
-    'ch15-plasmid-crispr-3d': { page: 3 },
+    'ch15-trophic-3d': { page: 0, lit: 'trophic_pyramid' },
+    'ch15-trophic-3d-budget': { page: 0, lit: 'trophic_pyramid', params: { trophicEtaPct: 12 } },
+    'ch15-carbon-3d': { page: 1, lit: 'root_nodule' },
+    'ch15-carbon-3d-nitrogen': { page: 1, lit: 'root_nodule' },
+    'ch15-eutrophication-3d': { page: 1, lit: 'lake_column', params: { runoffLoad: 80 } },
+    'ch15-carbon-3d-forest': { page: 1, lit: 'lake_column', params: { runoffLoad: 10 } },
+    'ch15-plasmid-crispr-3d-fermenter': { page: 2, lit: 'impeller_shaft' },
+    'ch15-eutrophication-3d-creek': { page: 1, lit: 'lake_column', params: { runoffLoad: 90 } },
+    'ch15-pyramid-lv-3d': { page: 0, lit: 'lv_bowl', params: { trophicEtaPct: 10 } },
+    'ch15-nodule-eutrophication-3d': { page: 1, lit: 'lake_column', params: { runoffLoad: 85 } },
+    'ch15-fermenter-3d': { page: 2, lit: 'cooling_jacket', params: { fermTempC: 37 } },
+    'ch15-plasmid-crispr-3d': { page: 3, lit: 'crispr_cas9' },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 140 + s.ferm.insulinYieldMgL * 0.65, dur: 0.06, type: 'sawtooth', gain: 0.028 });
@@ -155,6 +155,11 @@ export const CHAPTER = {
     lvAsm.position.set(0.5, 0.25, -0.5);
     const axL = prims.axes(lvAsm, { x: [0.25, 2.4], y: [0.25, 2.4], z: [1.8, 3.4], size: [1.9, 1.6, 1.5] });
     prims.surface(lvAsm, (R, F) => Math.min(3.3, M.lotkaVolterraInvariant(R, F)), { axes: axL, n: 22, pal: 'blue' });
+    prims.curve(lvAsm, u => {
+      const a = u * Math.PI * 2;
+      const r = 1.0 + 0.42 * Math.cos(a), f = 1.0 + 0.42 * Math.sin(a);
+      return [r, f, M.lotkaVolterraInvariant(r, f) + 0.04];
+    }, { axes: axL, samples: 48, color: 'ochre', width: 0.04 });
     const lvDot = part(lvAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: '(Prey R, Predator F) state' });
     let energyCaption = 'Energy tiers · η = 10%';
     label('board', 'Energy tiers', () => V(-1.1, 2.15, 0), { text: () => energyCaption });
@@ -165,11 +170,15 @@ export const CHAPTER = {
     nodAsm.position.set(13.0, 1.25, 0);
     part(nodAsm, cyl(0.18, 1.75, 16), { pal: 'ochre', tone: 'mid', ex: [-0.35, 0, 0], name: 'Legume taproot' });
     part(nodAsm, sphere(0.45, 22), { pal: 'red', tone: 'lit', pos: [0.28, 0, 0], ex: [0.45, 0.25, 0], name: 'Pink leghaemoglobin root nodule' });
+    for (const [bx, by, bz] of [[0.22, 0.12, 0.14], [0.36, -0.1, 0.12], [0.28, 0.02, -0.15]]) {
+      part(nodAsm, capsule(0.055, 0.12, 6, 10), { pal: 'green', tone: 'lit', pos: [bx, by, bz], rot: [0.4, 0, 0.5], ex: [0.55, 0.25, bz * 1.5], name: 'Nitrogen-fixing Rhizobium bacteroid' });
+    }
 
     const lakeAsm = asm('lake_column', root, { title: 'Lake column & algal bloom scum', sub: 'Fertiliser runoff → hypoxia crash' });
     lakeAsm.position.set(15.0, 0.2, 0);
     part(lakeAsm, cyl(0.68, 1.75, 24), { pal: 'blue', tone: 'mid', pos: [0, 0.88, 0], mat: shadeMat('blue', { opacity: 0.38 }), name: 'Water column' });
     const bloomMat = part(lakeAsm, cyl(0.67, 0.18, 24), { pal: 'green', tone: 'lit', pos: [0, 1.68, 0], ex: [0, 0.45, 0], name: 'Eutrophic algal bloom layer' });
+    part(lakeAsm, cyl(0.66, 0.22, 24), { pal: 'ink', tone: 'mid', pos: [0, 0.12, 0], ex: [0, -0.35, 0], name: 'Benthic hypoxic decomposer zone' });
     label('board', 'Rhizobium nodule', () => V(13.0, 2.35, 0));
     label('board', 'Eutrophication column', () => V(15.0, 2.25, 0));
 
@@ -190,6 +199,10 @@ export const CHAPTER = {
     const spargAsm = asm('air_sparger', root, { title: 'Sterile O₂ ring sparger', sub: 'Aerobic bubble diffuser' });
     spargAsm.position.set(28.0, 0.55, 0);
     part(spargAsm, torus(0.42, 0.055, 10, 24), { pal: 'green', tone: 'lit', rot: [Math.PI / 2, 0, 0], ex: [0, -0.45, 0], name: 'Sterile air sparger ring' });
+    const o2Bubbles = [0, 1, 2, 3].map(i => {
+      const a = (i * Math.PI) / 2 + 0.3;
+      return part(spargAsm, sphere(0.055, 10), { pal: 'blue', tone: 'lit', pos: [0.35 * Math.cos(a), 0.15 + i * 0.25, 0.35 * Math.sin(a)], ex: [0, -0.35, 0], name: 'Sterile O₂ bubble' });
+    });
     label('board', 'Jacketed fermenter', () => V(28.0, 2.45, 0));
 
     // Station 3 (x = 42): 3D Recombinant Plasmid Ring + CRISPR-Cas9
@@ -202,6 +215,8 @@ export const CHAPTER = {
     casAsm.position.set(43.0, 1.35, 0);
     prims.blob(casAsm, { r: 0.72, rings: 24, segs: 36, seed: 53, pal: 'green', cleft: 0.52, name: 'Cas9 endonuclease protein' });
     part(casAsm, cyl(0.06, 1.35, 14), { pal: 'ochre', tone: 'lit', rot: [0, 0, 0.45], ex: [0.4, 0.3, 0], name: 'Target DNA + 20-nt sgRNA' });
+    part(casAsm, torus(0.22, 0.045, 10, 20, Math.PI * 1.4), { pal: 'red', tone: 'lit', pos: [-0.15, 0.25, 0.35], ex: [-0.25, 0.35, 0.45], name: 'Single-guide RNA (sgRNA) scaffold loop' });
+    part(casAsm, sphere(0.11, 14), { pal: 'blue', tone: 'lit', pos: [0.22, -0.35, 0.22], ex: [0.45, -0.35, 0.35], name: '5′-NGG-3′ PAM recognition site' });
     label('board', 'Recombinant plasmid', () => V(41.0, 2.35, 0));
     label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.0, 2.35, 0));
 
@@ -228,8 +243,11 @@ export const CHAPTER = {
         // Algal bloom thickness scales with runoffLoad
         bloomMat.scale.y = 0.25 + (s.runoffLoad / 100) * 2.2;
 
-        // Spin fermenter impellers
+        // Spin fermenter impellers & animate rising O2 bubbles
         impGroup.rotation.y = s.t * 3.8;
+        o2Bubbles.forEach((b, i) => {
+          b.position.y = 0.08 + ((s.t * 0.55 + i * 0.25) % 1.15);
+        });
       },
     };
   },

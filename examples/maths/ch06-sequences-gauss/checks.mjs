@@ -1,0 +1,10 @@
+import * as M from './model.js';
+let bad = 0;
+const check = (name, ok) => { if (ok) console.log(`PASS  ${name}`); else { bad++; console.log(`FAIL  ${name}`); } };
+const g6 = M.arithmeticSeries(6, 1, 1);
+check('Gauss sum 1..6: pairHeight = 7, rect = 42, sum = 21', g6.pairHeight === 7 && g6.rectArea === 42 && g6.sum === 21);
+const g100 = M.arithmeticSeries(100, 1, 1);
+check('Gauss sum 1..100 = 5050', g100.sum === 5050);
+const qd = M.quadraticDifferences(3, 2, -1);
+check('Second difference of 3n^2 + 2n - 1 is constant 2a = 6', qd.diff2.every(v => v === 6));
+process.exit(bad ? 1 : 0);

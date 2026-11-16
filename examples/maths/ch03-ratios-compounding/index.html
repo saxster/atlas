@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch 3 · Singapore Ratio Bar Models & Exponential Compounding · @saxster/atlas 3D Mathematics</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --paper: #f6f4ec; --sheet: #fbfaf5; --ink: #1d2422; --muted: #5d6c66;
+    --proton: #c83e37; --neutron: #c88a1e; --electron: #2e66b8; --green: #1e7a50;
+  }
+  :root[data-theme="sepia"] {
+    --paper: #f2e8d5; --sheet: #f8f0e0; --ink: #3a2e22; --muted: #7a6953;
+    --proton: #a3452c; --neutron: #87581b; --electron: #3c687a; --green: #456446;
+  }
+  :root[data-theme="dark"] {
+    --paper: #141722; --sheet: #1b1f2e; --ink: #f2f0fa; --muted: #a6a0be;
+    --proton: #ff7a70; --neutron: #f5b945; --electron: #68b0f8; --green: #4ade9b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    margin: 0; padding: 10px;
+  }
+  figure {
+    max-width: 100%; margin: 0 auto; background: var(--sheet);
+    padding: 12px; border-radius: 10px; border: 1px solid rgba(128,128,128,0.2);
+  }
+  .live-controls {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px;
+  }
+  .live-ctl {
+    font: 600 12px/1.3 inherit; padding: 5px 10px;
+    border: 1px solid rgba(128,128,128,0.35); background: var(--paper);
+    color: var(--ink); border-radius: 999px; cursor: pointer;
+  }
+  .live-ctl[aria-pressed="true"] {
+    background: var(--electron); color: #fff; border-color: var(--electron);
+  }
+  .live-slider {
+    display: flex; align-items: center; gap: 6px; font-size: 12px;
+    background: var(--paper); padding: 4px 10px; border-radius: 999px;
+    border: 1px solid rgba(128,128,128,0.25);
+  }
+  .live-slider input[type="range"] { width: 96px; accent-color: var(--electron); }
+  .live-slider output { font: 600 11.5px ui-monospace, monospace; color: var(--proton); min-width: 38px; }
+  .live-readout {
+    flex-basis: 100%; margin: 6px 0 0; padding: 8px 10px;
+    background: var(--paper); border-radius: 8px;
+    border-left: 3px solid var(--electron);
+    font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "@saxster/atlas/adapters/": "../../../adapters/",
+    "@saxster/atlas/": "../../../engine/",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+  <figure id="fig">
+    <div class="live-stage" id="stage"></div>
+    <div class="live-controls" id="controls"></div>
+  </figure>
+  <script type="module">
+    import { mountAtlas } from '../../../adapters/kym-live.js';
+    import { CHAPTER } from './chapter.js';
+
+    const Q = new URLSearchParams(location.search);
+    const initPage = +(Q.get('page') || location.hash.replace('#', '') || 0);
+    const initTheme = Q.get('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', initTheme);
+
+    const stage = document.getElementById('stage');
+    const controls = document.getElementById('controls');
+    const loops = new Set();
+    const state = { t: 0 };
+    let playing = true, raf = 0, last = 0;
+
+    const api = {
+      get reduced() { return matchMedia('(prefers-reduced-motion: reduce)').matches; },
+      loop(fn) { loops.add(fn); return () => loops.delete(fn); },
+      readout() {
+        const r = document.createElement('p');
+        r.className = 'live-readout';
+        controls.appendChild(r);
+        return html => { if (r.innerHTML !== html) r.innerHTML = html; };
+      },
+      button(label, onClick, opts = {}) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'live-ctl';
+        b.textContent = label;
+        if (opts.pressed != null) b.setAttribute('aria-pressed', String(!!opts.pressed));
+        b.addEventListener('click', () => onClick(b));
+        controls.appendChild(b);
+        return b;
+      },
+      play() { setPlaying(true); },
+      pause() { setPlaying(false); },
+    };
+
+    const playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.className = 'live-ctl live-play';
+    playBtn.textContent = 'Pause';
+    playBtn.setAttribute('aria-pressed', 'true');
+    controls.appendChild(playBtn);
+
+    function frame(ts) {
+      const dt = Math.min(0.05, last ? (ts - last) / 1000 : 0.016);
+      last = ts;
+      state.t += dt;
+      for (const fn of loops) fn(dt, state.t);
+      if (playing) raf = requestAnimationFrame(frame);
+    }
+    function setPlaying(p) {
+      playing = p;
+      playBtn.textContent = p ? 'Pause' : 'Play';
+      playBtn.setAttribute('aria-pressed', String(p));
+      cancelAnimationFrame(raf);
+      last = 0;
+      if (p) raf = requestAnimationFrame(frame);
+      else for (const fn of loops) fn(0, state.t);
+    }
+    playBtn.addEventListener('click', () => setPlaying(!playing));
+
+    const widget = mountAtlas(stage, { height: 340 }, api, CHAPTER, { page: initPage });
+    if (Q.get('lesson')) widget.setLesson(Q.get('lesson'));
+    raf = requestAnimationFrame(frame);
+
+    window.addEventListener('hashchange', () => {
+      const p = parseInt(location.hash.replace('#', ''), 10);
+      if (!isNaN(p)) widget.setPage(p);
+    });
+    window.__host = { api, widget, setPlaying };
+  </script>
+</body>
+</html>

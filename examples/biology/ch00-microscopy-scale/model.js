@@ -8,6 +8,11 @@ export function focalLengthBallMm(radiusMm = 0.75, refIndex = 1.52) {
   return (n * r) / (2 * (n - 1));
 }
 
+export function backFocalLengthBallMm(radiusMm = 0.75, refIndex = 1.52) {
+  const r = Math.max(0.1, radiusMm);
+  return Math.max(0.02, focalLengthBallMm(r, refIndex) - r);
+}
+
 export function ballLensMagnification(radiusMm = 0.75, refIndex = 1.52) {
   return NEAR_POINT_MM / focalLengthBallMm(radiusMm, refIndex);
 }

@@ -97,15 +97,15 @@ export const CHAPTER = {
     { id: 'mutationMode', label: 'β-globin allele (0=WT, 1=HbS, 2=Silent)', min: 0, max: 2, step: 1, value: 1, unit: '' },
   ],
   lessons: {
-    'ch11-helix-3d-avery': { page: 0 },
-    'ch11-helix-3d': { page: 0 },
-    'ch11-ribosome-3d-codon': { page: 2 },
-    'ch11-transcription-3d': { page: 1 },
-    'ch11-ribosome-3d': { page: 2 },
-    'ch11-transcription-3d-ledger': { page: 1 },
-    'ch11-sickle-3d': { page: 3 },
-    'ch11-sickle-3d-outcomes': { page: 3 },
-    'ch11-ribosome-3d-silent': { page: 3, params: { mutationMode: 2 } },
+    'ch11-helix-3d-avery': { page: 0, lit: 'photo51_cross' },
+    'ch11-helix-3d': { page: 0, lit: 'bdna_helix' },
+    'ch11-ribosome-3d-codon': { page: 2, lit: 'ribosome_small' },
+    'ch11-transcription-3d': { page: 1, lit: 'rnapol_bubble' },
+    'ch11-ribosome-3d': { page: 2, lit: 'ribosome_large' },
+    'ch11-transcription-3d-ledger': { page: 1, lit: 'mrna_ribbon' },
+    'ch11-sickle-3d': { page: 3, lit: 'hbs_sickle_rbc', params: { mutationMode: 1 } },
+    'ch11-sickle-3d-outcomes': { page: 3, lit: 'hbs_sickle_rbc', params: { mutationMode: 1 } },
+    'ch11-ribosome-3d-silent': { page: 3, lit: 'hba_normal_rbc', params: { mutationMode: 2 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 220 + s.codonStep * 65, dur: 0.055, type: 'triangle', gain: 0.03 });
@@ -149,13 +149,19 @@ export const CHAPTER = {
     arm1.set(V(-0.52, -0.58, 0.06), V(0.52, 0.58, 0.06));
     const arm2 = rod(p51Asm, { r: 0.038, pal: 'ink', tone: 'lit', name: 'Helical X-cross arm' });
     arm2.set(V(-0.52, 0.58, 0.06), V(0.52, -0.58, 0.06));
+    for (const ly of [-0.68, 0.68]) {
+      const mArc = rod(p51Asm, { r: 0.032, pal: 'red', tone: 'lit', name: '10th layer line (0.34 nm base-pair rise)' });
+      mArc.set(V(-0.24, ly, 0.06), V(0.24, ly, 0.06));
+    }
     label('board', 'B-DNA double helix', () => V(-0.7, 2.75, 0));
     label('board', 'Photo 51 X-cross', () => V(1.25, 2.4, 0));
 
     // Station 1 (x = 14): RNA Polymerase Transcription Bubble & mRNA Ribbon
     const polAsm = asm('rnapol_bubble', root, { title: 'RNA Polymerase transcription bubble', sub: 'Unwinds DNA locally at 37 °C' });
     polAsm.position.set(14.0, 1.35, 0);
-    prims.blob(polAsm, { r: 0.85, subdiv: 3, seed: 17, pal: 'blue', cleft: { dir: [0, 0, 1], depth: 0.55, width: 0.55 }, name: 'RNA Polymerase core' });
+    prims.blob(polAsm, { r: 0.85, subdiv: 3, seed: 17, pal: 'blue', cleft: 0.52, name: 'RNA Polymerase core' });
+    const dnaInPts = [V(-1.25, 0.12, -0.1), V(-0.45, 0.25, -0.05), V(0.45, 0.25, -0.05), V(1.25, 0.12, -0.1)];
+    part(polAsm, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(dnaInPts), 24, 0.042, 8, false), { pal: 'ochre', tone: 'hi', ex: [0, 0.35, -0.2], name: 'Unwound DNA coding strand' });
 
     const mrnaAsm = asm('mrna_ribbon', root, { title: 'Synthesized single-stranded mRNA', sub: 'Ribose backbone with A, U, G, C triplets' });
     mrnaAsm.position.set(14.0, 1.35, 0.25);
@@ -167,11 +173,13 @@ export const CHAPTER = {
     // Station 2 (x = 28): 3D Two-Subunit Ribosome (60S + 40S) & E/P/A tRNA Adaptors
     const lgAsm = asm('ribosome_large', root, { title: 'Large 60S ribosomal subunit', sub: 'Peptidyl-transferase catalytic dome' });
     lgAsm.position.set(28.0, 1.65, 0);
-    prims.blob(lgAsm, { r: 0.88, subdiv: 3, seed: 31, pal: 'ochre', cleft: { dir: [0, -1, 0.3], depth: 0.48, width: 0.6 }, name: 'Large ribosomal subunit' });
+    prims.blob(lgAsm, { r: 0.88, subdiv: 3, seed: 31, pal: 'ochre', cleft: 0.45, name: 'Large ribosomal subunit' });
 
     const smAsm = asm('ribosome_small', root, { title: 'Small 40S ribosomal subunit', sub: 'mRNA decoding channel' });
     smAsm.position.set(28.0, 0.82, 0);
     prims.blob(smAsm, { r: 0.62, subdiv: 3, seed: 42, pal: 'blue', name: 'Small ribosomal subunit' });
+    const mrnaTape = rod(smAsm, { r: 0.038, pal: 'red', tone: 'lit', ex: [0, -0.25, 0.35], name: 'mRNA codon tape in 40S groove' });
+    mrnaTape.set(V(-0.85, 0.22, 0.32), V(0.85, 0.22, 0.32));
 
     const trnaAsm = asm('trna_adaptors', root, { title: 'E, P & A site tRNAs + nascent peptide', sub: 'Steps 3 bases per translocation cycle' });
     trnaAsm.position.set(28.0, 1.25, 0.38);

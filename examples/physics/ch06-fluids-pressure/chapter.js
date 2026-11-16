@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, lines, arrow, setArrow, rod,
+  THREE, part, box, cyl, sphere, lines, arrow, setArrow, rod, liveTube,
   prims, shadeMat, studioGrid, playTone, V
 } from '@saxster/atlas/phys_kit.js';
 import * as M from './model.js';
@@ -8,30 +8,30 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: '3-hole bottle & barrel',
-    fig: 'Figure 6.1 · Hydrostatic pressure P = ρgh: three-hole spouting bottle & Pascal’s barrel',
+    fig: 'Figure 6.1 · Hydrostatic pressure P = ρgh: three-hole spouting bottle',
     title: 'Hydrostatic Depth Pressure & Spouting Jets',
-    alt: '3D transparent water column with three side nozzles at depths h₁, h₂, and h₃ shooting parabolic water arcs of increasing horizontal speed v = √(2gh).',
-    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    alt: '3D transparent water column with three side nozzles at depths h₁, h₂, and h₃ shooting parabolic water arcs with efflux speed v = √(2gh) and floor range R = 2√(h(H−h)).',
+    cam: { target: [0, 1.25, 0], az: 24, el: 20, dist: 10.6 },
     lit: 'jet_nozzles',
     parts: ['water_tower', 'jet_nozzles'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Torricelli barometer',
-    fig: 'Figure 6.2 · Torricelli’s 760 mm mercury barometer column balanced by atmospheric pressure',
+    fig: 'Figure 6.2 · Torricelli’s 760 mm mercury barometer column',
     title: 'Torricelli’s Mercury Barometer (760 mm Hg)',
     alt: '3D cutaway mercury reservoir dish with an inverted glass tube holding a 760 mm silver mercury column topped by a Torricellian vacuum chamber.',
-    cam: { target: [14, 1.4, 0], az: 20, el: 20, dist: 7.2 },
+    cam: { target: [14, 1.3, 0], az: 20, el: 20, dist: 10.4 },
     lit: 'mercury_column',
     parts: ['mercury_basin', 'mercury_column'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Inverted glass card',
-    fig: 'Figure 6.3 · Inverted glass of water held up by upward atmospheric pressure on a card',
+    fig: 'Figure 6.3 · Inverted glass of water held up by atmospheric pressure on a card',
     title: 'Upward Atmospheric Pressure on an Inverted Card',
     alt: '3D inverted tumbler filled with water and sealed at the bottom by a flat postcard; a large upward atmospheric force arrow F_atm overwhelms the small downward water weight arrow mg.',
-    cam: { target: [28, 1.35, 0], az: 22, el: 18, dist: 7.0 },
+    cam: { target: [28, 1.3, 0], az: 22, el: 18, dist: 10.4 },
     lit: 'card_seal',
     parts: ['inverted_tumbler', 'card_seal'],
     look: { xray: 0.2, section: 0 },
@@ -127,20 +127,20 @@ export const CHAPTER = {
     const towerAsm = asm('water_tower', root, { title: 'Cylindrical water vessel', sub: 'P = P₀ + ρgh' });
     towerAsm.position.set(-0.8, 0.1, 0);
     part(towerAsm, cyl(0.58, 2.2, 24), { pal: 'paper', tone: 'mid', pos: [0, 1.1, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Bottle wall' });
-    const colWater = part(towerAsm, cyl(0.54, 1.9, 24), { pal: 'blue', tone: 'hi', pos: [0, 0.95, 0], ex: [0, 0.4, 0], name: 'Water column' });
+    const colWater = part(towerAsm, cyl(0.54, 1.9, 24), { pal: 'blue', tone: 'hi', pos: [0, 0.95, 0], ex: [-0.35, 0, 0], name: 'Water column' });
 
-    const nozAsm = asm('jet_nozzles', root, { title: 'Three spouting orifices', sub: 'v = √(2gh) parabolic arcs' });
+    const nozAsm = asm('jet_nozzles', root, { title: 'Three spouting orifices', sub: 'v = √(2gh), range R = 2√(h(H−h))' });
     nozAsm.position.set(-0.8, 0.1, 0);
-    const jetTubes = [];
+    const depthFracs = [0.25, 0.55, 0.85];
+    const jetNozzles = [], jetGeos = [], vExitVecs = [];
     for (let k = 0; k < 3; k++) {
-      const yHole = 1.45 - k * 0.52;
-      part(nozAsm, cyl(0.05, 0.18, 12), { pal: 'ochre', tone: 'hi', pos: [0.58, yHole, 0], rot: [0, 0, Math.PI / 2], ex: [0.35, 0, 0], name: `Orifice ${k + 1}` });
-      const pts = [];
-      for (let i = 0; i <= 12; i++) pts.push(V(0.65 + i * 0.12, yHole * (1 - (i / 12) ** 2), 0));
-      const tGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.028, 8, false);
-      jetTubes.push(part(nozAsm, tGeo, { pal: 'blue', tone: 'lit', ex: [0.5, 0, 0], name: `Parabolic water jet ${k + 1}` }));
+      jetNozzles.push(part(nozAsm, cyl(0.05, 0.18, 12), { pal: 'ochre', tone: 'hi', pos: [0.58, 1.2 - k * 0.45, 0], rot: [0, 0, Math.PI / 2], ex: [0.35, 0, 0], name: `Orifice ${k + 1}` }));
+      const lGeo = liveTube(16, 0.026, 8);
+      jetGeos.push(lGeo);
+      part(nozAsm, lGeo, { pal: 'blue', tone: 'lit', ex: [0.45, 0, 0], name: `Parabolic water jet ${k + 1}` });
+      vExitVecs.push(arrow(nozAsm, { pal: 'green', r: 0.018 }));
     }
-    label('board', 'P = ρgh → v = √(2gh)', () => V(0.5, 2.2, 0), { leader: [-20, -20] });
+    label('board', 'v = √(2gh) fastest at bottom; Mid jet lands farthest!', () => V(0.5, 2.25, 0), { leader: [-20, -20] });
 
     // Station 1 (x = 14): Torricelli Mercury Barometer
     const basinAsm = asm('mercury_basin', root, { title: 'Open mercury reservoir', sub: 'P_atm pushes down on free surface' });
@@ -155,7 +155,7 @@ export const CHAPTER = {
     const colAsm = asm('mercury_column', root, { title: '760 mm Hg column & vacuum', sub: 'ρ_Hg g h = P_atm' });
     colAsm.position.set(14, 0.25, 0);
     part(colAsm, cyl(0.18, 2.2, 20), { pal: 'paper', tone: 'mid', pos: [0, 1.1, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Inverted barometer tube' });
-    const hgRod = part(colAsm, cyl(0.14, 1.65, 20), { pal: 'red', tone: 'hi', pos: [0, 0.82, 0], ex: [0, 0.45, 0], name: 'Supported mercury column' });
+    const hgRod = part(colAsm, cyl(0.14, 1.65, 20), { pal: 'red', tone: 'hi', pos: [0, 0.82, 0], ex: [0, 0, 0.35], name: 'Supported mercury column' });
     label('board', 'Torricellian vacuum (P ≈ 0)', () => V(14, 2.55, 0), { leader: [0, -18] });
     label('board', '760 mm Hg', () => V(14.6, 1.35, 0));
 
@@ -176,12 +176,26 @@ export const CHAPTER = {
     return {
       labels,
       update(s) {
-        // Station 0: scale water height & jet reach
-        const hRatio = s.waterHeadM / 0.60;
-        colWater.scale.y = Math.max(0.25, hRatio);
-        colWater.position.y = colWater.scale.y * 0.95;
+        // Station 0: scale water height & compute true Torricelli parabolic trajectories
+        const hRatio = Math.max(0.25, s.waterHeadM / 0.60);
+        const hScene = hRatio * 1.9;
+        colWater.scale.y = hRatio;
+        colWater.position.y = hScene * 0.5;
         for (let k = 0; k < 3; k++) {
-          jetTubes[k].scale.x = 0.55 + hRatio * (0.45 + k * 0.22);
+          const f = depthFracs[k];
+          const dScene = f * hScene;
+          const yHole = Math.max(0.08, (1 - f) * hScene);
+          jetNozzles[k].position.y = yHole;
+          // Range R = 2 * sqrt(d * yHole)
+          const rJet = 1.45 * Math.sqrt(dScene * yHole);
+          const pts = [];
+          for (let i = 0; i <= 16; i++) {
+            const u = i / 16;
+            pts.push(V(0.62 + u * rJet, yHole * (1 - u * u), 0));
+          }
+          jetGeos[k].update(pts);
+          const vExitLen = 0.22 + 0.55 * Math.sqrt(dScene / 1.9);
+          setArrow(vExitVecs[k], V(0.62, yHole + 0.06, 0), V(0.62 + vExitLen, yHole + 0.06, 0));
         }
 
         // Station 1: scale mercury column height with P_atm

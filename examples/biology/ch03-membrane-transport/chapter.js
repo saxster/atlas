@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule,
+  THREE, part, box, cyl, sphere, torus, capsule, arrow, setArrow,
   prims, buildBilayer, rbcGeo, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -95,13 +95,13 @@ export const CHAPTER = {
     { id: 'atpLevel', label: 'Cellular ATP supply', min: 0.0, max: 5.0, step: 0.5, value: 3.0, unit: 'mM' },
   ],
   lessons: {
-    'ch03-bilayer-3d': { page: 0 },
-    'ch03-osmosis-3d': { page: 2 },
-    'ch03-nak-pump-3d': { page: 3 },
-    'ch03-diffusion-3d': { page: 0, params: { permRate: 0.5 } },
-    'ch03-aquaporin-3d': { page: 1, params: { extMolarity: 0.05 } },
-    'ch03-osmosis-cells-3d': { page: 2, params: { extMolarity: 0.35 } },
-    'ch03-active-root-3d': { page: 3, params: { atpLevel: 3.5 } },
+    'ch03-bilayer-3d': { page: 0, lit: 'bilayer_gate' },
+    'ch03-osmosis-3d': { page: 2, lit: 'plant_osmosis' },
+    'ch03-nak-pump-3d': { page: 3, lit: 'atpase_carrier' },
+    'ch03-diffusion-3d': { page: 0, lit: 'fick_curve', params: { permRate: 0.5 } },
+    'ch03-aquaporin-3d': { page: 1, lit: 'aquaporin_pore', params: { extMolarity: 0.05 } },
+    'ch03-osmosis-cells-3d': { page: 2, lit: 'plant_osmosis', params: { extMolarity: 0.35 } },
+    'ch03-active-root-3d': { page: 3, lit: 'atpase_carrier', params: { atpLevel: 3.5 } },
   },
   sonify(ctx, s, page) {
     if (page === 3) playTone(ctx, { freq: 140 + s.pump.vPump * 3.2, dur: 0.06, type: 'square', gain: 0.025 });
@@ -140,12 +140,14 @@ export const CHAPTER = {
     const gateAsm = asm('bilayer_gate', root, { title: 'Permeable lipid bilayer', sub: 'Brownian solute crossing' });
     gateAsm.position.set(-0.9, 0, 0);
     buildBilayer(gateAsm, { cols: 2, rows: 5, x0: 0, y0: 1.3, z0: 0 });
+    const netFluxArrow = arrow(gateAsm, 'red', { r: 0.025, head: 0.12, headR: 0.065, name: 'Net Fick diffusion flux vector J' });
     const soluteCloud = prims.particles(gateAsm, 48, { radius: 0.055, color: 'blue' });
 
     const curveAsm = asm('fick_curve', root, { title: 'Fick relaxation curve', sub: 'N_L(t)/N → 0.5' });
     curveAsm.position.set(0.6, 0.25, -0.3);
     const ax0 = prims.axes(curveAsm, { x: [0, 10], y: [0, 1], size: [2.0, 1.7, 0.6] });
     const plot0 = prims.plot(curveAsm, x => M.fickRelaxation(x, 0.4).fracLeft, { axes: ax0, samples: 40, color: 'red', width: 0.06 });
+    const fickCursor = part(curveAsm, sphere(0.075, 14), { pal: 'blue', tone: 'lit', name: 'Relaxation time cursor' });
     label('board', 'Lipid bilayer', () => V(-0.9, 2.35, 0));
     label('board', 'N_L(t)/N → 0.5', () => V(1.6, 2.15, -0.3));
 
@@ -155,6 +157,7 @@ export const CHAPTER = {
     buildBilayer(aqpAsm, { cols: 7, rows: 3, x0: 0, y0: 0, z0: 0, skipCenter: true });
     part(aqpAsm, cyl(0.45, 0.55, 24, 0.24), { pal: 'blue', tone: 'hi', pos: [0, 0.3, 0], mat: shadeMat('blue', { opacity: 0.68 }), ex: [0, 0.45, 0], name: 'Upper vestibule' });
     part(aqpAsm, cyl(0.24, 0.55, 24, 0.45), { pal: 'blue', tone: 'hi', pos: [0, -0.3, 0], mat: shadeMat('blue', { opacity: 0.68 }), ex: [0, -0.45, 0], name: 'Lower vestibule' });
+    part(aqpAsm, torus(0.23, 0.035, 10, 24), { pal: 'ochre', tone: 'lit', pos: [0, 0, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.2, 0.35], name: 'NPA selectivity constriction ring' });
 
     const h2oAsm = asm('single_file_water', root, { title: 'Single-file H₂O stream', sub: 'Exchange markers, not a rate' });
     h2oAsm.position.set(14, 1.35, 0);
@@ -162,6 +165,7 @@ export const CHAPTER = {
     for (let i = 0; i < 7; i++) {
       h2oSpheres.push(part(h2oAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', pos: [0, (i - 3) * 0.24, 0], ex: [0.35, 0, 0], name: 'Water molecule' }));
     }
+    part(h2oAsm, sphere(0.13, 14), { pal: 'green', tone: 'hi', pos: [0.38, 0.72, 0], ex: [0.45, 0.3, 0], name: 'Excluded hydrated ion' });
     label('board', 'Aquaporin-1 pore', () => V(14, 2.35, 0));
 
     // Station 2 (x = 28): RBC vs Walled Plant Cell Osmosis
@@ -173,6 +177,7 @@ export const CHAPTER = {
     plantAsm.position.set(29.0, 1.35, 0);
     part(plantAsm, box(1.5, 1.5, 1.3, 0.08), { pal: 'green', tone: 'mid', mat: shadeMat('green', { opacity: 0.35 }), ex: [0, 0.45, 0], name: 'Rigid cellulose cell wall' });
     const vacuoleMesh = part(plantAsm, sphere(0.58, 24), { pal: 'blue', tone: 'hi', ex: [0.45, 0, 0], name: 'Protoplast & vacuole' });
+    const tonoplastRing = part(plantAsm, torus(0.61, 0.025, 10, 24), { pal: 'ochre', tone: 'hi', ex: [0.45, 0.15, 0], name: 'Plasma membrane / tonoplast boundary' });
     label('board', 'Animal RBC', () => V(26.9, 2.35, 0));
     label('board', 'Walled plant cell', () => V(29.0, 2.35, 0));
 
@@ -187,6 +192,7 @@ export const CHAPTER = {
     const atpSiteAsm = asm('atp_site', root, { title: 'ATP phosphorylation domain', sub: 'Illustrative coupling, not fixed work per ATP' });
     atpSiteAsm.position.set(42, 0.72, 0.25);
     const atpOrb = part(atpSiteAsm, sphere(0.14, 16), { pal: 'red', tone: 'lit', ex: [0, -0.4, 0.35], name: 'Bound ATP/Pi' });
+    const adpOrb = part(atpSiteAsm, sphere(0.09, 14), { pal: 'ochre', tone: 'hi', pos: [0.24, -0.1, 0], ex: [0.2, -0.45, 0.35], name: 'Released ADP' });
     label('board', 'E₁/E₂ carrier pump', () => V(42, 2.35, 0));
 
     return {
@@ -194,6 +200,10 @@ export const CHAPTER = {
       update(s) {
         // Update solute cloud & Fick curve
         plot0.update(x => M.fickRelaxation(x, s.permRate).fracLeft);
+        const tMod = s.t % 10;
+        fickCursor.position.copy(ax0.to(tMod, s.fick.fracLeft, 0));
+        const netDrive = Math.max(0.05, (s.fick.fracLeft - s.fick.fracRight) * 1.15);
+        setArrow(netFluxArrow, V(-0.45, 1.92, 0), V(netDrive, 0, 0));
         const pts = [];
         for (let i = 0; i < 48; i++) {
           const isLeft = i < Math.round(48 * s.fick.fracLeft);
@@ -217,6 +227,7 @@ export const CHAPTER = {
         const swell = Math.max(0.48, Math.min(1.38, 1.25 - s.extMolarity * 1.65));
         rbcMesh.scale.set(swell, swell * (s.extMolarity < 0.08 ? 1.45 : 1), swell);
         vacuoleMesh.scale.setScalar(swell);
+        tonoplastRing.scale.setScalar(swell);
 
         // Active transport carrier rocking
         const rock = s.pump.uphillPossible ? Math.sin(s.t * (1.2 + s.pump.vPump * 0.03)) * 0.32 : -0.25;
@@ -224,6 +235,7 @@ export const CHAPTER = {
         jawR.rotation.z = -rock;
         ionBall.position.y = s.pump.uphillPossible ? Math.sin(s.t * (1.2 + s.pump.vPump * 0.03)) * 0.48 : -0.48;
         atpOrb.visible = s.pump.uphillPossible;
+        adpOrb.visible = s.pump.uphillPossible;
       },
     };
   },

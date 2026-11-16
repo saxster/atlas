@@ -8,20 +8,20 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Drop vs flick',
-    fig: 'Figure 4.1 · Dual-coin spring launcher proving horizontal speed does not slow vertical fall',
+    fig: 'Figure 4.1 · Dual-coin launcher proving horizontal speed does not slow vertical fall',
     title: 'Independence of Perpendicular Motions',
     alt: '3D benchtop spring-blade launcher that simultaneously drops one brass coin straight down while flicking an identical coin horizontally; horizontal strobe rods show both coins at the exact same height every millisecond.',
-    cam: { target: [0, 1.25, 0], az: 20, el: 20, dist: 7.2 },
+    cam: { target: [0, 1.2, 0], az: 20, el: 20, dist: 10.4 },
     lit: 'launcher_rig',
     parts: ['launcher_rig', 'strobe_plane'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Inward Δv chord',
-    fig: 'Figure 4.3 · Strobe orbit showing velocity change Δv = v₂ − v₁ pointing straight to the center',
+    fig: 'Figure 4.3 · Strobe orbit showing Δv = v₂ − v₁ pointing straight to the center',
     title: 'Centripetal Velocity-Change Vector Δv',
     alt: '3D circular orbit ring with strobe positions 1 and 2, tangent velocity vectors v₁ and v₂, and a vector subtraction triangle proving Δv points radially inward with magnitude v²/r.',
-    cam: { target: [14, 1.3, 0], az: 24, el: 28, dist: 7.4 },
+    cam: { target: [14, 1.2, 0], az: 24, el: 28, dist: 10.6 },
     lit: 'vector_fan',
     parts: ['orbit_ring', 'vector_fan'],
     look: { xray: 0.15, section: 0 },
@@ -105,8 +105,10 @@ export const CHAPTER = {
     const rigAsm = asm('launcher_rig', root, { title: 'Dual-coin release pillar', sub: 'Simultaneous drop & flick' });
     rigAsm.position.set(-1.3, 0, 0);
     const pillar = part(rigAsm, box(0.36, 1.9, 0.36, 0.03), { pal: 'dark', tone: 'mid', pos: [0, 0.95, 0], ex: [-0.35, 0, 0], name: 'Vertical support pillar' });
-    const coinDrop = part(root, cyl(0.14, 0.05, 20), { pal: 'ochre', tone: 'hi', pos: [-1.3, 1.9, 0], name: 'Dropped Coin A' });
-    const coinFlick = part(root, cyl(0.14, 0.05, 20), { pal: 'red', tone: 'hi', pos: [-1.3, 1.9, 0], name: 'Flicked Coin B' });
+    const coinDrop = part(rigAsm, cyl(0.14, 0.05, 20), { pal: 'ochre', tone: 'hi', pos: [0, 1.9, 0], name: 'Dropped Coin A' });
+    const coinFlick = part(rigAsm, cyl(0.14, 0.05, 20), { pal: 'red', tone: 'hi', pos: [0, 1.9, 0], name: 'Flicked Coin B' });
+    const vxFlickVec = arrow(rigAsm, { pal: 'green', r: 0.022 });
+    const vyFlickVec = arrow(rigAsm, { pal: 'red', r: 0.022 });
 
     const strobeAsm = asm('strobe_plane', root, { title: 'Stroboscopic elevation tie-bars', sub: 'y_A(t) = y_B(t) at every tick' });
     strobeAsm.position.set(-1.3, 0, 0);
@@ -114,8 +116,8 @@ export const CHAPTER = {
     const ghostsDrop = [], ghostsFlick = [];
     for (let i = 1; i <= 4; i++) {
       tieRods.push(rod(strobeAsm, { r: 0.012, pal: 'blue', tone: 'mid', name: `Equal-height tie bar ${i}` }));
-      ghostsDrop.push(part(strobeAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'mid', ex: [0, 0.25, -0.25], name: 'Drop strobe ghost' }));
-      ghostsFlick.push(part(strobeAsm, sphere(0.065, 12), { pal: 'red', tone: 'mid', ex: [0, 0.25, 0.25], name: 'Flick strobe ghost' }));
+      ghostsDrop.push(part(strobeAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'mid', ex: [0, 0, -0.25], name: 'Drop strobe ghost' }));
+      ghostsFlick.push(part(strobeAsm, sphere(0.065, 12), { pal: 'red', tone: 'mid', ex: [0, 0, 0.25], name: 'Flick strobe ghost' }));
     }
     label('board', 'Same height y(t) at every strobe tick!', () => V(0.3, 1.65, 0), { leader: [-24, -18] });
 
@@ -127,10 +129,14 @@ export const CHAPTER = {
 
     const fanAsm = asm('vector_fan', root, { title: 'Velocity chord triangle (Δv = v₂ − v₁)', sub: 'a_c = v² / r toward center' });
     fanAsm.position.set(14, 0.85, 0);
-    const orbiter = part(fanAsm, sphere(0.12, 18), { pal: 'ochre', tone: 'hi', pos: [1.45, 0, 0], ex: [0, 0.45, 0], name: 'Orbiting body' });
+    const ghostOrb1 = part(fanAsm, sphere(0.09, 14), { pal: 'paper', tone: 'mid', pos: [1.45, 0, 0], name: 'Strobe position 1 (v₁)' });
+    const orbiter = part(fanAsm, sphere(0.12, 18), { pal: 'ochre', tone: 'hi', pos: [1.45, 0, 0], ex: [0, 0.45, 0], name: 'Orbiting body at position 2 (v₂)' });
+    const v1Ghost = arrow(fanAsm, { pal: 'blue', r: 0.022 });
+    const v1Shifted = arrow(fanAsm, { pal: 'blue', r: 0.022 });
     const vTangent = arrow(fanAsm, { pal: 'green', r: 0.028 });
+    const dvChord = arrow(fanAsm, { pal: 'red', r: 0.026 });
     const dvInward = arrow(fanAsm, { pal: 'red', r: 0.03 });
-    label('board', 'v (tangent)', () => V(15.5, 1.35, 0));
+    label('board', 'v₂ (green) − v₁ (blue) = Δv (red)', () => V(15.5, 1.35, 0));
     label('board', 'Δv & a_c point to center', () => V(14.0, 1.65, 0), { leader: [24, -20] });
 
     return {
@@ -151,19 +157,31 @@ export const CHAPTER = {
         }
         const uAnim = (s.t * 0.85) % 1;
         const yNow = hTop * (1 - uAnim * uAnim) + 0.05;
-        coinDrop.position.set(-1.3, yNow, 0);
-        coinFlick.position.set(-1.3 + uAnim * xSpan, yNow, 0);
+        const xNow = uAnim * xSpan;
+        coinDrop.position.set(0, yNow, 0);
+        coinFlick.position.set(xNow, yNow, 0);
+        setArrow(vxFlickVec, V(xNow, yNow, 0), V(xNow + (s.vHorizMps / 8.0) * 0.65, yNow, 0));
+        setArrow(vyFlickVec, V(xNow, yNow, 0), V(xNow, yNow - Math.max(0.08, uAnim * 0.65), 0));
 
-        // Station 1: Orbiting body & inward Δv vector
+        // Station 1: Orbiting body & velocity subtraction triangle Δv = v2 - v1
         const rOrb = 0.75 + (s.orbitRadiusM / 4.0) * 1.05;
         ringMesh.scale.setScalar(rOrb / 1.45);
         const omega = (s.orbitSpeedMps / s.orbitRadiusM) * 0.55;
         const ang = s.t * omega;
-        const ox = rOrb * Math.cos(ang);
-        const oz = rOrb * Math.sin(ang);
+        const dAng = (24 * Math.PI) / 180;
+        const ang1 = ang - dAng;
+        const ox1 = rOrb * Math.cos(ang1), oz1 = rOrb * Math.sin(ang1);
+        const ox = rOrb * Math.cos(ang), oz = rOrb * Math.sin(ang);
+        ghostOrb1.position.set(ox1, 0, oz1);
         orbiter.position.set(ox, 0, oz);
         const vLen = (s.orbitSpeedMps / 10) * 1.1;
-        setArrow(vTangent, V(ox, 0, oz), V(ox - Math.sin(ang) * vLen, 0, oz + Math.cos(ang) * vLen));
+        const v1x = -Math.sin(ang1) * vLen, v1z = Math.cos(ang1) * vLen;
+        const v2x = -Math.sin(ang) * vLen, v2z = Math.cos(ang) * vLen;
+        setArrow(v1Ghost, V(ox1, 0, oz1), V(ox1 + v1x, 0, oz1 + v1z));
+        // Tail-to-tail velocity triangle at orbiter (ox, 0, oz): v1 (blue), v2 (green), and Δv = v2 - v1 (red chord)
+        setArrow(v1Shifted, V(ox, 0.02, oz), V(ox + v1x, 0.02, oz + v1z));
+        setArrow(vTangent, V(ox, 0, oz), V(ox + v2x, 0, oz + v2z));
+        setArrow(dvChord, V(ox + v1x, 0.02, oz + v1z), V(ox + v2x, 0.02, oz + v2z));
         const aLen = Math.min(rOrb * 0.85, (s.cen.aCentripetalMps2 / 40) * 1.2 + 0.25);
         setArrow(dvInward, V(ox, 0, oz), V(ox - Math.cos(ang) * aLen, 0, oz - Math.sin(ang) * aLen));
       },

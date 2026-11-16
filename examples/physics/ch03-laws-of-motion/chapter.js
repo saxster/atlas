@@ -11,7 +11,7 @@ export const PAGES = [
     fig: 'Figure 3.2 · Newton’s Second Law carts: doubling force vs doubling mass',
     title: 'Acceleration Proportional to F_net / m',
     alt: 'Two parallel 3D laboratory dynamics tracks comparing a reference cart against a programmable test cart driven by force vector F_net and loaded with brass mass bricks.',
-    cam: { target: [0, 1.25, 0], az: 22, el: 22, dist: 7.4 },
+    cam: { target: [0, 1.25, 0], az: 22, el: 22, dist: 10.6 },
     lit: 'test_cart',
     parts: ['ref_cart', 'test_cart'],
     look: { xray: 0, section: 0 },
@@ -21,7 +21,7 @@ export const PAGES = [
     fig: 'Figure 3.3 · Tension drop T₁ > T₂ > T₃ along a three-car accelerating train',
     title: 'Tension Drop Along a Bridging Chain',
     alt: 'Three coupled 3D carriages pulled forward by engine force T₁, with couplings T₂ and T₃ showing progressively smaller tension arrows because each coupling accelerates fewer trailing cars.',
-    cam: { target: [14, 1.2, 0], az: 20, el: 20, dist: 7.6 },
+    cam: { target: [14, 1.2, 0], az: 20, el: 20, dist: 10.8 },
     lit: 'chain_couplings',
     parts: ['three_cars', 'chain_couplings'],
     look: { xray: 0.15, section: 0 },
@@ -31,17 +31,17 @@ export const PAGES = [
     fig: 'Figure 3.4 · Two hooked luggage spring scales proving F_AB = −F_BA',
     title: 'Twin Hooked Spring Scales (3rd Law)',
     alt: 'Two 3D brass cylindrical spring scales hooked beak-to-beak with internal helical springs stretched to identical extensions and equal-and-opposite force arrows.',
-    cam: { target: [28, 1.3, 0], az: 16, el: 20, dist: 6.8 },
+    cam: { target: [28, 1.25, 0], az: 16, el: 20, dist: 10.2 },
     lit: 'scale_right',
     parts: ['scale_left', 'scale_right'],
     look: { xray: 0.3, section: 0 },
   },
   {
     tab: 'Action–reaction pairs',
-    fig: 'Figure 3.5 · Distinguishing equilibrium pairs (same body) from 3rd-law pairs (two bodies)',
+    fig: 'Figure 3.5 · Equilibrium pairs (same body) vs 3rd-law pairs (two bodies)',
     title: 'Action–Reaction vs Equilibrium Pairs',
     alt: '3D skater pushing off a wall alongside a book resting on a table, colour-coding forces that act on different bodies (true 3rd-law pair) vs forces on the same body.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [42, 1.3, 0], az: 24, el: 20, dist: 10.5 },
     lit: 'skater_pair',
     parts: ['table_book_pair', 'skater_pair'],
     look: { xray: 0, section: 0 },
@@ -51,7 +51,7 @@ export const PAGES = [
     fig: 'Figure 3.7 · Deep-space rocket accelerating by throwing exhaust mass backward',
     title: 'Rocket Exhaust & Momentum Conservation',
     alt: '3D cutaway rocket nozzle in vacuum expelling high-speed gas molecules backward (−Δp_gas) while the rocket body gains equal forward momentum (+Δp_rocket).',
-    cam: { target: [56, 1.35, 0], az: 22, el: 18, dist: 7.4 },
+    cam: { target: [56, 1.3, 0], az: 22, el: 18, dist: 10.6 },
     lit: 'rocket_nozzle',
     parts: ['rocket_hull', 'rocket_nozzle'],
     look: { xray: 0.25, section: 0 },
@@ -161,6 +161,7 @@ export const CHAPTER = {
     const refAsm = asm('ref_cart', root, { title: 'Reference cart (2 kg, 10 N)', sub: 'Baseline a₀ = 5 m/s²' });
     refAsm.position.set(0, 0.35, -0.65);
     const refMesh = part(refAsm, box(0.75, 0.32, 0.45, 0.03), { pal: 'blue', tone: 'mid', pos: [0, 0, 0], ex: [0, 0.3, -0.3], name: 'Reference cart' });
+    const fRefVec = arrow(refAsm, { pal: 'blue', r: 0.024 });
 
     const testAsm = asm('test_cart', root, { title: 'Variable F & m test cart', sub: 'a = F_net / m' });
     testAsm.position.set(0, 0.35, 0.65);
@@ -171,8 +172,9 @@ export const CHAPTER = {
     // Station 1 (x = 14): 3-Car Bridging Chain (T1 > T2 > T3)
     const carsAsm = asm('three_cars', root, { title: 'Three coupled carriages', sub: 'Equal mass m per car' });
     carsAsm.position.set(14, 0.4, 0);
+    const carMeshes = [];
     for (let i = 0; i < 3; i++) {
-      part(carsAsm, box(0.78, 0.44, 0.52, 0.03), { pal: 'blue', tone: 'hi', pos: [-1.25 + i * 1.25, 0, 0], mat: shadeMat('blue', { opacity: 0.55 }), ex: [0, 0.35, 0], name: `Carriage ${3 - i}` });
+      carMeshes.push(part(carsAsm, box(0.78, 0.44, 0.52, 0.03), { pal: 'blue', tone: 'hi', pos: [-1.25 + i * 1.25, 0, 0], mat: shadeMat('blue', { opacity: 0.55 }), ex: [0, 0.35, 0], name: `Carriage ${3 - i}` }));
     }
     const coupAsm = asm('chain_couplings', root, { title: 'Coupling tension links', sub: 'T₁ : T₂ : T₃ = 3 : 2 : 1' });
     coupAsm.position.set(14, 0.4, 0);
@@ -185,13 +187,14 @@ export const CHAPTER = {
     const scL = asm('scale_left', root, { title: 'Left spring scale A', sub: 'Reads |F_BA|' });
     scL.position.set(27.0, 1.1, 0);
     part(scL, cyl(0.24, 1.2, 20), { pal: 'ochre', tone: 'mid', pos: [0, 0, 0], rot: [0, 0, Math.PI / 2], mat: shadeMat('ochre', { opacity: 0.45 }), ex: [-0.45, 0, 0], name: 'Scale A casing' });
-    spring(scL, { R: 0.12, r: 0.022, turns: 6, len: 0.85, pal: 'dark', pos: [-0.42, 0, 0], axis: [1, 0, 0], name: 'Scale A spring' });
+    const sprL = spring(scL, { R: 0.12, r: 0.022, turns: 6, len: 0.85, pal: 'dark', pos: [-0.48, 0, 0], axis: [1, 0, 0], name: 'Scale A spring' });
     const vecBA = arrow(scL, { pal: 'blue', r: 0.028 });
 
     const scR = asm('scale_right', root, { title: 'Right spring scale B', sub: 'Reads |F_AB| = |F_BA|' });
     scR.position.set(29.0, 1.1, 0);
     part(scR, cyl(0.24, 1.2, 20), { pal: 'green', tone: 'mid', pos: [0, 0, 0], rot: [0, 0, Math.PI / 2], mat: shadeMat('green', { opacity: 0.45 }), ex: [0.45, 0, 0], name: 'Scale B casing' });
-    spring(scR, { R: 0.12, r: 0.022, turns: 6, len: 0.85, pal: 'dark', pos: [-0.42, 0, 0], axis: [1, 0, 0], name: 'Scale B spring' });
+    const sprR = spring(scR, { R: 0.12, r: 0.022, turns: 6, len: 0.85, pal: 'dark', pos: [-0.42, 0, 0], axis: [1, 0, 0], name: 'Scale B spring' });
+    const hookLink = rod(root, { r: 0.022, pal: 'dark', tone: 'hi', name: 'Interlocked scale hooks' });
     const vecAB = arrow(scR, { pal: 'red', r: 0.028 });
     label('board', 'F_AB = −F_BA (Equal & opposite)', () => V(28, 1.95, 0), { leader: [0, -20] });
 
@@ -200,6 +203,10 @@ export const CHAPTER = {
     bookPair.position.set(41.0, 0.55, 0);
     part(bookPair, box(1.1, 0.12, 0.8, 0.02), { pal: 'paper', tone: 'mid', pos: [0, 0, 0], name: 'Tabletop' });
     part(bookPair, box(0.55, 0.22, 0.45, 0.02), { pal: 'blue', tone: 'hi', pos: [0, 0.18, 0], ex: [0, 0.35, 0], name: 'Resting book' });
+    const fBookN = arrow(bookPair, { pal: 'blue', r: 0.022 });
+    const fBookG = arrow(bookPair, { pal: 'dark', r: 0.022 });
+    setArrow(fBookN, V(0, 0.29, 0), V(0, 0.78, 0));
+    setArrow(fBookG, V(0, 0.07, 0), V(0, -0.42, 0));
 
     const skaterAsm = asm('skater_pair', root, { title: 'Skater & wall (two bodies)', sub: 'True 3rd-law action-reaction pair' });
     skaterAsm.position.set(42.9, 0.1, 0);
@@ -209,7 +216,7 @@ export const CHAPTER = {
     const fSkaterOnWall = arrow(skaterAsm, { pal: 'red', r: 0.028 });
     setArrow(fWallOnSkater, V(-0.4, 0.85, 0), V(0.45, 0.85, 0));
     setArrow(fSkaterOnWall, V(-0.55, 0.85, 0), V(-1.4, 0.85, 0));
-    label('board', 'Different bodies → never cancel!', () => V(42.9, 2.0, 0), { leader: [0, -20] });
+    label('board', 'Same body (N, mg) vs Two bodies (F_AB, F_BA)', () => V(42.1, 2.0, 0), { leader: [0, -20] });
 
     // Station 4 (x = 56): Rocket Momentum Recoil
     const hullAsm = asm('rocket_hull', root, { title: 'Rocket body & propellant tank', sub: '+Δp_rocket forward' });
@@ -231,19 +238,26 @@ export const CHAPTER = {
         // Station 0: carts accelerate
         const u = (s.t * 0.65) % 1;
         refMesh.position.x = -1.2 + u * u * 1.4;
+        setArrow(fRefVec, V(refMesh.position.x + 0.4, 0, 0), V(refMesh.position.x + 0.4 + (10 / 48) * 1.1, 0, 0));
         const testDist = Math.min(2.6, (s.aCart / 5.0) * 1.4);
         testMesh.position.x = -1.2 + u * u * testDist;
         testMesh.scale.y = 0.7 + (s.massKg / 8) * 0.7;
         setArrow(fCartVec, V(testMesh.position.x + 0.4, 0, 0), V(testMesh.position.x + 0.4 + (s.forceN / 48) * 1.1, 0, 0));
 
-        // Station 1: 3-car chain tension arrows (3 : 2 : 1)
+        // Station 1: 3-car chain tension arrows (3 : 2 : 1) + synchronized train motion
         const scaleF = (s.forceN / 48) * 0.9;
-        setArrow(t1Vec, V(1.65, 0.25, 0), V(1.65 + scaleF, 0.25, 0));
-        setArrow(t2Vec, V(0.4, 0.25, 0), V(0.4 + scaleF * (2 / 3), 0.25, 0));
-        setArrow(t3Vec, V(-0.85, 0.25, 0), V(-0.85 + scaleF * (1 / 3), 0.25, 0));
+        const dxChain = ((u * u * (s.chain.accelMps2 / 6)) % 0.45) - 0.22;
+        for (let i = 0; i < 3; i++) carMeshes[i].position.x = -1.25 + i * 1.25 + dxChain;
+        setArrow(t1Vec, V(1.65 + dxChain, 0.25, 0), V(1.65 + dxChain + scaleF, 0.25, 0));
+        setArrow(t2Vec, V(0.4 + dxChain, 0.25, 0), V(0.4 + dxChain + scaleF * (2 / 3), 0.25, 0));
+        setArrow(t3Vec, V(-0.85 + dxChain, 0.25, 0), V(-0.85 + dxChain + scaleF * (1 / 3), 0.25, 0));
 
-        // Station 2: equal and opposite scale vectors
+        // Station 2: equal and opposite scale vectors & dynamic internal spring extension
         const sLen = (s.forceN / 48) * 0.95;
+        const sprExt = 0.55 + (s.forceN / 48) * 0.42;
+        sprL.set(V(-0.52, 0, 0), V(-0.52 + sprExt, 0, 0));
+        sprR.set(V(0.52, 0, 0), V(0.52 - sprExt, 0, 0));
+        hookLink.set(V(27.0 - 0.52 + sprExt, 1.1, 0), V(29.0 + 0.52 - sprExt, 1.1, 0));
         setArrow(vecBA, V(0.6, 0.35, 0), V(0.6 + sLen, 0.35, 0));
         setArrow(vecAB, V(-0.6, 0.35, 0), V(-0.6 - sLen, 0.35, 0));
 

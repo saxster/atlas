@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, torus,
+  THREE, part, box, cyl, sphere, capsule, torus, rod,
   prims, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -90,19 +90,19 @@ export const CHAPTER = {
     { id: 'malariaPressure', label: 'Malaria selective coefficient s₁', min: 0, max: 35, step: 5, value: 18, unit: '%' },
   ],
   lessons: {
-    'ch14-beak-3d': { page: 0 },
-    'ch14-antibiotic-3d-mutagens': { page: 0 },
-    'ch14-moth-3d': { page: 1 },
-    'ch14-antibiotic-3d': { page: 0 },
-    'ch14-landscape-3d-xero': { page: 2 },
-    'ch14-beak-3d-adaptive': { page: 2 },
-    'ch14-beak-3d-brassica': { page: 1 },
-    'ch14-landscape-3d': { page: 3 },
-    'ch14-landscape-3d-heterozygote': { page: 3 },
-    'ch14-mutation-luria-3d': { page: 0, params: { antibioticDose: 80 } },
-    'ch14-fitness-selection-3d': { page: 1, params: { antibioticDose: 85 } },
-    'ch14-xerophyte-hydrophyte-3d': { page: 2 },
-    'ch14-sahni-malaria-3d': { page: 3, params: { malariaPressure: 20 } },
+    'ch14-beak-3d': { page: 0, lit: 'petri_colony' },
+    'ch14-antibiotic-3d-mutagens': { page: 0, lit: 'petri_colony', params: { antibioticDose: 25 } },
+    'ch14-moth-3d': { page: 1, lit: 'fitness_surface' },
+    'ch14-antibiotic-3d': { page: 0, lit: 'petri_colony', params: { antibioticDose: 85 } },
+    'ch14-landscape-3d-xero': { page: 2, lit: 'xerophyte_crypt' },
+    'ch14-beak-3d-adaptive': { page: 2, lit: 'hydrophyte_leaf' },
+    'ch14-beak-3d-brassica': { page: 1, lit: 'fitness_surface' },
+    'ch14-landscape-3d': { page: 3, lit: 'sahni_strata' },
+    'ch14-landscape-3d-heterozygote': { page: 3, lit: 'balancing_curve' },
+    'ch14-mutation-luria-3d': { page: 0, lit: 'petri_colony', params: { antibioticDose: 80 } },
+    'ch14-fitness-selection-3d': { page: 1, lit: 'fitness_surface', params: { antibioticDose: 85 } },
+    'ch14-xerophyte-hydrophyte-3d': { page: 2, lit: 'xerophyte_crypt' },
+    'ch14-sahni-malaria-3d': { page: 3, lit: 'balancing_curve', params: { malariaPressure: 20 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 200 + s.resPct * 3.2, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -142,6 +142,7 @@ export const CHAPTER = {
     const dishAsm = asm('petri_colony', root, { title: '3D Petri dish & resistant clones', sub: 'Pre-existing mutants survive antibiotic sweep' });
     dishAsm.position.set(-0.95, 0.35, 0);
     part(dishAsm, cyl(0.95, 0.22, 28), { pal: 'paper', tone: 'mid', mat: shadeMat('paper', { opacity: 0.45 }), ex: [0, -0.3, 0], name: 'Agar Petri dish' });
+    const abHalo = part(dishAsm, torus(0.88, 0.03, 10, 28), { pal: 'ochre', tone: 'lit', pos: [0, 0.14, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.25, 0], name: 'Antibiotic selection medium' });
     const wildDots = prims.particles(dishAsm, 990, { radius: 0.012, color: 'blue' });
     const resDots = prims.particles(dishAsm, 10, { radius: 0.024, color: 'red' });
 
@@ -149,6 +150,7 @@ export const CHAPTER = {
     selAsm.position.set(0.6, 0.25, -0.3);
     const axS = prims.axes(selAsm, { x: [0, 14], y: [0, 1050], size: [2.0, 1.65, 0.5] });
     prims.plot(selAsm, t => M.logisticColonyAccount(t).nLog, { axes: axS, samples: 40, color: 'green', width: 0.064 });
+    const logDot = part(selAsm, sphere(0.075, 14), { pal: 'ochre', tone: 'lit', name: 'Colony population state N(t)' });
     label('board', 'Petri dish selection', () => V(-0.95, 1.85, 0));
     label('board', 'Logistic K = 1000', () => V(1.6, 2.15, -0.3));
 
@@ -158,6 +160,7 @@ export const CHAPTER = {
     const axF = prims.axes(fitAsm, { x: [-1.4, 1.4], y: [-1.2, 1.2], z: [0, 1.9], size: [2.2, 1.8, 1.65] });
     const surfF = prims.surface(fitAsm, (x, y) => M.fitnessLandscapeHeight(x, y, 0.75), { axes: axF, n: 26, pal: 'ochre' });
     const popPin = part(fitAsm, sphere(0.1, 16), { pal: 'red', tone: 'lit', name: 'Mean population phenotype' });
+    const popDrop = rod(fitAsm, { r: 0.015, pal: 'red', tone: 'mid', name: 'Fitness altitude projection' });
     label('board', 'Adaptive fitness peaks', () => V(14.1, 2.25, -0.6));
 
     // Station 2 (x = 28): Xerophyte Sunken Crypt vs Hydrophyte Aerenchyma Leaf
@@ -165,12 +168,17 @@ export const CHAPTER = {
     xeroAsm.position.set(27.0, 1.25, 0);
     part(xeroAsm, box(1.35, 1.1, 1.0, 0.06), { pal: 'ochre', tone: 'hi', mat: shadeMat('ochre', { opacity: 0.42 }), ex: [-0.35, 0.3, 0], name: 'Thick-cuticle xerophyte leaf' });
     part(xeroAsm, sphere(0.38, 18), { pal: 'blue', tone: 'lit', pos: [0, -0.25, 0], ex: [0, -0.45, 0], name: 'Humid sunken stomatal crypt' });
+    for (const [tx, ty] of [[-0.22, -0.32], [0.22, -0.32], [-0.18, -0.18], [0.18, -0.18]]) {
+      const tr = rod(xeroAsm, { r: 0.018, pal: 'paper', tone: 'lit', name: 'Epidermal trichome hair' });
+      tr.set(V(tx * 1.4, ty, 0.15), V(tx * 0.4, ty + 0.04, 0.15));
+    }
 
     const hydroAsm = asm('hydrophyte_leaf', root, { title: 'Hydrophyte floating leaf & aerenchyma', sub: 'Buoyant air chambers & upper stomata' });
     hydroAsm.position.set(29.0, 1.25, 0);
     part(hydroAsm, box(1.35, 0.85, 1.0, 0.05), { pal: 'green', tone: 'mid', mat: shadeMat('green', { opacity: 0.38 }), ex: [0.35, 0.3, 0], name: 'Thin hydrophyte epidermis' });
     for (const sx of [-0.38, 0, 0.38]) {
       part(hydroAsm, sphere(0.22, 16), { pal: 'paper', tone: 'lit', pos: [sx, 0, 0], ex: [0, 0.45, 0], name: 'Buoyant aerenchyma air sac' });
+      part(hydroAsm, torus(0.08, 0.024, 8, 16), { pal: 'green', tone: 'lit', pos: [sx, 0.44, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.55, 0], name: 'Upper-epidermis stomatal pore' });
     }
     label('board', 'Xerophyte sunken crypt', () => V(27.0, 2.25, 0));
     label('board', 'Hydrophyte aerenchyma', () => V(29.0, 2.25, 0));
@@ -192,6 +200,8 @@ export const CHAPTER = {
     for (const st of strataSpecs) {
       part(sahAsm, box(1.1, 0.42, 0.85, 0.03), { pal: st.pal, tone: 'hi', pos: [0, st.y, 0], ex: [0.35, st.y * 0.3, 0], name: st.name });
     }
+    part(sahAsm, capsule(0.07, 0.35, 8, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.25, 0.44], rot: [0, 0, 1.25], ex: [0.35, 0.08, 0.25], name: 'Glossopteris tongue-leaf fossil' });
+    part(sahAsm, cyl(0.08, 0.38, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.75, 0.44], rot: [0, 0, 1.4], ex: [0.35, 0.22, 0.25], name: 'Pentoxylon gymnosperm stem fossil' });
     label('board', 'Equilibrium q* peak', () => V(41.5, 2.15, -0.3));
     label('board', 'Sahni fossil strata', () => V(43.2, 1.95, 0));
 
@@ -214,11 +224,16 @@ export const CHAPTER = {
         wildDots.show(nWild);
         rPts.forEach((point, i) => resDots.set(i, point));
         resDots.show(nRes);
+        abHalo.visible = s.abDose > 0.02;
+        const tCur = (s.t * 2.5) % 14;
+        logDot.position.copy(axS.to(tCur, M.logisticColonyAccount(tCur).nLog, 0));
 
         // Update 3D fitness surface & peak pin
         surfF.update((x, z) => M.fitnessLandscapeHeight(x, z, s.abDose));
         const px = -0.65 + s.abDose * 1.3;
-        popPin.position.copy(axF.to(px, 0, M.fitnessLandscapeHeight(px, 0, s.abDose) + 0.08));
+        const fz = M.fitnessLandscapeHeight(px, 0, s.abDose);
+        popPin.position.copy(axF.to(px, 0, fz + 0.08));
+        popDrop.set(axF.to(px, 0, 0), popPin.position);
 
         // Update balancing selection curve & equilibrium pin
         plotB.update(q => M.balancingSelectionAccount(s.malariaS, 0.80, q).wBar);

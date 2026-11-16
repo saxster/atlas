@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, rod,
+  THREE, part, box, cyl, sphere, capsule, torus, rod,
   prims, rbcGeo, studioGrid, playTone, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -95,15 +95,15 @@ export const CHAPTER = {
     { id: 'aboChoice', label: 'ABO genotype (0=A, 1=B, 2=AB, 3=O)', min: 0, max: 3, step: 1, value: 2, unit: '' },
   ],
   lessons: {
-    'ch13-punnett-3d': { page: 0, params: { crossMode: 0, sampleN: 800 } },
-    'ch13-locus-3d': { page: 1, params: { crossMode: 1 } },
-    'ch13-punnett-3d-testcross': { page: 0, params: { crossMode: 1 } },
-    'ch13-pedigree-3d-rules': { page: 1, params: { crossMode: 0 } },
-    'ch13-abo-3d': { page: 2, params: { aboChoice: 2 } },
-    'ch13-abo-3d-compare': { page: 2, params: { aboChoice: 0 } },
-    'ch13-abo-3d-maternity': { page: 2, params: { aboChoice: 2 } },
-    'ch13-pedigree-3d-xy': { page: 3 },
-    'ch13-pedigree-3d': { page: 3 },
+    'ch13-punnett-3d': { page: 0, lit: 'genotype_bars', params: { crossMode: 0, sampleN: 800 } },
+    'ch13-locus-3d': { page: 1, lit: 'homologous_pair', params: { crossMode: 1 } },
+    'ch13-punnett-3d-testcross': { page: 0, lit: 'punnett_grid', params: { crossMode: 1 } },
+    'ch13-pedigree-3d-rules': { page: 1, lit: 'pedigree_tree', params: { crossMode: 0 } },
+    'ch13-abo-3d': { page: 2, lit: 'ab_rbc', params: { aboChoice: 2 } },
+    'ch13-abo-3d-compare': { page: 2, lit: 'a_b_rbcs', params: { aboChoice: 0 } },
+    'ch13-abo-3d-maternity': { page: 2, lit: 'ab_rbc', params: { aboChoice: 2 } },
+    'ch13-pedigree-3d-xy': { page: 3, lit: 'xy_chromosomes' },
+    'ch13-pedigree-3d': { page: 3, lit: 'xlinked_bars' },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 260 + s.mc.pDominant * 180, dur: 0.055, type: 'sine', gain: 0.03 });
@@ -174,7 +174,9 @@ export const CHAPTER = {
     const pedAsm = asm('pedigree_tree', root, { title: '3D Pedigree inheritance tree', sub: 'Aa × Aa carrier parents → ¼ aa child' });
     pedAsm.position.set(15.1, 1.35, 0);
     part(pedAsm, box(0.32, 0.32, 0.32, 0.03), { pal: 'blue', tone: 'hi', pos: [-0.45, 0.45, 0], ex: [-0.3, 0.3, 0], name: 'Carrier father (Aa)' });
+    part(pedAsm, box(0.16, 0.33, 0.33, 0.02), { pal: 'ochre', tone: 'lit', pos: [-0.37, 0.45, 0], ex: [-0.3, 0.3, 0.15], name: 'Father recessive allele (a)' });
     part(pedAsm, sphere(0.2, 18), { pal: 'blue', tone: 'hi', pos: [0.45, 0.45, 0], ex: [0.3, 0.3, 0], name: 'Carrier mother (Aa)' });
+    part(pedAsm, torus(0.21, 0.035, 10, 18), { pal: 'ochre', tone: 'lit', pos: [0.45, 0.45, 0], ex: [0.3, 0.3, 0.15], name: 'Mother recessive carrier band (a)' });
     part(pedAsm, sphere(0.22, 18), { pal: 'red', tone: 'lit', pos: [0, -0.45, 0], ex: [0, -0.35, 0], name: 'Affected child (aa)' });
     const l1 = rod(pedAsm, { r: 0.02, pal: 'dark', tone: 'mid', name: 'Marriage line' });
     l1.set(V(-0.45, 0.45, 0), V(0.45, 0.45, 0));
@@ -188,6 +190,12 @@ export const CHAPTER = {
     aboOtherAsm.position.set(27.0, 1.35, 0);
     part(aboOtherAsm, rbcGeo(0.58, 0), { pal: 'red', tone: 'hi', pos: [-0.45, 0.35, 0], rot: [0.4, 0, 0], ex: [-0.35, 0.3, 0], name: 'Group A / B RBC' });
     part(aboOtherAsm, rbcGeo(0.58, 0), { pal: 'red', tone: 'mid', pos: [0.45, -0.35, 0], rot: [0.4, 0, 0], ex: [0.35, -0.3, 0], name: 'Group O RBC (I^O I^O)' });
+    // Plasma antibody Y-markers floating in serum
+    for (const [ax, ay, pal, abName] of [[-0.55, -0.35, 'ochre', 'Anti-B plasma antibody'], [0.45, 0.38, 'blue', 'Anti-A plasma antibody']]) {
+      part(aboOtherAsm, capsule(0.03, 0.14, 6, 10), { pal, tone: 'lit', pos: [ax, ay, 0.25], rot: [0, 0, 0.3], ex: [ax * 0.4, ay * 0.4, 0.25], name: abName });
+      part(aboOtherAsm, capsule(0.025, 0.1, 6, 10), { pal, tone: 'lit', pos: [ax - 0.05, ay + 0.08, 0.25], rot: [0, 0, 0.85], ex: [ax * 0.4, ay * 0.4, 0.25], name: abName });
+      part(aboOtherAsm, capsule(0.025, 0.1, 6, 10), { pal, tone: 'lit', pos: [ax + 0.05, ay + 0.05, 0.25], rot: [0, 0, -0.35], ex: [ax * 0.4, ay * 0.4, 0.25], name: abName });
+    }
 
     const abAsm = asm('ab_rbc', root, { title: 'Codominant Group AB red blood cell', sub: 'Expresses both A (spheres) & B (cones) antigens' });
     abAsm.position.set(29.0, 1.35, 0);
@@ -207,8 +215,11 @@ export const CHAPTER = {
     const xyAsm = asm('xy_chromosomes', root, { title: 'X (155 Mb) vs Y (57 Mb) chromosomes', sub: 'Non-homologous X-linked loci on X' });
     xyAsm.position.set(41.1, 1.35, 0);
     part(xyAsm, capsule(0.18, 1.45, 10, 18), { pal: 'blue', tone: 'lit', pos: [-0.38, 0, 0], ex: [-0.45, 0.25, 0], name: 'Large X chromosome (155 Mb)' });
+    part(xyAsm, torus(0.19, 0.035, 10, 18), { pal: 'ink', tone: 'mid', pos: [-0.38, 0.12, 0], rot: [Math.PI / 2, 0, 0], ex: [-0.45, 0.12, 0], name: 'X centromere constriction' });
     part(xyAsm, sphere(0.21, 16), { pal: 'red', tone: 'lit', pos: [-0.38, 0.55, 0], ex: [-0.45, 0.55, 0.25], name: 'X-linked Factor VIII / Opsin locus' });
+    part(xyAsm, cyl(0.19, 0.1, 16), { pal: 'green', tone: 'lit', pos: [-0.38, 0.82, 0], ex: [-0.45, 0.65, 0], name: 'Pseudoautosomal region (PAR1)' });
     part(xyAsm, capsule(0.14, 0.45, 10, 16), { pal: 'ochre', tone: 'hi', pos: [0.38, -0.35, 0], ex: [0.45, -0.25, 0], name: 'Short Y chromosome (57 Mb, SRY)' });
+    part(xyAsm, cyl(0.15, 0.08, 16), { pal: 'green', tone: 'lit', pos: [0.38, -0.05, 0], ex: [0.45, 0.05, 0], name: 'Y pseudoautosomal region (PAR1)' });
 
     const xlAsm = asm('xlinked_bars', root, { title: 'X-linked offspring outcome bars', sub: '50% sons affected vs 0% daughters affected' });
     xlAsm.position.set(42.9, 0.1, 0);

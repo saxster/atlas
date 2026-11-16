@@ -1,7 +1,7 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, torus, cone, lines, arrow, setArrow, rod,
-  prims, motion, MOLECULES, studioGrid, playTone, shadeMat, V
+  THREE, part, box, cyl, sphere, torus, cone, capsule, lines, arrow, setArrow, rod,
+  prims, motion, MOLECULES, rbcGeo, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
 
@@ -62,8 +62,8 @@ export const PLATES = {
     text: 'Hand-beaten twin brass plates clamping the tiny spherical soda-lime glass bead between aligned pinhole apertures.',
   },
   bead_lens: {
-    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1); smaller radius gives greater magnification in this ideal ball-lens model; usable magnification also depends on resolving detail.',
-    facts: s => [['f', `${s.fMm.toFixed(2)} mm`], ['M', `${s.mag.toFixed(0)}×`], ['d_min', `${s.dMinNm.toFixed(0)} nm`]],
+    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1) and working distance BFL = f − R; smaller radius gives greater magnification in this ideal ball-lens model; usable magnification also depends on resolving detail.',
+    facts: s => [['f', `${s.fMm.toFixed(2)} mm`], ['BFL', `${s.bflMm.toFixed(2)} mm`], ['M', `${s.mag.toFixed(0)}×`], ['d_min', `${s.dMinNm.toFixed(0)} nm`]],
   },
   specimen_screw: {
     text: 'Threaded focus and elevation screws position the specimen relative to the lens; the chosen focal length changes with the lens-radius control.',
@@ -100,10 +100,13 @@ export const CHAPTER = {
     { id: 'tiltFlask', label: 'Flask tilt (0 upright → 1 tipped)', min: 0, max: 1, step: 1, value: 0, unit: '' },
   ],
   lessons: {
-    'ch00-redi-3d': { page: 0 },
-    'ch00-leeuwenhoek-3d': { page: 1, params: { lensRadiusMm: 0.70 } },
-    'ch00-swan-neck-3d': { page: 2, params: { neckDipMm: 22, tiltFlask: 0 } },
-    'ch00-scale-ladder-3d': { page: 3 },
+    'ch00-redi-3d': { page: 0, lit: 'gauze_jar' },
+    'ch00-microscope-3d': { page: 1, lit: 'bead_lens', params: { lensRadiusMm: 0.70 } },
+    'ch00-leeuwenhoek-3d': { page: 1, lit: 'bead_lens', params: { lensRadiusMm: 0.70 } },
+    'ch00-pasteur-3d': { page: 2, lit: 'swan_bend', params: { neckDipMm: 22, tiltFlask: 0 } },
+    'ch00-swan-neck-3d': { page: 2, lit: 'swan_bend', params: { neckDipMm: 22, tiltFlask: 0 } },
+    'ch00-scale-3d': { page: 3, lit: 'scale_tower' },
+    'ch00-scale-ladder-3d': { page: 3, lit: 'scale_tower' },
   },
   sonify(ctx, s, page) {
     if (page === 1) playTone(ctx, { freq: 180 + s.mag * 1.4, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -114,17 +117,18 @@ export const CHAPTER = {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.2 : clock;
     const fMm = M.focalLengthBallMm(p.lensRadiusMm, 1.52);
+    const bflMm = M.backFocalLengthBallMm(p.lensRadiusMm, 1.52);
     const mag = M.ballLensMagnification(p.lensRadiusMm, 1.52);
     const dMinNm = M.rayleighLimitNm(550, Math.min(0.85, 0.35 + 0.3 / p.lensRadiusMm));
     const trap = M.swanNeckSporeCapture(p.neckDipMm, 1.5, 1.4);
-    return { t, lensRadiusMm: p.lensRadiusMm, fMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: p.tiltFlask > 0.5, trap };
+    return { t, lensRadiusMm: p.lensRadiusMm, fMm, bflMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: p.tiltFlask > 0.5, trap };
   },
   readout(s, page, pageIdx) {
     if (pageIdx === 0) {
       return `<b>Redi’s Controlled Jars</b> · Open jar: flies enter → larvae on meat · Gauze jar: scent plume escapes, flies lay eggs on mesh only (0 larvae on meat) · Sealed jar: air & flies excluded.`;
     }
     if (pageIdx === 1) {
-      return `<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm · Magnification <b>${s.mag.toFixed(0)}×</b> · Chosen ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
+      return `<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm (working clearance BFL = ${s.bflMm.toFixed(2)} mm) · Magnification <b>${s.mag.toFixed(0)}×</b> · Ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
     }
     if (pageIdx === 2) {
       const status = s.tilted ? 'Tipped broth contacts trapped contamination; cloudiness represents subsequent growth under suitable conditions' : 'Upright bend keeps settled dust away from the broth in this schematic; the trapping estimate is illustrative, not a sterility prediction';
@@ -152,8 +156,15 @@ export const CHAPTER = {
       g.position.set(j.x, 0, 0);
       part(g, cyl(0.62, 1.55, 24), { pal: 'paper', tone: 'mid', pos: [0, 0.8, 0], mat: shadeMat('paper', { opacity: 0.42 }), name: 'Glass jar wall' });
       part(g, box(0.65, 0.28, 0.5, 0.06), { pal: 'red', tone: 'hi', pos: [0, 0.22, 0], ex: [0, 0.35, 0], name: 'Meat sample' });
-      if (j.lid === 'gauze') {
+      if (j.lid === 'none') {
+        for (const [lx, lz] of [[-0.14, 0.08], [0.12, -0.06], [0.02, 0.12]]) {
+          part(g, capsule(0.032, 0.07, 6, 10), { pal: 'paper', tone: 'lit', pos: [lx, 0.39, lz], rot: [0.2, lx * 3, 1.35], ex: [0, 0.45, 0], name: 'Blowfly larva on meat' });
+        }
+      } else if (j.lid === 'gauze') {
         part(g, cyl(0.66, 0.05, 24), { pal: 'ochre', tone: 'hi', pos: [0, 1.6, 0], ex: [0, 0.65, 0], name: 'Porous gauze mesh' });
+        for (const [lx, lz] of [[-0.15, 0.09], [0.14, -0.08], [0.0, 0.14]]) {
+          part(g, capsule(0.028, 0.065, 6, 10), { pal: 'paper', tone: 'lit', pos: [lx, 1.65, lz], rot: [0.1, lz * 3, 1.4], ex: [0, 0.72, 0], name: 'Eggs stopped on gauze mesh' });
+        }
       } else if (j.lid === 'sealed') {
         part(g, cyl(0.67, 0.12, 24), { pal: 'dark', tone: 'hi', pos: [0, 1.62, 0], ex: [0, 0.65, 0], name: 'Airtight parchment seal' });
       }
@@ -169,16 +180,20 @@ export const CHAPTER = {
     plateAsm.position.set(14, 1.4, 0);
     part(plateAsm, box(1.1, 2.1, 0.12, 0.03), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], ex: [0, 0, -0.35], name: 'Front brass plate' });
     part(plateAsm, box(1.1, 2.1, 0.12, 0.03), { pal: 'ochre', tone: 'mid', pos: [0, 0, -0.14], ex: [0, 0, -0.65], name: 'Back brass plate' });
+    part(plateAsm, torus(0.22, 0.035, 12, 24), { pal: 'dark', tone: 'hi', pos: [0, 0.35, 0.06], ex: [0, 0.15, -0.2], name: 'Lens pinhole bezel' });
 
     const lensAsm = asm('bead_lens', root, { title: 'Soda-lime glass bead lens', sub: 'Spherical refractor' });
     lensAsm.position.set(14, 1.75, 0);
     const beadMesh = part(lensAsm, sphere(0.24, 24), { pal: 'blue', tone: 'lit', pos: [0, 0, 0], ex: [0, 0.35, 0.45], name: 'Spherical glass bead' });
-    const rayUpper = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Marginal light ray' });
-    const rayLower = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Marginal light ray' });
+    const rayUpper = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Refracted upper light ray' });
+    const rayLower = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Refracted lower light ray' });
+    const rayInUpper = rod(lensAsm, { r: 0.015, pal: 'ochre', tone: 'hi', name: 'Incident specimen ray' });
+    const rayInLower = rod(lensAsm, { r: 0.015, pal: 'ochre', tone: 'hi', name: 'Incident specimen ray' });
 
     const screwAsm = asm('specimen_screw', root, { title: 'Specimen focus screw', sub: 'Sub-millimetre stage' });
     screwAsm.position.set(14, 0.85, 0.35);
     part(screwAsm, cyl(0.06, 1.3, 16), { pal: 'dark', tone: 'hi', pos: [0, 0, 0], ex: [0, -0.4, 0.3], name: 'Lead screw' });
+    part(screwAsm, box(0.42, 0.12, 0.24, 0.02), { pal: 'ochre', tone: 'mid', pos: [0, 0.45, -0.05], ex: [0, -0.2, 0.25], name: 'Threaded specimen bracket' });
     part(screwAsm, sphere(0.11, 16), { pal: 'green', tone: 'hi', pos: [0, 0.9, -0.1], ex: [0, 0.25, 0.3], name: 'Pond-water drop' });
     label('board', 'Glass bead lens', () => V(14, 2.25, 0), { leader: [36, -24] });
 
@@ -196,6 +211,7 @@ export const CHAPTER = {
     ];
     const neckGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(neckPts), 40, 0.13, 12, false);
     part(neckAsm, neckGeo, { pal: 'blue', tone: 'hi', ex: [0.5, 0.35, 0], name: 'Curved S-neck tube' });
+    const tippedSlug = part(neckAsm, sphere(0.14, 14), { pal: 'red', tone: 'hi', pos: [1.55, -0.42, 0], ex: [0.5, 0.2, 0], name: 'Tipped broth contacting trapped dust' });
     const brothMaterials = { clear: shadeMat('ochre'), cloudy: shadeMat('red') };
     const sporeParticles = prims.particles(neckAsm, 18, { radius: 0.04, color: 'red' });
     label('board', 'Settled spores in dip', () => V(29.65, 1.4, 0), { leader: [38, 22] });
@@ -208,13 +224,22 @@ export const CHAPTER = {
     const towerAsm = asm('scale_tower', root, { title: 'Biological scale columns', sub: 'Orders of magnitude' });
     towerAsm.position.set(42.8, 0.1, 0);
     const steps = [
-      { h: 0.45, pal: 'blue', x: -0.9, name: 'Protein (5 nm)' },
-      { h: 0.95, pal: 'ochre', x: -0.3, name: 'Phage virus (100 nm)' },
-      { h: 1.55, pal: 'green', x: 0.3, name: 'Bacterium (2 µm)' },
-      { h: 2.25, pal: 'red', x: 0.9, name: 'Red blood cell (8 µm)' },
+      { h: 0.45, pal: 'blue', x: -0.9, name: 'Protein (5 nm)', icon: 'protein' },
+      { h: 0.95, pal: 'ochre', x: -0.3, name: 'Phage virus (100 nm)', icon: 'phage' },
+      { h: 1.55, pal: 'green', x: 0.3, name: 'Bacterium (2 µm)', icon: 'bacterium' },
+      { h: 2.25, pal: 'red', x: 0.9, name: 'Red blood cell (8 µm)', icon: 'rbc' },
     ];
     for (const st of steps) {
       part(towerAsm, box(0.42, st.h, 0.42, 0.04), { pal: st.pal, tone: 'hi', pos: [st.x, st.h / 2, 0], ex: [0, st.h * 0.25, 0], name: st.name });
+      if (st.icon === 'protein') {
+        part(towerAsm, sphere(0.11, 14), { pal: 'blue', tone: 'lit', pos: [st.x, st.h + 0.14, 0], ex: [0, 0.35, 0], name: 'Folded protein globule (5 nm)' });
+      } else if (st.icon === 'phage') {
+        part(towerAsm, new THREE.IcosahedronGeometry(0.12, 0), { pal: 'ochre', tone: 'lit', pos: [st.x, st.h + 0.15, 0], ex: [0, 0.4, 0], name: 'Icosahedral phage head (100 nm)' });
+      } else if (st.icon === 'bacterium') {
+        part(towerAsm, capsule(0.075, 0.14, 6, 12), { pal: 'green', tone: 'lit', pos: [st.x, st.h + 0.14, 0], rot: [0, 0, Math.PI / 2], ex: [0, 0.45, 0], name: 'Rod bacterium (2 µm)' });
+      } else if (st.icon === 'rbc') {
+        part(towerAsm, rbcGeo(0.16, 0), { pal: 'red', tone: 'lit', pos: [st.x, st.h + 0.12, 0], rot: [0.45, 0, 0], ex: [0, 0.5, 0], name: 'Biconcave RBC disc (8 µm)' });
+      }
     }
     label('board', 'Water: molecular scale', () => V(40.6, 2.35, 0));
     label('board', 'Size-order columns', () => V(42.8, 2.55, 0));
@@ -237,14 +262,17 @@ export const CHAPTER = {
         const sc = s.lensRadiusMm / 0.75;
         beadMesh.scale.setScalar(sc);
         const fScene = Math.max(0.22, Math.min(0.85, s.fMm * 0.22));
-        rayUpper.set(V(0, 0.18 * sc, 0), V(0, 0, fScene));
-        rayLower.set(V(0, -0.18 * sc, 0), V(0, 0, fScene));
+        rayUpper.set(V(0, 0.18 * sc, 0), V(0, 0, -fScene));
+        rayLower.set(V(0, -0.18 * sc, 0), V(0, 0, -fScene));
+        rayInUpper.set(V(0, 0, 0.25), V(0, 0.18 * sc, 0));
+        rayInLower.set(V(0, 0, 0.25), V(0, -0.18 * sc, 0));
 
         // Flask tilt & spore positions in swan-neck bend
         const tiltRad = s.tilted ? -0.42 : 0;
         flaskAsm.rotation.z = tiltRad;
         neckAsm.rotation.z = tiltRad;
         brothMesh.material = s.tilted ? brothMaterials.cloudy : brothMaterials.clear;
+        tippedSlug.visible = s.tilted;
         const sp = [];
         for (let i = 0; i < 18; i++) {
           const u = i / 18;

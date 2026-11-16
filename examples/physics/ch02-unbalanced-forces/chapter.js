@@ -8,10 +8,10 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Double ramp',
-    fig: 'Figure 2.1 · Galileo’s double inclined plane & the frictionless coasting limit',
+    fig: 'Figure 2.1 · Galileo’s double inclined plane & the coasting limit',
     title: 'Galileo’s Double Inclined Plane',
-    alt: '3D curved release ramp meeting an adjustable recovery slope where a bronze ball seeks its starting height h, running further as the second slope flattens toward zero.',
-    cam: { target: [0, 1.3, 0], az: 20, el: 22, dist: 7.4 },
+    alt: '3D release ramp meeting an adjustable recovery slope where a bronze ball seeks its starting height h, running further as the second slope flattens toward zero.',
+    cam: { target: [0, 1.25, 0], az: 20, el: 22, dist: 10.6 },
     lit: 'recovery_slope',
     parts: ['release_slope', 'recovery_slope'],
     look: { xray: 0, section: 0 },
@@ -21,7 +21,7 @@ export const PAGES = [
     fig: 'Figure 2.2 · Free-body force vectors acting on a pushed tabletop block',
     title: '3D Free-Body Force Diagram',
     alt: '3D wooden crate on a table showing upward normal force N, downward weight mg, horizontal push F_push, and opposing friction f emerging from the crate.',
-    cam: { target: [14, 1.25, 0], az: 26, el: 22, dist: 6.8 },
+    cam: { target: [14, 1.25, 0], az: 26, el: 22, dist: 10.2 },
     lit: 'force_crate',
     parts: ['table_slab', 'force_crate'],
     look: { xray: 0.15, section: 0 },
@@ -31,27 +31,27 @@ export const PAGES = [
     fig: 'Figure 2.4 · Braking train carriage with forward-tilting strap & sliding teacup',
     title: 'Inertia in a Braking Train Cabin',
     alt: '3D cutaway railway carriage during braking: a hanging hand-strap swings forward at angle tan θ = a/g while a teacup slides forward on the tray table.',
-    cam: { target: [28, 1.35, 0], az: 18, el: 20, dist: 7.2 },
+    cam: { target: [28, 1.3, 0], az: 18, el: 20, dist: 10.5 },
     lit: 'inertia_strap',
     parts: ['cabin_shell', 'inertia_strap'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Asperity peaks',
-    fig: 'Figure 2.5 · Microscopic interlocking surface asperities & normal-load contact area',
+    fig: 'Figure 2.5 · Microscopic interlocking surface asperities under normal load',
     title: 'Microscopic Asperity Cold Welds',
     alt: '3D magnified cutaway of two seemingly smooth blocks revealing jagged microscopic mountain peaks that squash together under heavier normal load N.',
-    cam: { target: [42, 1.3, 0], az: 22, el: 20, dist: 6.8 },
+    cam: { target: [42, 1.25, 0], az: 22, el: 20, dist: 10.2 },
     lit: 'upper_asperities',
     parts: ['lower_asperities', 'upper_asperities'],
     look: { xray: 0, section: 0 },
   },
   {
     tab: 'Static → kinetic',
-    fig: 'Figure 2.6 · Static friction ramp-up to peak f_s,max followed by drop to kinetic f_k',
+    fig: 'Figure 2.6 · Static friction peak f_s,max followed by drop to kinetic f_k',
     title: 'Static Peak & Kinetic Friction Drop',
-    alt: '3D friction test sled pulled by a spring scale alongside a 3D force profile showing the 45° static ramp, breakaway peak μ_s N, and lower kinetic plateau μ_k N.',
-    cam: { target: [56, 1.3, 0], az: 24, el: 22, dist: 7.4 },
+    alt: '3D friction test sled pulled by a spring scale alongside a 3D force profile showing the static ramp, breakaway peak μ_s N, and lower kinetic plateau μ_k N.',
+    cam: { target: [56, 1.25, 0], az: 24, el: 22, dist: 10.6 },
     lit: 'friction_curve',
     parts: ['test_sled', 'friction_curve'],
     look: { xray: 0, section: 0 },
@@ -175,28 +175,31 @@ export const CHAPTER = {
     const relAsm = asm('release_slope', root, { title: 'Steep release incline', sub: 'Fixed drop height h = 0.45 m' });
     relAsm.position.set(-1.1, 0.75, 0);
     part(relAsm, box(1.8, 0.12, 0.5, 0.02), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], rot: [0, 0, -0.52], ex: [-0.3, 0.3, 0], name: 'Left release ramp' });
-    part(relAsm, box(3.6, 0.04, 0.5, 0.01), { pal: 'green', tone: 'lit', pos: [1.1, 0.42, 0], name: 'Target height line h' });
+    part(relAsm, box(3.8, 0.035, 0.5, 0.01), { pal: 'green', tone: 'lit', pos: [1.15, 0.42, 0], name: 'Target height line h' });
 
     const recAsm = asm('recovery_slope', root, { title: 'Adjustable recovery slope', sub: 'L = h / sin θ₂' });
     recAsm.position.set(-0.3, 0.3, 0);
-    const recPlank = part(recAsm, box(2.8, 0.12, 0.5, 0.02), { pal: 'blue', tone: 'hi', pos: [1.4, 0, 0], ex: [0.4, 0.3, 0], name: 'Adjustable right slope' });
-    const galBall = part(root, sphere(0.13, 18), { pal: 'red', tone: 'hi', pos: [0, 0.45, 0], name: 'Rolling bronze ball' });
+    const recPlank = new THREE.Group();
+    recAsm.add(recPlank);
+    part(recPlank, box(2.8, 0.12, 0.5, 0.02), { pal: 'blue', tone: 'hi', pos: [1.4, 0, 0], ex: [0.4, 0.3, 0], name: 'Adjustable right slope' });
+    const galBall = part(recAsm, sphere(0.13, 18), { pal: 'red', tone: 'hi', pos: [0, 0.15, 0], name: 'Rolling bronze ball' });
     label('board', 'Starting height h', () => V(-1.6, 1.35, 0));
-    label('board', 'Recovery slope θ₂', () => V(1.2, 1.35, 0), { leader: [0, -20] });
+    label('board', 'Recovery slope θ₂ (L = h / sin θ₂)', () => V(1.2, 1.35, 0), { leader: [0, -20] });
 
     // Station 1 (x = 14): 3D Free-Body Force Arrows
     const tabAsm = asm('table_slab', root, { title: 'Benchtop surface', sub: 'Provides normal force N' });
     tabAsm.position.set(14, 0.45, 0);
     part(tabAsm, box(3.4, 0.16, 1.4, 0.03), { pal: 'paper', tone: 'mid', pos: [0, 0, 0], name: 'Laboratory bench' });
 
-    const crateAsm = asm('force_crate', root, { title: 'Pushed wooden block', sub: '4 forces acting on block' });
+    const crateAsm = asm('force_crate', root, { title: 'Pushed wooden block', sub: 'Forces acting on block' });
     crateAsm.position.set(14, 0.9, 0);
     part(crateAsm, box(0.85, 0.65, 0.65, 0.04), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], mat: shadeMat('ochre', { opacity: 0.65 }), ex: [0, 0.4, 0], name: 'Wooden block' });
     const fNorm = arrow(crateAsm, { pal: 'blue', r: 0.028 });
     const fGrav = arrow(crateAsm, { pal: 'dark', r: 0.028 });
     const fPush = arrow(crateAsm, { pal: 'green', r: 0.03 });
     const fFric = arrow(crateAsm, { pal: 'red', r: 0.03 });
-    label('board', 'N (Normal) & mg (Weight)', () => V(14, 2.15, 0));
+    const fNet = arrow(crateAsm, { pal: 'ochre', r: 0.026 });
+    label('board', 'N = mg (vertical balance)', () => V(14, 2.15, 0));
     label('board', 'F_push vs friction f', () => V(14.9, 1.2, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): Braking Train Cabin & Inertia Strap
@@ -208,8 +211,12 @@ export const CHAPTER = {
 
     const strapAsm = asm('inertia_strap', root, { title: 'Hanging grab-strap pendulum', sub: 'tan θ = a / g' });
     strapAsm.position.set(27.6, 1.85, 0);
-    part(strapAsm, cyl(0.025, 0.85, 12), { pal: 'dark', tone: 'hi', pos: [0, -0.42, 0], ex: [0, 0.3, 0], name: 'Strap cord' });
-    part(strapAsm, sphere(0.13, 16), { pal: 'blue', tone: 'hi', pos: [0, -0.85, 0], ex: [0, 0.45, 0], name: 'Strap handle' });
+    const strapPivot = new THREE.Group();
+    strapAsm.add(strapPivot);
+    part(strapPivot, cyl(0.025, 0.85, 12), { pal: 'dark', tone: 'hi', pos: [0, -0.42, 0], ex: [0, 0.3, 0], name: 'Strap cord' });
+    part(strapPivot, sphere(0.13, 16), { pal: 'blue', tone: 'hi', pos: [0, -0.85, 0], ex: [0, 0.45, 0], name: 'Strap handle' });
+    const tStrapVec = arrow(strapAsm, { pal: 'green', r: 0.022 });
+    const gStrapVec = arrow(strapAsm, { pal: 'dark', r: 0.022 });
     label('board', 'Tilt θ = arctan(a/g)', () => V(27.6, 2.2, 0), { leader: [20, 22] });
 
     // Station 3 (x = 42): Microscopic Asperity Peaks
@@ -226,63 +233,75 @@ export const CHAPTER = {
     for (let i = -3; i <= 3; i++) {
       part(upAsp, cone(0.22, 0.38, 8), { pal: 'red', tone: 'hi', pos: [i * 0.36 + 0.12, -0.32, 0], rot: [0, 0, Math.PI], ex: [0, 0.3, 0], name: 'Interlocking upper peak' });
     }
-    label('board', 'Cold-weld contact tips', () => V(42, 1.95, 0), { leader: [0, -22] });
+    label('board', 'Cold-weld contact tips squash under N', () => V(42, 1.95, 0), { leader: [0, -22] });
 
     // Station 4 (x = 56): Static-to-Kinetic Friction Graph & Sled
     const sledAsm = asm('test_sled', root, { title: 'Spring-pulled friction sled', sub: 'Breaks free above μ_s N' });
     sledAsm.position.set(56, 0.35, 0.65);
     const sledBox = part(sledAsm, box(0.78, 0.42, 0.52, 0.03), { pal: 'green', tone: 'hi', pos: [0, 0, 0], ex: [0, 0.35, 0.3], name: 'Test sled' });
 
-    const curveAsm = asm('friction_curve', root, { title: 'Static peak & kinetic plateau', sub: 'f(F_push) 3D profile' });
+    const curveAsm = asm('friction_curve', root, { title: 'Static peak & kinetic plateau', sub: 'f(F_push) scales with N = mg' });
     curveAsm.position.set(56, 0.15, -0.45);
     const curvePts = [
-      V(-1.4, 0.1, 0), V(-0.2, 1.35, 0), V(-0.08, 0.92, 0), V(1.4, 0.92, 0),
+      V(-1.4, 0.05, 0), V(-0.2, 1.25, 0), V(-0.08, 0.875, 0), V(1.4, 0.875, 0),
     ];
     const curveGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curvePts), 40, 0.045, 10, false);
-    part(curveAsm, curveGeo, { pal: 'blue', tone: 'hi', ex: [0, 0.3, -0.3], name: 'Static-to-kinetic friction curve' });
+    const curveTrace = part(curveAsm, curveGeo, { pal: 'blue', tone: 'hi', ex: [0, 0, -0.35], name: 'Static-to-kinetic friction curve' });
     const stateBall = part(curveAsm, sphere(0.11, 16), { pal: 'red', tone: 'hi', pos: [-0.5, 0.8, 0], name: 'Current operating point' });
-    label('board', 'Peak f_s,max = μ_s N', () => V(55.8, 1.75, -0.45), { leader: [0, -18] });
+    label('board', 'Peak f_s,max = μ_s N → drop to f_k = μ_k N', () => V(55.8, 1.85, -0.45), { leader: [0, -18] });
 
     return {
       labels,
       update(s) {
-        // Station 0: tilt recovery ramp & animate ball
+        // Station 0: tilt recovery ramp & animate ball seeking original height h (L = h / sin theta_2)
         const rad = (s.secondSlopeDeg * Math.PI) / 180;
-        recAsm.rotation.z = rad;
+        recPlank.rotation.z = rad;
+        const hDropScene = 0.72; // height in scene units to reach green target line
+        const maxClimb = Math.min(2.65, hDropScene / Math.max(0.05, Math.sin(rad)));
         const u = 0.5 + 0.5 * Math.sin(s.t * 1.6);
-        const xBall = -1.5 + u * 2.9;
-        if (xBall < -0.3) {
-          galBall.position.set(xBall, 0.35 + (-0.3 - xBall) * 0.55, 0);
+        const totalPath = 1.4 + maxClimb;
+        const sPos = u * totalPath;
+        if (sPos < 1.4) {
+          const dLeft = 1.4 - sPos;
+          galBall.position.set(-dLeft * Math.cos(0.52), 0.16 + dLeft * Math.sin(0.52), 0);
         } else {
-          const d = xBall + 0.3;
-          galBall.position.set(-0.3 + d * Math.cos(rad), 0.35 + d * Math.sin(rad), 0);
+          const dRight = sPos - 1.4;
+          galBall.position.set(dRight * Math.cos(rad) - 0.14 * Math.sin(rad), 0.16 * Math.cos(rad) + dRight * Math.sin(rad), 0);
         }
 
-        // Station 1: scale 3D force arrows
-        const nLen = (s.fric.normalN / 100) * 1.1;
+        // Station 1: scale 3D force arrows (consistent horizontal scale + balanced vertical N = mg)
+        const nLen = (s.fric.normalN / 98) * 1.05;
         const pLen = (s.pushN / 45) * 1.15;
         const fLen = (s.fric.frictionN / 45) * 1.15;
+        const netLen = (s.fric.netForceN / 45) * 1.15;
         setArrow(fNorm, V(0, 0.32, 0), V(0, 0.32 + nLen, 0));
         setArrow(fGrav, V(0, -0.32, 0), V(0, -0.32 - nLen, 0));
         setArrow(fPush, V(0.42, 0, 0), V(0.42 + pLen, 0, 0));
         setArrow(fFric, V(-0.42, -0.2, 0), V(-0.42 - fLen, -0.2, 0));
+        setArrow(fNet, V(-0.2, 0.52, 0), V(-0.2 + netLen, 0.52, 0), s.fric.netForceN > 0.5 ? 1 : 0);
 
         // Station 2: braking strap angle & sliding teacup
-        strapAsm.rotation.z = (s.strapDeg * Math.PI) / 180;
+        const sRad = (s.strapDeg * Math.PI) / 180;
+        strapPivot.rotation.z = sRad;
+        const hx = 0.85 * Math.sin(sRad), hy = -0.85 * Math.cos(sRad);
+        setArrow(tStrapVec, V(hx, hy, 0), V(hx - 0.55 * Math.sin(sRad), hy + 0.55 * Math.cos(sRad), 0));
+        setArrow(gStrapVec, V(hx, hy, 0), V(hx, hy - 0.55 * Math.cos(sRad), 0));
         teaCup.position.x = 0.2 + (s.decelMps2 / 6) * 0.32 * (0.5 + 0.5 * Math.sin(s.t * 2));
 
         // Station 3: normal load squashes upper asperities closer
         upAsp.position.y = 1.38 - (s.massKg / 10) * 0.14;
 
-        // Station 4: operating dot on static/kinetic curve & sled slide
+        // Station 4: operating dot on static/kinetic curve (scaled by normal load) & sled slide
+        const loadScale = 0.5 + 0.5 * (s.massKg / 5.0);
+        curveTrace.scale.y = loadScale;
         const ratio = s.pushN / Math.max(1, s.fric.fStaticMaxN);
         if (!s.fric.sliding) {
           const uSt = Math.min(1, ratio);
-          stateBall.position.set(-1.4 + uSt * 1.2, 0.1 + uSt * 1.25, 0);
+          stateBall.position.set(-1.4 + uSt * 1.2, (0.05 + uSt * 1.2) * loadScale, 0);
           sledBox.position.x = 0;
         } else {
           const uSl = Math.min(1, (ratio - 1) / 1.0);
-          stateBall.position.set(-0.08 + uSl * 1.45, 0.92, 0);
+          stateBall.position.set(-0.08 + uSl * 1.45, 0.875 * loadScale, 0);
           sledBox.position.x = ((s.t * s.fric.accelMps2 * 0.25) % 1.2) - 0.6;
         }
       },

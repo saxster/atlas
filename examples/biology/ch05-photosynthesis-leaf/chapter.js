@@ -1,6 +1,6 @@
 import { SUBJECT } from '../subject.js';
 import {
-  THREE, part, box, cyl, sphere, capsule, torus,
+  THREE, part, box, cyl, sphere, capsule, torus, rod,
   prims, MOLECULES, studioGrid, playTone, shadeMat, V
 } from '@saxster/atlas/bio_kit.js';
 import * as M from './model.js';
@@ -99,19 +99,19 @@ export const CHAPTER = {
   ],
   sensor: { type: 'light', label: 'Use camera light sensor', param: 'lightCap', min: 5, max: 100 },
   lessons: {
-    'ch05-calvin-3d-willow': { page: 0 },
-    'ch05-thylakoid-3d-gas': { page: 0 },
-    'ch05-thylakoid-3d': { page: 1 },
-    'ch05-calvin-3d': { page: 2 },
-    'ch05-leaf-3d': { page: 3 },
-    'ch05-stomata-3d': { page: 3 },
-    'ch05-calvin-3d-phloem': { page: 3 },
-    'ch05-mass-ledger-3d': { page: 0, params: { lightCap: 75 } },
-    'ch05-gas-bubbles-3d': { page: 0, params: { lightCap: 90 } },
-    'ch05-chloroplast-3d': { page: 1, params: { lightCap: 80, co2Cap: 80 } },
-    'ch05-blackman-surface-3d': { page: 2, params: { lightCap: 40, co2Cap: 85, leafTempC: 25 } },
-    'ch05-leaf-anatomy-3d': { page: 3, params: { lightCap: 75 } },
-    'ch05-phloem-xylem-3d': { page: 3, params: { lightCap: 85 } },
+    'ch05-calvin-3d-willow': { page: 0, lit: 'mass_columns' },
+    'ch05-thylakoid-3d-gas': { page: 0, lit: 'hydrilla_jar' },
+    'ch05-thylakoid-3d': { page: 1, lit: 'grana_stacks' },
+    'ch05-calvin-3d': { page: 2, lit: 'blackman_surf' },
+    'ch05-leaf-3d': { page: 3, lit: 'palisade_layer' },
+    'ch05-stomata-3d': { page: 3, lit: 'guard_stoma' },
+    'ch05-calvin-3d-phloem': { page: 3, lit: 'xylem_phloem_bundle' },
+    'ch05-mass-ledger-3d': { page: 0, lit: 'mass_columns', params: { lightCap: 75 } },
+    'ch05-gas-bubbles-3d': { page: 0, lit: 'hydrilla_jar', params: { lightCap: 90 } },
+    'ch05-chloroplast-3d': { page: 1, lit: 'grana_stacks', params: { lightCap: 80, co2Cap: 80 } },
+    'ch05-blackman-surface-3d': { page: 2, lit: 'blackman_surf', params: { lightCap: 40, co2Cap: 85, leafTempC: 25 } },
+    'ch05-leaf-anatomy-3d': { page: 3, lit: 'palisade_layer', params: { lightCap: 75 } },
+    'ch05-phloem-xylem-3d': { page: 3, lit: 'xylem_phloem_bundle', params: { lightCap: 85 } },
   },
   sonify(ctx, s, page) {
     playTone(ctx, { freq: 200 + Math.max(0, s.bm.net) * 4.5, dur: 0.06, type: 'sine', gain: 0.03 });
@@ -165,13 +165,17 @@ export const CHAPTER = {
     envAsm.position.set(13.5, 1.3, 0);
     part(envAsm, capsule(0.75, 1.35, 14, 24), { pal: 'green', tone: 'mid', rot: [0, 0, Math.PI / 2], mat: shadeMat('green', { opacity: 0.36 }), ex: [0, -0.45, 0], name: 'Chloroplast envelope' });
 
-    const granaAsm = asm('grana_stacks', root, { title: 'Thylakoid grana stacks', sub: 'Light-harvesting antennae' });
+    const granaAsm = asm('grana_stacks', root, { title: 'Thylakoid grana stacks', sub: 'Light-harvesting antennae & stroma lamellae' });
     granaAsm.position.set(13.5, 1.3, 0);
     for (const gx of [-0.55, 0.0, 0.55]) {
       for (let k = -2; k <= 2; k++) {
         part(granaAsm, cyl(0.22, 0.065, 18), { pal: 'green', tone: 'lit', pos: [gx, k * 0.1, 0], ex: [0, 0.4 + k * 0.12, 0], name: 'Thylakoid granum disc' });
       }
     }
+    const lam1 = rod(granaAsm, { r: 0.025, pal: 'green', tone: 'hi', name: 'Stroma lamella bridge' });
+    lam1.set(V(-0.55, 0.05, 0), V(0.0, -0.05, 0));
+    const lam2 = rod(granaAsm, { r: 0.025, pal: 'green', tone: 'hi', name: 'Stroma lamella bridge' });
+    lam2.set(V(0.0, 0.05, 0), V(0.55, -0.05, 0));
 
     const gluAsm = asm('stroma_glucose', root, { title: 'Glucose summary product', sub: 'Made through later reactions' });
     gluAsm.position.set(15.5, 1.35, 0);
@@ -185,6 +189,7 @@ export const CHAPTER = {
     const axB = prims.axes(bmAsm, { x: [0, 100], y: [0, 100], z: [0, 105], size: [2.2, 1.8, 1.65], names: { x: 'Light capacity', y: 'CO₂ capacity', z: 'Gross rate' } });
     const surfB = prims.surface(bmAsm, (L, C) => M.blackmanSurface(L, C, 25).gross, { axes: axB, n: 24, pal: 'green' });
     const bmPin = part(bmAsm, sphere(0.095, 16), { pal: 'red', tone: 'lit', name: 'Current operating state' });
+    const bmDrop = rod(bmAsm, { r: 0.016, pal: 'red', tone: 'mid', name: 'Operating rate projection line' });
     label('board', 'Blackman surface r(L, CO₂)', () => V(28.1, 2.25, -0.6));
 
     // Station 3 (x = 42): 3D Dicot Leaf Cross-Section + Guard Stoma + Xylem/Phloem
@@ -193,6 +198,9 @@ export const CHAPTER = {
     part(palAsm, box(1.9, 0.12, 1.2, 0.02), { pal: 'ochre', tone: 'mid', pos: [0, 0.58, 0], ex: [0, 0.55, 0], name: 'Waxy water-loss-reducing cuticle' });
     for (let i = -2; i <= 2; i++) {
       part(palAsm, box(0.32, 0.65, 1.1, 0.05), { pal: 'green', tone: 'lit', pos: [i * 0.36, 0.12, 0], ex: [0, 0.25, 0], name: 'Palisade mesophyll cell' });
+    }
+    for (const [sx, sy, sz] of [[-0.45, -0.42, 0.18], [0.05, -0.48, -0.15], [0.52, -0.4, 0.12]]) {
+      part(palAsm, sphere(0.18, 14), { pal: 'green', tone: 'mid', pos: [sx, sy, sz], ex: [0, -0.15, 0], name: 'Spongy mesophyll cell bordering air space' });
     }
 
     const stomaAsm = asm('guard_stoma', root, { title: 'Guard-cell stomatal pore', sub: 'Turgor-controlled CO₂/H₂O gate' });
@@ -207,6 +215,9 @@ export const CHAPTER = {
       part(vascAsm, torus(0.23, 0.028, 10, 20), { pal: 'ochre', tone: 'lit', pos: [-0.28, k * 0.34, 0], rot: [Math.PI / 2, 0, 0], ex: [-0.35, 0, 0.25], name: 'Lignin spiral ring' });
     }
     part(vascAsm, cyl(0.2, 1.9, 20), { pal: 'green', tone: 'hi', pos: [0.28, 0, 0], ex: [0.35, 0, 0], name: 'Phloem sieve-tube element' });
+    for (const sy of [-0.45, 0.0, 0.45]) {
+      part(vascAsm, cyl(0.21, 0.03, 18), { pal: 'ochre', tone: 'lit', pos: [0.28, sy, 0], ex: [0.45, 0, 0.2], name: 'Perforated phloem sieve plate' });
+    }
     label('board', 'Palisade & stoma', () => V(41.2, 2.45, 0));
     label('board', 'Xylem & Phloem', () => V(43.1, 2.45, 0));
 
@@ -226,7 +237,10 @@ export const CHAPTER = {
 
         // Update Blackman 3D surface for leafTempC & move operating pin
         surfB.update((L, C) => M.blackmanSurface(L, C, s.leafTempC).gross);
-        bmPin.position.copy(axB.to(s.lightCap, s.co2Cap, s.bm.gross));
+        const topB = axB.to(s.lightCap, s.co2Cap, s.bm.gross);
+        const botB = axB.to(s.lightCap, s.co2Cap, 0);
+        bmPin.position.copy(topB);
+        bmDrop.set(botB, topB);
 
         // Guard cell stomatal aperture
         const gap = 0.04 + s.sap.stomatalAperture * 0.11;

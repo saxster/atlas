@@ -8,10 +8,10 @@ import * as M from './model.js';
 export const PAGES = [
   {
     tab: 'Joule paddle',
-    fig: 'Figure 8.1 · Joule’s falling-weight paddle-wheel calorimeter (4.184 J per calorie)',
+    fig: 'Figure 8.1 · Joule’s falling-weight paddle-wheel calorimeter (4.184 J/cal)',
     title: 'Joule’s Mechanical Equivalent of Heat',
     alt: '3D cutaway copper calorimeter churned by brass paddles tied over pulleys to two falling lead weights, converting mechanical potential energy 2mgh into thermal agitation ΔT.',
-    cam: { target: [0, 1.35, 0], az: 22, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.3, 0], az: 22, el: 20, dist: 10.6 },
     lit: 'paddle_churn',
     parts: ['lead_weights', 'paddle_churn'],
     look: { xray: 0.25, section: 0 },
@@ -21,27 +21,27 @@ export const PAGES = [
     fig: 'Figure 8.2 · Boiling spoon (high T, low Q) vs warm bucket (moderate T, huge Q)',
     title: 'Temperature (Intensive) vs Thermal Energy (Extensive)',
     alt: '3D comparison of a small 100 °C spoon with fast-jiggling molecules against a large 40 °C bucket containing 500× more water molecules and far greater total thermal energy.',
-    cam: { target: [14, 1.3, 0], az: 20, el: 22, dist: 7.2 },
+    cam: { target: [14, 1.25, 0], az: 20, el: 22, dist: 10.4 },
     lit: 'warm_bucket',
     parts: ['hot_spoon', 'warm_bucket'],
     look: { xray: 0.2, section: 0 },
   },
   {
     tab: 'Sweater & ice',
-    fig: 'Figure 8.4 · Why wrapping an ice block in a wool sweater keeps it frozen longer',
+    fig: 'Figure 8.4 · Why wrapping an ice block in a wool sweater keeps it frozen',
     title: 'Thermal Insulation: The Sweater-Wrapped Ice Block',
     alt: 'Two 3D ice blocks on a table: a bare ice block rapidly absorbing room heat vs an identical ice block wrapped in a porous wool sweater that traps still air and blocks inward heat conduction.',
-    cam: { target: [28, 1.25, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [28, 1.2, 0], az: 24, el: 20, dist: 10.4 },
     lit: 'wool_wrap',
     parts: ['bare_ice', 'wool_wrap'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Phase plateaus',
-    fig: 'Figure 8.5 · Heating curve of water showing flat 0 °C melting and 100 °C boiling plateaus',
+    fig: 'Figure 8.5 · Heating curve of water showing 0 °C melting and 100 °C boiling plateaus',
     title: 'Latent Heat & Phase-Change Plateaus',
     alt: '3D temperature-vs-heat staircase tube with flat horizontal plateaus at 0 °C (L_f = 334 kJ/kg) and 100 °C (L_v = 2260 kJ/kg) alongside a live H₂O molecular cluster.',
-    cam: { target: [42, 1.35, 0], az: 20, el: 20, dist: 7.4 },
+    cam: { target: [42, 1.3, 0], az: 20, el: 20, dist: 10.6 },
     lit: 'phase_stair',
     parts: ['phase_stair', 'h2o_lattice'],
     look: { xray: 0, section: 0 },
@@ -51,17 +51,17 @@ export const PAGES = [
     fig: 'Figure 8.6 · Porous terracotta matka cooling water by selective escape of fast molecules',
     title: 'Evaporative Cooling in an Earthen Matka',
     alt: '3D cutaway terracotta matka water pot with microscopic clay pores allowing high-speed red water molecules to escape as vapour while slower blue molecules remain behind at a cooler temperature.',
-    cam: { target: [56, 1.35, 0], az: 24, el: 20, dist: 7.2 },
+    cam: { target: [56, 1.3, 0], az: 24, el: 20, dist: 10.4 },
     lit: 'matka_vessel',
     parts: ['matka_vessel', 'escaping_vapour'],
     look: { xray: 0.25, section: 0 },
   },
   {
     tab: 'Sea breeze loop',
-    fig: 'Figure 8.7 · Coastal Mumbai sea-breeze and land-breeze thermal convection cell',
+    fig: 'Figure 8.7 · Coastal Mumbai sea-breeze thermal convection cell',
     title: 'Coastal Sea-Breeze Convection Loop',
     alt: '3D coastal slice of Mumbai beach and Arabian Sea with a rotating 3D convection ring driven by the 5× specific-heat contrast between water and sand.',
-    cam: { target: [70, 1.3, 0], az: 22, el: 22, dist: 7.6 },
+    cam: { target: [70, 1.25, 0], az: 22, el: 22, dist: 10.8 },
     lit: 'convection_loop',
     parts: ['coast_slab', 'convection_loop'],
     look: { xray: 0, section: 0 },
@@ -177,14 +177,20 @@ export const CHAPTER = {
     // Station 0 (x = 0): Joule's Paddle Calorimeter
     const wtAsm = asm('lead_weights', root, { title: 'Twin falling lead weights', sub: 'W = 2 m g h N' });
     wtAsm.position.set(0, 1.3, 0);
+    part(wtAsm, cyl(0.14, 0.08, 18), { pal: 'ochre', tone: 'hi', pos: [-1.35, 0.55, 0], rot: [Math.PI / 2, 0, 0], name: 'Left pulley wheel' });
+    part(wtAsm, cyl(0.14, 0.08, 18), { pal: 'ochre', tone: 'hi', pos: [1.35, 0.55, 0], rot: [Math.PI / 2, 0, 0], name: 'Right pulley wheel' });
+    const cordL = rod(wtAsm, { r: 0.012, pal: 'dark', tone: 'hi', name: 'Left pulley cord' });
+    const cordR = rod(wtAsm, { r: 0.012, pal: 'dark', tone: 'hi', name: 'Right pulley cord' });
     const weightL = part(wtAsm, cyl(0.2, 0.45, 18), { pal: 'dark', tone: 'hi', pos: [-1.35, 0, 0], ex: [-0.4, 0, 0], name: 'Left lead weight' });
     const weightR = part(wtAsm, cyl(0.2, 0.45, 18), { pal: 'dark', tone: 'hi', pos: [1.35, 0, 0], ex: [0.4, 0, 0], name: 'Right lead weight' });
 
     const padAsm = asm('paddle_churn', root, { title: 'Insulated copper calorimeter & paddles', sub: '4,184 J warms 1 kg water by 1 °C' });
     padAsm.position.set(0, 0.85, 0);
     part(padAsm, cyl(0.68, 1.35, 24), { pal: 'ochre', tone: 'mid', pos: [0, 0, 0], mat: shadeMat('ochre', { opacity: 0.45 }), name: 'Copper calorimeter drum' });
-    const paddleShaft = part(padAsm, cyl(0.06, 1.55, 14), { pal: 'red', tone: 'hi', pos: [0, 0.1, 0], ex: [0, 0.45, 0], name: 'Paddle rotor shaft' });
-    part(padAsm, box(0.95, 0.45, 0.08, 0.01), { pal: 'red', tone: 'hi', pos: [0, -0.1, 0], ex: [0, 0.35, 0], name: 'Churning vane' });
+    const paddleGroup = new THREE.Group();
+    padAsm.add(paddleGroup);
+    part(paddleGroup, cyl(0.06, 1.55, 14), { pal: 'red', tone: 'hi', pos: [0, 0.1, 0], ex: [0, 0.45, 0], name: 'Paddle rotor shaft' });
+    part(paddleGroup, box(0.95, 0.45, 0.08, 0.01), { pal: 'red', tone: 'hi', pos: [0, -0.1, 0], ex: [0, 0.35, 0], name: 'Churning vane' });
     label('board', 'W = 2mgh → Q = mcΔT', () => V(0, 2.15, 0), { leader: [0, -20] });
 
     // Station 1 (x = 14): Boiling Spoon vs Warm Bucket
@@ -215,12 +221,15 @@ export const CHAPTER = {
     // Station 3 (x = 42): Phase-Change Heating Curve & H2O Cluster
     const stairAsm = asm('phase_stair', root, { title: 'Phase-change temperature staircase', sub: 'Flat plateaus at 0 °C and 100 °C' });
     stairAsm.position.set(41.6, 0.3, 0);
-    const stairPts = [
-      V(-1.5, 0.1, 0), V(-1.0, 0.5, 0), V(-0.3, 0.5, 0),
-      V(0.3, 1.35, 0), V(1.25, 1.35, 0), V(1.6, 1.75, 0),
+    const stairKnots = [
+      [-1.5, 0.1], [-1.0, 0.5], [-0.3, 0.5],
+      [0.3, 1.35], [1.25, 1.35], [1.6, 1.75],
     ];
-    const stairGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stairPts), 48, 0.045, 10, false);
-    part(stairAsm, stairGeo, { pal: 'red', tone: 'hi', ex: [0, 0.3, 0], name: 'T(Q) heating curve' });
+    for (let i = 0; i < stairKnots.length - 1; i++) {
+      const [x0, y0] = stairKnots[i], [x1, y1] = stairKnots[i + 1];
+      const segRod = rod(stairAsm, { r: 0.042, pal: i === 1 || i === 3 ? 'blue' : 'red', tone: 'hi', name: `Heating segment ${i + 1}` });
+      segRod.set(V(x0, y0, 0), V(x1, y1, 0));
+    }
     const phaseMarker = part(stairAsm, sphere(0.11, 16), { pal: 'ochre', tone: 'hi', pos: [0, 0.8, 0], name: 'Current phase state' });
 
     const h2oAsm = asm('h2o_lattice', root, { title: 'H₂O hydrogen-bond cluster', sub: 'Bonds break during plateaus' });
@@ -249,22 +258,35 @@ export const CHAPTER = {
     const loopAsm = asm('convection_loop', root, { title: 'Thermal convection ring', sub: 'Cool sea breeze flows inland' });
     loopAsm.position.set(70, 1.25, 0);
     const breezeRing = part(loopAsm, torus(1.05, 0.055, 12, 36), { pal: 'green', tone: 'hi', ex: [0, 0.35, 0], name: 'Convection circulation loop' });
+    const seaWindVec = arrow(loopAsm, { pal: 'blue', r: 0.026 });
+    const warmRiseVec = arrow(loopAsm, { pal: 'red', r: 0.026 });
+    setArrow(seaWindVec, V(-0.6, -0.78, 0.12), V(0.6, -0.78, 0.12));
+    setArrow(warmRiseVec, V(0.95, -0.45, 0.12), V(0.95, 0.55, 0.12));
     label('board', 'Daytime sea breeze →', () => V(70, 2.55, 0), { leader: [0, -20] });
+
+    const qBreaks = [0, 42, 376, 794.4, 3054.4, 3200];
 
     return {
       labels,
       update(s) {
         // Station 0: Joule weights & paddle spin
         const cyc = (s.t * 0.65) % 1;
-        weightL.position.y = 0.45 - cyc * 0.85;
-        weightR.position.y = 0.45 - cyc * 0.85;
-        paddleShaft.rotation.y = s.t * 3.2;
+        const wy = 0.45 - cyc * 0.85;
+        weightL.position.y = wy;
+        weightR.position.y = wy;
+        cordL.set(V(-1.35, 0.55, 0), V(-1.35, wy + 0.2, 0));
+        cordR.set(V(1.35, 0.55, 0), V(1.35, wy + 0.2, 0));
+        paddleGroup.rotation.y = s.t * 3.2;
 
-        // Station 3: Phase marker along staircase
-        const uQ = Math.min(1, s.addedHeatKj / 3200);
-        const xM = -1.5 + uQ * 3.1;
-        const yM = 0.1 + ((s.phase.tempC + 20) / 140) * 1.65;
-        phaseMarker.position.set(xM, yM, 0);
+        // Station 3: Phase marker piecewise along the 5 regimes of the water heating curve
+        const q = Math.max(0, Math.min(3200, s.addedHeatKj));
+        let segIdx = 0;
+        for (let i = 0; i < 5; i++) {
+          if (q >= qBreaks[i]) segIdx = i;
+        }
+        const uSeg = (q - qBreaks[segIdx]) / Math.max(1e-6, qBreaks[segIdx + 1] - qBreaks[segIdx]);
+        const [x0, y0] = stairKnots[segIdx], [x1, y1] = stairKnots[segIdx + 1];
+        phaseMarker.position.set(x0 + uSeg * (x1 - x0), y0 + uSeg * (y1 - y0), 0);
         h2oAsm.rotation.y = s.t * (0.5 + (s.phase.tempC + 20) * 0.02);
 
         // Station 4: Matka escaping fast molecules

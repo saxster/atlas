@@ -102,10 +102,19 @@ export const CHAPTER = {
   ],
   // Microphone loudness cannot measure heart rate or breathing volume; no sensor mapping.
   lessons: {
-    'ch08-airway-alveoli-3d': { page: 0 },
-    'ch08-harvey-double-3d': { page: 1 },
-    'ch08-heart-vsd-3d': { page: 2, params: { heartRateBpm: 80, vsdShuntPct: 25 } },
-    'ch08-vessels-lever-3d': { page: 3, params: { elbowDeg: 75 } },
+    'ch08-thorax-3d-airway': { page: 0, lit: 'ribcage_bell' },
+    'ch08-thorax-3d': { page: 0, lit: 'diaphragm_dome' },
+    'ch08-alveolus-3d': { page: 0, lit: 'alveolus_sac' },
+    'ch08-vessels-3d-harvey': { page: 1, lit: 'venous_valve' },
+    'ch08-heart-3d': { page: 1, lit: 'double_figure8' },
+    'ch08-heart-3d-valves': { page: 2, lit: 'left_ventricle' },
+    'ch08-vessels-3d': { page: 3, lit: 'vessel_trio' },
+    'ch08-vessels-3d-blood': { page: 3, lit: 'arm_linkage', params: { elbowDeg: 75 } },
+    'ch08-heart-3d-septal': { page: 2, lit: 'septum_valves', params: { heartRateBpm: 80, vsdShuntPct: 25 } },
+    'ch08-airway-alveoli-3d': { page: 0, lit: 'alveolus_sac' },
+    'ch08-harvey-double-3d': { page: 1, lit: 'double_figure8' },
+    'ch08-heart-vsd-3d': { page: 2, lit: 'septum_valves', params: { heartRateBpm: 80, vsdShuntPct: 25 } },
+    'ch08-vessels-lever-3d': { page: 3, lit: 'arm_linkage', params: { elbowDeg: 75 } },
   },
   sonify(ctx, s, page) {
     // Lub-dub cardiac transient
@@ -148,9 +157,10 @@ export const CHAPTER = {
     const label = (cls, html, at, opts = {}) => labels.push({ cls, html, at, ...opts });
 
     // Station 0 (x = 0): Thoracic Bell, Diaphragm Dome & Alveolus Sac
-    const ribAsm = asm('ribcage_bell', root, { title: 'Thoracic ribcage bell', sub: 'Intercostal expansion' });
+    const ribAsm = asm('ribcage_bell', root, { title: 'Thoracic ribcage bell', sub: 'Intercostal expansion & airway tree' });
     ribAsm.position.set(-0.9, 1.35, 0);
     part(ribAsm, cyl(0.75, 1.65, 24, 0.58), { pal: 'paper', tone: 'mid', mat: shadeMat('paper', { opacity: 0.38 }), ex: [0, 0.45, 0], name: 'Thoracic wall' });
+    part(ribAsm, cyl(0.08, 0.55, 14), { pal: 'blue', tone: 'hi', pos: [0, 0.68, 0], ex: [0, 0.55, 0], name: 'Trachea with C-ring cartilage' });
     const lungL = part(ribAsm, capsule(0.24, 0.55, 10, 18), { pal: 'red', tone: 'hi', pos: [-0.26, 0.1, 0], ex: [-0.4, 0.2, 0], name: 'Left lung' });
     const lungR = part(ribAsm, capsule(0.24, 0.55, 10, 18), { pal: 'red', tone: 'hi', pos: [0.26, 0.1, 0], ex: [0.4, 0.2, 0], name: 'Right lung' });
 
@@ -173,6 +183,8 @@ export const CHAPTER = {
     fig8Asm.position.set(13.1, 1.35, 0);
     part(fig8Asm, torus(0.55, 0.08, 12, 28), { pal: 'blue', tone: 'hi', pos: [0, 0.52, 0], ex: [0, 0.35, 0], name: 'Pulmonary low-pressure loop' });
     part(fig8Asm, torus(0.72, 0.1, 12, 28), { pal: 'red', tone: 'lit', pos: [0, -0.35, 0], ex: [0, -0.35, 0], name: 'Systemic high-pressure loop' });
+    const pulmCorpuscle = part(fig8Asm, sphere(0.09, 14), { pal: 'blue', tone: 'lit', pos: [0.55, 0.52, 0], name: 'Pulmonary circuit blood bolus' });
+    const sysCorpuscle = part(fig8Asm, sphere(0.1, 14), { pal: 'red', tone: 'lit', pos: [0.72, -0.35, 0], name: 'Systemic circuit blood bolus' });
 
     const valveAsm = asm('venous_valve', root, { title: 'Harvey’s one-way venous valve', sub: 'Semilunar pocket cusps' });
     valveAsm.position.set(15.2, 1.35, 0);
@@ -202,6 +214,7 @@ export const CHAPTER = {
       part(sepAsm, torus(0.12, 0.035), { pal: 'ochre', tone: 'hi', pos: [x, 0.54, 0.55], name: x < 0 ? 'Tricuspid valve symbol' : 'Mitral valve symbol' });
       part(sepAsm, torus(0.09, 0.03), { pal: 'ochre', tone: 'hi', pos: [x, 0.30, 0.60], name: x < 0 ? 'Pulmonary valve symbol' : 'Aortic valve symbol' });
     }
+    const vsdJet = part(sepAsm, cyl(0.045, 0.38, 12), { pal: 'red', tone: 'lit', pos: [0, -0.1, 0.25], rot: [0, 0, Math.PI / 2], ex: [0, 0.35, 0.35], name: 'Left-to-right VSD shunt stream' });
     label('board', 'RA → RV (25 mmHg peak)', () => V(26.9, 0.4, 0.2));
     label('board', 'LA → LV (120 mmHg peak)', () => V(29.1, 0.4, 0.2));
 
@@ -210,6 +223,8 @@ export const CHAPTER = {
     vesAsm.position.set(40.7, 1.2, 0);
     part(vesAsm, torus(0.32, 0.14, 14, 24), { pal: 'red', tone: 'lit', pos: [-0.55, 0, 0], ex: [-0.35, 0.3, 0], name: 'Thick elastic artery' });
     part(vesAsm, torus(0.38, 0.055, 12, 24), { pal: 'blue', tone: 'hi', pos: [0.35, 0, 0], ex: [0.35, 0.3, 0], name: 'Wide thin-walled vein' });
+    part(vesAsm, box(0.24, 0.04, 0.08, 0.01), { pal: 'ochre', tone: 'lit', pos: [0.24, 0.05, 0], rot: [0, 0, 0.45], ex: [0.35, 0.35, 0], name: 'Venous pocket valve leaflet' });
+    part(vesAsm, box(0.24, 0.04, 0.08, 0.01), { pal: 'ochre', tone: 'lit', pos: [0.46, 0.05, 0], rot: [0, 0, -0.45], ex: [0.35, 0.35, 0], name: 'Venous pocket valve leaflet' });
     part(vesAsm, torus(0.14, 0.025, 10, 20), { pal: 'green', tone: 'hi', pos: [-0.1, 0.65, 0], ex: [0, 0.45, 0], name: 'One-cell capillary' });
 
     const armAsm = asm('arm_linkage', root, { title: 'Antagonistic biceps / triceps lever', sub: '3rd-class forearm linkage' });
@@ -232,12 +247,18 @@ export const CHAPTER = {
         lungL.scale.setScalar(lScale);
         lungR.scale.setScalar(lScale);
 
+        // Circulating corpuscles on figure-8 loop
+        const omegaC = s.t * (s.heartRateBpm / 60) * 2.2;
+        pulmCorpuscle.position.set(0.55 * Math.cos(omegaC), 0.52 + 0.55 * Math.sin(omegaC), 0.05);
+        sysCorpuscle.position.set(0.72 * Math.cos(-omegaC), -0.35 + 0.72 * Math.sin(-omegaC), 0.05);
+
         // Heartbeat systole/diastole pulse
         const beat = Math.pow(Math.max(0, Math.sin(s.t * (s.heartRateBpm / 60) * Math.PI * 2)), 4);
         const sysScale = 1 - beat * 0.14;
         rvMesh.scale.set(sysScale, 1 + beat * 0.06, sysScale);
         lvMesh.scale.set(sysScale, 1 + beat * 0.08, sysScale);
         sepWall.scale.y = 1 - (s.vsdShuntPct / 100) * 0.45;
+        vsdJet.visible = s.vsdShuntPct > 0;
 
         // Forearm lever kinematics
         const th = (s.elbowDeg * Math.PI) / 180;
