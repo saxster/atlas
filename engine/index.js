@@ -1,7 +1,8 @@
 // @saxster/atlas: everything a figure needs, from one import. Each module is also importable on its own
 // ('@saxster/atlas/stage.js', '@saxster/atlas/prims.js' …), which is what the examples do.
 export {
-  createStage, draggable, rayAxisClosest, mountMediumBar, MEDIUMS,
+  createStage, draggable, rayAxisClosest, mountMediumBar, mountQuirkBar,
+  MEDIUMS, QUIRKS, DEFAULT_QUIRK, QUIRK_PRESETS, resolveQuirk,
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,

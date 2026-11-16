@@ -395,6 +395,24 @@ export const TARGETS = [
       'Ground floating parts with height-attenuated contactShadow, seed tabletop micro-jitter via rrange(seed), and anchor >10x scale jumps with familiar reference objects.',
     ],
   },
+  {
+    slug: 'whacky-lab',
+    kind: 'voice',
+    register: 'wild',
+    voiceDoc: 'docs/voices/whacky-lab.md',
+    summary: 'Register 4 (Wild, Whacky & Over-the-Top) — Far Side x Scott Adams x Incredible Machine Mad Atelier maximalism: quirk "wild" (uQuirk=1.0), simultaneous Moebius cross-hatch + Risograph pop dots + 12Hz line boil, rubber-hose squashStretch, and full WebAudio soundscape.',
+    triggers: ['whacky lab', 'wild and whacky', 'over the top', 'mad atelier', 'rube goldberg'],
+    modules: {
+      '@saxster/atlas/render.js': ['MEDIUMS', 'QUIRKS', 'DEFAULT_QUIRK', 'QUIRK_PRESETS', 'resolveQuirk'],
+      '@saxster/atlas/stage.js': ['mountQuirkBar', 'mountMediumBar', 'draggable'],
+      '@saxster/atlas/motion.js': ['squashStretch', 'anticipate', 'settleShake', 'camDollyZoom', 'camHandheld', 'posterizeTime'],
+      '@saxster/atlas/comic.js': ['renderComicStripHTML', 'mountComicStrip'],
+      '@saxster/atlas/sound.js': ['createHum', 'playBoop', 'playClick', 'playKnock', 'mountSoundToggle'],
+    },
+    invariants: [
+      'Use quirk: "wild" (or mountQuirkBar defaulting to DEFAULT_QUIRK = "slightly-quirky" with full range from "bland" to "wild"), and preserve pure model.js + ?render determinism.',
+    ],
+  },
 ];
 
 function words(text) {

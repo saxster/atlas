@@ -13,7 +13,7 @@
 //   - Optional user-initiated Web Audio sonification (api.audio())
 //   - Optional user-initiated HTML5 sensor bridge (camera photometer, mic spirometer, device tilt)
 //   - Automatic 2D Canvas paper-and-ink fallback when WebGL is disabled
-import { createStage } from '../engine/stage.js';
+import { createStage, DEFAULT_QUIRK, resolveQuirk } from '../engine/stage.js';
 import { readTheme, srgbLuminance } from '../engine/theme.js';
 
 const CSS = `
@@ -285,10 +285,13 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
       S.destroy();
     }
     try {
+      const q = resolveQuirk(opts.quirk || chapter.quirk || DEFAULT_QUIRK);
       S = createStage(canvas, labels, chapter, {
         reduced: reducedMotion(),
         touch: matchMedia('(pointer: coarse)').matches,
         theme: readTheme(stage),
+        quirk: q.id,
+        medium: opts.medium || chapter.medium || q.medium,
         dprCap: 2,
         frameParts: true,
         labelTopInset: () => title.offsetHeight || 24,
@@ -752,6 +755,18 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
   draw(0, false);
   return {
     setPage,
+    setMedium(m) {
+      if (S?.setMedium) {
+        S.setMedium(m);
+        kick();
+      }
+    },
+    setQuirk(q) {
+      if (S?.setQuirk) {
+        S.setQuirk(q);
+        kick();
+      }
+    },
     setLesson(lessonKey) {
       const preset = chapter.lessons?.[lessonKey];
       if (!preset) return;

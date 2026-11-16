@@ -2,7 +2,7 @@
 // page 3), with everything the reader does to the figure itself: hover lights a thing, a click or tap breaks it down,
 // drag turns the camera, shift-drag pans. The book (book.js) puts pages, text and controls around it; a textbook's
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
-import { createEngine, MEDIUMS } from './render.js';
+import { createEngine, MEDIUMS, QUIRKS, DEFAULT_QUIRK, QUIRK_PRESETS, resolveQuirk } from './render.js';
 import { frameAssemblies, separateLabels } from './framing.js';
 import { themeScene } from './parts.js';
 import {
@@ -15,7 +15,7 @@ import {
 } from './motion.js';
 
 export {
-  MEDIUMS,
+  MEDIUMS, QUIRKS, DEFAULT_QUIRK, QUIRK_PRESETS, resolveQuirk,
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
@@ -70,7 +70,7 @@ export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = nul
     moebius: 'Ligne-claire',
     risograph: 'Risograph',
   };
-  let cur = initialMedium || figure.medium || figure.mediums[0] || 'paper-ink';
+  let cur = initialMedium || figure.medium || figure.mediums[0] || 'pencil-wash';
   const bar = document.createElement('div');
   bar.className = 'mode mediumbar';
   bar.setAttribute('role', 'group');
@@ -90,6 +90,38 @@ export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = nul
     if (b) apply(b.dataset.medium);
   });
   return { el: bar, apply, get medium() { return cur; } };
+}
+
+export function mountQuirkBar(anchorEl, figure, getStage, { initialQuirk = null, place = 'after', onChange = null } = {}) {
+  if (!anchorEl) return null;
+  const list = Array.isArray(figure?.quirks) && figure.quirks.length ? figure.quirks : QUIRKS;
+  let cur = resolveQuirk(initialQuirk || figure?.quirk || DEFAULT_QUIRK).id;
+  const bar = document.createElement('div');
+  bar.className = 'mode quirkbar';
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', 'Design quirk spectrum (Bland to Wild & Whacky)');
+  bar.innerHTML = list.map(q => {
+    const p = resolveQuirk(q);
+    return `<button type="button" data-quirk="${p.id}" aria-pressed="${p.id === cur}" title="${p.summary}">${p.label}</button>`;
+  }).join('');
+  if (place === 'before') anchorEl.before(bar);
+  else anchorEl.after(bar);
+  const apply = q => {
+    const p = resolveQuirk(q);
+    cur = p.id;
+    bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.quirk === cur)));
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.quirk = cur;
+      document.documentElement.dataset.medium = p.medium;
+    }
+    getStage()?.setQuirk?.(cur);
+    onChange?.(cur, p);
+  };
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-quirk]');
+    if (b) apply(b.dataset.quirk);
+  });
+  return { el: bar, apply, get quirk() { return cur; } };
 }
 
 export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syncUrl = null) {
@@ -237,19 +269,23 @@ export function draggable(target, opts = {}) {
   return spec;
 }
 
-// chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), medium?, forceLook?(selected, look), clock0? }
-// opts: { reduced, touch, theme (see parts.js applyTheme), medium, dprCap }
+// chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), medium?, quirk?, forceLook?(selected, look), clock0? }
+// opts: { reduced, touch, theme (see parts.js applyTheme), medium, quirk, dprCap }
 // hooks (assign after creating): onHover(key | null), onSelect(key | null), onPointerDown(), onDrag(spec, pt)
-export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, medium = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
+export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, medium = null, quirk = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
   const { PAGES } = chapter;
   const N = PAGES.length;
-  const urlMedium = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('medium') : null;
+  const urlParams = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  const urlMedium = urlParams ? urlParams.get('medium') : null;
+  const urlQuirk = urlParams ? urlParams.get('quirk') : null;
   const RENDER_MODE = typeof location !== 'undefined' && /[?&]render\b/.test(location.search);
-  let activeMedium = (urlMedium && MEDIUMS.includes(urlMedium)) ? urlMedium : (medium || chapter.medium || 'paper-ink');
-  if (typeof document !== 'undefined' && activeMedium !== 'paper-ink') {
+  let activeQuirk = resolveQuirk(urlQuirk || quirk || chapter.quirk || DEFAULT_QUIRK);
+  let activeMedium = (urlMedium && MEDIUMS.includes(urlMedium)) ? urlMedium : (medium || chapter.medium || activeQuirk.medium);
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.quirk = activeQuirk.id;
     document.documentElement.dataset.medium = activeMedium;
   }
-  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme: theme || chapter.theme || null, medium: activeMedium, retainContext });
+  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme: theme || chapter.theme || null, medium: activeMedium, quirk: activeQuirk.id, retainContext });
   E.draggable = draggable;
   const W = chapter.buildWorld(E);
   E.setMedium(activeMedium);                     // apply headlight/poche uniforms to newly built world meshes
@@ -714,7 +750,8 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     W.update(state, look);
     E.stepExplode(dt);
 
-    const boil = (!RENDER_MODE && !reduced && activeMedium === 'pencil-wash') ? (Math.floor((now || 0) / 160) % 4) : 0;
+    const boilRate = activeQuirk.boilRate ?? (activeMedium === 'pencil-wash' ? 6 : 0);
+    const boil = (!RENDER_MODE && !reduced && boilRate > 0) ? (Math.floor(((now || 0) / 1000) * boilRate) % 8) : 0;
     E.setMedium(activeMedium, { boil });
 
     if (frameParts) {
@@ -901,9 +938,23 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     }
   }
 
+  function setQuirk(q, { syncMedium = true } = {}) {
+    activeQuirk = E.setQuirk(q, { syncMedium });
+    if (syncMedium && MEDIUMS.includes(activeQuirk.medium)) {
+      activeMedium = activeQuirk.medium;
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.quirk = activeQuirk.id;
+      document.documentElement.dataset.medium = activeMedium;
+    }
+    return activeQuirk;
+  }
+
   return {
-    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, labelReport, sceneReport, destroy, fit, draggable,
+    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, setQuirk, labelReport, sceneReport, destroy, fit, draggable,
     get medium() { return activeMedium; },
+    get quirk() { return activeQuirk.id; },
+    get quirkPreset() { return activeQuirk; },
     get pickIntercept() { return pickIntercept; }, set pickIntercept(fn) { pickIntercept = fn; },
     get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
     get litOverride() { return litOverride; }, set litOverride(v) { litOverride = v; relight(); },

@@ -766,7 +766,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 }
 { // Programmatic boot package assembler & strict router (cli/boot.mjs)
   const { TARGETS, boot } = await import('../cli/boot.mjs');
-  const allTargetsOk = TARGETS.length === 22 && TARGETS.every(t => {
+  const allTargetsOk = TARGETS.length === 23 && TARGETS.every(t => {
     const res = boot(t.slug);
     const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
     const hasVoiceDoc = t.kind !== 'voice' || (Boolean(res.voiceDoc) && res.markdown.includes('## Creator Voice Guide'));
@@ -775,20 +775,22 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const trigExplorer = boot('interactive experiment with what if sliders');
   const trigBlueprint = boot('2d to 3d architectural blueprint with section cut');
   const trigVoice = boot('thebuggeddev pencil wash');
+  const trigWhacky = boot('wild and whacky mad atelier');
   const trigCombo = boot('what if sliders in ciechanow style');
   const abstainRes = boot('create a lesson tracker doc for the course');
   const noMatchRes = boot('underwater basketweaving');
   const listRes = boot('', { list: true });
 
-  C.check('cli/boot.mjs: all 6 grammars, 8 kits & 8 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+  C.check('cli/boot.mjs: all 6 grammars, 8 kits & 9 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
     allTargetsOk
     && trigExplorer.matched && trigExplorer.slug === 'explorer'
     && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
     && trigVoice.matched && trigVoice.slug === 'bugged-sketchbook' && trigVoice.register === 'quirky'
+    && trigWhacky.matched && trigWhacky.slug === 'whacky-lab' && trigWhacky.register === 'wild'
     && trigCombo.matched && trigCombo.slug === 'explorer' && trigCombo.supportingKits.includes('ciechanowski-mechanism')
     && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
     && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
-    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 22);
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 23);
 }
 { // Pure conservation solvers, equal-flux quantileSeeds & 3D axisymmetric ray tracing (engine/solvers.js)
   const { solveNetwork, quantileSeeds, traceAxisymmetricRays } = await import('./solvers.js');
@@ -889,8 +891,8 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && asideHtml.includes('aria-controls="why-split"') && asideHtml.includes('hidden')
     && oscCount >= 7 && bufCount === 1);
 }
-{ // 1D skew-line rail drag, multi-target assembly isolation, flush idOff, MEDIUMS, fieldLines, flowBeads, live chart & calmPBR
-  const { rayAxisClosest, MEDIUMS } = await import('./stage.js');
+{ // 1D skew-line rail drag, multi-target assembly isolation, flush idOff, MEDIUMS, QUIRKS, fieldLines, flowBeads, live chart & calmPBR
+  const { rayAxisClosest, MEDIUMS, QUIRKS, DEFAULT_QUIRK, resolveQuirk } = await import('./stage.js');
   const { arrow, setArrow } = await import('./parts.js');
   const { fieldLines, flowBeads } = await import('./prims.js');
   const { moveTangent, setLivePath } = await import('./chart.js');
@@ -952,6 +954,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 
   const checksMap = {
     med: MEDIUMS.length === 5 && MEDIUMS.includes('pencil-wash') && MEDIUMS.includes('ciechanow') && MEDIUMS.includes('moebius') && MEDIUMS.includes('risograph'),
+    quirk: QUIRKS.length === 5 && DEFAULT_QUIRK === 'slightly-quirky' && resolveQuirk().id === 'slightly-quirky' && resolveQuirk().medium === 'pencil-wash' && resolveQuirk('bland').level === 0 && resolveQuirk('whacky').id === 'wild' && resolveQuirk('over-the-top').level === 1,
     ray: hitOblique !== null && near(hitOblique.s, 0.65, 1e-6) && hitBehind === null,
     rail: near(dRail.get(), 1.5, 1e-12) && near(railMesh.position.x, 1.5, 1e-12) && typeof steppedVal === 'number' && steppedVal < 1.5 && steppedVal > 0.5,
     shadow: shadowGroup.children.length === 2 && near(sh1.position.y, -0.5, 1e-6) && near(sh2.position.y, -0.975, 1e-6) && sh2.material.uniforms.uStrength.value < 0.18,

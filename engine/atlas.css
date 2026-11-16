@@ -16,11 +16,15 @@ a { color: inherit; }
 @view-transition { navigation: auto; }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
-/* Multi-voice medium overrides & RTL numeric/stage safety */
+/* Multi-voice medium & quirk spectrum overrides & RTL numeric/stage safety */
 html[data-medium="ciechanow"] { --page: #f8f8f8; --card: #f8f8f8; --lift: none; }
 html[data-medium="pencil-wash"] { --page: #faf4ec; --card: #fdf9f3; }
 html[data-medium="moebius"] { --page: #f4efe6; --card: #faf6ee; }
 html[data-medium="risograph"] { --page: #f4efe2; --card: #fdfbf7; }
+html[data-quirk="bland"] { --page: #f5f5f3; --card: #ffffff; }
+html[data-quirk="slightly-quirky"] { --page: #faf4ec; --card: #fdf9f3; }
+html[data-quirk="playful"] { --page: #f6efe0; --card: #fffcf5; }
+html[data-quirk="wild"] { --page: #f3ead8; --card: #fffaf0; }
 [dir="rtl"] .figure, [dir="rtl"] canvas { direction: ltr; }
 .corner.br, .chip .v, .slider output { direction: ltr; unicode-bidi: isolate; }
 /* The book and the contents page around it move with engine/cover.js, which animates these itself. The cover (the

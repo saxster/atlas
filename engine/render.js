@@ -11,6 +11,105 @@ import { TONE, ATLAS_INKS, applyTheme } from './parts.js';
 export const MEDIUMS = ['paper-ink', 'ciechanow', 'pencil-wash', 'moebius', 'risograph'];
 const MEDIUM_ID = Object.fromEntries(MEDIUMS.map((m, i) => [m, i]));
 
+export const QUIRKS = ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'];
+export const DEFAULT_QUIRK = 'slightly-quirky';
+export const QUIRK_PRESETS = {
+  bland: {
+    id: 'bland',
+    label: 'Bland',
+    level: 0.0,
+    medium: 'paper-ink',
+    wobble: 0.0,
+    boilRate: 0.0,
+    springZeta: 1.0,
+    squashAmp: 0.0,
+    voice: 'textbook-pure',
+    summary: 'Austere, clinical reference plate: zero edge wobble, zero grain, overdamped transitions.',
+  },
+  atelier: {
+    id: 'atelier',
+    label: 'Atelier',
+    level: 0.25,
+    medium: 'ciechanow',
+    wobble: 0.25,
+    boilRate: 0.0,
+    springZeta: 0.65,
+    squashAmp: 0.15,
+    voice: 'ciechanowski-mechanism',
+    summary: 'Crisp editorial mechanism & visual-proof plate with subtle ink pressure.',
+  },
+  'slightly-quirky': {
+    id: 'slightly-quirky',
+    label: 'Slightly Quirky',
+    level: 0.5,
+    medium: 'pencil-wash',
+    wobble: 1.0,
+    boilRate: 6.0,
+    springZeta: 0.35,
+    squashAmp: 0.45,
+    voice: 'bugged-sketchbook',
+    summary: 'Default Curious Atelier sketchbook: warm pencil-wash watercolour, gentle graphite wobble, lively springs, and tactile probes.',
+  },
+  playful: {
+    id: 'playful',
+    label: 'Playful',
+    level: 0.75,
+    medium: 'risograph',
+    wobble: 1.35,
+    boilRate: 8.0,
+    springZeta: 0.24,
+    squashAmp: 0.75,
+    voice: 'ncase-playable-toy',
+    summary: 'Bouncy tabletop toybox: CMYK Risograph halftones, expressive squash-and-stretch, and stop-motion boil.',
+  },
+  wild: {
+    id: 'wild',
+    label: 'Wild & Whacky',
+    level: 1.0,
+    medium: 'moebius',
+    wobble: 1.85,
+    boilRate: 12.0,
+    springZeta: 0.15,
+    squashAmp: 1.15,
+    voice: 'whacky-lab',
+    summary: 'Over-the-top Mad Atelier maximalism: animated stop-motion line boil, comic cross-hatching + Risograph pop dots, rubber-hose springs, and full soundscape.',
+  },
+};
+
+const QUIRK_ALIASES = {
+  calm: 'bland',
+  clinical: 'bland',
+  plain: 'bland',
+  'textbook-pure': 'bland',
+  creative: 'atelier',
+  editorial: 'atelier',
+  quirky: 'slightly-quirky',
+  default: 'slightly-quirky',
+  sketchbook: 'slightly-quirky',
+  toy: 'playful',
+  toybox: 'playful',
+  whacky: 'wild',
+  wacky: 'wild',
+  'over-the-top': 'wild',
+  overthetop: 'wild',
+  mad: 'wild',
+  'whacky-lab': 'wild',
+};
+
+export function resolveQuirk(input = DEFAULT_QUIRK) {
+  if (typeof input === 'number' && Number.isFinite(input)) {
+    const lvl = Math.max(0, Math.min(1, input));
+    const id = lvl <= 0.12 ? 'bland'
+      : lvl <= 0.37 ? 'atelier'
+      : lvl <= 0.62 ? 'slightly-quirky'
+      : lvl <= 0.87 ? 'playful' : 'wild';
+    return { ...QUIRK_PRESETS[id], level: lvl };
+  }
+  const key = String(input || DEFAULT_QUIRK).trim().toLowerCase();
+  const canonical = QUIRK_PRESETS[key] ? key : (QUIRK_ALIASES[key] || DEFAULT_QUIRK);
+  return { ...QUIRK_PRESETS[canonical] };
+}
+
 const toKeySet = keys => {
   if (!keys) return new Set();
   if (keys instanceof Set) return keys;
@@ -146,8 +245,10 @@ export function createAssemblyController(ASM = {}) {
 }
 
 // theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
-export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null, medium = 'paper-ink', retainContext = false } = {}) {
+// quirk: design expressiveness preset ('bland' [0.0] -> 'atelier' [0.25] -> 'slightly-quirky' [0.5, default] -> 'playful' [0.75] -> 'wild' [1.0])
+export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null, medium = null, quirk = DEFAULT_QUIRK, retainContext = false } = {}) {
   const th = applyTheme(theme);
+  let curQuirk = resolveQuirk(quirk);
   const bgLinear = new THREE.Color(th ? th.sheet : bg).convertSRGBToLinear();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
   renderer.resetState();
@@ -213,13 +314,13 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
       tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null },
       uRes: { value: new THREE.Vector2() }, uPx: { value: 1 }, cameraNear: { value: near }, cameraFar: { value: far },
       uInk: { value: (th ? th.inks : ATLAS_INKS).map(c => new THREE.Color(c)) },
-      uMedium: { value: 0 }, uBoil: { value: 0 },
+      uMedium: { value: 0 }, uBoil: { value: 0 }, uQuirk: { value: curQuirk.level },
     },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: `
       #include <packing>
       uniform sampler2D tDiffuse, tNormal, tDepth;
-      uniform vec2 uRes; uniform float uPx, cameraNear, cameraFar, uMedium, uBoil;
+      uniform vec2 uRes; uniform float uPx, cameraNear, cameraFar, uMedium, uBoil, uQuirk;
       uniform vec3 uInk[5];
       varying vec2 vUv;
 
@@ -286,17 +387,49 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
         vec2 fp = vUv * uRes;
         vec4 nCenter = texture2D(tNormal, vUv);
         bool fg = nCenter.a > 0.02;
+        float qScale = clamp(uQuirk * 2.0, 0.0, 2.0);
+
+        if (uQuirk > 0.88) {
+          // Quirk = 1.0 ('wild' / 'whacky' / 'over-the-top'): Mad Atelier maximalism combining
+          // animated stop-motion boil, Moebius comic cross-hatching, CMYK Risograph pop dots, and double-inked keylines.
+          vec2 wildWob = wob(fp, uBoil + 2.3, 1.85);
+          vec3 col = texture2D(tDiffuse, vUv).rgb;
+          if (fg) {
+            vec2 washUv = clamp(vUv + vec2(3.1, -2.2) * uPx / uRes + wildWob, vec2(0.001), vec2(0.999));
+            col = mix(col, texture2D(tDiffuse, washUv).rgb, 0.55);
+            float cell = max(3.2, 4.2 * uPx);
+            vec4 cmyk = rgb2cmyk(col);
+            float dotPop = risoDot(vUv, 18.0, max(0.0, cmyk.x - 0.06), cell) * 0.22
+                         + risoDot(vUv, 72.0, max(0.0, cmyk.y - 0.06), cell) * 0.24;
+            col = clamp(col * (1.0 - dotPop), 0.0, 1.0);
+            vec3 nView = normalize(nCenter.rgb * 2.0 - 1.0);
+            float kDiff = max(0.0, dot(nView, normalize(vec3(0.52, 0.72, 0.45))));
+            float lum = dot(col, vec3(0.2126, 0.7152, 0.0722)) + 0.48 * kDiff;
+            vec2 hp = (vUv + wildWob) * uRes / max(1.0, uPx);
+            if (lum <= 0.74 && mod(hp.x + hp.y, 7.0) <= 1.15) col = mix(col, uInk[3], 0.58);
+            if (lum <= 0.48 && mod(hp.x - hp.y, 7.0) <= 1.15) col = mix(col, uInk[4], 0.72);
+          }
+          vec2 es1 = edgeSample(vUv + wildWob, 1.25);
+          vec2 es2 = edgeSample(vUv - wildWob * 0.65, 0.9);
+          float e = clamp(max(es1.x, es2.x * 0.7), 0.0, 1.0);
+          float tone = es1.x >= es2.x * 0.7 ? es1.y : es2.y;
+          gl_FragColor = vec4(mix(col, ink(tone), e * 0.98), 1.);
+          return;
+        }
 
         if (uMedium > 1.5 && uMedium < 2.5) {
           // Medium 2: 'pencil-wash' (thebuggeddev/electric-motor coloured-pencil + misregistered watercolour wash)
-          vec2 washUv = clamp(vUv + vec2(2.4, -1.7) * uPx / uRes + wob(fp, uBoil + 1.7, 0.8), vec2(0.001), vec2(0.999));
-          vec3 col = mix(texture2D(tDiffuse, vUv).rgb, texture2D(tDiffuse, washUv).rgb, 0.72);
-          float grain = (vnoise(fp / max(1.0, uPx * 2.2)) - 0.5) * 0.032;
-          col = clamp(col + grain, 0.0, 1.0);
-          vec2 es1 = edgeSample(vUv + wob(fp, uBoil, 1.35), 1.05);
-          vec2 es2 = edgeSample(vUv + wob(fp, uBoil + 3.3, 2.1) + vec2(0.65, -0.45) * uPx / uRes, 0.8);
-          float press = 0.72 + 0.36 * vnoise(fp / max(1.0, uPx * 36.0) + uBoil);
-          float e = clamp(max(es1.x, es2.x * 0.58) * press, 0.0, 1.0);
+          vec3 col = texture2D(tDiffuse, vUv).rgb;
+          if (fg) {
+            vec2 washUv = clamp(vUv + vec2(2.4, -1.7) * qScale * uPx / uRes + wob(fp, uBoil + 1.7, 0.8 * qScale), vec2(0.001), vec2(0.999));
+            col = mix(col, texture2D(tDiffuse, washUv).rgb, clamp(0.72 * qScale, 0.0, 0.88));
+            float grain = (vnoise(fp / max(1.0, uPx * 2.2)) - 0.5) * 0.032 * qScale;
+            col = clamp(col + grain, 0.0, 1.0);
+          }
+          vec2 es1 = edgeSample(vUv + wob(fp, uBoil, 1.35 * qScale), 1.05);
+          vec2 es2 = edgeSample(vUv + wob(fp, uBoil + 3.3, 2.1 * qScale) + vec2(0.65, -0.45) * qScale * uPx / uRes, 0.8);
+          float press = mix(1.0, 0.72 + 0.36 * vnoise(fp / max(1.0, uPx * 36.0) + uBoil), clamp(qScale, 0.0, 1.0));
+          float e = clamp(max(es1.x, es2.x * 0.58 * clamp(qScale, 0.0, 1.0)) * press, 0.0, 1.0);
           float tone = es1.x >= es2.x * 0.58 ? es1.y : es2.y;
           gl_FragColor = vec4(mix(col, ink(tone), e * 0.92), 1.);
           return;
@@ -304,7 +437,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
 
         if (uMedium > 2.5 && uMedium < 3.5) {
           // Medium 3: 'moebius' (Maxime Heckel ligne-claire ink wiggle + 3-tier diffuse-compensated cross-hatching)
-          vec2 disp = vec2(hash21(floor(fp)) * sin(fp.y * 0.08), hash21(floor(fp + 9.1)) * cos(fp.x * 0.08)) * (1.15 * uPx) / uRes;
+          vec2 disp = vec2(hash21(floor(fp)) * sin(fp.y * 0.08), hash21(floor(fp + 9.1)) * cos(fp.x * 0.08)) * (1.15 * max(0.25, qScale) * uPx) / uRes;
           vec3 col = texture2D(tDiffuse, vUv).rgb;
           if (fg) {
             vec3 nView = normalize(nCenter.rgb * 2.0 - 1.0);
@@ -338,14 +471,15 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
             paper *= (1.0 - 0.78 * risoDot(vUv, 45.0, cK, cell));
             col = mix(col, paper, 0.58);
           }
-          vec2 es = edgeSample(vUv, 1.0);
+          vec2 es = edgeSample(vUv + wob(fp, uBoil, 0.45 * max(0.0, qScale - 0.5)), 1.0);
           gl_FragColor = vec4(mix(col, ink(es.y), es.x * 0.96), 1.);
           return;
         }
 
         // Medium 0 ('paper-ink') & Medium 1 ('ciechanow' self-hue CAD edges)
         vec3 base = texture2D(tDiffuse, vUv).rgb;
-        vec2 es = edgeSample(vUv, 1.0);
+        vec2 subWob = uQuirk > 0.12 ? wob(fp, uBoil, 0.45 * uQuirk) : vec2(0.0);
+        vec2 es = edgeSample(vUv + subWob, 1.0);
         vec3 edgeCol = ink(es.y);
         if (uMedium > 0.5 && uMedium < 1.5) {
           edgeCol = mix(base * 0.48, edgeCol, 0.28);
@@ -366,9 +500,9 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     moebius: '#f6f4ee',
     risograph: '#f7f2e7',
   };
-  let curMedium = MEDIUMS.includes(medium) ? medium : 'paper-ink';
+  let curMedium = MEDIUMS.includes(medium) ? medium : curQuirk.medium;
   function setMedium(nextMedium, { boil = 0 } = {}) {
-    const mName = MEDIUMS.includes(nextMedium) ? nextMedium : 'paper-ink';
+    const mName = MEDIUMS.includes(nextMedium) ? nextMedium : curQuirk.medium;
     curMedium = mName;
     if (!th) {
       renderer.setClearColor(new THREE.Color(MEDIUM_BG[mName] || bg).convertSRGBToLinear());
@@ -376,7 +510,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     const id = MEDIUM_ID[mName] ?? 0;
     edges.uniforms.uMedium.value = id;
     edges.uniforms.uBoil.value = boil;
-    specIslandU.value = mName === 'moebius' ? 1 : 0;
+    specIslandU.value = (mName === 'moebius' || curQuirk.level > 0.88) ? 1 : 0;
     const isCiech = mName === 'ciechanow' ? 1 : 0;
     scene.traverse(o => {
       if (!o.isMesh || !o.material?.uniforms) return;
@@ -384,6 +518,16 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
       if (u.uHeadlight) u.uHeadlight.value = isCiech;
       if (u.uPocheMode && o.userData?.poche !== 'hatch') u.uPocheMode.value = isCiech;
     });
+  }
+  function setQuirk(nextQuirk, { syncMedium = true, boil = 0 } = {}) {
+    curQuirk = resolveQuirk(nextQuirk);
+    edges.uniforms.uQuirk.value = curQuirk.level;
+    if (syncMedium && MEDIUMS.includes(curQuirk.medium)) {
+      setMedium(curQuirk.medium, { boil });
+    } else {
+      specIslandU.value = (curMedium === 'moebius' || curQuirk.level > 0.88) ? 1 : 0;
+    }
+    return curQuirk;
   }
   setMedium(curMedium);
 
@@ -504,6 +648,8 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   return {
     THREE, renderer, scene, camera, ASM, asm, resize, setDprCap, render, setLit, setCutaway, setXray, setIsolate,
     resetExplode, setExplode, warm, pick, stepExplode, placeCamera, distFor, toScreen, theme: th,
-    setMedium, get medium() { return curMedium; }, dispose,
+    setMedium, get medium() { return curMedium; },
+    setQuirk, get quirk() { return curQuirk.id; }, get quirkPreset() { return curQuirk; },
+    dispose,
   };
 }
