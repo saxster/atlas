@@ -49,7 +49,35 @@ const style = () => {
 };
 
 export const mountChapter = mountAtlas;
-export function mountAtlas(stage, params, api, chapter, defaults = {}) {
+
+function normalizeChapterOrFigure(raw) {
+  if (!raw || (Array.isArray(raw.PAGES) && raw.buildWorld?.length <= 1 && !raw.STEPS)) return raw;
+  const items = JSON.parse(JSON.stringify(raw.initialItems || []));
+  const resolvePages = () => {
+    if (Array.isArray(raw.PAGES) && raw.PAGES.length) return raw.PAGES;
+    if (typeof raw.PAGES === 'function') return raw.PAGES(raw.params || {}, items);
+    if (raw.intro || Array.isArray(raw.STEPS)) {
+      const intro = raw.intro || { cam: { target: [0, 0, 0], az: 0, el: 12, dist: 12 } };
+      return [
+        { tab: 'Overview', fig: raw.title || 'Overview', ...intro, look: intro.look || {} },
+        ...(raw.STEPS || []).map(s => ({ tab: s.label || s.fig, fig: s.fig || s.label, ...s, look: s.look || {} })),
+      ];
+    }
+    return [{ cam: { target: [0, 0, 0], az: 15, el: 15, dist: 10 }, fig: raw.title || '3D Figure' }];
+  };
+  const ch = {
+    ...raw,
+    params: { ...(raw.params || {}) },
+    PAGES: resolvePages(),
+    buildWorld: E => raw.buildWorld(E, ch.params, items, {}),
+    state: (clock, reduced) => raw.state(clock, reduced, ch.params, items),
+    readout: (s, P, pg) => (raw.readout ? raw.readout(s, ch.params, items, P, pg) : ''),
+  };
+  return ch;
+}
+
+export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
+  const chapter = normalizeChapterOrFigure(rawChapter);
   document.querySelectorAll('.atlas-stage, .live-3d').forEach(el => {
     if (el.parentElement !== stage) el.closest('figure')?.dispatchEvent(new CustomEvent('close-lesson'));
   });
@@ -461,14 +489,17 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
   if (Array.isArray(chapter.controls) && chapter.controls.length) {
     chapter.params = chapter.params || {};
     for (const c of chapter.controls) {
-      const initVal = chapter.params[c.id] !== undefined ? chapter.params[c.id] : c.value;
-      chapter.params[c.id] = initVal;
+      const cid = c.id || c.key;
+      if (!cid) continue;
+      const cfmt = c.format || c.fmt;
+      const initVal = chapter.params[cid] !== undefined ? chapter.params[cid] : (c.value ?? c.min ?? 0);
+      chapter.params[cid] = initVal;
       const row = document.createElement('div');
       row.className = 'live-slider';
       const lab = document.createElement('label');
       const inp = document.createElement('input');
       const out = document.createElement('output');
-      const uid = `atlas-sl-${c.id}-${Math.random().toString(36).slice(2, 7)}`;
+      const uid = `atlas-sl-${cid}-${Math.random().toString(36).slice(2, 7)}`;
       lab.htmlFor = uid;
       lab.textContent = c.label;
       inp.id = uid;
@@ -477,21 +508,22 @@ export function mountAtlas(stage, params, api, chapter, defaults = {}) {
       inp.max = String(c.max);
       inp.step = String(c.step ?? 1);
       inp.value = String(initVal);
-      const fmt = v => (c.format ? c.format(v) : `${v}${c.unit ? ' ' + c.unit : ''}`);
+      const fmt = v => (cfmt ? cfmt(v) : `${v}${c.unit ? ' ' + c.unit : ''}`);
       out.textContent = fmt(initVal);
       const applyVal = raw => {
         const val = Number(raw);
         inp.value = String(val);
-        chapter.params[c.id] = val;
+        chapter.params[cid] = val;
         out.textContent = fmt(val);
-        if (chapter.onParamChange) chapter.onParamChange(chapter.params, S, c.id, val);
+        if (c.rebuild) build();
+        if (chapter.onParamChange) chapter.onParamChange(chapter.params, S, cid, val);
         kick();
         api._refresh?.();
       };
       inp.addEventListener('input', () => applyVal(inp.value));
       row.append(lab, inp, out);
       controlsEl.appendChild(row);
-      sliderInputs.set(c.id, { input: inp, out, unit: c.unit, format: c.format });
+      sliderInputs.set(cid, { input: inp, out, unit: c.unit, format: cfmt });
       if (Array.isArray(api._sliders)) api._sliders.push({ label: c.label, input: inp, apply: applyVal });
     }
   }

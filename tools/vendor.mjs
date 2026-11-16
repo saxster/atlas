@@ -28,7 +28,10 @@ const walk = rel => {
   for (const [, , , spec] of src.matchAll(SPEC)) walk(target(rel, spec));
 };
 walk('adapters/kym-live.js');
-for (const c of chapters) walk(path.join(c, 'chapter.js'));
+for (const c of chapters) {
+  const entry = fs.existsSync(path.join(ROOT, c, 'chapter.js')) ? 'chapter.js' : 'figure.js';
+  walk(path.join(c, entry));
+}
 // in the book's copy, examples sit at the top (physics/oscillations/…) and every import is relative, for its bundler
 const placed = rel => rel.replace(/^examples\//, '');
 const relink = (rel, buf) => {
