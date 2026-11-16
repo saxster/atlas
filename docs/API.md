@@ -109,14 +109,14 @@ Bridges 2D technical drawings, floorplans, and STEM/Economics textbook diagrams 
   - `extrudeCrossSections(parent, spec, opts)`: extrudes a 2D base region (`xRange`, `zLow(x)`, `zHigh(x)`) into $N$ 3D Cavalieri/Riemann cross-sectional slices (`shape: 'semicircle' | 'square' | 'triangle' | 'rect'`) with `setLift(u)` and `setHighlight(idx)` (`examples/maths/cross-sections`).
   - `extrudeLayers(parent, spec, opts)`: extrudes a 2D stratified/histological cross-section (`layers: [{ z0, z1, x0, x1, key, cutOut }]`, `columns`, `tubes`) into a watertight 3D multi-layer block along Y with `setDepth(u)` (`examples/biology/leaf-section`).
   - `extrudeContours(parent, spec, opts)`: extrudes a 2D contour/isoquant map + linear constraint line into a watertight 3D solid surface $y = f(x, z)$ + vertical 3D constraint wall with `setElevation(u)` (`examples/economics/isoquant`).
-- **Parametric 3D detailing & procedural PBR:** `uvMetres(geo, scale)`, `bevelBox(w, h, d, bevel, segs)`, `shell(w, d, h, { thickness, radius })` (closed-bottom hollow rounded extrusion), `lathe(points, { segs, spline })`, `drape(w, d, h, { drop, fold })`, `fronts(parent, { w, h, d, nx, ny, gap, pull })` (shadow-gap cabinetry with bar/knob/edge pulls), `contactShadow(parent, w, d, opts)`, `batchGeos(items)` (merges static geometries with per-vertex `aCenter`), `branchTree(parent, opts)` (Frenet-frame procedural organic tree with foliated canopy), `procTex(kind, opts)` (`'wood'`, `'marble'`, `'tile'`, `'terrazzo'`, `'brushed'`, `'linen'`, `'painting'`), `tweakMat(material, opts)` (world-space 3D value-noise macro de-tiling via `onBeforeCompile`), `createRevealController(zones, opts)`, and `inkAware(material, ctrl, opts)`.
+- **Parametric 3D detailing & procedural PBR:** `uvMetres(geo, scale)`, `bevelBox(w, h, d, bevel, segs)`, `shell(w, d, h, { thickness, radius })` (closed-bottom hollow rounded extrusion), `lathe(points, { segs, spline })`, `drape(w, d, h, { drop, fold })`, `fronts(parent, { w, h, d, nx, ny, gap, pull })` (shadow-gap cabinetry with bar/knob/edge pulls), `contactShadow(parent, w, d, opts)` (with `setHeight(h)` penumbra attenuation), `batchGeos(items)` (merges static geometries with per-vertex `aCenter`), `branchTree(parent, opts)` (Frenet-frame procedural organic tree with foliated canopy), `procTex(kind, opts)` (`'wood'`, `'marble'`, `'tile'`, `'terrazzo'`, `'brushed'`, `'linen'`, `'painting'`, `'foil'`, `'fluted'`, `'striation'`, `'acuity'`), `tweakMat(material, opts)` (world-space 3D value-noise macro de-tiling via `onBeforeCompile`), `createRevealController(zones, opts)`, and `inkAware(material, ctrl, opts)`.
 
 ## 3D Mesh Audit & Specimen Viewer (`mesh-audit.js`, `adapters/specimen.js`)
 
-- `auditDeliverable(root, { maxTris = 50000, requireUV = false, checkScale = true, clampNonMetal = false })` (`@saxster/atlas/mesh-audit.js`): traverses a Three.js `Object3D` hierarchy and checks triangle budget, non-empty geometries, finite coordinates, normal presence, negative-scale inside-out winding (`matrixWorld.determinant() < 0`), UV presence on textured meshes, and optionally clamps dielectric `metalness`.
-- `showSpecimen(el, spec, { background })` (`@saxster/atlas/adapters/specimen.js`): mounts an on-demand 3-point-lit turntable viewer for a `.glb`/`.gltf` URL or Three.js builder function and audits it with `auditDeliverable`. Book pages with `specimen: { src | build | object, source }` get a "See the real specimen" button automatically.
-- `chart`, `scale`, `samples`, `moveCursor`, `textAdvanceEm`, `waterfallWalk`, `waterfallChart`, `sankeyLayout`, `sankeyChart` (`@saxster/atlas/chart.js`): 2D left-page and explorer/sandbox SVG charts with paper-masked callout plates (`6px` clearance, clamped to plot frame), collision-free accessible `<title>`/`<desc>` naming, and conservation-verified waterfall bridges and Sankey flow diagrams (horizontal midline cubic Bezier tangents).
-- `readTheme`, `KYM`, `parseColor`, `compositeOver`, `srgbLuminance`, `wcagContrast`, `auditTheme` (`@saxster/atlas/theme.js`): host CSS theme reader plus pure IEC 61966-2-1 relative luminance, alpha compositing, and WCAG 2.x contrast verification (`4.5:1` text, `3.0:1` large text & essential marks).
+- `auditDeliverable(root, { maxTris = 50000, requireUV = false, checkScale = true, clampNonMetal = false, calmPBR = false })` (`@saxster/atlas/mesh-audit.js`): traverses a Three.js `Object3D` hierarchy and checks triangle budget, non-empty geometries, finite coordinates, normal presence, negative-scale inside-out winding (`matrixWorld.determinant() < 0`), UV presence on textured meshes, and optionally clamps dielectric `metalness` / calms PBR roughness (`>= 0.38`) and normal maps idempotently.
+- `showSpecimen(el, spec, { background })` (`@saxster/atlas/adapters/specimen.js`): mounts an on-demand 3-point-lit turntable viewer (demand-rendered, grounded plinth + radial shadow, optional metric `ScaleBar` via `spec.scaleBar`, and live `Paper & Ink` toggle) for a `.glb`/`.gltf` URL or Three.js builder function and audits it with `auditDeliverable`. Book pages with `specimen: { src | build | object, source, scaleBar? }` get a "See the real specimen" button automatically.
+- `chart`, `scale`, `samples`, `moveCursor`, `moveTangent`, `setLivePath`, `textAdvanceEm`, `waterfallWalk`, `waterfallChart`, `sankeyLayout`, `sankeyChart` (`@saxster/atlas/chart.js`): 2D left-page and explorer/sandbox SVG charts with paper-masked callout plates (`6px` clearance, clamped to plot frame), zero-thrash `{ key, svg, update }` live attribute updates, collision-free accessible `<title>`/`<desc>` naming, and conservation-verified waterfall bridges and Sankey flow diagrams (horizontal midline cubic Bezier tangents).
+- `readTheme`, `KYM`, `BYRNE_THEME`, `parseColor`, `compositeOver`, `srgbLuminance`, `wcagContrast`, `auditTheme` (`@saxster/atlas/theme.js`): host CSS theme reader, Oliver Byrne 1847 primary-ink preset (`theme: BYRNE_THEME`), plus pure IEC 61966-2-1 relative luminance, alpha compositing, and WCAG 2.x contrast verification (`4.5:1` text, `3.0:1` large text & essential marks).
 
 ## Four grammars
 
@@ -126,7 +126,7 @@ top of each file.
 **Book** (`startBook(chapter)`, `book.js`). The reader scrolls; each page has a camera, a lit part and text, and a
 click breaks a part down. `chapter` is `{ no, subject, PAGES, PLATES, buildWorld, lookKeys, state, readout }`. A page
 is `{ kicker, title, sub, body, cam, lit, look, fig, alt, parts?, molecule?, specimen? }`. Practice questions come from
-`practice.js` and support 4-choice (`choices`), numeric entry (`numeric: { answer, tol }`), and 3D drag-position verification (`target: { label, hint, check(state, E) }`).
+`practice.js` and support 4-choice (`choices`), numeric entry (`numeric: { answer, tol }`), 3D drag-position verification (`target: { label, hint, check(state, W, E) }`), and direct 3D part-click identification (`pickPart: 'assemblyKey'` or `{ asm, label? }`).
 
 **Machine** (`startMachine(figure)`, `machine.js`). Numbered steps, only the next one live. Manual by default, Auto
 on request (with simulated operator cursor and 25 s pointer-interaction handover), and the choice is remembered. A step is `{ label, hint, run, play, real?, cam, look?, lit? }`: `run`
@@ -139,7 +139,15 @@ is `{ key, label, min, max, step, fmt?, rebuild? }`.
 
 **Sandbox** (`startSandbox(figure)`, `sandbox.js`). Constructive play: presets (`presets`), a 2×2 matrix or parameter editor (`matrix`, `controls`), and a palette (`palette`) to place, remove and drag 3D pieces (`items`) directly on the stage while chips and charts update live.
 
-All four draw through `createStage` (`stage.js`) and support shareable state URLs (`?t=...`, `?step=...`, `?key=val`).
+All four draw through `createStage` (`stage.js`) and support shareable state URLs (`?t=...`, `?step=...`, `?key=val`, `?medium=...`).
+
+## Art-direction mediums, Creator Voices, reactive prose & solvers
+
+- **Art-direction mediums (`engine/render.js`, `engine/stage.js`):** Every chapter or figure accepts `medium: 'paper-ink' | 'ciechanow' | 'pencil-wash' | 'moebius' | 'risograph'` and optional `mediums: [...]` to mount a live switcher pill (`mountMediumBar`). Flush coplanar meshes inside one assembly carry sub-bucket `idOff` offsets (`±0.05` in `normalRT.a`) so mating parts draw crisp ink seams.
+- **Creator Voices (`docs/voices/catalog.md`, `npx atlas boot <voice>`):** Eight curated voices across three registers—*Textbook-Pure* (`textbook-pure`), *Creative Atelier* (`ciechanowski-mechanism`, `byrne-visual-proof`, `moebius-printmaking`, `redblob-reactive-prose`), and *Quirky & Toy-First* (`bugged-sketchbook`, `ncase-playable-toy`, `toybox-scale-joy`).
+- **Reactive prose & visual proofs (`@saxster/atlas/prose.js`, `@saxster/atlas/theme.js`):** `scrub(key, opts)` (Bret Victor `5px = 1 step` spinbutton), `val(key)` (live `<output>` formatted via `proseFormat` / `formatters`), `term(targets, text)` (bidirectional `[data-part]` hover/click lock), `byrne.{seg,angle,poly}` (Oliver Byrne inline SVG proof glyphs with `theme: BYRNE_THEME`), and `aside(trigger, body)` (Nicky Case `:nutshell` expandable card), bound automatically by `bindProse`.
+- **Pure STEM solvers (`@saxster/atlas/solvers.js`):** Zero-DOM/Three.js math for `model.js`: `solveNetwork` ($G_{\min}$-regularized MNA conservation networks), `quantileSeeds` (inverse-CDF equal-flux seeding for `fieldLines`), and `traceAxisymmetricRays` (3D conic/aspheric Snell refraction + total internal reflection along `+X`).
+- **Tactile rails, fields & procedural audio (`@saxster/atlas/stage.js`, `@saxster/atlas/prims.js`, `@saxster/atlas/sound.js`):** `draggable(mesh, { axis, load })` (`rayAxisClosest`, `stepDraggableLoad`), `fieldLines` + `flowBeads`, `{ key, svg, update }` live charts (`moveTangent`, `setLivePath` in `engine/chart.js`), and opt-in `sonify(ctx, state, ...)` (`playTone`, `playBoop`, `playClick`, `playKnock`, `createHum`, `mountSoundToggle`).
 
 ## Just the figure, in any page
 
@@ -151,8 +159,8 @@ book's `chapter.js`.
 
 ```js
 import { mountFigure } from '@saxster/atlas';
-import { CHAPTER } from './biology/cell/chapter.js';
-mountFigure(document.querySelector('#cell'), CHAPTER, { page: 2, height: 420 });
+import { CHAPTER } from './examples/physics/newton/chapter.js';
+mountFigure(document.querySelector('#newton'), CHAPTER, { page: 2, height: 420 });
 ```
 
 ## Modes, on any figure's URL
@@ -185,7 +193,7 @@ Run from the repo that holds the figures; a figure is its folder, relative to he
 | Command | Does |
 |---|---|
 | `npx atlas new <subject>/<id> --grammar book\|machine\|explorer\|sandbox\|teardown\|blueprint` | copies a working minimal example to start from |
-| `npx atlas boot [<grammar\|kit\|task>] [--list] [--json]` | assembles a boot package (contract, verified exports, working minimal skeleton) for a grammar or kit |
+| `npx atlas boot [<grammar\|kit\|voice\|task>] [--list] [--json]` | assembles a boot package (contract, voice guide, verified exports, working minimal skeleton) |
 | `npx atlas check [dir]` | audits `model.js` purity and runs every `checks.mjs` under the folder |
 | `npx atlas gate [<file>] [--transcript <jsonl>]` | verifies the Model-First & Read-Before-Write gate (CLI or `PreToolUse` stdin hook) |
 | `npx atlas stills <out> <figure…>` | a still of every page or step, at 1440×900 and 390×844 |
@@ -198,4 +206,4 @@ The browser commands need Chrome; set `CHROME` if it isn't at the usual place.
 
 `npm run check` runs every model's checks, the link checks, and `tools/style.mjs`. `npm run test:browser` drives the grammars in Chrome.
 `tools/stills.mjs`, `tools/jumps.mjs`, `tools/labels.mjs`, `tools/scene.mjs` and `tools/clip.mjs` are the visual and geometric critics. `tools/record.mjs` makes a
-1080p60 MP4 with a soundtrack. `CLAUDE.md` and `docs/decisions.md` describe each.
+1080p60 MP4 with a soundtrack. `tools/figma-bridge.mjs` (`tokens`, `audit`, `bundle`) bridges multi-mode palettes and self-contained Code Layer bundles with the Figma MCP server (`docs/figma-mcp-workflow.md`). `CLAUDE.md` and `docs/decisions.md` describe each.

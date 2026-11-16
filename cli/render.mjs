@@ -27,11 +27,18 @@ export async function launch() {
 export async function open(browser, base, chapter, w = 1440, h = 900, query = 'render') {
   const page = await browser.newPage();
   const errors = [];
-  page.on('pageerror', e => errors.push(e.message));
+  let rejectBoot;
+  const bootErrPromise = new Promise((_, rej) => { rejectBoot = rej; });
+  bootErrPromise.catch(() => {});
+  page.on('pageerror', e => { errors.push(e.message); rejectBoot?.(new Error(`Page error in ${chapter}: ${e.stack || e.message}`)); });
   page.on('console', m => { if (m.type() === 'error' && !m.location().url?.includes('/_vercel/insights/')) errors.push(m.text()); });
   await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
   await page.goto(`${base}/${chapter}/?${query}`, { waitUntil: 'networkidle0' });
-  await page.waitForFunction('window.seek', { timeout: 30000 });
+  if (errors.length && !(await page.evaluate(() => Boolean(window.seek)))) {
+    throw new Error(`Boot failed in ${chapter}: ${errors.join(' | ')}`);
+  }
+  await Promise.race([page.waitForFunction('window.seek', { timeout: 30000 }), bootErrPromise]);
+  rejectBoot = null;
   const seek = t => page.evaluate(t => window.seek(t), t);
   // pre-roll: draw the tour once and let the fonts settle, so glyphs that need a fallback font (₹ is not in EB Garamond)
   // are loaded before any frame is kept; the first frame after load also rasterises a little differently

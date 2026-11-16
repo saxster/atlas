@@ -8,33 +8,48 @@ export const TONE = { faint: 0.2, lo: 0.4, mid: 0.6, hi: 0.8, lit: 1.0 };
 const SHADE_V = `
   #include <clipping_planes_pars_vertex>
   varying vec3 vWN;
+  varying vec3 vVN;
   void main() {
     vec3 n = normal;
     #ifdef USE_INSTANCING
       n = mat3(instanceMatrix) * n;
     #endif
     vWN = normalize(mat3(modelMatrix) * n);
+    vVN = normalize(normalMatrix * n);
     #include <begin_vertex>
     #include <project_vertex>
     #include <clipping_planes_vertex>
   }`;
 const SHADE_F = `
   #include <clipping_planes_pars_fragment>
-  uniform vec3 uTop; uniform vec3 uLight; uniform vec3 uDark; uniform vec3 uPoche; uniform float uHasPoche; uniform float uOpacity; uniform float uLit;
+  uniform vec3 uTop; uniform vec3 uLight; uniform vec3 uDark; uniform vec3 uPoche;
+  uniform float uHasPoche; uniform float uPocheMode; uniform float uHeadlight; uniform float uHatchSign;
+  uniform float uOpacity; uniform float uLit;
   varying vec3 vWN;
+  varying vec3 vVN;
   void main() {
     #include <clipping_planes_fragment>
     if (uHasPoche > 0.5 && !gl_FrontFacing) {
-      gl_FragColor = vec4(uPoche, uOpacity);
+      if (uPocheMode > 0.5) {
+        float h = fract((gl_FragCoord.x + uHatchSign * gl_FragCoord.y) * 0.022);
+        float band = smoothstep(0.0, 0.1, h) - smoothstep(0.58, 0.68, h);
+        gl_FragColor = vec4(uLight * (0.52 + 0.38 * band), uOpacity);
+      } else {
+        gl_FragColor = vec4(uPoche, uOpacity);
+      }
       #include <colorspace_fragment>
       return;
     }
     vec3 n = normalize(vWN);
     // sides: close tones by facing, continuous so curved parts never staircase
     float side = clamp(dot(normalize(vec3(-0.55, 0.0, 0.83)), normalize(vec3(n.x, 0.0, n.z) + 1e-5)) * 0.5 + 0.5, 0.0, 1.0);
-    vec3 c = mix(uDark, uLight, side);
-    c = mix(c, uTop, smoothstep(0.55, 0.95, n.y));
-    c = mix(c, uDark * 0.97, smoothstep(-0.4, -0.95, n.y));
+    vec3 paperC = mix(uDark, uLight, side);
+    paperC = mix(paperC, uTop, smoothstep(0.55, 0.95, n.y));
+    paperC = mix(paperC, uDark * 0.97, smoothstep(-0.4, -0.95, n.y));
+    // Ciechanowski un-chromed headlight diffuse: compressed [0.75, 1.0] floor so gear roots never crush dark
+    vec3 vn = normalize(vVN);
+    vec3 headC = uLight * (0.75 + 0.25 * max(0.0, vn.z));
+    vec3 c = mix(paperC, headC, uHeadlight);
     c = mix(c, uTop, uLit * 0.35);
     gl_FragColor = vec4(c, uOpacity);
     #include <colorspace_fragment>
@@ -50,6 +65,12 @@ export const PALETTE = {
   ochre: ['#e3b857', '#c8962e', '#936022'],
   amber: ['#e3b857', '#c8962e', '#936022'],
   board: ['#fdfdfb', '#f7f7f4', '#ececE8'],
+  // Ciechanowski semantic mechanism roles (driver, driven, idler, compound, housing)
+  driver: ['#fee48a', '#fcd561', '#d2ab3a'],
+  driven: ['#9ec993', '#78ad6c', '#57874d'],
+  idler: ['#8dc6e6', '#5eaad4', '#3f84ad'],
+  compound: ['#e68888', '#d45e5e', '#ab3e3e'],
+  housing: ['#e4e3df', '#d0cfca', '#b4b3ae'],
 };
 let before = null;                                  // the palette as it was before a theme replaced it
 export const ATLAS_INKS = ['#d4d4d6', '#b4b4b8', '#8a8a8f', '#2c2c30', '#000000'];
@@ -82,6 +103,11 @@ export function applyTheme(theme) {
     ochre: tri(theme.ochre || '#936022'),
     amber: tri(theme.ochre || '#936022'),
     board: [mix(sheet, ink, 0.0), mix(sheet, ink, 0.02), mix(sheet, ink, 0.06)],
+    driver: tri(theme.ochre || '#d2ab3a'),
+    driven: tri(theme.green || '#57874d'),
+    idler: tri(theme.blue || '#3f84ad'),
+    compound: tri(theme.red || '#ab3e3e'),
+    housing: [mix(sheet, ink, 0.08), mix(sheet, ink, 0.16), mix(sheet, ink, 0.28)],
   });
   return { sheet: '#' + sheet.getHexString(), ink: '#' + ink.getHexString(), dark, inks: [0.18, 0.32, 0.5, 0.82, 1].map(u => mix(sheet, ink, u)) };
 }
@@ -110,9 +136,10 @@ export function themeScene(scene, th) {
   });
 }
 const cache = new Map();
-export function shadeMat(pal = 'paper', { opacity = 1, poche = false } = {}) {
-  const key = `${pal}:${opacity}:${poche ? 1 : 0}`;
-  if (opacity === 1 && !poche && cache.has(key)) return cache.get(key);
+let partSeq = 0;
+export function shadeMat(pal = 'paper', { opacity = 1, poche = false, headlight = 0, pocheMode = 0, hatchSign = 1 } = {}) {
+  const key = `${pal}:${opacity}:${poche ? 1 : 0}:${headlight}:${pocheMode}:${hatchSign}`;
+  if (opacity === 1 && !poche && !headlight && !pocheMode && cache.has(key)) return cache.get(key);
   const [top, light, dark] = PALETTE[pal] || PALETTE.paper;
   const inkCol = PALETTE.ink ? PALETTE.ink[2] : '#18181a';
   const m = new THREE.ShaderMaterial({
@@ -123,20 +150,27 @@ export function shadeMat(pal = 'paper', { opacity = 1, poche = false } = {}) {
       uDark: { value: new THREE.Color(dark) },
       uPoche: { value: new THREE.Color(inkCol) },
       uHasPoche: { value: poche ? 1 : 0 },
+      uPocheMode: { value: poche === 'hatch' ? 1 : pocheMode },
+      uHeadlight: { value: headlight },
+      uHatchSign: { value: hatchSign },
       uOpacity: { value: opacity },
       uLit: { value: 0 },
     },
   });
-  if (opacity === 1 && !poche) cache.set(key, m);
+  if (opacity === 1 && !poche && !headlight && !pocheMode) cache.set(key, m);
   return m;
 }
 
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-export function part(parent, geo, { tone = 'mid', pal = 'paper', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat, poche } = {}) {
-  const m = new THREE.Mesh(geo, mat || shadeMat(pal, { poche: !!poche }));
+export function part(parent, geo, { tone = 'mid', pal = 'paper', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat, poche, noSeam = false, idOff: customIdOff } = {}) {
+  const hatchSign = (partSeq & 1) ? 1 : -1;
+  const m = new THREE.Mesh(geo, mat || shadeMat(pal, { poche: !!poche, pocheMode: poche === 'hatch' ? 1 : 0, hatchSign }));
   m.position.set(...pos);
   if (rot) m.rotation.set(...rot);
-  m.userData = { tone: TONE[tone], baseTone: TONE[tone], part: name, home: m.position.clone(), ex: V(...ex), poche };
+  // Sub-bucket part ID offset (±0.05 in HalfFloat normalRT.a) gives flush coplanar parts crisp ink seams
+  // without altering the quantized 0..4 TONE ink bucket (int(floor(a * 5.0 - 0.5))).
+  const idOff = customIdOff ?? (noSeam ? 0 : (((++partSeq) % 11) - 5) * 0.01);
+  m.userData = { tone: TONE[tone], baseTone: TONE[tone], idOff, part: name, home: m.position.clone(), ex: V(...ex), poche };
   parent.add(m);
   return m;
 }
@@ -159,8 +193,8 @@ export function arrow(parent, pal, { r = 0.035, head = 0.16, headR = 0.09, name,
   const g = new THREE.Group();
   // vectors are what the diagram is about: draw them over solids, as a free-body diagram does
   const mat = shadeMat(pal).clone(); mat.depthTest = false; mat.transparent = true;   // sorts after translucent solids
-  const shaft = part(g, cyl(r, 1, 20), { pal, tone, name, mat });
-  const tip = part(g, new THREE.ConeGeometry(headR, head, 28), { pal, tone, name, mat });
+  const shaft = part(g, cyl(r, 1, 20), { pal, tone, name, mat, noSeam: true });
+  const tip = part(g, new THREE.ConeGeometry(headR, head, 28), { pal, tone, name, mat, noSeam: true });
   shaft.renderOrder = tip.renderOrder = 10;
   g.userData.arrow = { shaft, tip, head };
   parent.add(g);
@@ -169,13 +203,16 @@ export function arrow(parent, pal, { r = 0.035, head = 0.16, headR = 0.09, name,
 const UP = V(0, 1, 0);
 export function setArrow(a, from, vec, opacity = 1) {
   const len = vec.length(), { shaft, tip, head } = a.userData.arrow;
-  a.visible = opacity > 0.01 && len > 0.02;
+  a.visible = opacity > 0.01 && len > 0.012;
   if (!a.visible) return;
-  const hl = Math.min(head, len * 0.5), sl = Math.max(len - hl, 0.001);
+  // Steven Wittens (MathBox) cubic micro-vector ease: smoothly shrinks arrowhead below 3x head length without snapping
+  const mini = Math.max(0, Math.min(1, 1 - len / (head * 3)));
+  const headScale = 1 - mini * mini * mini;
+  const hl = Math.min(head * headScale, len * 0.6), sl = Math.max(len - hl, 0.0005);
   a.position.copy(from);
   a.quaternion.setFromUnitVectors(UP, vec.clone().normalize());
-  shaft.scale.set(1, sl, 1); shaft.position.y = sl / 2;
-  tip.scale.set(1, hl / head, 1); tip.position.y = sl + hl / 2;
+  shaft.scale.set(headScale, sl, headScale); shaft.position.y = sl / 2;
+  tip.scale.set(headScale, Math.max(hl / head, 0.01), headScale); tip.position.y = sl + hl / 2;
 }
 
 // a cylindrical strut/segment stretched between two points a and b via rod.set(a, b)
@@ -273,9 +310,14 @@ export function gearGeo(teeth = 16, { module: m, r, width = 0.14, helix = 0, bor
   return g;
 }
 
-export function gear(parent, { teeth = 16, module: m, r, width = 0.14, helix = 0, bore = 0, pressureAngle = 20, pal = 'paper', tone = 'mid', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat } = {}) {
+export function gear(parent, { teeth = 16, module: m, r, width = 0.14, helix = 0, bore = 0, pressureAngle = 20, pal = 'paper', tone = 'mid', pos = [0, 0, 0], rot, name, ex = [0, 0, 0], mat, notch = false } = {}) {
   const rp = r ?? 0.5 * (m ?? 0.1) * teeth;
   const mesh = part(parent, gearGeo(teeth, { module: m, r: rp, width, helix, bore, pressureAngle }), { pal, tone, pos, rot, name, ex, mat });
+  if (notch) {
+    // Ciechanowski orientation marker so angular velocity & phase remain legible on symmetric gears
+    const nr = Math.max(0.018, rp * 0.09);
+    part(mesh, cyl(nr, 0.012, 3), { pal: 'ink', tone: 'hi', pos: [rp * 0.58, 0, width * 0.5 + 0.008], rot: [Math.PI / 2, 0, -Math.PI / 2], name, noSeam: true });
+  }
   mesh.userData.rp = rp;
   mesh.userData.teeth = teeth;
   return mesh;

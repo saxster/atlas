@@ -90,12 +90,39 @@ div.chart > svg.chart { margin-top: 0; }
 .chart .zero { stroke: var(--faint); }
 .chart .area { fill: #dadad6; stroke: none; }
 .chart .curve { fill: none; stroke: var(--hi); stroke-width: 1.6; }
+.chart .curve.red { stroke: var(--red-ink, #b8343a); }
+.chart .curve.blue { stroke: #3d63a8; }
+.chart .curve.ochre { stroke: #936022; }
+.chart .curve.green { stroke: var(--green-ink, #236b43); }
+.chart .curve.faint { stroke: var(--mid); stroke-width: 1.2; stroke-dasharray: 4 3; }
 .chart .total { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 3; }
 .chart .trend { fill: none; stroke: var(--red-ink); stroke-width: 1.6; stroke-dasharray: 4 3; }
 .chart .bar { fill: #dadad6; stroke: var(--mid); stroke-width: .8; }
 .chart .mask { fill: var(--page); }
 .chart .mark { fill: var(--hi); }
+/* Josh Comeau asymmetric tactile pushbuttons (snappy 250ms hover lift, instant 34ms press, cushioned 500ms release) */
+.run, .step, .preset, .pal-btn {
+  transition: transform 500ms cubic-bezier(0.3, 0.7, 0.4, 1), border-color .15s, background .15s;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .run:hover:not(:disabled), .step:hover:not(:disabled), .preset:hover:not(:disabled), .pal-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    transition: transform 240ms cubic-bezier(0.3, 0.7, 0.4, 1.45), border-color .15s, background .15s;
+  }
+  .run:active:not(:disabled), .step:active:not(:disabled), .preset:active:not(:disabled), .pal-btn:active:not(:disabled) {
+    transform: translateY(1px);
+    transition: transform 34ms;
+  }
+}
+.mediumbar { margin-top: -4px; flex-wrap: wrap; border-radius: 14px; padding: 4px; gap: 3px; }
+.soundtoggle {
+  align-self: flex-start; border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer;
+  font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px;
+}
+.soundtoggle[aria-pressed="true"] { background: var(--hi); color: var(--card); border-color: var(--hi); }
 .chart .cursor { fill: var(--lit); stroke: var(--page); stroke-width: 2; }
+.chart .tangent { stroke: var(--green-ink, #236b43); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.chart .live-path { stroke: var(--red-ink, #b8343a); stroke-width: 1.8; }
 .chart .wf-total { fill: #dadad6; stroke: var(--hi); stroke-width: 1; }
 .chart .wf-up { fill: #eef7f1; stroke: var(--green-ink); stroke-width: 1; }
 .chart .wf-down { fill: #fcefef; stroke: var(--red-ink); stroke-width: 1; }
@@ -145,15 +172,18 @@ div.chart > svg.chart { margin-top: 0; }
   .figpage.explorer .question, .figpage.sandbox .question { order: 0; }
   .figpage.explorer .figure, .figpage.sandbox .figure { order: 1; }
   .figpage.explorer .predict, .figpage.sandbox .presets { order: 2; }
+  .figpage.explorer .mediumbar, .figpage.sandbox .mediumbar, .figpage.sandbox .cutbar { order: 3; }
+  .figpage.explorer .prose-note, .figpage.sandbox .prose-note { order: 4; }
   .figpage.sandbox .matrix-box { order: 3; }
   .figpage.sandbox .palette { order: 4; }
   .figpage.explorer .controls, .figpage.sandbox .controls { order: 5; }
   .figpage.explorer .run { order: 6; }
-  .figpage.explorer .again, .figpage.sandbox .again { order: 7; }
+  .figpage.explorer .again, .figpage.sandbox .again, .figpage.explorer .soundtoggle, .figpage.sandbox .soundtoggle { order: 7; }
   .figpage.explorer .why { order: 7; }
   .figpage.explorer .chips, .figpage.sandbox .chips { order: 8; }
   .figpage.explorer .chart, .figpage.sandbox .chart { order: 9; }
   .figpage.explorer .bigidea, .figpage.sandbox .bigidea { order: 10; }
   .figpage.explorer .plate, .figpage.sandbox .plate { order: 11; }
 }
+.prose-note { font: 400 15.5px/1.58 var(--serif); color: var(--text); margin: 4px 0 6px; }
 html.render *, html.render *::before, html.render *::after { transition: none !important; animation: none !important; }

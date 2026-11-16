@@ -462,3 +462,156 @@ export function linkage(parent, {
   update(joints);
   return { object, labels, bars: bars.map(b => b.mesh), pins, update };
 }
+
+// Batched multi-streamline field bundle with optional InstancedMesh direction cones (inspired by thebuggeddev/electromagnetism).
+// Integrates x' = fn(x, y, z) by RK4 from each seed in `seeds` and updates all tubes + cones in place.
+export function fieldLines(parent, fn, {
+  axes,
+  seeds = [[0, 0, 0]],
+  dt = 0.04,
+  steps = 64,
+  radius = 0.015,
+  color = 'blue',
+  conesEvery = 0,
+  coneRadius = radius * 2.4,
+  coneLength = radius * 5.8,
+  normalizeField = false,
+  name = 'Field lines',
+} = {}) {
+  const map = toOf(axes);
+  const pal = palOf(color);
+  const object = new THREE.Group();
+  object.name = name;
+  parent.add(object);
+  const tubes = seeds.map((_, idx) => {
+    const geo = liveTube(steps, radius, 6);
+    const mesh = part(object, geo, { pal, tone: 'mid', name: `${name} ${idx + 1}` });
+    const pts = Array.from({ length: steps + 1 }, () => V());
+    return { mesh, pts };
+  });
+
+  const maxConesPerLine = conesEvery > 0 ? Math.max(1, Math.floor(steps / conesEvery)) : 0;
+  const maxCones = seeds.length * maxConesPerLine;
+  let cones = null;
+  const coneMat = new THREE.Matrix4(), coneQuat = new THREE.Quaternion(), coneScale = V(1, 1, 1), upV = V(0, 1, 0), dirV = V();
+  if (maxCones > 0) {
+    const cGeo = new THREE.ConeGeometry(coneRadius, coneLength, 12);
+    cones = new THREE.InstancedMesh(cGeo, shadeMat(pal), maxCones);
+    cones.userData = { tone: TONE.hi, baseTone: TONE.hi, part: name, home: V(), ex: V(), noSeam: true };
+    cones.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    object.add(cones);
+  }
+
+  let curFn = fn, curSeeds = seeds;
+  const stepDeriv = (f, p) => {
+    const [vx = 0, vy = 0, vz = 0] = f(p[0], p[1], p[2]);
+    if (!normalizeField) return [vx, vy, vz];
+    const m = Math.hypot(vx, vy, vz);
+    return m > 1e-9 ? [vx / m, vy / m, vz / m] : [0, 0, 0];
+  };
+
+  function update(nextFn = curFn, nextSeeds = curSeeds) {
+    curFn = nextFn;
+    curSeeds = nextSeeds;
+    let coneIdx = 0;
+    for (let li = 0; li < tubes.length; li++) {
+      const tb = tubes[li];
+      const s0 = curSeeds[li];
+      if (!s0) { tb.mesh.visible = false; continue; }
+      tb.mesh.visible = true;
+      let y = s0.isVector3 ? [s0.x, s0.y, s0.z] : [s0[0], s0[1], s0[2] ?? 0];
+      map(y[0], y[1], y[2], tb.pts[0]);
+      for (let i = 1; i <= steps; i++) {
+        const k1 = stepDeriv(curFn, y);
+        const k2 = stepDeriv(curFn, [y[0] + 0.5 * dt * k1[0], y[1] + 0.5 * dt * k1[1], y[2] + 0.5 * dt * k1[2]]);
+        const k3 = stepDeriv(curFn, [y[0] + 0.5 * dt * k2[0], y[1] + 0.5 * dt * k2[1], y[2] + 0.5 * dt * k2[2]]);
+        const k4 = stepDeriv(curFn, [y[0] + dt * k3[0], y[1] + dt * k3[1], y[2] + dt * k3[2]]);
+        y = [
+          y[0] + (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]),
+          y[1] + (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]),
+          y[2] + (dt / 6) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]),
+        ];
+        map(y[0], y[1], y[2], tb.pts[i]);
+        if (cones && conesEvery > 0 && i % conesEvery === 0 && coneIdx < maxCones) {
+          dirV.subVectors(tb.pts[i], tb.pts[i - 1]);
+          if (dirV.lengthSq() > 1e-10) {
+            coneQuat.setFromUnitVectors(upV, dirV.normalize());
+            coneMat.compose(tb.pts[i], coneQuat, coneScale);
+            cones.setMatrixAt(coneIdx++, coneMat);
+          }
+        }
+      }
+      tb.mesh.geometry.update(tb.pts);
+    }
+    if (cones) {
+      cones.count = coneIdx;
+      cones.instanceMatrix.needsUpdate = true;
+    }
+  }
+  update(fn, seeds);
+  return { object, labels: [], tubes: tubes.map(t => t.mesh), cones, update };
+}
+
+// Stateless InstancedMesh carrier beads/chevrons moving along a closed or open 3D polyline/curve r(u) for u in [0, 1]
+// (inspired by thebuggeddev/electric-motor & spaceship signal/current pulses).
+export function flowBeads(parent, pathOrFn, {
+  axes,
+  count = 16,
+  radius = 0.032,
+  color = 'ochre',
+  shape = 'sphere',
+  name = 'Flow beads',
+} = {}) {
+  const map = toOf(axes);
+  const pal = palOf(color);
+  const geo = shape === 'cone' ? new THREE.ConeGeometry(radius, radius * 2.4, 14) : new THREE.SphereGeometry(radius, 14, 10);
+  const inst = new THREE.InstancedMesh(geo, shadeMat(pal), count);
+  inst.name = name;
+  inst.userData = { tone: TONE.hi, baseTone: TONE.hi, part: name, home: V(), ex: V(), noSeam: true };
+  inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  parent.add(inst);
+
+  const samplePath = (src, u) => {
+    const uu = ((u % 1) + 1) % 1;
+    if (typeof src === 'function') return src(uu);
+    if (Array.isArray(src) && src.length >= 2) {
+      const f = uu * (src.length - 1);
+      const i = Math.min(src.length - 2, Math.floor(f));
+      const t = f - i;
+      const a = src[i], b = src[i + 1];
+      return [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        (a[2] ?? 0) + ((b[2] ?? 0) - (a[2] ?? 0)) * t,
+      ];
+    }
+    return [0, 0, 0];
+  };
+
+  let curPath = pathOrFn;
+  const p = V(), pNext = V(), dir = V(), upV = V(0, 1, 0), q = new THREE.Quaternion(), m4 = new THREE.Matrix4(), sc = V(1, 1, 1);
+
+  function update(phaseOffset = 0, { path = curPath, visibleCount = count, scale = 1 } = {}) {
+    curPath = path;
+    const n = Math.max(0, Math.min(count, visibleCount));
+    inst.count = n;
+    sc.set(scale, scale, scale);
+    for (let i = 0; i < n; i++) {
+      const u = ((i / count + phaseOffset) % 1 + 1) % 1;
+      point(map, samplePath(curPath, u), p);
+      if (shape === 'cone') {
+        point(map, samplePath(curPath, u + 0.01), pNext);
+        dir.subVectors(pNext, p);
+        if (dir.lengthSq() > 1e-10) q.setFromUnitVectors(upV, dir.normalize());
+        else q.identity();
+      } else {
+        q.identity();
+      }
+      m4.compose(p, q, sc);
+      inst.setMatrixAt(i, m4);
+    }
+    inst.instanceMatrix.needsUpdate = true;
+  }
+  update(0);
+  return { object: inst, labels: [], update };
+}

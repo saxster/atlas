@@ -2,7 +2,7 @@
 // page 3), with everything the reader does to the figure itself: hover lights a thing, a click or tap breaks it down,
 // drag turns the camera, shift-drag pans. The book (book.js) puts pages, text and controls around it; a textbook's
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
-import { createEngine } from './render.js';
+import { createEngine, MEDIUMS } from './render.js';
 import { frameAssemblies, separateLabels } from './framing.js';
 import { themeScene } from './parts.js';
 import {
@@ -15,6 +15,7 @@ import {
 } from './motion.js';
 
 export {
+  MEDIUMS,
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
@@ -22,6 +23,74 @@ export {
   cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 };
+
+// Pure skew-line closest-point solver for camera-angle-invariant 1D rail/axis dragging.
+// Given camera ray (rayOrigin, rayDir) and axis (axisOrigin, axisVec), returns { s, sWorld, tRay }
+// where axisPt = axisOrigin + s * axisVec, or null when nearly collinear or behind the camera (tRay <= 0).
+export function rayAxisClosest(rayOrigin, rayDir, axisOrigin, axisVec) {
+  const dLen = Math.hypot(rayDir[0], rayDir[1], rayDir[2]);
+  const L = Math.hypot(axisVec[0], axisVec[1], axisVec[2]);
+  if (dLen < 1e-9 || L < 1e-9) return null;
+  const dx = rayDir[0] / dLen, dy = rayDir[1] / dLen, dz = rayDir[2] / dLen;
+  const ux = axisVec[0] / L, uy = axisVec[1] / L, uz = axisVec[2] / L;
+  const wx = rayOrigin[0] - axisOrigin[0], wy = rayOrigin[1] - axisOrigin[1], wz = rayOrigin[2] - axisOrigin[2];
+  const b = dx * ux + dy * uy + dz * uz;
+  const denom = 1 - b * b;
+  if (denom < 1e-4) return null;
+  const wu = wx * ux + wy * uy + wz * uz;
+  const wd = wx * dx + wy * dy + wz * dz;
+  const sWorld = (wu - b * wd) / denom;
+  const tRay = (b * wu - wd) / denom;
+  if (tRay <= 1e-3) return null;
+  return { s: sWorld / L, sWorld, tRay };
+}
+
+// Advances a damped/loaded draggable one dt step toward d.targetValue.
+// Accepts d.load as either a custom function (target, cur, dt) => next or a numeric time-constant in seconds.
+export function stepDraggableLoad(d, dt) {
+  if (!d?.load || d.targetValue === null || d.targetValue === undefined || d.value === null || d.value === undefined) return null;
+  if (typeof d.load === 'function') return d.load(d.targetValue, d.value, dt);
+  const tau = Math.max(0.015, Number(d.load) || 0.15);
+  const a = 1 - Math.exp(-Math.max(0, dt) / tau);
+  if (typeof d.targetValue === 'number' && typeof d.value === 'number') {
+    return d.value + (d.targetValue - d.value) * a;
+  }
+  if (Array.isArray(d.targetValue) && Array.isArray(d.value)) {
+    return d.targetValue.map((tv, i) => (d.value[i] ?? tv) + (tv - (d.value[i] ?? tv)) * a);
+  }
+  return d.targetValue;
+}
+
+export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = null, place = 'after', onChange = null } = {}) {
+  if (!figure.mediums?.length || !anchorEl) return null;
+  const labels = {
+    'paper-ink': 'Textbook',
+    ciechanow: 'Mechanism',
+    'pencil-wash': 'Sketchbook',
+    moebius: 'Ligne-claire',
+    risograph: 'Risograph',
+  };
+  let cur = initialMedium || figure.medium || figure.mediums[0] || 'paper-ink';
+  const bar = document.createElement('div');
+  bar.className = 'mode mediumbar';
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', 'Visual medium');
+  bar.innerHTML = figure.mediums.map(m => `<button type="button" data-medium="${m}" aria-pressed="${m === cur}">${labels[m] || m}</button>`).join('');
+  if (place === 'before') anchorEl.before(bar);
+  else anchorEl.after(bar);
+  const apply = m => {
+    cur = m;
+    bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.medium === cur)));
+    document.documentElement.dataset.medium = cur;
+    getStage()?.setMedium?.(cur);
+    onChange?.(cur);
+  };
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-medium]');
+    if (b) apply(b.dataset.medium);
+  });
+  return { el: bar, apply, get medium() { return cur; } };
+}
 
 export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syncUrl = null) {
   if (!anchorEl) return null;
@@ -94,10 +163,12 @@ export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, pl
   };
 }
 
-// draggable(target, { axes?, plane?, constrain?, onDrag?, onStart?, onEnd?, onReset?, anchor?, pad?, autoMove? })
+// draggable(target, { axes?, plane?, axis?, load?, constrain?, onDrag?, onStart?, onEnd?, onReset?, anchor?, pad?, autoMove? })
 // Makes any 3D mesh, vector, arrow or group directly grabbable on the canvas.
-// - axes: optional prims.axes instance; when given, constrain/onDrag work in data coordinates [x, y, z].
+// - axes: optional prims.axes instance; when given, constrain/onDrag/axis work in data coordinates [x, y, z].
 // - plane: 'xy' (default), 'xz', 'yz', 'camera', [nx, ny, nz] normal, or THREE.Plane.
+// - axis: { origin: [x,y,z], dir: [dx,dy,dz], min?, max? } camera-invariant 1D rail projection (never blows up edge-on).
+// - load(targetPt, curPt, dt): optional damped resistance filter (e.g. Lenz eddy drag or spring load) stepped each frame.
 // - constrain(pt): maps raw [x, y, z] to constrained [x, y, z] (e.g. snapping to a curve y = f(x)).
 // - onDrag(pt, worldPt): called as the reader drags the handle in 3D.
 export function draggable(target, opts = {}) {
@@ -108,6 +179,8 @@ export function draggable(target, opts = {}) {
     target,
     axes: opts.axes || null,
     plane: opts.plane || null,
+    axis: opts.axis || null,
+    load: opts.load || null,
     constrain: opts.constrain || null,
     onDrag: opts.onDrag || null,
     onStart: opts.onStart || null,
@@ -118,24 +191,35 @@ export function draggable(target, opts = {}) {
     autoMove: opts.autoMove ?? true,
     active: false,
     value: null,
+    targetValue: null,
     get() {
       return spec.value;
     },
     set(pt) {
+      spec.targetValue = null;
       return spec.project(pt);
     },
     project(pt, worldPt = null) {
       let p = Array.isArray(pt) ? [...pt] : pt?.isVector3 ? [pt.x, pt.y, pt.z] : pt;
+      if (spec.axis && typeof p === 'number') {
+        p = clamp(p, spec.axis.min ?? -Infinity, spec.axis.max ?? Infinity);
+      }
       if (spec.constrain) p = spec.constrain(p);
       spec.value = p;
-      if (spec.autoMove && !obj.userData?.arrow && Array.isArray(p)) {
-        if (spec.axes?.to) {
-          const lp = spec.axes.to(p[0], p[1], p[2] ?? 0);
-          obj.position?.copy(lp);
-          if (obj.userData?.home) obj.userData.home.copy(lp);
-        } else if (obj.position) {
-          obj.position.set(p[0], p[1], p[2] ?? 0);
+      if (spec.autoMove && !obj.userData?.arrow) {
+        if (spec.axis && typeof p === 'number' && obj.position) {
+          const ao = spec.axis.origin || [0, 0, 0], ad = spec.axis.dir || [1, 0, 0];
+          obj.position.set(ao[0] + p * ad[0], ao[1] + p * ad[1], (ao[2] ?? 0) + p * (ad[2] ?? 0));
           if (obj.userData?.home) obj.userData.home.copy(obj.position);
+        } else if (Array.isArray(p)) {
+          if (spec.axes?.to) {
+            const lp = spec.axes.to(p[0], p[1], p[2] ?? 0);
+            obj.position?.copy(lp);
+            if (obj.userData?.home) obj.userData.home.copy(lp);
+          } else if (obj.position) {
+            obj.position.set(p[0], p[1], p[2] ?? 0);
+            if (obj.userData?.home) obj.userData.home.copy(obj.position);
+          }
         }
       }
       if (spec.onDrag) spec.onDrag(p, worldPt);
@@ -143,6 +227,7 @@ export function draggable(target, opts = {}) {
     },
     reset() {
       spec.value = null;
+      spec.targetValue = null;
       spec.active = false;
       if (spec.onReset) spec.onReset();
     },
@@ -152,16 +237,23 @@ export function draggable(target, opts = {}) {
   return spec;
 }
 
-// chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), forceLook?(selected, look), clock0? }
-// opts: { reduced, touch, theme (see parts.js applyTheme), dprCap }
+// chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), medium?, forceLook?(selected, look), clock0? }
+// opts: { reduced, touch, theme (see parts.js applyTheme), medium, dprCap }
 // hooks (assign after creating): onHover(key | null), onSelect(key | null), onPointerDown(), onDrag(spec, pt)
-export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
+export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, medium = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
   const { PAGES } = chapter;
   const N = PAGES.length;
-  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme, retainContext });
+  const urlMedium = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('medium') : null;
+  const RENDER_MODE = typeof location !== 'undefined' && /[?&]render\b/.test(location.search);
+  let activeMedium = (urlMedium && MEDIUMS.includes(urlMedium)) ? urlMedium : (medium || chapter.medium || 'paper-ink');
+  if (typeof document !== 'undefined' && activeMedium !== 'paper-ink') {
+    document.documentElement.dataset.medium = activeMedium;
+  }
+  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme: theme || chapter.theme || null, medium: activeMedium, retainContext });
   E.draggable = draggable;
   const W = chapter.buildWorld(E);
-  themeScene(E.scene, E.theme);                 // a host theme: the chapter's greys become this paper's ink
+  E.setMedium(activeMedium);                     // apply headlight/poche uniforms to newly built world meshes
+  themeScene(E.scene, E.theme);                  // a host theme: the chapter's greys become this paper's ink
   const hooks = { onHover() {}, onSelect() {}, onPointerDown() {}, onDrag() {} };
   const off = [];                                // listeners to remove on destroy
   const on = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); off.push(() => el.removeEventListener(ev, fn, opt)); };
@@ -187,7 +279,10 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   const labels = (W.labels || []).map(L => {
     const initHtml = L.html ?? (typeof L.text === 'string' ? L.text : '');
     const textFn = typeof L.text === 'function' ? L.text : null;
-    const el = document.createElement('div'); el.className = 'lbl ' + L.cls; el.innerHTML = initHtml; labelsEl.appendChild(el);
+    const el = document.createElement('div');
+    el.className = 'lbl ' + L.cls + (L.normal ? ' no-fade-lag' : '');
+    el.innerHTML = initHtml;
+    labelsEl.appendChild(el);
     let line = null, dot = null;
     const autoLeader = frameParts && L.cls.split(/\s+/).includes('board') && !L.leader;
     if (L.leader || autoLeader) {
@@ -201,28 +296,51 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       dot.setAttribute('fill', 'var(--muted, #86868c)');
       leaderSvg.appendChild(dot);
     }
-    return { el, line, dot, autoLeader, leader: L.leader || null, anchor: L.anchor || null, at: L.at, text: textFn, last: initHtml };   // text: optional () => html for live values
+    return {
+      el, line, dot, autoLeader,
+      leader: L.leader || null, anchor: L.anchor || null, at: L.at, on: L.on || null,
+      normal: L.normal || null, lift: L.lift || 0,
+      text: textFn, last: initHtml,
+    };
   });
+  const tmpSurf = new E.THREE.Vector3(), tmpCamDir = new E.THREE.Vector3(), tmpNorm = new E.THREE.Vector3();
   function placeLabels(w, h) {
     const shown = [];
     for (const L of labels) {
+      if (L.on && !L.on()) { L.el.style.opacity = 0; if (L.line) L.line.style.opacity = 0; if (L.dot) L.dot.style.opacity = 0; continue; }
       const p = L.at();
       if (!p) { L.el.style.opacity = 0; if (L.line) L.line.style.opacity = 0; if (L.dot) L.dot.style.opacity = 0; continue; }
-      const [px, py, front] = E.toScreen(p, w, h);
+      const rawAp = L.anchor ? L.anchor() : null;
+      const surfRef = rawAp || p;
+      tmpSurf.copy(surfRef);
+      let vis = 1;
+      if (L.normal || L.lift) {
+        tmpCamDir.subVectors(E.camera.position, surfRef).normalize();
+        if (L.normal) {
+          const nw = L.normal();
+          if (nw) {
+            if (Array.isArray(nw)) tmpNorm.set(nw[0], nw[1], nw[2] ?? 0).normalize();
+            else tmpNorm.copy(nw).normalize();
+            vis = smooth(0.0, 0.28, tmpNorm.dot(tmpCamDir));
+          }
+        }
+        if (L.lift) tmpSurf.addScaledVector(tmpCamDir, L.lift);
+      }
+      const labelPt = !rawAp && L.lift ? tmpSurf : p;
+      const [px, py, front] = E.toScreen(labelPt, w, h);
       const off = typeof L.leader === 'function' ? L.leader() : L.leader;
-      let ax = px, ay = py, x = px, y = py;
+      let ax = px, ay = py, aFront = front, x = px, y = py;
       if (Array.isArray(off)) {
         x = ax + off[0]; y = ay + off[1];
-      } else if (L.anchor) {
-        const ap = L.anchor();
-        if (ap) [ax, ay] = E.toScreen(ap, w, h);
+      } else if (rawAp) {
+        [ax, ay, aFront] = E.toScreen(tmpSurf, w, h);
       }
-      const on = front && x > 8 && x < w - 8 && y > 8 && y < h - 8;
-      L.el.style.opacity = on ? 1 : 0;
+      const on = front && aFront && vis > 0.01 && x > 8 && x < w - 8 && y > 8 && y < h - 8;
+      L.el.style.opacity = on ? vis : 0;
       L.el.style.left = `${x}px`; L.el.style.top = `${y}px`;
       if (L.line) {
-        L.line.style.opacity = on ? 0.78 : 0;
-        L.dot.style.opacity = on ? 0.85 : 0;
+        L.line.style.opacity = on ? 0.78 * vis : 0;
+        L.dot.style.opacity = on ? 0.85 * vis : 0;
         if (on) {
           const elbowX = ax + (x - ax) * 0.65;
           L.line.setAttribute('points', `${ax.toFixed(1)},${ay.toFixed(1)} ${elbowX.toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
@@ -231,7 +349,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
         }
       }
       if (L.text) { const h = L.text(); if (h !== L.last) { L.el.innerHTML = h; L.last = h; } }
-      if (on) shown.push([L, x, y, ax, ay]);
+      if (on) shown.push([L, x, y, ax, ay, vis]);
     }
     // a label whose anchor is near an edge slides in, so its words stay inside the figure (one layout read for all)
     if (!shown.length) return;
@@ -242,16 +360,16 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     });
     if (frameParts) {
       const rootBox = labelsEl.getBoundingClientRect();
-      const measured = shown.map(([L]) => { const b = L.el.getBoundingClientRect();return { x: b.left - rootBox.left, y: b.top - rootBox.top, width: b.width, height: b.height, fixed: !L.el.classList.contains('board') }; });
+      const measured = shown.map(([L]) => { const b = L.el.getBoundingClientRect(); return { x: b.left - rootBox.left, y: b.top - rootBox.top, width: b.width, height: b.height, fixed: !L.el.classList.contains('board') }; });
       const offsets = separateLabels(measured, h, labelTopInset() + 20);
-      shown.forEach(([L, x, y, ax, ay], index) => {
-        const placedY = y + offsets[index];L.el.style.top = `${placedY}px`;
+      shown.forEach(([L, x, y, ax, ay, vis], index) => {
+        const placedY = y + offsets[index]; L.el.style.top = `${placedY}px`;
         if (L.line) {
           const placedX = parseFloat(L.el.style.left), elbowX = ax + (placedX - ax) * .65;
           L.line.setAttribute('points', `${ax},${ay} ${elbowX},${placedY} ${placedX},${placedY}`);
           if (L.autoLeader) {
             const shifted = Math.abs(placedX - ax) > 1 || Math.abs(placedY - ay) > 1;
-            L.line.style.opacity = shifted ? .65 : 0;L.dot.style.opacity = shifted ? .8 : 0;
+            L.line.style.opacity = shifted ? .65 * vis : 0; L.dot.style.opacity = shifted ? .8 * vis : 0;
           }
         }
       });
@@ -259,8 +377,16 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   }
 
   // ---------- hover / click / direct 3D drag ----------
-  let hovered = null, hoveredDrag = null, selected = null, litOverride = null, pageLit = PAGES[0].lit;
-  const relight = () => E.setLit(hovered || selected || litOverride || pageLit);
+  let hovered = null, hoveredDrag = null, externLit = null, externIso = null, selected = null, litOverride = null, pageLit = PAGES[0].lit;
+  let pickIntercept = null;
+  const relight = () => E.setLit(externLit || hovered || selected || litOverride || pageLit);
+  function hoverExtern(keys = null, { isolate = false } = {}) {
+    externLit = keys || null;
+    externIso = keys && isolate ? keys : null;
+    if (externIso) E.setIsolate(externIso);
+    else E.setIsolate(lastLook?.isolate ?? null);
+    relight();
+  }
   const dRay = new E.THREE.Raycaster(), dNdc = new E.THREE.Vector2(), dHit = new E.THREE.Vector3();
   function liveDraggables() {
     const out = [];
@@ -296,6 +422,33 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     else if (d.axes?.z && d.plane !== 'xy') n = new E.THREE.Vector3(0, 1, 0);
     else n = new E.THREE.Vector3(0, 0, 1);
     return new E.THREE.Plane().setFromNormalAndCoplanarPoint(n, wp0);
+  }
+  function axisWorldEndpoints(d) {
+    const ax = d.axis;
+    const orig = ax.origin || [0, 0, 0];
+    const dir = ax.dir || [1, 0, 0];
+    const end = [orig[0] + dir[0], orig[1] + dir[1], orig[2] + dir[2]];
+    let p0, p1;
+    if (d.axes?.toWorld) {
+      p0 = d.axes.toWorld(...orig);
+      p1 = d.axes.toWorld(...end);
+    } else if (d.obj.parent) {
+      d.obj.parent.updateWorldMatrix(true, false);
+      p0 = d.obj.parent.localToWorld(new E.THREE.Vector3(...orig));
+      p1 = d.obj.parent.localToWorld(new E.THREE.Vector3(...end));
+    } else {
+      p0 = new E.THREE.Vector3(...orig);
+      p1 = new E.THREE.Vector3(...end);
+    }
+    return { orig, dir, p0: p0.toArray(), vec: p1.sub(p0).toArray() };
+  }
+  function rayToAxisParam(clientX, clientY, d) {
+    const r = box(), x = clientX - r.left, y = clientY - r.top;
+    dNdc.set((x / r.width) * 2 - 1, -(y / r.height) * 2 + 1);
+    dRay.setFromCamera(dNdc, E.camera);
+    const { orig, dir, p0, vec } = axisWorldEndpoints(d);
+    const hit = rayAxisClosest(dRay.ray.origin.toArray(), dRay.ray.direction.toArray(), p0, vec);
+    return hit ? { s: hit.s, orig, dir, p0, vec } : null;
   }
   function rayToPlane(clientX, clientY, plane) {
     const r = box(), x = clientX - r.left, y = clientY - r.top;
@@ -359,7 +512,11 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       // a finger has no hover: a tap picks whatever is under it
       const r = box();
       const k = e.pointerType === 'mouse' ? hovered : E.pick(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
-      select(k && k !== selected ? k : null);
+      if (pickIntercept) {
+        pickIntercept(k);
+      } else {
+        select(k && k !== selected ? k : null);
+      }
     }
     drag = null; canvas.classList.remove('dragging');
   });
@@ -373,9 +530,23 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       if (!drag.moved && drag.item) {
         const wp0 = handleWorldPos(drag.item);
-        drag.plane = makeDragPlane(drag.item, wp0);
-        const hit0 = rayToPlane(drag.x0, drag.y0, drag.plane);
-        drag.offset = hit0 ? wp0.clone().sub(hit0) : new E.THREE.Vector3();
+        if (drag.item.axis) {
+          const ah0 = rayToAxisParam(drag.x0, drag.y0, drag.item);
+          let curS = 0;
+          const curVal = drag.item.value;
+          if (typeof curVal === 'number') {
+            curS = curVal;
+          } else if (Array.isArray(curVal) && ah0) {
+            const { orig, dir } = ah0;
+            const d2 = dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2 || 1;
+            curS = ((curVal[0] - orig[0]) * dir[0] + (curVal[1] - orig[1]) * dir[1] + ((curVal[2] ?? 0) - orig[2]) * dir[2]) / d2;
+          }
+          drag.sOffset = ah0 ? curS - ah0.s : 0;
+        } else {
+          drag.plane = makeDragPlane(drag.item, wp0);
+          const hit0 = rayToPlane(drag.x0, drag.y0, drag.plane);
+          drag.offset = hit0 ? wp0.clone().sub(hit0) : new E.THREE.Vector3();
+        }
         drag.item.active = true;
         drag.item.onStart?.();
       }
@@ -383,17 +554,39 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       canvas.classList.add('dragging');
       if (drag.item) {
         timeRate = 0;
-        const hit = rayToPlane(e.clientX, e.clientY, drag.plane);
-        if (hit) {
-          const worldPt = hit.add(drag.offset);
-          let pt;
-          if (drag.item.axes?.fromWorld) pt = drag.item.axes.fromWorld(worldPt);
-          else if (drag.item.obj.parent) {
-            drag.item.obj.parent.updateWorldMatrix(true, false);
-            pt = drag.item.obj.parent.worldToLocal(worldPt.clone()).toArray();
-          } else pt = worldPt.toArray();
-          const val = drag.item.project(pt, worldPt);
-          hooks.onDrag(drag.item, val);
+        let pt = null, worldPt = null;
+        if (drag.item.axis) {
+          const ah = rayToAxisParam(e.clientX, e.clientY, drag.item);
+          if (ah) {
+            let sParam = ah.s + (drag.sOffset || 0);
+            if (drag.item.axis.min !== undefined) sParam = Math.max(drag.item.axis.min, sParam);
+            if (drag.item.axis.max !== undefined) sParam = Math.min(drag.item.axis.max, sParam);
+            pt = sParam;
+            worldPt = new E.THREE.Vector3(ah.p0[0] + sParam * ah.vec[0], ah.p0[1] + sParam * ah.vec[1], ah.p0[2] + sParam * ah.vec[2]);
+          }
+        } else {
+          const hit = rayToPlane(e.clientX, e.clientY, drag.plane);
+          if (hit) {
+            worldPt = hit.add(drag.offset);
+            if (drag.item.axes?.fromWorld) pt = drag.item.axes.fromWorld(worldPt);
+            else if (drag.item.obj.parent) {
+              drag.item.obj.parent.updateWorldMatrix(true, false);
+              pt = drag.item.obj.parent.worldToLocal(worldPt.clone()).toArray();
+            } else pt = worldPt.toArray();
+          }
+        }
+        if (pt !== null) {
+          if (drag.item.load && !RENDER_MODE && !reduced) {
+            drag.item.targetValue = pt;
+            drag.item.lastWorldPt = worldPt;
+            if (drag.item.value === null || drag.item.value === undefined) {
+              const val = drag.item.project(pt, worldPt);
+              hooks.onDrag(drag.item, val);
+            }
+          } else {
+            const val = drag.item.project(pt, worldPt);
+            hooks.onDrag(drag.item, val);
+          }
         }
       } else if (drag.scrub) {
         clock = Math.max(0, clock + dx * 0.025);
@@ -471,11 +664,23 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     E.placeCamera(cam);
 
     // time eases to a stop while something is pointed at, open, or being scrubbed/dragged, so moving things can be caught and read
-    timeRate = selected || hovered || hoveredDrag || !running || drag?.scrub || drag?.item ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
+    timeRate = selected || hovered || hoveredDrag || externLit || !running || drag?.scrub || drag?.item ? 0 : timeRate + (1 - timeRate) * (1 - Math.exp(-dt * 4));
     if (clockAt !== undefined) {
       if (clockAt !== lastClockAt) { lastClockAt = clockAt; if (!drag?.scrub) scrubbed = null; }
       clock = scrubbed ?? clockAt;
     } else if (!reduced) clock += dt * timeRate;
+
+    // Advance any spring/Lenz load-coupled draggables smoothly during live interaction
+    if (!RENDER_MODE && !reduced && dt > 0) {
+      for (const d of liveDraggables()) {
+        const nextPt = stepDraggableLoad(d, dt);
+        if (nextPt !== null) {
+          const val = d.project(nextPt, d.lastWorldPt || null);
+          hooks.onDrag(d, val);
+        }
+      }
+    }
+
     const state = chapter.state(clock, reduced);
     const LA = PAGES[i].look || {}, LB = PAGES[j].look || {}, look = {};
     for (const key of chapter.lookKeys || []) {
@@ -501,12 +706,16 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
         E.setCutaway((look.section || 0) > 0.5 ? (chapter.cutPlane || [0, 0, -1, 0]) : null, chapter.cutKeys || null);
       }
     }
-    if (look.isolate !== undefined) E.setIsolate(look.isolate);
+    if (externIso) E.setIsolate(externIso);
+    else if (look.isolate !== undefined) E.setIsolate(look.isolate);
     if (look.ex !== undefined && !selected) E.setExplode(look.ex, null, true);
     lastLook = look;
     E.resetExplode?.();
     W.update(state, look);
     E.stepExplode(dt);
+
+    const boil = (!RENDER_MODE && !reduced && activeMedium === 'pencil-wash') ? (Math.floor((now || 0) / 160) % 4) : 0;
+    E.setMedium(activeMedium, { boil });
 
     if (frameParts) {
       const keys = selected ? [selected] : PAGES[page].parts || [PAGES[page].lit];
@@ -526,9 +735,11 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     E.scene.traverse(o => { if (o.isMesh && o.visible && o.userData.part !== undefined && o.material.depthTest !== false && !o.material.transparent) solids.push(o); });
     const cb = canvas.getBoundingClientRect();
     // a vector's label rides its arrow, which is drawn over the solids as in a free-body diagram: never hidden
-    return labels.filter(L => +L.el.style.opacity > 0).map(L => {
-      const p = L.at(), r = L.el.getBoundingClientRect();
-      anchorV.copy(p); const d = E.camera.position.distanceTo(anchorV);
+    return labels.filter(L => +L.el.style.opacity > 0.15).map(L => {
+      const p = L.anchor?.() || L.at(), r = L.el.getBoundingClientRect();
+      anchorV.copy(p);
+      if (L.lift) anchorV.addScaledVector(E.camera.position.clone().sub(anchorV).normalize(), L.lift);
+      const d = E.camera.position.distanceTo(anchorV);
       ray.set(E.camera.position, anchorV.clone().sub(E.camera.position).normalize()); ray.far = d * 0.97;
       const hit = ray.intersectObjects(solids, false).find(h => { for (let o = h.object; o; o = o.parent) if (!o.visible) return false; return true; });
       return { text: L.el.textContent, box: [r.left - cb.left, r.top - cb.top, r.width, r.height], hiddenBy: hit && !L.el.classList.contains('vec') && !L.leader ? (hit.object.userData.part || 'a solid') : null };
@@ -683,8 +894,17 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     E.dispose();
   }
 
+  function setMedium(m) {
+    if (MEDIUMS.includes(m)) {
+      activeMedium = m;
+      E.setMedium(m);
+    }
+  }
+
   return {
-    E, W, N, hooks, step, select, relight, labelReport, sceneReport, destroy, fit, draggable,
+    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, labelReport, sceneReport, destroy, fit, draggable,
+    get medium() { return activeMedium; },
+    get pickIntercept() { return pickIntercept; }, set pickIntercept(fn) { pickIntercept = fn; },
     get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
     get litOverride() { return litOverride; }, set litOverride(v) { litOverride = v; relight(); },
     get lastLook() { return lastLook; },

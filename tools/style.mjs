@@ -25,8 +25,12 @@ if (!fs.existsSync(decisionsPath) || fs.statSync(decisionsPath).size < 200) {
   fail.push('docs/decisions.md is missing or empty');
 }
 
-// 3. Verify explicit local file/folder paths referenced in CLAUDE.md, docs/API.md, and docs/decisions.md
-const DOC_FILES = ['CLAUDE.md', 'docs/API.md', 'docs/decisions.md'];
+// 3. Verify explicit local file/folder paths referenced in CLAUDE.md, docs/API.md, docs/decisions.md, and docs/voices/*.md
+const voiceDir = path.join(ROOT, 'docs', 'voices');
+const voiceDocs = fs.existsSync(voiceDir)
+  ? fs.readdirSync(voiceDir).filter(f => f.endsWith('.md')).map(f => `docs/voices/${f}`)
+  : [];
+const DOC_FILES = ['CLAUDE.md', 'docs/API.md', 'docs/decisions.md', 'docs/figma-mcp-workflow.md', ...voiceDocs];
 const PATH_RE = /`((?:engine|adapters|bin|cli|tools|docs|examples)\/[A-Za-z0-9_./-]+)`/g;
 for (const rel of DOC_FILES) {
   const abs = path.join(ROOT, rel);
@@ -111,6 +115,9 @@ for (const t of TARGETS) {
         fail.push(`cli/boot.mjs [${t.slug}] symbol "${sym}" is not exported by ${modSpec}`);
       }
     }
+  }
+  if (t.voiceDoc && !fs.existsSync(path.join(ROOT, t.voiceDoc))) {
+    fail.push(`cli/boot.mjs [${t.slug}] missing voiceDoc: ${t.voiceDoc}`);
   }
   if (t.templateDir) {
     const dir = path.join(ROOT, t.templateDir);

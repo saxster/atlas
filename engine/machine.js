@@ -19,7 +19,9 @@
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, smooth, mountShareButton, mountCutBar } from './stage.js';
+import { createStage, smooth, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
+import { bindProse } from './prose.js';
+import { mountSoundToggle, playBoop } from './sound.js';
 
 const $ = id => document.getElementById(id);
 const MODE_KEY = 'atlas:machine-mode';
@@ -109,9 +111,26 @@ export function startMachine(figure) {
   const S = createStage($('gl'), $('labels'), { ...figure, PAGES }, { reduced, touch, dprCap: touch ? 1.5 : 2 });
   S.hooks.onPointerDown = () => { if (mode === 'auto' && !RENDER) { idleWait = 25; } };
 
-  // Optional cutaway / x-ray / section bar when figure.cuts is provided
+  // Optional cutaway / x-ray / section bar & visual medium bar when provided
   cutBar = mountCutBar($('mode'), figure, () => S, { initialMode: Q.get('cut') || null, place: 'after' });
   if (cutBar && Q.has('cut')) cutBar.apply(Q.get('cut'), true);
+  mountMediumBar(cutBar?.el || $('mode'), figure, () => S, { initialMedium: Q.get('medium') || null, place: 'after' });
+  const mParams = { ...(figure.params || {}) };
+  if (figure.prose && $('steps')) {
+    const pNote = document.createElement('div');
+    pNote.className = 'prose-note';
+    pNote.innerHTML = typeof figure.prose === 'function' ? figure.prose(mParams) : figure.prose;
+    $('steps').before(pNote);
+  }
+  const soundCtl = figure.sonify ? mountSoundToggle($('again'), { label: 'Sound' }) : null;
+  const proseRoot = document.querySelector('main') || document.body;
+  const prose = bindProse(proseRoot, {
+    getStage: () => S,
+    getParams: () => mParams,
+    setParam: (key, val) => { mParams[key] = val; },
+    formatters: figure.proseFormat || figure.formatters || {},
+    onSound: () => { if (soundCtl?.on && soundCtl.ctx) playBoop(soundCtl.ctx, { streak: done }); },
+  });
 
   // Simulated operator cursor + click ring during Auto / ?render tours
   const tourCur = document.createElement('div');
@@ -134,7 +153,7 @@ export function startMachine(figure) {
     ringEl.style.opacity = String(pressRing * 0.85);
     ringEl.style.transform = `translate(-50%, -50%) scale(${(0.35 + (1 - pressRing) * 0.9).toFixed(2)})`;
   }
-  S.hooks.onHover = key => { $('hint').textContent = key ? `${S.E.ASM[key].userData.title}: click to look closer` : hintFor(); };
+  S.hooks.onHover = key => { prose.highlightPart(key); $('hint').textContent = key ? `${S.E.ASM[key].userData.title}: click to look closer` : hintFor(); };
   S.hooks.onSelect = key => {
     const pl = $('plate');
     if (!key || !figure.PLATES?.[key]) { pl.hidden = true; return; }
@@ -164,7 +183,15 @@ export function startMachine(figure) {
   function draw(now, dt, pose) {
     const state = S.step({ now, dt, s: pose.s, litPage: Math.round(pose.s), running: pose.playing || mode === 'auto', clockAt: pose.clock, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1, blend: 'linear' });
     $('readout').textContent = figure.readout(state, pose.step ? STEPS[pose.step - 1] : null);
-    (figure.chips || []).forEach((c, i) => { chipEls[i].textContent = pose.step >= c.from ? c.value(state) : '–'; chipEls[i].parentNode.classList.toggle('on', pose.step >= c.from); });
+    (figure.chips || []).forEach((c, i) => {
+      const txt = pose.step >= c.from ? String(c.value(state)) : '–';
+      if (chipEls[i].textContent !== txt) chipEls[i].textContent = txt;
+      chipEls[i].parentNode.classList.toggle('on', pose.step >= c.from);
+    });
+    prose.sync(state);
+    if (soundCtl?.on && soundCtl.ctx && figure.sonify) {
+      try { figure.sonify(soundCtl.ctx, state, pose.step, null); } catch {}
+    }
     const st = pose.playing ? STEPS[pose.step - 1] : null, sp = st && (st.real ?? st.run) > 0 ? speedLabel(st.real ?? st.run, st.play) : '';   // a step that only changes the view has no speed
     $('speed').textContent = sp; $('speed').hidden = !sp;
     drawSounds(pose, state);

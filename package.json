@@ -21,6 +21,7 @@
     "cli",
     "docs/API.md",
     "docs/decisions.md",
+    "docs/voices",
     "examples/minimal",
     "LICENSE",
     "README.md"

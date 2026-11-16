@@ -2,6 +2,7 @@
    Shared by the book (book.css) and the machine and explorer pages (figure.css). */
 #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .lbl { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; transition: opacity .25s; }
+.lbl.no-fade-lag { transition: none; }
 .lbl.vec { font: italic 22px/1 var(--serif); color: var(--hi); }
 .lbl.vec.red { color: var(--red-ink, #b8343a); }
 .lbl.tick { font: 11px/1 var(--mono); color: var(--muted); transform: translate(-100%, -50%); }

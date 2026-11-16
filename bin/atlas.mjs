@@ -3,7 +3,7 @@
 // Figures are folders relative to the current one (biology/heart). The browser commands need Chrome (CHROME=… if it
 // isn't at the usual place); record also needs ffmpeg.
 const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown|blueprint]   start a figure from a working example
-atlas boot [<grammar|kit|task>] [--list] [--json]          assemble a grammar or kit boot package (contract, exports, working skeleton)
+atlas boot [<grammar|kit|voice|task>] [--list] [--json]    assemble a grammar, kit, or creator voice boot package
 atlas check [dir]                                          audit model.js purity and run every checks.mjs under dir (default: here)
 atlas gate [<file>] [--transcript <jsonl>]                 verify Model-First & Read-Before-Write gate (CLI or PreToolUse stdin hook)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone

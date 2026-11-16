@@ -24,13 +24,20 @@
   perspective: 2600px;
 }
 .page { position: relative; background: var(--card); overflow: hidden; }
-.page.left { border-radius: 14px 3px 3px 14px; box-shadow: var(--lift); padding: 54px 56px 64px; }
+.page.left {
+  border-radius: 14px 3px 3px 14px;
+  box-shadow: var(--lift), -2px 0 0 0 rgba(220, 215, 202, calc(var(--left-stack, 0) * 0.9)), -4px 0 0 0 rgba(204, 198, 184, calc(var(--left-stack, 0) * 0.75));
+  padding: 54px 56px 64px;
+}
 /* opening, the left page swings out from under the cover, about the spine (engine/cover.js) */
 .page.left { backface-visibility: hidden; transform-origin: 100% 50%; }
-.page.right { border-radius: 3px 14px 14px 3px; box-shadow: var(--lift); }
+.page.right {
+  border-radius: 3px 14px 14px 3px;
+  box-shadow: var(--lift), 2px 0 0 0 rgba(220, 215, 202, calc(var(--right-stack, 0) * 0.9)), 4px 0 0 0 rgba(204, 198, 184, calc(var(--right-stack, 0) * 0.75));
+}
 .spine {
   position: absolute; top: 0; bottom: 0; left: calc(41% - 0px); width: 60px; transform: translateX(-50%); pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(0,0,0,.035) 45%, rgba(0,0,0,.06) 50%, rgba(0,0,0,.025) 56%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.035) 45%, rgba(0,0,0,.07) 49.5%, rgba(255,255,255,.75) 50.5%, rgba(0,0,0,.025) 56%, transparent);
 }
 
 /* ---- left page: the text ---- */
@@ -58,6 +65,8 @@
 .chart .mask { fill: var(--card); }
 .chart .mark { fill: var(--hi); }
 .chart .cursor { fill: var(--lit); stroke: var(--card); stroke-width: 2; }
+.chart .tangent { stroke: var(--green-ink, #236b43); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.chart .live-path { stroke: var(--red-ink, #b8343a); stroke-width: 1.8; }
 .chart .wf-total { fill: #ecece8; stroke: var(--hi); stroke-width: 1; }
 .chart .wf-up { fill: #eef7f1; stroke: var(--green-ink); stroke-width: 1; }
 .chart .wf-down { fill: #fcefef; stroke: var(--red-ink); stroke-width: 1; }
@@ -71,6 +80,10 @@
 .folio {
   position: absolute; left: 56px; right: 56px; bottom: 24px; display: flex; justify-content: space-between;
   font: italic 14px var(--serif); color: var(--muted);
+}
+.folio::before {
+  content: ''; position: absolute; left: 0; bottom: -6px; height: 1.5px; width: calc(var(--dwell, 0) * 100%);
+  background: var(--lo); opacity: 0.65; pointer-events: none;
 }
 
 /* ---- plate: a part taken apart ---- */

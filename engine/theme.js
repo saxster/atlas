@@ -2,6 +2,17 @@
 // Zero Node imports: tools/vendor.mjs bundles this file into offline Kym textbooks via esbuild.
 export const KYM = { sheet: '--sheet', ink: '--ink', red: '--proton', blue: '--electron', green: '--green', ochre: '--neutron' };
 
+// Oliver Byrne (1847 Chiswick Press / c82.net) primary-colour geometric proof theme.
+// Yellow fills (#e5ad16) are keylined in carbon ink (#1b1917) by render.js's edge pass; unbordered prose text uses #8a6200.
+export const BYRNE_THEME = {
+  sheet: '#f4efe2',
+  ink: '#1b1917',
+  red: '#d63a24',
+  blue: '#1d5b8c',
+  ochre: '#e5ad16',
+  green: '#226b48',
+};
+
 export function readTheme(el = document.documentElement, names = KYM) {
   const cs = getComputedStyle(el), g = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const hex = v => {

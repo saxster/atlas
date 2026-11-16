@@ -3,7 +3,9 @@
 // stage (stage.js); the book is everything around it: pages, the leaf turning, practice, the top bar, Play.
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
-import { createStage, smooth, ease, mountShareButton } from './stage.js';
+import { createStage, smooth, ease, clamp01, mountShareButton } from './stage.js';
+import { bindProse } from './prose.js';
+import { mountSoundToggle, playBoop, playClick } from './sound.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -39,6 +41,8 @@ export function startBook(chapter) {
   // ?embed&page=i: only the figure, held on page i (an iframe or a book's widget). Calm unless &auto.
   // ?render: no clock of its own; window.seek(t) draws the page tour at time t, so any frame can be drawn in any order
   const EMBED = Q.has('embed'), RENDER = Q.has('render');
+  const params = { ...(chapter.params || {}) };
+  for (const k of Object.keys(params)) if (Q.has(k)) params[k] = Number.isNaN(+Q.get(k)) ? Q.get(k) : +Q.get(k);
   const calm = !RENDER && (chapter.calm ?? chapter.subject?.calm ?? (Q.has('calm') || (EMBED && !Q.has('auto'))));
   if (EMBED) document.documentElement.classList.add('embed');
   if (RENDER) document.documentElement.classList.add('render');
@@ -57,13 +61,14 @@ export function startBook(chapter) {
   import(new URL('practice.js', location.href).href).then(m => { PRACTICE = m.PRACTICE || {}; shown = leafFor = -1; }, () => {});
   const numHtml = q => q.numeric ? `<div class="numrow"><input type="number" step="any" class="numin" placeholder="${esc(q.numeric.placeholder || 'Type a number…')}" aria-label="Numeric answer">${q.numeric.unit ? `<span class="numunit">${q.numeric.unit}</span>` : ''}<button type="button" class="numcheck">Check</button><span class="numstatus" aria-live="polite"></span></div>` : '';
   const targetHtml = q => q.target ? `<div class="targetrow"><button type="button" class="targetcheck">${q.target.label || 'Check figure position'}</button><span class="targetstatus" aria-live="polite">${q.target.hint || 'Drag the point in the 3D figure, then check'}</span></div>` : '';
+  const pickHtml = q => q.pickPart ? `<div class="targetrow"><button type="button" class="targetcheck pickbtn">${q.pickPart.label || 'Locate on the figure'}</button><span class="targetstatus pickstatus" aria-live="polite">${q.pickPart.hint || 'Click to arm, then tap the matching part in 3D'}</span></div>` : '';
   const practiceHtml = i => {
     const qs = PRACTICE[i] || [];
     if (!qs.length) return '';
     return `<section class="practice"><div class="kicker">Practice</div>${qs.map((q, n) => `<div class="q" data-q="${n}">
       <p class="qtext"><span class="qn">${n + 1}</span>${q.q}</p>
-      ${targetHtml(q)}${numHtml(q)}${q.choices ? `<ol class="choices">${q.choices.map((c, k) => `<li><button type="button" data-c="${k}"><span class="letter">${'ABCDE'[k]}</span><span>${c}</span></button></li>`).join('')}</ol>`
-        : (!q.numeric && !q.target ? '<button type="button" class="reveal">Show the solution</button>' : '')}
+      ${targetHtml(q)}${pickHtml(q)}${numHtml(q)}${q.choices ? `<ol class="choices">${q.choices.map((c, k) => `<li><button type="button" data-c="${k}"><span class="letter">${'ABCDE'[k]}</span><span>${c}</span></button></li>`).join('')}</ol>`
+        : (!q.numeric && !q.target && !q.pickPart ? '<button type="button" class="reveal">Show the solution</button>' : '')}
       <div class="why" hidden>${q.why || q.solution}</div></div>`).join('')}</section>`;
   };
   const xrefHtml = i => {
@@ -176,15 +181,52 @@ export function startBook(chapter) {
     if (st) { st.textContent = ok ? '✓ Target matched in figure!' : (item.target.tryAgain || 'Drag the handle in the figure closer to the target and check again.'); st.className = `targetstatus ${ok ? 'right' : 'wrong'}`; }
     if (ok) markRight(q, item);
   };
+  let armedPick = null;
+  function disarmPick() {
+    if (!armedPick) return;
+    armedPick = null;
+    if (typeof S !== 'undefined' && S) { S.pickIntercept = null; S.litOverride = null; }
+    $('sheet')?.querySelectorAll('.parts button').forEach(btn => { btn.style.visibility = ''; });
+  }
+  const armPickPart = (q, item) => {
+    const b = q.querySelector('.pickbtn'), st = q.querySelector('.pickstatus');
+    if (!b || !item.pickPart || q.classList.contains('done')) return;
+    disarmPick();
+    armedPick = { q, item };
+    if (st) { st.textContent = 'Now click the part directly on the 3D figure →'; st.className = 'targetstatus pickstatus'; }
+    // Temporarily hide part-breakdown labels on the left page so they don't give away the answer
+    $('sheet')?.querySelectorAll('.parts button').forEach(btn => { btn.style.visibility = 'hidden'; });
+    S.pickIntercept = clickedKey => {
+      if (!clickedKey) return;
+      const rightKey = typeof item.pickPart === 'string' ? item.pickPart : item.pickPart.asm;
+      const ok = clickedKey === rightKey;
+      disarmPick();
+      b.classList.toggle('right', ok); b.classList.toggle('wrong', !ok);
+      if (ok) {
+        if (st) { st.textContent = `✓ Found ${E.ASM[rightKey]?.userData?.title || rightKey}!`; st.className = 'targetstatus pickstatus right'; }
+        S.litOverride = rightKey;
+        setTimeout(() => { if (S.litOverride === rightKey) S.litOverride = null; }, 1600);
+        markRight(q, item);
+      } else {
+        // Dual highlight: show both the clicked assembly and the true target simultaneously (inspired by anatomy)
+        const clickedName = E.ASM[clickedKey]?.userData?.title || clickedKey;
+        const rightName = E.ASM[rightKey]?.userData?.title || rightKey;
+        if (st) { st.textContent = `That was ${clickedName} — look where ${rightName} is lit`; st.className = 'targetstatus pickstatus wrong'; }
+        S.litOverride = [clickedKey, rightKey];
+        setTimeout(() => { S.litOverride = null; }, 1800);
+      }
+    };
+  };
   $('sheet').addEventListener('click', e => {
     const b = e.target.closest('button'), q = b && b.closest('.q');
     if (b?.dataset.turn) return goto(+b.dataset.turn);
-    if (b?.dataset.part) { begin(); return select(b.dataset.part, b); }
+    if (b?.dataset.part && !b.classList.contains('byrne-chip')) { begin(); return select(b.dataset.part, b); }
     if (b?.dataset.molecule) return openMolecule(+b.dataset.molecule, b);
     if (b?.dataset.specimen) return openSpecimen(+b.dataset.specimen, b);
     if (!q) return;
     const item = PRACTICE[shown][+q.dataset.q];
     if (b.classList.contains('numcheck')) return checkNumeric(q, item);
+    if (b.classList.contains('pickbtn')) return armPickPart(q, item);
     if (b.classList.contains('targetcheck')) return checkTarget(q, item);
     if (b.dataset.c !== undefined) {
       if (q.classList.contains('done')) return;
@@ -207,10 +249,16 @@ export function startBook(chapter) {
   function showPage(i) {
     if (i === shown) return;
     shown = i;
+    disarmPick();
     closeMolecule();
     $('sheet').innerHTML = sheetHtml(i);
     $('left').scrollTop = 0;
     $('pagenum').textContent = `${i + 1} / ${N}`;
+    const bookEl = $('book');
+    if (bookEl) {
+      bookEl.style.setProperty('--left-stack', (N > 1 ? i / (N - 1) : 0).toFixed(3));
+      bookEl.style.setProperty('--right-stack', (N > 1 ? 1 - i / (N - 1) : 0).toFixed(3));
+    }
     // the address names the page, so it can be bookmarked or linked: kinematics/#3
     history.replaceState(null, '', i ? `#${i}` : location.pathname);
     $('folio').textContent = i + 1;
@@ -253,13 +301,30 @@ export function startBook(chapter) {
   });
 
   // ---------- scene ----------
-  const S = createStage($('gl'), $('labels'), chapter, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  const stageChapter = { ...chapter, state: (c, r) => chapter.state(c, r, params) };
+  const S = createStage($('gl'), $('labels'), stageChapter, { reduced, touch, dprCap: touch ? 1.5 : 2 });
   const E = S.E;
+  let soundCtl = null;
+  if (!EMBED && chapter.sonify) {
+    soundCtl = mountSoundToggle(playB || document.querySelector('.pager'), { label: 'Sound' });
+  }
+  const prose = bindProse($('sheet'), {
+    getStage: () => S,
+    getParams: () => params,
+    setParam: (k, v) => { params[k] = v; begin(); },
+    formatters: chapter.proseFormat || chapter.formatters || {},
+    onPartSelect: (k, fromEl) => { if (PLATES?.[k]) { begin(); select(k, fromEl); } },
+    onSound: (kind, dir) => { if (soundCtl?.on && soundCtl.ctx) (kind === 'scrub' ? playClick : playBoop)(soundCtl.ctx, { dir, streak: 1 }); },
+  });
 
   // ---------- hover / click: the stage reports, the book shows ----------
   let returnFocus = null, pendingFrom = null, selectScroll = 0;
   S.hooks.onPointerDown = () => begin();
-  S.hooks.onHover = k => { $('hint').textContent = k ? `${E.ASM[k].userData.title} — click to break it down` : S.selected ? CLOSE_HINT : DEFAULT_HINT; };
+  S.hooks.onHover = k => {
+    prose.highlightPart(k);
+    if (armedPick) { $('hint').textContent = k ? 'Tap to submit this part as your answer' : 'Tap the matching part on the 3D figure'; return; }
+    $('hint').textContent = k ? `${E.ASM[k].userData.title} — click to break it down` : S.selected ? CLOSE_HINT : DEFAULT_HINT;
+  };
   S.hooks.onSelect = k => {
     returnFocus = pendingFrom; pendingFrom = null;
     selectScroll = scrollY;
@@ -337,6 +402,7 @@ export function startBook(chapter) {
       leaf.style.setProperty('--shade', (0.10 * Math.sin(flip * Math.PI)).toFixed(3));
     } else leaf.style.visibility = 'hidden';
     $('cue').style.opacity = s < 0.05 ? 1 : 0;
+    $('folio')?.parentElement?.style?.setProperty('--dwell', clamp01(f / 0.5).toFixed(3));
 
     // the figure: camera, time, world, labels (stage.js); time pauses while something is pointed at or open
     const state = S.step({ now, dt, s, litPage: shown, running: started && !userPaused, narrow: narrow(), narrowZoom: chapter.narrowZoom ?? 1,
@@ -345,6 +411,10 @@ export function startBook(chapter) {
     paused.classList.toggle('on', !reduced && started && !userPaused && !!(S.selected || S.hovered));
 
     $('readout').textContent = chapter.readout(state, PAGES[shown]);
+    prose.sync(state, params);
+    if (soundCtl?.on && soundCtl.ctx && chapter.sonify) {
+      try { chapter.sonify(soundCtl.ctx, state, shown, params); } catch {}
+    }
     if (chapter.onFrame) chapter.onFrame(state, [$('sheet'), $('leafsheet')]);
     if (S.selected && $('facts')) $('facts').innerHTML = PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
     if (!RENDER) requestAnimationFrame(frame);

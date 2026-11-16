@@ -13,8 +13,21 @@
 //   readout(state, params) → corner text, chips: [{ label, value: (state, params) → text }],
 //   chart?(state, params) → svg markup, PLATES?, narrowZoom? (camera distance factor on phones), frameAspect? (as machine.js)
 // }
-import { createStage, mountShareButton } from './stage.js';
+import { createStage, mountShareButton, mountMediumBar } from './stage.js';
 import { speedLabel } from './machine.js';
+import { bindProse } from './prose.js';
+import { mountSoundToggle, playClick, playBoop } from './sound.js';
+
+function applyChartSlot(el, res, state, params) {
+  if (!el || !res) return;
+  if (typeof res === 'string') {
+    if (el._lastSvg !== res) { el._lastSvg = res; el._chartKey = null; el.innerHTML = res; }
+  } else if (typeof res === 'object' && res.svg !== undefined) {
+    const k = res.key ?? 'static';
+    if (el._chartKey !== k) { el._chartKey = k; el._lastSvg = null; el.innerHTML = res.svg; }
+    res.update?.(el, state, params);
+  }
+}
 
 const $ = id => document.getElementById(id);
 const END = 1.5;
@@ -93,9 +106,31 @@ export function startExplorer(figure) {
   };
   $('again').onclick = () => reset();
   mountShareButton($('again'), shareUrl, 'again sharebtn', syncUrl);
+  mountMediumBar($('controls'), figure, () => S, { initialMedium: Q.get('medium') || null, place: 'before' });
+  if (figure.prose) {
+    const pNote = document.createElement('div');
+    pNote.className = 'prose-note';
+    pNote.innerHTML = typeof figure.prose === 'function' ? figure.prose(params) : figure.prose;
+    $('controls').before(pNote);
+  }
+  const soundCtl = figure.sonify ? mountSoundToggle($('again'), { label: 'Sound' }) : null;
 
   // ---------- the figure ----------
   let S = null;
+  const proseRoot = document.querySelector('main') || document.body;
+  const prose = bindProse(proseRoot, {
+    getStage: () => S,
+    getParams: () => params,
+    setParam: (k, v) => {
+      params[k] = v;
+      const inp = $('controls')?.querySelector(`input[data-key="${k}"]`);
+      const c = (figure.controls || []).find(x => x.key === k);
+      if (inp && c) { inp.value = v; inp.nextElementSibling.textContent = fmt(c); if (c.rebuild) build(); }
+      reset();
+    },
+    formatters: figure.proseFormat || figure.formatters || {},
+    onSound: (kind, dir) => { if (soundCtl?.on && soundCtl.ctx) (kind === 'scrub' ? playClick : playBoop)(soundCtl.ctx, { dir }); },
+  });
   // PAGES may depend on the settings (a taller board needs the camera further back): a function of params, or a list
   const fig = () => ({ ...figure, PAGES: (typeof figure.PAGES === 'function' ? figure.PAGES(params) : figure.PAGES).map(p => ({ look: {}, ...p })), buildWorld: E => figure.buildWorld(E, params), state: (c, r) => figure.state(c, r, params) });
   function build() {
@@ -104,6 +139,7 @@ export function startExplorer(figure) {
       const fresh = document.createElement('canvas'); fresh.id = 'gl'; $('gl').replaceWith(fresh);   // a disposed context can't be reused
     }
     S = createStage($('gl'), $('labels'), fig(), { reduced, touch, dprCap: touch ? 1.5 : 2 });
+    S.hooks.onHover = key => { prose.highlightPart(key); };
     S.hooks.onSelect = key => {
       const pl = $('plate');
       if (!key || !figure.PLATES?.[key]) { pl.hidden = true; return; }
@@ -118,8 +154,16 @@ export function startExplorer(figure) {
   function draw(now, dt, c) {
     const state = S.step({ now, dt, s: 0, litPage: 0, running, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
     $('readout').textContent = figure.readout(state, params);
-    (figure.chips || []).forEach((ch, i) => { chipEls[i].textContent = c > 0 || ran ? ch.value(state, params) : '–'; chipEls[i].parentNode.classList.toggle('on', c > 0 || ran); });
-    if (figure.chart) $('chart').innerHTML = figure.chart(state, params);
+    (figure.chips || []).forEach((ch, i) => {
+      const txt = c > 0 || ran ? String(ch.value(state, params)) : '–';
+      if (chipEls[i].textContent !== txt) chipEls[i].textContent = txt;
+      chipEls[i].parentNode.classList.toggle('on', c > 0 || ran);
+    });
+    if (figure.chart) applyChartSlot($('chart'), figure.chart(state, params), state, params);
+    prose.sync(state, params);
+    if (soundCtl?.on && soundCtl.ctx && figure.sonify) {
+      try { figure.sonify(soundCtl.ctx, state, 0, params); } catch {}
+    }
     const sp = running && figure.run.real ? speedLabel(figure.run.real(params), duration()) : '';
     $('speed').textContent = sp; $('speed').hidden = !sp;
   }

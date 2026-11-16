@@ -7811,6 +7811,15 @@ export const SEARCH_INDEX = [
     ]
   },
   {
+    "id": "physics/dc-motor",
+    "kind": "explorer",
+    "subject": "Physics",
+    "title": "The split-ring trick",
+    "sub": "why a brushed DC motor flips its own current every half-turn instead of trapping at 90°",
+    "text": "A watercolor-and-graphite DC motor with sliding N/S stator magnets, equal-flux magnetic field lines, copper coil current cones, and a split-ring commutator",
+    "href": "physics/dc-motor/"
+  },
+  {
     "id": "statistics/galton",
     "kind": "explorer",
     "subject": "Statistics",

@@ -766,24 +766,205 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 }
 { // Programmatic boot package assembler & strict router (cli/boot.mjs)
   const { TARGETS, boot } = await import('../cli/boot.mjs');
-  const allTargetsOk = TARGETS.length === 11 && TARGETS.every(t => {
+  const allTargetsOk = TARGETS.length === 22 && TARGETS.every(t => {
     const res = boot(t.slug);
     const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
-    return res.matched && res.exitCode === 0 && res.slug === t.slug && hasTemplates;
+    const hasVoiceDoc = t.kind !== 'voice' || (Boolean(res.voiceDoc) && res.markdown.includes('## Creator Voice Guide'));
+    return res.matched && res.exitCode === 0 && res.slug === t.slug && hasTemplates && hasVoiceDoc;
   });
   const trigExplorer = boot('interactive experiment with what if sliders');
   const trigBlueprint = boot('2d to 3d architectural blueprint with section cut');
+  const trigVoice = boot('thebuggeddev pencil wash');
+  const trigCombo = boot('what if sliders in ciechanow style');
   const abstainRes = boot('create a lesson tracker doc for the course');
   const noMatchRes = boot('underwater basketweaving');
   const listRes = boot('', { list: true });
 
-  C.check('cli/boot.mjs: all 6 grammars & 5 kits assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+  C.check('cli/boot.mjs: all 6 grammars, 8 kits & 8 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
     allTargetsOk
     && trigExplorer.matched && trigExplorer.slug === 'explorer'
     && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
+    && trigVoice.matched && trigVoice.slug === 'bugged-sketchbook' && trigVoice.register === 'quirky'
+    && trigCombo.matched && trigCombo.slug === 'explorer' && trigCombo.supportingKits.includes('ciechanowski-mechanism')
     && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
     && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
-    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 11);
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 22);
+}
+{ // Pure conservation solvers, equal-flux quantileSeeds & 3D axisymmetric ray tracing (engine/solvers.js)
+  const { solveNetwork, quantileSeeds, traceAxisymmetricRays } = await import('./solvers.js');
+  // 10V ideal source (node 1 -> 0) feeding R1 = 4Ω (1 -> 2), R2 = 6Ω (2 -> 0), plus 0.5A current source (0 -> 2)
+  // KCL at node 2: (V2 - 10)/4 + V2/6 - 0.5 = 0 => (5/12) V2 = 3 => V2 = 7.2V
+  const net = solveNetwork(2, [
+    { type: 'V', from: 1, to: 0, V: 10 },
+    { type: 'R', from: 1, to: 2, R: 4 },
+    { type: 'R', from: 2, to: 0, R: 6 },
+    { type: 'I', from: 0, to: 2, I: 0.5 },
+  ], { gmin: 1e-12 });
+  const powerSum = net.powers.reduce((a, b) => a + b, 0);
+  // Backward-Euler RC step: 10V -> R=1Ω -> C=1F (dt=1s, prevDiff=0) => V_c = 5V
+  const rcStep = solveNetwork(2, [
+    { type: 'V', from: 1, to: 0, V: 10 },
+    { type: 'R', from: 1, to: 2, R: 1 },
+    { type: 'C', from: 2, to: 0, cap: 1, prevDiff: 0, dt: 1 },
+  ], { gmin: 1e-12 });
+
+  // quantileSeeds: uniform w(r)=1 on [0, 4] -> [0.5, 1.5, 2.5, 3.5]; radial w(r)=2r on [0, 1] -> sqrt((k+0.5)/4)
+  const qUni = quantileSeeds(() => 1, [0, 4], 4);
+  const qRad = quantileSeeds(r => 2 * r, [0, 1], 4, { samples: 512 });
+  const qOk = qUni.every((v, k) => near(v, k + 0.5, 1e-3))
+    && qRad.every((v, k) => near(v, Math.sqrt((k + 0.5) / 4), 2e-3));
+
+  // Thin biconvex lens in air (n=1.5, R1=+4, R2=-4, thickness 0.002 -> paraxial 1/f = (1.5 - 1)*(1/4 + 1/4) = 0.25 => f = 4.0)
+  const paraxial = traceAxisymmetricRays([
+    { x0: 0, R: 4, aperture: 1.5, n1: 1.0, n2: 1.5 },
+    { x0: 0.002, R: -4, aperture: 1.5, n1: 1.5, n2: 1.0 },
+  ], [{ origin: [-1, 0.04, 0], dir: [1, 0, 0] }], { xEnd: 6 })[0];
+  // Intercept where ray crosses y = 0: x_focus = exitOrigin.x - exitOrigin.y * (dir.x / dir.y)
+  const xFocus = paraxial.exitOrigin[0] - paraxial.exitOrigin[1] * (paraxial.dir[0] / paraxial.dir[1]);
+
+  // Total internal reflection inside glass (n1=1.5 -> n2=1.0 at >41.8° incidence on flat x0=0 interface)
+  const tirRay = traceAxisymmetricRays([
+    { x0: 0, R: Infinity, aperture: 5, n1: 1.5, n2: 1.0 },
+  ], [{ origin: [-1, 0, 0], dir: [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3), 0] }])[0];
+
+  C.check('solvers.js: solveNetwork satisfies KCL & Tellegen power balance, quantileSeeds matches inverse-CDF, and traceAxisymmetricRays hits lens focus & TIR',
+    near(net.potentials[1], 10, 1e-9) && near(net.potentials[2], 7.2, 1e-8)
+    && net.maxKclResidual < 1e-9 && Math.abs(powerSum) < 1e-8
+    && near(rcStep.potentials[2], 5.0, 1e-8)
+    && qOk
+    && !paraxial.tir && !paraxial.clipped && near(xFocus, 4.0, 0.01)
+    && tirRay.tir && tirRay.dir[0] < -0.49);
+}
+{ // Reactive prose kit, Oliver Byrne theme contrast & procedural WebAudio kit (engine/prose.js, theme.js, sound.js)
+  const { BYRNE_THEME } = await import('./theme.js');
+  const { scrub, val, term, byrne, aside } = await import('./prose.js');
+  const { playTone, playBoop, playClick, playKnock, createHum } = await import('./sound.js');
+
+  const byrneAudit = auditTheme([
+    { role: 'Byrne ink on rag sheet', fg: BYRNE_THEME.ink, bg: BYRNE_THEME.sheet, kind: 'text' },
+    { role: 'Byrne cobalt on rag sheet', fg: BYRNE_THEME.blue, bg: BYRNE_THEME.sheet, kind: 'text' },
+    { role: 'Byrne emerald on rag sheet', fg: BYRNE_THEME.green, bg: BYRNE_THEME.sheet, kind: 'text' },
+    { role: 'Byrne ochre prose ink (#825b00) on rag sheet', fg: '#825b00', bg: BYRNE_THEME.sheet, kind: 'text' },
+    { role: 'Byrne vermilion mark on rag sheet', fg: BYRNE_THEME.red, bg: BYRNE_THEME.sheet, kind: 'mark' },
+  ]);
+
+  const scHtml = scrub('omega', { value: 2.5, min: 0, max: 10, step: 0.5, unit: ' rad/s', part: 'rotor', color: 'ochre' });
+  const valHtml = val('torque', { initial: '1.2 N·m', part: 'coil', color: 'red' });
+  const termHtml = term(['brushA', 'brushB'], 'carbon brushes', { color: 'blue', isolate: true });
+  const segHtml = byrne.seg('arm', { color: 'red', angle: 30 });
+  const angHtml = byrne.angle('phi', { color: 'blue', sweep: 45 });
+  const polyHtml = byrne.poly('face', { shape: 'tri', color: 'ochre' });
+  const asideHtml = aside('why split the ring?', 'So current reverses every half-turn.', { id: 'why-split' });
+
+  // Mock WebAudio context in headless Node
+  let oscCount = 0, bufCount = 0;
+  const mockParam = () => ({ setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {} });
+  const mockNode = () => ({ connect() {}, start() {}, stop() {}, frequency: mockParam(), gain: mockParam(), Q: mockParam(), pan: mockParam(), type: '' });
+  const mockCtx = {
+    state: 'running',
+    currentTime: 0,
+    sampleRate: 44100,
+    destination: {},
+    createOscillator() { oscCount++; return mockNode(); },
+    createGain() { return mockNode(); },
+    createBiquadFilter() { return mockNode(); },
+    createStereoPanner() { return mockNode(); },
+    createBuffer(_ch, len) { return { getChannelData: () => new Float32Array(len) }; },
+    createBufferSource() { bufCount++; return mockNode(); },
+  };
+  playTone(mockCtx, { freq: 440, pan: -0.3 });
+  playBoop(mockCtx, { streak: 3 });
+  playClick(mockCtx, { dir: -1 });
+  playKnock(mockCtx, { velocity: 2.0 });
+  const hum = createHum(mockCtx);
+  hum.update(0.75);
+  hum.stop();
+
+  C.check('prose.js, BYRNE_THEME & sound.js: Byrne palette passes WCAG AA, inline tokens emit accessible attributes, and WebAudio synthesis runs cleanly',
+    byrneAudit.ok
+    && scHtml.includes('role="spinbutton"') && scHtml.includes('data-param="omega"') && scHtml.includes('#825b00')
+    && valHtml.includes('data-var="torque"')
+    && termHtml.includes('data-part="brushA,brushB"') && termHtml.includes('data-isolate="1"')
+    && segHtml.includes('<svg') && angHtml.includes('<path') && polyHtml.includes('<polygon')
+    && asideHtml.includes('aria-controls="why-split"') && asideHtml.includes('hidden')
+    && oscCount >= 7 && bufCount === 1);
+}
+{ // 1D skew-line rail drag, multi-target assembly isolation, flush idOff, MEDIUMS, fieldLines, flowBeads, live chart & calmPBR
+  const { rayAxisClosest, MEDIUMS } = await import('./stage.js');
+  const { arrow, setArrow } = await import('./parts.js');
+  const { fieldLines, flowBeads } = await import('./prims.js');
+  const { moveTangent, setLivePath } = await import('./chart.js');
+
+  // Skew-line closest point at oblique grazing view angle + behind-camera rejection
+  const hitOblique = rayAxisClosest([0.4, 2.0, 3.0], [0.2, -2.0, -3.0], [-2, 0, 0], [4, 0, 0]);
+  const hitBehind = rayAxisClosest([0, 0, 2], [0, 0, 1], [-1, 0, 0], [2, 0, 0]);
+  const railMesh = new THREE.Mesh();
+  const dRail = draggable(railMesh, { axis: { origin: [0, 0, 0], dir: [1, 0, 0], min: -1.5, max: 1.5 }, load: 0.4 });
+  dRail.set(2.4); // clamps to 1.5
+
+  // Multi-target assembly isolation + flush coplanar idOff preservation + gear notch + MathBox micro-vector ease
+  const scene = new THREE.Group();
+  const ctrl = createAssemblyController();
+  const gA = ctrl.asm('a', scene), gB = ctrl.asm('b', scene), gC = ctrl.asm('c', scene);
+  const pA1 = part(gA, box(0.5, 0.5, 0.5), { pal: 'driver', idOff: -0.05, name: 'HalfA' });
+  const pA2 = part(gA, box(0.5, 0.5, 0.5), { pal: 'driven', idOff: 0.05, name: 'HalfB' });
+  const pB = gear(gB, { teeth: 14, r: 0.6, width: 0.16, pal: 'idler', notch: true, name: 'Idler' });
+  const pC = part(gC, box(0.5, 0.5, 0.5), { pal: 'housing', name: 'Shell' });
+  ctrl.setIsolate(['a', 'b']);
+  const multiIsoOk = near(pC.material.uniforms.uOpacity.value, 0.14, 1e-6)
+    && (pA1.material.uniforms?.uOpacity?.value ?? 1) === 1
+    && near(pA2.userData.idOff - pA1.userData.idOff, 0.10, 1e-6);
+  ctrl.setIsolate(null);
+
+  const arr = arrow(scene, 'red', { head: 0.18 });
+  setArrow(arr, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.05, 0, 0), 1); // tiny < 3 * head -> cubic micro-ease
+  const microHeadScaled = arr.userData.arrow.tip.scale.x < 0.7 && arr.userData.arrow.tip.scale.x > 0.01 && arr.visible;
+
+  // fieldLines + flowBeads + new procTex presets + idempotent calmPBR audit + chart tangents/livePaths
+  const fl = fieldLines(scene, (x, y) => [-y, x, 0], { seeds: [[1, 0, 0], [1.5, 0, 0]], steps: 24, dt: 0.05, conesEvery: 8 });
+  const fb = flowBeads(scene, u => [Math.cos(u * TAU), Math.sin(u * TAU), 0], { count: 10, shape: 'cone' });
+  fb.update(0.25);
+  const texKindsOk = ['foil', 'fluted', 'striation', 'acuity'].every(k => procTex(k).image.data.length === 256 * 256 * 4);
+
+  const mirrorGroup = new THREE.Group();
+  const mirrorMat = new THREE.MeshStandardMaterial({ roughness: 0.05, metalness: 0.9, normalScale: new THREE.Vector2(1, 1) });
+  const mirrorBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mirrorMat);
+  mirrorGroup.add(mirrorBox);
+  auditDeliverable(mirrorGroup, { calmPBR: true });
+  auditDeliverable(mirrorGroup, { calmPBR: true }); // second pass must be idempotent (normalScale stays 0.65, not 0.65^2)
+
+  const liveSvg = chart({
+    x0: 0, x1: 4, y0: -2, y1: 2,
+    series: [{ pts: [[0, 0], [4, 1]] }],
+    tangents: ['tg1'],
+    livePaths: ['lp1'],
+    xlabel: 'θ', ylabel: 'τ', label: 'Torque',
+  });
+
+  // Regression checks: contactShadow options-object overload + setHeight, numeric draggable load + stepDraggableLoad
+  const { stepDraggableLoad } = await import('./stage.js');
+  const shadowGroup = new THREE.Group();
+  const sh1 = contactShadow(shadowGroup, 2.0, 1.8, { pos: [0, -0.5, 0], strength: 0.3 });
+  const sh2 = contactShadow(shadowGroup, { w: 2.1, d: 2.0, opacity: 0.18, y: -0.975 });
+  sh2.setHeight?.(0.6);
+  dRail.targetValue = 0.5;
+  const steppedVal = stepDraggableLoad?.(dRail, 1 / 60);
+
+  const checksMap = {
+    med: MEDIUMS.length === 5 && MEDIUMS.includes('pencil-wash') && MEDIUMS.includes('ciechanow') && MEDIUMS.includes('moebius') && MEDIUMS.includes('risograph'),
+    ray: hitOblique !== null && near(hitOblique.s, 0.65, 1e-6) && hitBehind === null,
+    rail: near(dRail.get(), 1.5, 1e-12) && near(railMesh.position.x, 1.5, 1e-12) && typeof steppedVal === 'number' && steppedVal < 1.5 && steppedVal > 0.5,
+    shadow: shadowGroup.children.length === 2 && near(sh1.position.y, -0.5, 1e-6) && near(sh2.position.y, -0.975, 1e-6) && sh2.material.uniforms.uStrength.value < 0.18,
+    iso: multiIsoOk && pB.children.length === 1 && pB.children[0].userData.idOff === 0,
+    micro: microHeadScaled,
+    fl: fl.tubes.length === 2 && fl.cones.count === 6 && fb.object.count === 10,
+    tex: texKindsOk,
+    pbr: near(mirrorMat.metalness, 0.05, 1e-6) && near(mirrorMat.roughness, 0.38, 1e-6) && near(mirrorMat.normalScale.x, 0.65, 1e-6),
+    svg: liveSvg.includes('data-tangent="tg1"') && liveSvg.includes('data-live="lp1"') && typeof moveTangent === 'function' && typeof setLivePath === 'function',
+  };
+  C.check('MEDIUMS, rayAxisClosest, multi-target isolation, flush idOff, gear notch, fieldLines/flowBeads, procTex, calmPBR & live chart slots work cleanly',
+    Object.values(checksMap).every(Boolean),
+    Object.entries(checksMap).filter(([, v]) => !v).map(([k]) => k).join(','));
 }
 { // Model-First structural audit (cli/check.mjs) & PreToolUse gate (cli/gate.mjs)
   const fs = await import('node:fs');
@@ -832,6 +1013,45 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
       && allowAfterBoot.allowed && allowAfterBoot.pass === 1);
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+}
+{ // Figma MCP token audit & self-contained Code Layer bundler (tools/figma-bridge.mjs)
+  const os = await import('node:os');
+  const { exportTokens, auditFigmaVariables, bundleFigureForFigma, buildAtelierSvgSheet } = await import('../tools/figma-bridge.mjs');
+  const tok = exportTokens();
+  const svgSheet = buildAtelierSvgSheet();
+  const auditOk = auditFigmaVariables(tok);
+  const auditFlatOk = auditFigmaVariables({ 'paper-ink/sheet': '#fbfbfa', 'paper-ink/page': '#f2f2ef', 'paper-ink/text': '#57575a', 'paper-ink/ochre': '#8c6208' });
+  const auditFlatBad = auditFigmaVariables({ 'paper-ink/sheet': '#ffffff', 'paper-ink/text': '#b5b5b5' });
+  const auditEmpty = auditFigmaVariables({});
+  const tmpBundle = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-figma-bundle-'));
+  const tmpBook = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-figma-book-'));
+  const tmpHeadless = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-figma-headless-'));
+  try {
+    const bRes = bundleFigureForFigma('physics/dc-motor', tmpBundle);
+    const bundledHtml = fs.readFileSync(path.join(tmpBundle, 'index.html'), 'utf8');
+    const hasEngine = fs.existsSync(path.join(tmpBundle, 'engine', 'explorer.js'));
+    const noChecks = !fs.existsSync(path.join(tmpBundle, 'checks.mjs'));
+    const noParentEscape = !bundledHtml.includes('../engine/') && bundledHtml.includes('./engine/');
+
+    bundleFigureForFigma('physics/newton', tmpBook);
+    const bookChapJs = fs.readFileSync(path.join(tmpBook, 'chapter.js'), 'utf8');
+    const bookSubjJs = fs.readFileSync(path.join(tmpBook, 'subject.js'), 'utf8');
+    const bookNoEscape = !bookChapJs.includes('../subject.js') && bookChapJs.includes('./subject.js') && !bookSubjJs.includes('../xrefs.js') && !bookSubjJs.includes('../equations/');
+
+    bundleFigureForFigma('biology/ch02-cell-architecture', tmpHeadless);
+    const headlessOk = fs.existsSync(path.join(tmpHeadless, 'index.html')) && fs.existsSync(path.join(tmpHeadless, 'main.js'));
+
+    C.check('tools/figma-bridge.mjs: all 8 Figma Variable modes & flat get_variable_defs maps pass WCAG AA, empty/low-contrast maps fail, and Code Layer bundles standalone, book & headless chapters cleanly',
+      Object.keys(tok.modes).length === 8 && tok.typography.serif === 'EB Garamond'
+      && auditOk.ok && auditOk.checked >= 80 && auditFlatOk.ok && !auditFlatBad.ok && !auditEmpty.ok
+      && bRes.files.includes('index.html') && hasEngine && noChecks && noParentEscape
+      && bookNoEscape && headlessOk && svgSheet.includes('Ciechanowski-Involute-Gear') && svgSheet.includes('Byrne-Visual-Proof-Tokens'),
+      auditOk.findings.map(f => `${f.role} (${f.ratio}:1 < ${f.min}:1)`).join('; '));
+  } finally {
+    fs.rmSync(tmpBundle, { recursive: true, force: true });
+    fs.rmSync(tmpBook, { recursive: true, force: true });
+    fs.rmSync(tmpHeadless, { recursive: true, force: true });
   }
 }
 C.report();

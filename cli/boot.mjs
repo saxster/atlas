@@ -141,10 +141,10 @@ export const TARGETS = [
   {
     slug: 'prims',
     kind: 'kit',
-    summary: 'Core 3D paper-and-ink mathematical and scientific building blocks (axes, plots, surfaces, vector fields, streamlines, lattices, molecules, particles).',
-    triggers: ['building blocks', '3d plot', 'vector field', 'streamline', '3d surface', 'molecule xyz', 'coordinate axes'],
+    summary: 'Core 3D paper-and-ink mathematical and scientific building blocks (axes, plots, surfaces, vector fields, streamlines, equal-flux fieldLines, flowBeads, lattices, molecules, particles).',
+    triggers: ['building blocks', '3d plot', 'vector field', 'streamline', 'field lines', 'flow beads', '3d surface', 'molecule xyz', 'coordinate axes'],
     modules: {
-      '@saxster/atlas/prims.js': ['axes', 'plot', 'area', 'surface', 'curve', 'vector', 'field', 'streamline', 'lattice', 'blob', 'particles', 'molecule', 'parseXYZ', 'linkage'],
+      '@saxster/atlas/prims.js': ['axes', 'plot', 'area', 'surface', 'curve', 'vector', 'field', 'streamline', 'fieldLines', 'flowBeads', 'lattice', 'blob', 'particles', 'molecule', 'parseXYZ', 'linkage'],
       '@saxster/atlas/parts.js': ['part', 'box', 'cyl', 'rod', 'lines', 'arrow', 'setArrow', 'liveTube', 'shadeMat', 'PALETTE', 'TONE'],
     },
     invariants: [
@@ -164,6 +164,20 @@ export const TARGETS = [
     invariants: [
       'kinematics.js is pure math (zero DOM, zero three.js) and belongs in model.js and checks.mjs.',
       'Always verify link lengths across multiple crank angles with checkLinkLengths() in checks.mjs.',
+    ],
+  },
+  {
+    slug: 'solvers',
+    kind: 'kit',
+    summary: 'Pure conservation-network solver (MNA circuits/hydraulics/thermal), inverse-CDF equal-flux streamline seeding, and 3D axisymmetric Snell/TIR ray-tracing.',
+    triggers: ['circuit solver', 'nodal analysis', 'flow network', 'equal flux', 'quantile seeds', 'ray tracing', 'snell refraction', 'optical bench'],
+    modules: {
+      '@saxster/atlas/solvers.js': ['solveLinear', 'solveNetwork', 'quantileSeeds', 'opticSag', 'traceAxisymmetricRays'],
+      '@saxster/atlas/checks.js': ['checks', 'near', 'deriv', 'integ'],
+    },
+    invariants: [
+      'solvers.js is pure math (zero DOM, zero three.js) and belongs in model.js and checks.mjs.',
+      'Verify KCL residual (maxKclResidual < 1e-8) and power conservation (sum(powers) === 0) in checks.mjs.',
     ],
   },
   {
@@ -208,18 +222,177 @@ export const TARGETS = [
   {
     slug: 'chart',
     kind: 'kit',
-    summary: '2D SVG line/scatter charts, waterfall bridges, and Sankey flow diagrams with paper-masked labels and WCAG-checked palettes for book pages and explorers.',
-    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart'],
+    summary: '2D SVG line/scatter charts, live tangents/paths, waterfall bridges, and Sankey flow diagrams with paper-masked labels and WCAG-checked palettes.',
+    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart', 'live chart'],
     modules: {
       '@saxster/atlas/chart.js': [
-        'textAdvanceEm', 'scale', 'chart', 'samples', 'moveCursor',
+        'textAdvanceEm', 'scale', 'chart', 'samples', 'moveCursor', 'moveTangent', 'setLivePath',
         'waterfallWalk', 'waterfallChart', 'sankeyLayout', 'sankeyChart',
       ],
-      '@saxster/atlas/theme.js': ['readTheme', 'KYM', 'parseColor', 'compositeOver', 'srgbLuminance', 'wcagContrast', 'auditTheme'],
+      '@saxster/atlas/theme.js': ['readTheme', 'KYM', 'BYRNE_THEME', 'parseColor', 'compositeOver', 'srgbLuminance', 'wcagContrast', 'auditTheme'],
     },
     invariants: [
       'Compute waterfallWalk(steps) or sankeyLayout({ stages, links }) in model.js/checks.mjs and verify mass/flow conservation before drawing.',
-      'Run npx atlas critic <figure> (which includes cli/clip.mjs) to verify zero SVG text/node overlaps or viewport clipping.',
+      'Return { key, svg, update } from figure.chart(params) with moveCursor/moveTangent/setLivePath for zero-thrash live updates.',
+    ],
+  },
+  {
+    slug: 'prose',
+    kind: 'kit',
+    summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
+    triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber'],
+    modules: {
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'bindProse'],
+      '@saxster/atlas/theme.js': ['BYRNE_THEME', 'auditTheme'],
+    },
+    invariants: [
+      'Every inline val(key) formats state from model.js via proseFormat / formatters (never inline math in DOM strings).',
+      'Every data-part target in term() or byrne.* resolves to a named 3D assembly in world.js.',
+    ],
+  },
+  {
+    slug: 'sound',
+    kind: 'kit',
+    summary: 'Zero-asset WebAudio synthesis kit: rising-semitone playBoop, directional playClick, velocity-gated playKnock, continuous motor/field createHum, and muted-by-default mountSoundToggle.',
+    triggers: ['procedural audio', 'sound synthesis', 'motor hum', 'commutator click', 'rising boop'],
+    modules: {
+      '@saxster/atlas/sound.js': ['playTone', 'playBoop', 'playClick', 'playKnock', 'createHum', 'mountSoundToggle'],
+    },
+    invariants: [
+      'Audio is always opt-in via figure.sonify(ctx, state, ...) (muted by default until user clicks Sound, suspended on mute, and hidden in ?render).',
+    ],
+  },
+  // ---------- Creator Voices (3 Design Registers: textbook, creative, quirky) ----------
+  {
+    slug: 'textbook-pure',
+    kind: 'voice',
+    register: 'textbook',
+    voiceDoc: 'docs/voices/textbook-pure.md',
+    summary: 'Register 1 (Textbook-Pure) — Kym / Tufte calm reference plate: paper-ink medium, single-accent focus, zero theatrical chrome.',
+    triggers: ['textbook pure', 'anodyne textbook', 'canonical plate', 'calm textbook'],
+    modules: {
+      '@saxster/atlas/render.js': ['MEDIUMS'],
+      '@saxster/atlas/chart.js': ['chart', 'moveCursor'],
+      '@saxster/atlas/theme.js': ['auditTheme'],
+    },
+    invariants: [
+      'Use medium: "paper-ink" with silent defaults and <= 6 stage callouts per beat.',
+    ],
+  },
+  {
+    slug: 'ciechanowski-mechanism',
+    kind: 'voice',
+    register: 'creative',
+    voiceDoc: 'docs/voices/ciechanowski-mechanism.md',
+    summary: 'Register 2 (Creative Atelier) — Bartosz Ciechanowski mechanical clarity: frameless #f8f8f8 stage, [0.75, 1.0] view-headlight, driver/driven/idler role gears with notch: true.',
+    triggers: ['ciechanowski', 'bartosz mechanism', 'gear mechanism voice', 'ciechanow style'],
+    modules: {
+      '@saxster/atlas/render.js': ['MEDIUMS'],
+      '@saxster/atlas/parts.js': ['part', 'gear', 'rack', 'spring', 'PALETTE'],
+      '@saxster/atlas/kinematics.js': ['gearRatio', 'sliderCrank', 'fourBar', 'rackPinion', 'differential'],
+    },
+    invariants: [
+      'Set medium: "ciechanow", assign pal: "driver"|"driven"|"idler"|"compound"|"housing", and pass notch: true on rotating gears.',
+    ],
+  },
+  {
+    slug: 'byrne-visual-proof',
+    kind: 'voice',
+    register: 'creative',
+    voiceDoc: 'docs/voices/byrne-visual-proof.md',
+    summary: 'Register 2 (Creative Atelier) — Oliver Byrne (1847 Euclid) & c82.net: BYRNE_THEME primary inks + inline SVG seg/angle/poly tokens replacing letter labels with hover proof-isolation.',
+    triggers: ['oliver byrne', 'byrne proof', 'visual euclid', 'geometric proof voice'],
+    modules: {
+      '@saxster/atlas/prose.js': ['byrne', 'term', 'aside'],
+      '@saxster/atlas/theme.js': ['BYRNE_THEME', 'auditTheme'],
+      '@saxster/atlas/parts.js': ['applyTheme', 'part'],
+    },
+    invariants: [
+      'Replace 3-letter vertex strings in prose with byrne.seg(), byrne.angle(), and byrne.poly() locked to 3D assemblies via data-isolate="1".',
+    ],
+  },
+  {
+    slug: 'moebius-printmaking',
+    kind: 'voice',
+    register: 'creative',
+    voiceDoc: 'docs/voices/moebius-printmaking.md',
+    summary: 'Register 2 (Creative Atelier) — Moebius ligne-claire & Risograph printmaking (Maxime Heckel): hard specular islands + 3-tier shadow cross-hatching or CMYK rotated halftone dots.',
+    triggers: ['moebius style', 'ligne claire', 'risograph print', 'crosshatch shader'],
+    modules: {
+      '@saxster/atlas/render.js': ['MEDIUMS'],
+      '@saxster/atlas/cad_kit.js': ['revolveSection', 'extrudeLayers', 'extrudeContours', 'procTex'],
+      '@saxster/atlas/mesh-audit.js': ['auditDeliverable'],
+    },
+    invariants: [
+      'Set medium: "moebius" or "risograph" and audit PBR meshes with auditDeliverable(root, { calmPBR: true }).',
+    ],
+  },
+  {
+    slug: 'redblob-reactive-prose',
+    kind: 'voice',
+    register: 'creative',
+    voiceDoc: 'docs/voices/redblob-reactive-prose.md',
+    summary: 'Register 2 (Creative Atelier) — Amit Patel (Red Blob Games) & Bret Victor (Tangle): 4-surface hue lock across inline 5px/step scrub(), live val(), [data-part] term(), and 60fps SVG charts.',
+    triggers: ['red blob', 'amit patel', 'bret victor', 'tangle prose', 'coupled chart prose'],
+    modules: {
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'bindProse'],
+      '@saxster/atlas/chart.js': ['chart', 'moveCursor', 'moveTangent', 'setLivePath'],
+      '@saxster/atlas/parts.js': ['setArrow', 'PALETTE'],
+    },
+    invariants: [
+      'Lock each variable to one semantic hue across inline scrub()/val(), term(), 2D chart tangents/livePaths, and 3D vectors.',
+    ],
+  },
+  {
+    slug: 'bugged-sketchbook',
+    kind: 'voice',
+    register: 'quirky',
+    voiceDoc: 'docs/voices/bugged-sketchbook.md',
+    summary: 'Register 3 (Quirky & Toy-First) — thebuggeddev STEM sketchbook: pencil-wash watercolor medium, flush-seam parts, 1D axis/load tactile drag, hold-to-stall probes, fieldLines/flowBeads, and motor hum.',
+    triggers: ['thebuggeddev', 'bugged sketchbook', 'pencil wash', 'watercolor sketchbook', 'sketchbook lab'],
+    modules: {
+      '@saxster/atlas/render.js': ['MEDIUMS'],
+      '@saxster/atlas/stage.js': ['draggable', 'rayAxisClosest', 'mountMediumBar'],
+      '@saxster/atlas/prims.js': ['fieldLines', 'flowBeads'],
+      '@saxster/atlas/solvers.js': ['solveNetwork', 'quantileSeeds', 'traceAxisymmetricRays'],
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'aside'],
+      '@saxster/atlas/sound.js': ['createHum', 'playClick', 'mountSoundToggle'],
+    },
+    invariants: [
+      'Set medium: "pencil-wash", include direct 1D axis/load manipulation or an edge-case stall probe, and keep figure.sonify(ctx, state) muted by default.',
+    ],
+  },
+  {
+    slug: 'ncase-playable-toy',
+    kind: 'voice',
+    register: 'quirky',
+    voiceDoc: 'docs/voices/ncase-playable-toy.md',
+    summary: 'Register 3 (Quirky & Toy-First) — Nicky Case playable system: 5-act Interest Curve (Toy Hook -> Single Rule -> Bet -> Twist -> Sandbox), :nutshell aside() bubbles, and squashStretch personality.',
+    triggers: ['nicky case', 'playable toy', 'evolution of trust', 'interest curve', 'nutshell voice'],
+    modules: {
+      '@saxster/atlas/prose.js': ['aside', 'term', 'scrub', 'val'],
+      '@saxster/atlas/motion.js': ['squashStretch', 'settleShake', 'spring'],
+      '@saxster/atlas/sound.js': ['playBoop', 'playClick'],
+    },
+    invariants: [
+      'Open with an immediate toy hook before multi-slider walls, test intuition with predict/pickPart, and tuck tangents into expandable aside() bubbles.',
+    ],
+  },
+  {
+    slug: 'toybox-scale-joy',
+    kind: 'voice',
+    register: 'quirky',
+    voiceDoc: 'docs/voices/toybox-scale-joy.md',
+    summary: 'Register 3 (Quirky & Toy-First) — Bruno Simon, Josh Comeau & Neal Agarwal: 3-second zero-onboarding tabletop joy, rrange imperfection, grounded contactShadow, logFovLerp scale anchors, and boops/knocks.',
+    triggers: ['bruno simon', 'josh comeau', 'neal agarwal', 'tabletop toybox', 'scale joy'],
+    modules: {
+      '@saxster/atlas/motion.js': ['rrange', 'logFovLerp', 'camDollyZoom', 'squashStretch'],
+      '@saxster/atlas/cad_kit.js': ['contactShadow', 'procTex'],
+      '@saxster/atlas/sound.js': ['playBoop', 'playKnock'],
+      '@saxster/atlas/adapters/specimen.js': ['showSpecimen', 'auditDeliverable'],
+    },
+    invariants: [
+      'Ground floating parts with height-attenuated contactShadow, seed tabletop micro-jitter via rrange(seed), and anchor >10x scale jumps with familiar reference objects.',
     ],
   },
 ];
@@ -293,6 +466,11 @@ function assemblePackage(primary, matchedBy, supportingKits = []) {
       if (fs.existsSync(p)) templates[fn] = fs.readFileSync(p, 'utf8').trim();
     }
   }
+  let voiceMarkdown = null;
+  if (primary.voiceDoc) {
+    const vp = path.join(HERE, primary.voiceDoc);
+    if (fs.existsSync(vp)) voiceMarkdown = fs.readFileSync(vp, 'utf8').trim();
+  }
   const lines = [
     `# Boot Package: ${primary.slug} (${primary.kind})`,
     `Matched by: ${matchedBy}`,
@@ -307,12 +485,19 @@ function assemblePackage(primary, matchedBy, supportingKits = []) {
   for (const [mod, syms] of Object.entries(primary.modules)) {
     lines.push(`- \`${mod}\`: ${syms.map(s => `\`${s}\``).join(', ')}`);
   }
+  if (voiceMarkdown) {
+    lines.push('', '## Creator Voice Guide', '', voiceMarkdown);
+  }
   if (supportingKits.length) {
-    lines.push('', '## Matched Supporting Kits');
+    lines.push('', '## Matched Supporting Kits & Voices');
     for (const kit of supportingKits) {
-      lines.push(`### ${kit.slug} — ${kit.summary}`);
+      lines.push(`### ${kit.slug} (${kit.kind}) — ${kit.summary}`);
       for (const [mod, syms] of Object.entries(kit.modules)) {
         lines.push(`- \`${mod}\`: ${syms.map(s => `\`${s}\``).join(', ')}`);
+      }
+      if (kit.voiceDoc) {
+        const kvp = path.join(HERE, kit.voiceDoc);
+        if (fs.existsSync(kvp)) lines.push('', fs.readFileSync(kvp, 'utf8').trim());
       }
     }
   }
@@ -335,10 +520,12 @@ function assemblePackage(primary, matchedBy, supportingKits = []) {
     exitCode: 0,
     slug: primary.slug,
     kind: primary.kind,
+    register: primary.register || null,
     matchedBy,
     supportingKits: supportingKits.map(k => k.slug),
     modules: primary.modules,
     templates,
+    voiceDoc: primary.voiceDoc || null,
     markdown: lines.join('\n'),
   };
 }
@@ -348,6 +535,7 @@ export function boot(queryOrSlug = '', { list = false, json = false } = {}) {
   if (list || !q) {
     const grammars = TARGETS.filter(t => t.kind === 'grammar');
     const kits = TARGETS.filter(t => t.kind === 'kit');
+    const voices = TARGETS.filter(t => t.kind === 'voice');
     const lines = [
       '# Atlas Boot Targets',
       '',
@@ -356,11 +544,14 @@ export function boot(queryOrSlug = '', { list = false, json = false } = {}) {
       '',
       '## Domain Kits (`npx atlas boot <kit>`)',
       ...kits.map(k => `- **${k.slug.padEnd(10)}** — ${k.summary} (triggers: ${k.triggers.join(', ')})`),
+      '',
+      '## Creator Voices (`npx atlas boot <voice>` — see `docs/voices/catalog.md`)',
+      ...voices.map(v => `- **${v.slug.padEnd(23)}** [${v.register}] — ${v.summary} (triggers: ${v.triggers.join(', ')})`),
     ];
     const payload = {
       matched: false,
       exitCode: 0,
-      targets: TARGETS.map(({ slug, kind, summary, triggers }) => ({ slug, kind, summary, triggers })),
+      targets: TARGETS.map(({ slug, kind, register, summary, triggers }) => ({ slug, kind, ...(register ? { register } : {}), summary, triggers })),
       markdown: lines.join('\n'),
     };
     return payload;
@@ -381,18 +572,23 @@ export function boot(queryOrSlug = '', { list = false, json = false } = {}) {
 
   const firedGrammars = fired.filter(x => x.target.kind === 'grammar');
   const firedKits = fired.filter(x => x.target.kind === 'kit');
+  const firedVoices = fired.filter(x => x.target.kind === 'voice');
 
   if (firedGrammars.length === 1) {
     const g = firedGrammars[0];
     return assemblePackage(
       g.target,
       `trigger fired: "${g.hits[0]}"`,
-      firedKits.map(k => k.target),
+      [...firedKits, ...firedVoices].map(x => x.target),
     );
   }
-  if (firedGrammars.length === 0 && firedKits.length === 1) {
+  if (firedGrammars.length === 0 && firedKits.length === 1 && firedVoices.length === 0) {
     const k = firedKits[0];
     return assemblePackage(k.target, `trigger fired: "${k.hits[0]}"`);
+  }
+  if (firedGrammars.length === 0 && firedKits.length === 0 && firedVoices.length === 1) {
+    const v = firedVoices[0];
+    return assemblePackage(v.target, `trigger fired: "${v.hits[0]}"`);
   }
 
   const candidates = scoreTargets(TARGETS, q);

@@ -1154,6 +1154,57 @@ export function procTex(kind = 'wood', {
         setPx(x, y, br + fine, bg + fine, bb + fine);
       }
     }
+  } else if (kind === 'foil') {
+    // Crinkled aerospace Kapton MLI micro-facets (inspired by thebuggeddev/spaceship)
+    const [br, bg, bb] = base || [218, 172, 62];
+    const cells = 12, cw = width / cells, ch = height / cells;
+    const slopes = Array.from({ length: cells * cells }, () => [(rnd() - 0.5) * 46, (rnd() - 0.5) * 46]);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cx = Math.min(cells - 1, Math.floor(x / cw)), cy = Math.min(cells - 1, Math.floor(y / ch));
+        const u = (x % cw) / cw - 0.5, v = (y % ch) / ch - 0.5;
+        const [sx, sy] = slopes[cy * cells + cx];
+        const tri = u + v > 0 ? 1 : -0.75;
+        const d = (u * sx + v * sy) * tri;
+        setPx(x, y, br + d, bg + d * 0.85, bb + d * 0.45);
+      }
+    }
+  } else if (kind === 'fluted') {
+    // Parallel cooling/winding channels (inspired by thebuggeddev/spaceship & electric-motor)
+    const [br, bg, bb] = base || [188, 126, 84];
+    const ridges = 24;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const ridge = Math.cos((x / width) * ridges * Math.PI * 2) * 18;
+        const ox = Math.sin((y / height) * Math.PI) * 8;
+        setPx(x, y, br + ridge + ox, bg + ridge * 0.8, bb + ridge * 0.7 - ox * 0.4);
+      }
+    }
+  } else if (kind === 'striation') {
+    // Stacked book page-block fore-edge striations + paper flecks (inspired by thebuggeddev/books)
+    const [br, bg, bb] = base || [244, 238, 224];
+    const rowTones = Array.from({ length: height }, () => (rnd() - 0.5) * 16);
+    for (let y = 0; y < height; y++) {
+      const rt = rowTones[y] + (y % 3 === 0 ? -9 : 0);
+      for (let x = 0; x < width; x++) {
+        const fleck = rnd() < 0.015 ? -18 : 0;
+        setPx(x, y, br + rt + fleck, bg + rt + fleck, bb + rt * 0.9 + fleck);
+      }
+    }
+  } else if (kind === 'acuity') {
+    // Optical bench resolution target / calibration grid (inspired by thebuggeddev/lens)
+    const [br, bg, bb] = base || [248, 246, 240];
+    const [ar, ag, ab] = accent || [28, 28, 32];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const border = x < 4 || x >= width - 4 || y < 4 || y >= height - 4;
+        const grid = (x % 32 === 0) || (y % 32 === 0);
+        const bars = y > height * 0.25 && y < height * 0.75 && x > width * 0.25 && x < width * 0.75 && ((Math.floor(x / 8) + Math.floor(y / 24)) % 2 === 0);
+        if (border || bars) setPx(x, y, ar, ag, ab);
+        else if (grid) setPx(x, y, lerp(br, ar, 0.25), lerp(bg, ag, 0.25), lerp(bb, ab, 0.25));
+        else setPx(x, y, br, bg, bb);
+      }
+    }
   } else {
     // 'linen' or 'painting'
     const [br, bg, bb] = base || [226, 219, 206];
@@ -1399,9 +1450,23 @@ export function inkAware(material, ctrl, {
 }
 
 // Soft analytical contact-shadow plane placed under furniture or apparatus on the floor.
-export function contactShadow(parent, w, d, {
-  pos = [0, 0.005, 0], strength = 0.45, color = '#18181a',
-} = {}) {
+// Accepts both positional contactShadow(parent, w, d, opts) and options contactShadow(parent, { w, d, pos, y, strength, opacity, color }).
+export function contactShadow(parentOrOpts, wOrOpts = 1, dArg = 1, rawOpts = {}) {
+  let parent = parentOrOpts;
+  let w = wOrOpts, d = dArg, opts = rawOpts;
+  if (parentOrOpts && typeof parentOrOpts.add !== 'function') {
+    opts = parentOrOpts;
+    parent = null;
+    w = opts.w ?? 1;
+    d = opts.d ?? 1;
+  } else if (wOrOpts && typeof wOrOpts === 'object') {
+    opts = wOrOpts;
+    w = opts.w ?? 1;
+    d = opts.d ?? 1;
+  }
+  const baseStrength = opts.strength ?? opts.opacity ?? 0.45;
+  const pos = opts.pos ?? [0, opts.y ?? 0.005, 0];
+  const color = opts.color ?? '#18181a';
   const mat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -1410,7 +1475,7 @@ export function contactShadow(parent, w, d, {
     polygonOffsetUnits: -1,
     uniforms: {
       uColor: { value: new THREE.Color(color) },
-      uStrength: { value: strength },
+      uStrength: { value: baseStrength },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -1435,7 +1500,14 @@ export function contactShadow(parent, w, d, {
   m.position.set(...pos);
   m.userData = { noEdge: true };
   m.renderOrder = 2;
-  parent.add(m);
+  // Bruno Simon height-attenuation: softens shadow and widens penumbra as lifted height h grows
+  m.setHeight = (h = 0) => {
+    const hh = Math.max(0, h);
+    mat.uniforms.uStrength.value = baseStrength / (1 + 2.2 * hh);
+    const s = 1 + 0.35 * hh;
+    m.scale.set(s, s, 1);
+  };
+  parent?.add?.(m);
   return m;
 }
 

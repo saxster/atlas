@@ -12,6 +12,8 @@ export function auditDeliverable(root, {
   requireUV = false,
   checkScale = true,
   clampNonMetal = false,
+  calmPBR = false,
+  maxAnisotropy = 1,
 } = {}) {
   const errors = [], warnings = [], perObject = {};
   let meshes = 0, tris = 0;
@@ -96,12 +98,27 @@ export function auditDeliverable(root, {
       errors.push(`${name}: missing UV attribute`);
     }
 
-    // Optional PBR dielectric fix: image-to-3D generators frequently set metalness > 0.5 on glazed/painted surfaces
-    if (clampNonMetal) {
+    // Optional PBR dielectric & anti-shimmer hygiene (inspired by thebuggeddev/anatomy & seed)
+    if (clampNonMetal || calmPBR) {
       for (const m of mats) {
-        if (typeof m.metalness === 'number' && m.metalness > 0.15 && !m.userData?.isMetal) {
+        if ((clampNonMetal || calmPBR) && typeof m.metalness === 'number' && m.metalness > 0.15 && !m.userData?.isMetal) {
           m.metalness = 0.05;
           objWarnings.push('clamped spurious PBR metalness to 0.05');
+        }
+        if (calmPBR && !m.userData?._calmed) {
+          m.userData = m.userData || {};
+          m.userData._calmed = true;
+          if (typeof m.roughness === 'number' && !m.userData?.isMetal) {
+            m.roughness = Math.max(0.38, Math.min(0.88, m.roughness));
+          }
+          if (m.normalScale?.multiplyScalar) m.normalScale.multiplyScalar(0.65);
+          for (const mapKey of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) {
+            const tex = m[mapKey];
+            if (tex && tex.generateMipmaps !== false) {
+              tex.minFilter = THREE.LinearMipmapLinearFilter;
+              if (maxAnisotropy > 1) tex.anisotropy = Math.min(8, maxAnisotropy);
+            }
+          }
         }
       }
     }

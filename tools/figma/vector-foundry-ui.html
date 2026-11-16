@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+    html, body { margin: 0; padding: 0; height: auto; min-height: 0; }
+    body { display: block; }
+    #plugin-root { height: auto; }
+    body > #plugin-root > fig-footer {
+      background-color: var(--figma-color-bg);
+      box-shadow: inset 0 1px 0 0 var(--figma-color-border);
+      border-radius: 0 0 var(--radius-large) var(--radius-large);
+    }
+    #status {
+      font-size: 11px;
+      color: var(--figma-color-text-secondary);
+      padding: 4px 12px 8px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="plugin-root">
+    <fig-content>
+      <fig-field>
+        <label>Generator</label>
+        <fig-dropdown id="mode" value="Gear">
+          <option value="Gear">Involute gear + timing mark</option>
+          <option value="ByrneGlyphs">Oliver Byrne proof glyphs</option>
+          <option value="Rosette">Guilloche engraving rosette</option>
+          <option value="PaleMatrix">8-voice palette swatch matrix</option>
+        </fig-dropdown>
+      </fig-field>
+      <fig-field>
+        <label>Teeth / lobes</label>
+        <fig-slider id="teeth" value="18" min="8" max="40" step="1" text></fig-slider>
+      </fig-field>
+      <fig-field>
+        <label>Size (px)</label>
+        <fig-slider id="size" value="200" min="96" max="420" step="8" text></fig-slider>
+      </fig-field>
+      <fig-field>
+        <label>Accent fill</label>
+        <fig-input-color id="color" value="#FCD561FF" picker="figma-native"></fig-input-color>
+      </fig-field>
+      <span id="status">Ready to generate editable layers</span>
+    </fig-content>
+    <fig-footer sticky>
+      <fig-button id="run" type="submit">Generate on canvas</fig-button>
+    </fig-footer>
+  </div>
+
+  <script>
+    function post(message) {
+      parent.postMessage({ pluginMessage: message }, '*')
+    }
+
+    let lastReportedHeight = 0
+    let resizeRaf = 0
+    function reportHeight() {
+      const root = document.getElementById('plugin-root')
+      if (!root) return
+      const height = Math.ceil(root.getBoundingClientRect().height)
+      if (height && height !== lastReportedHeight) {
+        lastReportedHeight = height
+        post({ type: 'resize', height: height })
+      }
+    }
+
+    const pluginRoot = document.getElementById('plugin-root')
+    if (pluginRoot && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(function () {
+        if (resizeRaf) cancelAnimationFrame(resizeRaf)
+        resizeRaf = requestAnimationFrame(reportHeight)
+      }).observe(pluginRoot)
+    }
+
+    window.onmessage = function (ev) {
+      const msg = ev.data && ev.data.pluginMessage
+      if (msg && msg.type === 'status') {
+        const el = document.getElementById('status')
+        if (el) el.textContent = msg.text
+        reportHeight()
+      }
+    }
+
+    document.getElementById('run').addEventListener('click', function () {
+      const rawHex = String(document.getElementById('color').value || '#FCD561').slice(0, 7)
+      post({
+        type: 'run',
+        mode: String(document.getElementById('mode').value || 'Gear'),
+        teeth: Number(document.getElementById('teeth').value || 18),
+        size: Number(document.getElementById('size').value || 200),
+        primaryHex: rawHex.startsWith('#') ? rawHex : '#' + rawHex,
+      })
+    })
+  </script>
+</body>
+</html>

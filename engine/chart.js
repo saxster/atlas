@@ -61,7 +61,7 @@ export function scale({ x0, x1, y0, y1, w = 420, h = 170 }) {
 
 // series: [{ pts: [[x, y], …], cls?, fill? (shade down to y = 0), tag?: [x, y, text, alignEnd?] }]
 // marks: [[x, y, text]]; cursors: keys for moveCursor
-export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel, marks = [], cursors = [], label, desc = '', id = '' }) {
+export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel, marks = [], cursors = [], tangents = [], livePaths = [], label, desc = '', id = '' }) {
   const { sx, sy } = scale({ x0, x1, y0, y1, w, h });
   const d = pts => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join('');
   const base = sy(Math.min(Math.max(0, y0), y1)).toFixed(1);
@@ -71,8 +71,9 @@ export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel
       const c = calloutPlate(sx(s.tag[0]), sy(s.tag[1]), s.tag[2], { alignEnd: !!s.tag[3], above: true, fontSize: 11.5, cls: 'lab', w, h });
       masks.push(c.mask); labels.push(c.text);
     }
-    return (s.fill ? `<path class="area" d="${d(s.pts)}L${sx(s.pts.at(-1)[0]).toFixed(1)},${base}L${sx(s.pts[0][0]).toFixed(1)},${base}Z"/>` : '') +
-      `<path class="${s.cls || 'curve'}" d="${d(s.pts)}"/>`;
+    const pAttr = s.part ? ` data-part="${esc(s.part)}"` : '';
+    return (s.fill ? `<path class="area"${pAttr} d="${d(s.pts)}L${sx(s.pts.at(-1)[0]).toFixed(1)},${base}L${sx(s.pts[0][0]).toFixed(1)},${base}Z"/>` : '') +
+      `<path class="${s.cls || 'curve'}"${pAttr} d="${d(s.pts)}"/>`;
   }).join('');
   const zero = y0 < 0 && y1 > 0 ? `<line class="zero" x1="${P.l}" x2="${w - P.r}" y1="${sy(0)}" y2="${sy(0)}"/>` : '';
   const dots = marks.map(([x, y, t]) => {
@@ -85,8 +86,10 @@ export function chart({ x0, x1, y0, y1, w = 420, h = 170, series, xlabel, ylabel
     }
     return `<circle class="mark" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.5"/>`;
   }).join('');
+  const liveSvg = livePaths.map(k => `<path class="curve live-path" data-live="${esc(k)}" d=""/>`).join('');
+  const tanSvg = tangents.map(k => `<line class="tangent" data-tangent="${esc(k)}" x1="0" y1="0" x2="0" y2="0"/>`).join('');
   return `${svgHeader({ w, h, label, desc, id })}
-    <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${zero}${paths}${masks.join('')}${dots}${labels.join('')}
+    <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${zero}${paths}${liveSvg}${tanSvg}${masks.join('')}${dots}${labels.join('')}
     <text class="ax" x="${P.l - 6}" y="${sy(y1) + 4}" text-anchor="end">${esc(num(y1))}</text><text class="ax" x="${P.l - 6}" y="${sy(y0) + 4}" text-anchor="end">${esc(num(y0))}</text>
     <text class="ax" x="${P.l}" y="${h - 9}">${esc(num(x0))}</text><text class="ax" x="${w - P.r}" y="${h - 9}" text-anchor="end">${esc(num(x1))}</text>
     <text class="lab" x="${P.l + 6}" y="${P.t + 13}">${esc(ylabel)}</text><text class="ax" x="${(P.l + w - P.r) / 2}" y="${h - 9}" text-anchor="middle">${esc(xlabel)}</text>
@@ -100,7 +103,33 @@ export const samples = (a, b, n, fn) => Array.from({ length: n + 1 }, (_, i) => 
 // place every cursor named key, in each of the given page elements (the sheet and the turning leaf)
 export function moveCursor(sheets, key, range, x, y) {
   const { sx, sy } = scale(range);
-  for (const el of sheets) el.querySelectorAll(`circle[data-cursor="${key}"]`).forEach(c => { c.setAttribute('cx', sx(x)); c.setAttribute('cy', sy(y)); });
+  const roots = Array.isArray(sheets) ? sheets : [sheets];
+  for (const el of roots) el?.querySelectorAll?.(`circle[data-cursor="${key}"]`).forEach(c => { c.setAttribute('cx', sx(x).toFixed(1)); c.setAttribute('cy', sy(y).toFixed(1)); });
+}
+
+// update a tangent slope segment (y(x +/- dx) = y +/- slope * dx) in place at 60fps without re-parsing SVG
+export function moveTangent(sheets, key, range, x, y, slope, dx = (range.x1 - range.x0) * 0.12) {
+  const { sx, sy } = scale(range);
+  const xa = Math.max(range.x0, x - dx), xb = Math.min(range.x1, x + dx);
+  const ya = clamp(y + slope * (xa - x), range.y0, range.y1);
+  const yb = clamp(y + slope * (xb - x), range.y0, range.y1);
+  const roots = Array.isArray(sheets) ? sheets : [sheets];
+  for (const el of roots) {
+    el?.querySelectorAll?.(`line[data-tangent="${key}"]`).forEach(ln => {
+      ln.setAttribute('x1', sx(xa).toFixed(1)); ln.setAttribute('y1', sy(ya).toFixed(1));
+      ln.setAttribute('x2', sx(xb).toFixed(1)); ln.setAttribute('y2', sy(yb).toFixed(1));
+    });
+  }
+}
+
+// update a progressive live <path data-live="key"> in place at 60fps without innerHTML DOM thrash
+export function setLivePath(sheets, key, range, pts) {
+  const { sx, sy } = scale(range);
+  const d = pts.length ? pts.map(([x, y], i) => `${i ? 'L' : 'M'}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join('') : '';
+  const roots = Array.isArray(sheets) ? sheets : [sheets];
+  for (const el of roots) {
+    el?.querySelectorAll?.(`path[data-live="${key}"]`).forEach(p => p.setAttribute('d', d));
+  }
 }
 
 // ---------- Waterfall chart (conservation-verified running-total bridge) ----------

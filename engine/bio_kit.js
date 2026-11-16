@@ -181,20 +181,5 @@ export function buildAtpSynthase(parent, { x0 = 0, y0 = 1.4, z0 = 0, scale = 1, 
   return { group: g, rotor, crown };
 }
 
-// Gentle Web Audio helper for biological sonification (never throws, respects user opt-in)
-export function playTone(ctx, { freq = 220, dur = 0.07, type = 'sine', gain = 0.04, slideTo = null } = {}) {
-  if (!ctx || ctx.state === 'closed') return;
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(Math.max(40, Math.min(2400, freq)), now);
-  if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(40, Math.min(2400, slideTo)), now + dur);
-  g.gain.setValueAtTime(gain, now);
-  g.gain.exponentialRampToValueAtTime(0.0008, now + dur);
-  osc.connect(g);
-  g.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + dur + 0.01);
-}
+// Gentle Web Audio helper for biological sonification (consolidated in engine/sound.js)
+export { playTone, playBoop, playClick, playKnock, createHum } from './sound.js';

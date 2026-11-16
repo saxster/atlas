@@ -1,7 +1,20 @@
 // The sandbox: constructive play. Place, remove or drag pieces in 3D, type your own matrix or parameters, or pick a
 // preset, and watch the figure, chips and chart respond at once. Built on stage.js and draggable(), with shareable URLs
 // and a deterministic ?render tour across presets so tools/cards.mjs and tools/stills.mjs work out of the box.
-import { createStage, ease, mountShareButton, mountCutBar } from './stage.js';
+import { createStage, ease, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
+import { bindProse } from './prose.js';
+import { mountSoundToggle, playClick, playBoop } from './sound.js';
+
+function applySandboxChart(el, res, state, params, items) {
+  if (!el || !res) return;
+  if (typeof res === 'string') {
+    if (el._lastSvg !== res) { el._lastSvg = res; el._chartKey = null; el.innerHTML = res; }
+  } else if (typeof res === 'object' && res.svg !== undefined) {
+    const k = res.key ?? 'static';
+    if (el._chartKey !== k) { el._chartKey = k; el._lastSvg = null; el.innerHTML = res.svg; }
+    res.update?.(el, state, params, items);
+  }
+}
 
 const $ = id => document.getElementById(id);
 const clone = x => JSON.parse(JSON.stringify(x));
@@ -174,6 +187,8 @@ export function startSandbox(figure) {
   }
   if ($('again')) $('again').onclick = () => reset();
   if ($('again')) mountShareButton($('again'), shareUrl, 'again sharebtn', syncUrl);
+  mountMediumBar(cutBar?.el || $('presets') || $('controls'), figure, () => S, { initialMedium: Q.get('medium') || null, place: 'before' });
+  const soundCtl = figure.sonify && $('again') ? mountSoundToggle($('again'), { label: 'Sound' }) : null;
 
   // ---------- hooks for 3D draggable handles inside world.js ----------
   const worldHooks = {
@@ -201,12 +216,28 @@ export function startSandbox(figure) {
     buildWorld: E => figure.buildWorld(E, params, items, worldHooks),
     state: (c, r) => figure.state(c, r, params, items),
   });
+  if (figure.prose && $('controls')) {
+    const pNote = document.createElement('div');
+    pNote.className = 'prose-note';
+    pNote.innerHTML = typeof figure.prose === 'function' ? figure.prose(params) : figure.prose;
+    $('controls').before(pNote);
+  }
+  const proseRoot = document.querySelector('main') || document.body;
+  const prose = bindProse(proseRoot, {
+    getStage: () => S,
+    getParams: () => params,
+    setParam: (k, v) => worldHooks.setParam(k, v),
+    formatters: figure.proseFormat || figure.formatters || {},
+    onSound: (kind, dir) => { if (soundCtl?.on && soundCtl.ctx) (kind === 'scrub' ? playClick : playBoop)(soundCtl.ctx, { dir }); },
+  });
+
   function build() {
     if (S) {
       S.destroy();
       const fresh = document.createElement('canvas'); fresh.id = 'gl'; $('gl').replaceWith(fresh);
     }
     S = createStage($('gl'), $('labels'), fig(), { reduced, touch, dprCap: touch ? 1.5 : 2 });
+    S.hooks.onHover = key => { prose.highlightPart(key); };
     S.hooks.onSelect = key => {
       const pl = $('plate');
       if (!key || !figure.PLATES?.[key]) { pl.hidden = true; return; }
@@ -223,8 +254,15 @@ export function startSandbox(figure) {
   function draw(now, dt, c) {
     const state = S.step({ now, dt, s: 0, litPage: 0, running: !reduced, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
     $('readout').textContent = figure.readout(state, params, items);
-    (figure.chips || []).forEach((ch, i) => { chipEls[i].textContent = ch.value(state, params, items); });
-    if (figure.chart && $('chart')) $('chart').innerHTML = figure.chart(state, params, items);
+    (figure.chips || []).forEach((ch, i) => {
+      const txt = String(ch.value(state, params, items));
+      if (chipEls[i].textContent !== txt) chipEls[i].textContent = txt;
+    });
+    if (figure.chart && $('chart')) applySandboxChart($('chart'), figure.chart(state, params, items), state, params, items);
+    prose.sync(state, params);
+    if (soundCtl?.on && soundCtl.ctx && figure.sonify) {
+      try { figure.sonify(soundCtl.ctx, state, 0, params); } catch {}
+    }
   }
 
   let last = performance.now();

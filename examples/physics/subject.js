@@ -7,7 +7,7 @@ export const SUBJECT = {
   name: 'Atlas of Physics',
   chapters: ['kinematics', 'newton', 'circular', 'energy', 'momentum', 'oscillations', 'rotation', 'fluids',
     'electrostatics', 'gauss', 'potential', 'capacitors', 'circuits', 'magnetism', 'induction'],
-  figures: ['optics-bench'],
+  figures: ['optics-bench', 'dc-motor'],
   // extra links in each chapter's top bar, relative to the chapter's directory
   links: [{ label: 'Equations', href: '../equations/', cls: 'eqlink' }],
   source: 'https://github.com/nathanliow/atlas-of-physics',
@@ -17,6 +17,8 @@ export const SUBJECT = {
     oscillations: { alt: 'A block on a spring drawing its own cosine on a paper strip' },
     'optics-bench': { section: 'Optics · 2D Blueprint to 3D', title: 'From 2D ray diagram to 3D optical bench', sub: 'thin-lens principal rays, 270° lens revolution and magnification', grammar: 'machine', at: 5.5,
       alt: 'A 2D principal-ray diagram that revolves into a 3D cutaway biconvex glass lens and brass barrel' },
+    'dc-motor': { section: 'Electromagnetism · Sketchbook Explorer', title: 'The split-ring trick', sub: 'why a brushed DC motor flips its own current every half-turn instead of trapping at 90°', grammar: 'explorer', at: 1.8,
+      alt: 'A watercolor-and-graphite DC motor with sliding N/S stator magnets, equal-flux magnetic field lines, copper coil current cones, and a split-ring commutator' },
   },
   contents: false,   // physics/index.html is made by hand: its sections follow the AP courses
 };

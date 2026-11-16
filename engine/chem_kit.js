@@ -596,17 +596,5 @@ export function studioGrid(root, { x0 = -5, x1 = 48, z0 = -4, z1 = 4, y = 0.001 
   return lines(root, g, '#e6e6e2');
 }
 
-// Gentle Web Audio synthesis helper for opt-in sonification
-export function playTone(ctx, { freq = 440, dur = 0.08, type = 'sine', gain = 0.04 } = {}) {
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(Math.max(40, Math.min(2400, freq)), now);
-  g.gain.setValueAtTime(gain, now);
-  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-  osc.connect(g).connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + dur + 0.01);
-}
+// Gentle Web Audio synthesis helper for opt-in sonification (consolidated in engine/sound.js)
+export { playTone, playBoop, playClick, playKnock, createHum } from './sound.js';

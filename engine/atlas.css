@@ -15,6 +15,14 @@ a { color: inherit; }
 /* Page to page: a soft crossfade, under the book opening from its card and closing into it (engine/cover.js). */
 @view-transition { navigation: auto; }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* Multi-voice medium overrides & RTL numeric/stage safety */
+html[data-medium="ciechanow"] { --page: #f8f8f8; --card: #f8f8f8; --lift: none; }
+html[data-medium="pencil-wash"] { --page: #faf4ec; --card: #fdf9f3; }
+html[data-medium="moebius"] { --page: #f4efe6; --card: #faf6ee; }
+html[data-medium="risograph"] { --page: #f4efe2; --card: #fdfbf7; }
+[dir="rtl"] .figure, [dir="rtl"] canvas { direction: ltr; }
+.corner.br, .chip .v, .slider output { direction: ltr; unicode-bidi: isolate; }
 /* The book and the contents page around it move with engine/cover.js, which animates these itself. The cover (the
    card's picture) and the pages swing about the spine, showing one side; the cover sits over the opening book. */
 html.book-vt::view-transition-old(root), html.book-vt::view-transition-new(root), ::view-transition-new(book),
