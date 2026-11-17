@@ -1,12 +1,12 @@
 // @saxster/atlas: everything a figure needs, from one import. Each module is also importable on its own
 // ('@saxster/atlas/stage.js', '@saxster/atlas/prims.js' …), which is what the examples do.
 export {
-  createStage, draggable, rayAxisClosest, mountMediumBar, mountQuirkBar,
+  createStage, draggable, rayAxisClosest, wireModeBar, mountMediumBar, mountQuirkBar,
   MEDIUMS, QUIRKS, DEFAULT_QUIRK, QUIRK_PRESETS, resolveQuirk,
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
-  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 } from './stage.js';
 export { auditDeliverable } from './mesh-audit.js';

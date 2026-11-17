@@ -541,6 +541,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
   const quirkBar = mountQuirkBar(partsWrap, { ...chapter, quirks: chapter.quirks || QUIRKS }, () => S, {
     initialQuirk: initialQuirkObj.id,
     place: 'after',
+    pill: false,
     onChange: () => {
       kick();
       api._refresh?.();

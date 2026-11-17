@@ -10,7 +10,7 @@ import {
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
   planArea, planBounds, planPose, logFovLerp, glide,
-  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 } from './motion.js';
 
@@ -20,7 +20,7 @@ export {
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
   hash, rand, rrange, loopNoise,
   planArea, planBounds, planPose, logFovLerp, glide,
-  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 };
 
@@ -61,7 +61,34 @@ export function stepDraggableLoad(d, dt) {
   return d.targetValue;
 }
 
-export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = null, place = 'after', onChange = null } = {}) {
+export function wireModeBar(barEl) {
+  if (!barEl || typeof document === 'undefined') return null;
+  let pill = barEl.querySelector(':scope > .mode-pill');
+  if (!pill) {
+    pill = document.createElement('span');
+    pill.className = 'mode-pill';
+    pill.setAttribute('aria-hidden', 'true');
+    pill.style.cssText = 'position:absolute;left:0;top:0;z-index:-1;pointer-events:none';
+    barEl.prepend(pill);
+  }
+  const sync = () => {
+    const btn = barEl.querySelector('button[aria-pressed="true"]');
+    if (!btn) { pill.style.opacity = '0'; return; }
+    pill.style.opacity = '';
+    pill.style.width = `${btn.offsetWidth}px`;
+    pill.style.height = `${btn.offsetHeight}px`;
+    pill.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+  };
+  sync();
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(sync).observe(barEl);
+  const isRender = typeof location !== 'undefined' && /[?&]render\b/.test(location.search);
+  if (!isRender && typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => requestAnimationFrame(() => { sync(); barEl.setAttribute('data-ready', ''); }));
+  }
+  return { el: pill, sync };
+}
+
+export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = null, place = 'after', onChange = null, pill: usePill = true } = {}) {
   if (!figure.mediums?.length || !anchorEl) return null;
   const labels = {
     'paper-ink': 'Textbook',
@@ -78,9 +105,11 @@ export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = nul
   bar.innerHTML = figure.mediums.map(m => `<button type="button" data-medium="${m}" aria-pressed="${m === cur}">${labels[m] || m}</button>`).join('');
   if (place === 'before') anchorEl.before(bar);
   else anchorEl.after(bar);
+  const pill = usePill ? wireModeBar(bar) : null;
   const apply = m => {
     cur = m;
     bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.medium === cur)));
+    pill?.sync();
     document.documentElement.dataset.medium = cur;
     getStage()?.setMedium?.(cur);
     onChange?.(cur);
@@ -92,7 +121,7 @@ export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = nul
   return { el: bar, apply, get medium() { return cur; } };
 }
 
-export function mountQuirkBar(anchorEl, figure, getStage, { initialQuirk = null, place = 'after', onChange = null } = {}) {
+export function mountQuirkBar(anchorEl, figure, getStage, { initialQuirk = null, place = 'after', onChange = null, pill: usePill = true } = {}) {
   if (!anchorEl) return null;
   const list = Array.isArray(figure?.quirks) && figure.quirks.length ? figure.quirks : QUIRKS;
   let cur = resolveQuirk(initialQuirk || figure?.quirk || DEFAULT_QUIRK).id;
@@ -106,10 +135,12 @@ export function mountQuirkBar(anchorEl, figure, getStage, { initialQuirk = null,
   }).join('');
   if (place === 'before') anchorEl.before(bar);
   else anchorEl.after(bar);
+  const pill = usePill ? wireModeBar(bar) : null;
   const apply = q => {
     const p = resolveQuirk(q);
     cur = p.id;
     bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.quirk === cur)));
+    pill?.sync();
     if (typeof document !== 'undefined') {
       document.documentElement.dataset.quirk = cur;
       document.documentElement.dataset.medium = p.medium;
@@ -143,7 +174,7 @@ export function mountShareButton(anchorEl, shareUrl, cls = 'again sharebtn', syn
   return shareB;
 }
 
-export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, place = 'after', onChange = null } = {}) {
+export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, place = 'after', onChange = null, pill: usePill = true } = {}) {
   if (!figure.cuts?.length || !anchorEl) return null;
   let cutMode = initialMode || 'solid';
   let userOverrode = initialMode !== null;
@@ -156,9 +187,11 @@ export function mountCutBar(anchorEl, figure, getStage, { initialMode = null, pl
   cutBar.innerHTML = figure.cuts.map(c => `<button type="button" data-cut="${c}" aria-pressed="${c === cutMode}">${labels[c] || c}</button>`).join('');
   if (place === 'before') anchorEl.before(cutBar);
   else anchorEl.after(cutBar);
+  const pill = usePill ? wireModeBar(cutBar) : null;
   const syncButtons = m => {
     cutMode = m;
     cutBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cut === cutMode)));
+    pill?.sync();
   };
   const apply = (c, fromUser = true) => {
     userOverrode = fromUser;
@@ -224,11 +257,14 @@ export function draggable(target, opts = {}) {
     active: false,
     value: null,
     targetValue: null,
+    rubberOffset: 0,
+    _wasRubber: false,
     get() {
       return spec.value;
     },
     set(pt) {
       spec.targetValue = null;
+      spec.rubberOffset = 0;
       return spec.project(pt);
     },
     project(pt, worldPt = null) {
@@ -260,6 +296,8 @@ export function draggable(target, opts = {}) {
     reset() {
       spec.value = null;
       spec.targetValue = null;
+      spec.rubberOffset = 0;
+      spec._wasRubber = false;
       spec.active = false;
       if (spec.onReset) spec.onReset();
     },
@@ -534,34 +572,47 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   let drag = null;
   on(canvas, 'contextmenu', e => e.preventDefault());
   on(canvas, 'pointerdown', e => {
+    if (drag) return;
     hooks.onPointerDown();
     const pan = e.shiftKey || e.button === 2, scrub = e.altKey;
     const item = !pan && !scrub && e.button === 0 ? pickDraggable(e.clientX, e.clientY) : null;
-    drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, pan, scrub, item, moved: false };
-    canvas.setPointerCapture(e.pointerId);
+    drag = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, pan, scrub, item, moved: false };
+    try { canvas.setPointerCapture?.(e.pointerId); } catch {}
   });
-  on(canvas, 'pointerup', e => {
-    if (drag?.item && drag.moved) {
+  function finishDrag(e = null, cancelled = false) {
+    if (!drag) return;
+    if (e?.pointerId !== undefined && drag.pointerId !== undefined && e.pointerId !== drag.pointerId) return;
+    if (drag.item && drag.moved) {
       drag.item.active = false;
+      if (cancelled) drag.item.rubberOffset = 0;
       drag.item.onEnd?.(drag.item.value);
-    } else if (drag && !drag.moved && e.button === 0) {
+    } else if (!cancelled && drag && !drag.moved && (!e || e.button === 0)) {
       // a finger has no hover: a tap picks whatever is under it
       const r = box();
-      const k = e.pointerType === 'mouse' ? hovered : E.pick(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
+      const cx = e ? e.clientX : drag.x, cy = e ? e.clientY : drag.y;
+      const k = e?.pointerType === 'mouse' ? hovered : E.pick(cx - r.left, cy - r.top, r.width, r.height);
       if (pickIntercept) {
         pickIntercept(k);
       } else {
         select(k && k !== selected ? k : null);
       }
+    } else if (drag.item) {
+      drag.item.active = false;
+      if (cancelled) drag.item.rubberOffset = 0;
     }
     drag = null; canvas.classList.remove('dragging');
-  });
+  }
+  on(canvas, 'pointerup', e => finishDrag(e, false));
+  on(canvas, 'pointercancel', e => finishDrag(e, true));
+  on(canvas, 'lostpointercapture', e => finishDrag(e, true));
+  on(window, 'blur', () => finishDrag(null, true));
   on(canvas, 'dblclick', () => {
     orbit.az = 0; orbit.el = 0; orbit.pan.set(0, 0, 0);
     for (const d of liveDraggables()) d.reset();
   });
   on(canvas, 'pointermove', e => {
     if (drag) {
+      if (drag.pointerId !== undefined && e.pointerId !== undefined && e.pointerId !== drag.pointerId) return;
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       if (!drag.moved && drag.item) {
@@ -594,9 +645,17 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
         if (drag.item.axis) {
           const ah = rayToAxisParam(e.clientX, e.clientY, drag.item);
           if (ah) {
-            let sParam = ah.s + (drag.sOffset || 0);
-            if (drag.item.axis.min !== undefined) sParam = Math.max(drag.item.axis.min, sParam);
-            if (drag.item.axis.max !== undefined) sParam = Math.min(drag.item.axis.max, sParam);
+            const rawS = ah.s + (drag.sOffset || 0);
+            let sParam = rawS;
+            const minS = drag.item.axis.min, maxS = drag.item.axis.max;
+            if (minS !== undefined) sParam = Math.max(minS, sParam);
+            if (maxS !== undefined) sParam = Math.min(maxS, sParam);
+            if (!RENDER_MODE && !reduced && drag.item.axis.rubberband !== false && rawS !== sParam) {
+              const span = (Number.isFinite(minS) && Number.isFinite(maxS) && maxS > minS) ? (maxS - minS) : 1;
+              drag.item.rubberOffset = rubberband(rawS - sParam, span * 0.18, 0.55);
+            } else {
+              drag.item.rubberOffset = 0;
+            }
             pt = sParam;
             worldPt = new E.THREE.Vector3(ah.p0[0] + sParam * ah.vec[0], ah.p0[1] + sParam * ah.vec[1], ah.p0[2] + sParam * ah.vec[2]);
           }
@@ -748,6 +807,22 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     lastLook = look;
     E.resetExplode?.();
     W.update(state, look);
+    if (!RENDER_MODE && !reduced) {
+      for (const d of liveDraggables()) {
+        if (!d.axis || !d.autoMove || d.obj.userData?.arrow || typeof d.value !== 'number' || !d.obj.position) continue;
+        if (!d.active && Math.abs(d.rubberOffset) > 1e-5 && dt > 0) {
+          d.rubberOffset *= Math.exp(-dt * 18);
+          if (Math.abs(d.rubberOffset) < 1e-4) d.rubberOffset = 0;
+        }
+        if (Math.abs(d.rubberOffset) > 1e-5 || d._wasRubber) {
+          const ao = d.axis.origin || [0, 0, 0], ad = d.axis.dir || [1, 0, 0];
+          const sVis = d.value + (d.rubberOffset || 0);
+          d.obj.position.set(ao[0] + sVis * ad[0], ao[1] + sVis * ad[1], (ao[2] ?? 0) + sVis * (ad[2] ?? 0));
+          if (d.obj.userData?.home) d.obj.userData.home.set(ao[0] + d.value * ad[0], ao[1] + d.value * ad[1], (ao[2] ?? 0) + d.value * (ad[2] ?? 0));
+          d._wasRubber = Math.abs(d.rubberOffset) > 1e-5;
+        }
+      }
+    }
     E.stepExplode(dt);
 
     const boilRate = activeQuirk.boilRate ?? (activeMedium === 'pencil-wash' ? 6 : 0);

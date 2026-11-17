@@ -190,7 +190,7 @@ export async function showSpecimen(el, spec, { background = '#fbfbfa' } = {}) {
   const camera = new THREE.PerspectiveCamera(28, 1, radius * 0.02, radius * 40);
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let az = 0.45, elAng = 0.28, dist = (radius / Math.sin(THREE.MathUtils.degToRad(14))) * 1.32;
-  let spinning = !reduced, dragging = false, lastX = 0, lastY = 0, raf = 0, lastT = performance.now();
+  let spinning = !reduced, dragging = false, pointerId = null, lastX = 0, lastY = 0, lastMoveT = 0, velAz = 0, raf = 0, lastT = performance.now();
 
   function updateScaleBar() {
     if (!scaleLine || !cfg.lengthMm) return;
@@ -240,38 +240,65 @@ export async function showSpecimen(el, spec, { background = '#fbfbfa' } = {}) {
   fit();
 
   const onDown = e => {
+    if (dragging) return;
     dragging = true;
-    if (spinning) { spinning = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
-    lastX = e.clientX; lastY = e.clientY;
+    pointerId = e.pointerId;
+    velAz = 0;
+    if (spinning || raf) { spinning = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    lastX = e.clientX; lastY = e.clientY; lastMoveT = performance.now();
     canvas.style.cursor = 'grabbing';
-    canvas.setPointerCapture?.(e.pointerId);
+    try { canvas.setPointerCapture?.(e.pointerId); } catch {}
   };
   const onMove = e => {
-    if (!dragging) return;
+    if (!dragging || (pointerId !== null && e.pointerId !== pointerId)) return;
+    const now = performance.now();
+    const dtMove = Math.max(0.004, (now - lastMoveT) / 1000);
     const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    lastX = e.clientX; lastY = e.clientY;
-    az -= dx * 0.008;
+    lastX = e.clientX; lastY = e.clientY; lastMoveT = now;
+    const dAz = -dx * 0.008;
+    az += dAz;
     elAng = Math.max(-1.35, Math.min(1.35, elAng + dy * 0.008));
+    velAz = velAz * 0.35 + (dAz / dtMove) * 0.65;
     drawOnce();
   };
-  const onUp = () => { dragging = false; canvas.style.cursor = 'grab'; };
+  const finishDrag = (e, cancelled = false) => {
+    if (!dragging || (pointerId !== null && e?.pointerId !== undefined && e.pointerId !== pointerId)) return;
+    dragging = false;
+    pointerId = null;
+    canvas.style.cursor = 'grab';
+    if (cancelled || reduced || performance.now() - lastMoveT > 80) {
+      velAz = 0;
+    } else if (Math.abs(velAz) > 0.02 && !raf) {
+      lastT = performance.now();
+      raf = requestAnimationFrame(tick);
+    }
+  };
+  const onUp = e => finishDrag(e, false);
+  const onCancel = e => finishDrag(e, true);
   const onWheel = e => {
     e.preventDefault();
-    if (spinning) { spinning = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    velAz = 0;
+    if (spinning || raf) { spinning = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
     dist = Math.max(radius * 0.8, Math.min(radius * 12, dist * (1 + Math.sign(e.deltaY) * 0.08)));
     drawOnce();
   };
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointercancel', onUp);
+  canvas.addEventListener('pointercancel', onCancel);
+  canvas.addEventListener('lostpointercapture', onCancel);
   canvas.addEventListener('wheel', onWheel, { passive: false });
 
   function tick(now) {
-    if (!spinning) { raf = 0; return; }
-    const dt = Math.min((now - lastT) / 1000, 0.05);
+    if (!spinning && Math.abs(velAz) < 1e-3) { velAz = 0; raf = 0; return; }
+    const dt = Math.min(Math.max((now - lastT) / 1000, 0), 0.05);
     lastT = now;
-    az += dt * 0.35;
+    if (spinning) {
+      az += dt * 0.35;
+    } else {
+      az += velAz * dt;
+      velAz *= Math.exp(-dt * 5.0);
+    }
     drawOnce();
     raf = requestAnimationFrame(tick);
   }
@@ -283,12 +310,14 @@ export async function showSpecimen(el, spec, { background = '#fbfbfa' } = {}) {
     setInkMode,
     destroy() {
       spinning = false;
+      velAz = 0;
       if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
-      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointercancel', onCancel);
+      canvas.removeEventListener('lostpointercapture', onCancel);
       canvas.removeEventListener('wheel', onWheel);
       setInkMode(false);
       plasterMat.dispose();

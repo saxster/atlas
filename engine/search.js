@@ -229,9 +229,9 @@ const STYLE = `
 .search-trigger {
   display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--faint); background: var(--card);
   color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 500 11px/1 var(--mono); letter-spacing: .05em;
-  text-transform: uppercase; cursor: pointer;
+  text-transform: uppercase; cursor: pointer; transition: scale 120ms var(--ease-out), border-color 150ms, color 150ms;
 }
-.search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+@media (prefers-reduced-motion: no-preference) { .search-trigger:active:not(:disabled) { scale: 0.97; } }
 .search-trigger kbd { font: 500 10px/1 var(--mono); color: var(--lo); border: 1px solid var(--faint); border-radius: 4px; padding: 2px 4px; background: var(--page, #f6f6f3); }
 .search-backdrop {
   position: fixed; inset: 0; z-index: 50; background: rgba(20, 20, 19, 0.32); backdrop-filter: blur(3px);
@@ -252,7 +252,11 @@ const STYLE = `
   display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 10px 12px;
   border-radius: 8px; text-decoration: none; color: var(--text);
 }
-.search-results li a.active, .search-results li a:hover { background: #efefe9; }
+.search-results li a.active { background: #efefe9; }
+@media (hover: hover) and (pointer: fine) {
+  .search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+  .search-results li a:hover { background: #efefe9; }
+}
 .search-results .sr-main { min-width: 0; flex: 1; }
 .search-results .sr-title { font: 500 15px/1.3 var(--sans); color: var(--strong); }
 .search-results .sr-sub { font: italic 14px/1.3 var(--serif); color: var(--muted); margin-left: 8px; }
@@ -265,6 +269,7 @@ const STYLE = `
   width: 100%; padding: 10px 16px; border: 1px solid var(--faint); border-radius: 999px; background: var(--card);
   box-shadow: var(--lift); font: 400 15px var(--sans); color: var(--strong); outline: none;
 }
+@media (pointer: coarse) { .concept-filter { font-size: 16px; } }
 .concept-filter:focus { border-color: var(--hi); }
 `;
 
@@ -281,7 +286,7 @@ function initSearch() {
   backdrop.className = 'search-backdrop'; backdrop.hidden = true;
   backdrop.innerHTML = `<div class="search-modal" role="dialog" aria-modal="true" aria-label="Search Atlas">
     <div class="search-bar">
-      <input type="search" id="atlas-search-input" placeholder="Search chapters, concepts, equations, or questions…" autocomplete="off">
+      <input type="search" id="atlas-search-input" enterkeyhint="go" placeholder="Search chapters, concepts, equations, or questions…" autocomplete="off">
       <button type="button" class="esc">Esc</button>
     </div>
     <ul class="search-results" id="atlas-search-results"></ul>

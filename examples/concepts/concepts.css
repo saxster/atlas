@@ -1,6 +1,6 @@
 /* concepts/index.html (written by build.mjs): threads first, then each subject; a row is formula | name and figures. */
 html { scroll-padding-top: 76px; }
-body { min-height: 100vh; padding: 0 16px 80px; }
+body { min-height: 100vh; min-height: 100svh; padding: 0 16px calc(80px + env(safe-area-inset-bottom, 0px)); }
 header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 header a { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); text-decoration: none; }
 .hero { text-align: center; margin: 56px auto 40px; max-width: 760px; }
@@ -9,7 +9,6 @@ header a { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none;
 nav { position: sticky; top: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px; background: color-mix(in srgb, var(--page) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--faint); }
 nav .in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 6px 22px; flex-wrap: wrap; }
 nav a { font: 500 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; padding: 8px 0; }
-nav a:hover { color: var(--strong); }
 main { max-width: 1180px; margin: 0 auto; }
 .part { font: 400 clamp(30px, 4vw, 42px)/1.05 var(--serif); color: var(--strong); border-bottom: 1px solid var(--mid); padding: 48px 4px 10px; margin-bottom: 18px; }
 .group { background: var(--card); border-radius: 14px; box-shadow: var(--lift); padding: 18px 22px 8px; margin-bottom: 18px; }
@@ -26,7 +25,7 @@ li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chips a, .none { font: 11px/1.3 var(--mono); letter-spacing: .02em; color: var(--hi); text-decoration: none; border: 1px solid var(--faint); background: var(--page); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
 .chips a .subj { color: var(--muted); margin-right: 6px; }
-.chips a:hover, .chips a:focus-visible { border-color: var(--hi); color: var(--lit); }
+.chips a:focus-visible { border-color: var(--hi); color: var(--lit); }
 .none { color: var(--lo); border-style: dashed; background: none; font-style: italic; }
 li.unshown .e { color: var(--mid); border-left-style: dashed; }
 @media (max-width: 1000px) { .m { grid-template-columns: 1fr; } }
@@ -42,9 +41,15 @@ li.unshown .e { color: var(--mid); border-left-style: dashed; }
   .chips a, .none { white-space: normal; }
 }
 /* instant search & live concept filter (search.js) */
-.search-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--faint); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
-.search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+.search-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--faint); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; transition: scale 120ms var(--ease-out), border-color 150ms, color 150ms; }
+@media (prefers-reduced-motion: no-preference) { .search-trigger:active:not(:disabled) { scale: 0.97; } }
+@media (hover: hover) and (pointer: fine) {
+  nav a:hover { color: var(--strong); }
+  .chips a:hover { border-color: var(--hi); color: var(--lit); }
+  .search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+}
 .search-trigger kbd { font: 500 10px/1 var(--mono); color: var(--muted); border: 1px solid var(--faint); border-radius: 4px; padding: 2px 4px; background: var(--page, #f6f6f3); }
 .concept-filter-wrap { max-width: 520px; margin: 20px auto 0; }
 .concept-filter { width: 100%; padding: 10px 16px; border: 1px solid var(--faint); border-radius: 999px; background: var(--card); box-shadow: var(--lift); font: 400 15px var(--sans); color: var(--strong); outline: none; }
+@media (pointer: coarse) { .concept-filter { font-size: 16px; } }
 .concept-filter:focus { border-color: var(--hi); }

@@ -183,15 +183,15 @@ export const TARGETS = [
   {
     slug: 'motion',
     kind: 'kit',
-    summary: 'Stateless closed-loop procedural motion, 28 easings, cubic-bezier, choreography (stagger, dwell, anticipate, followThrough), seamless loopNoise, and 3D camera moves.',
-    triggers: ['procedural motion', 'camera moves', 'dolly zoom', 'spring easing', 'loop noise', 'stagger animation', 'stateless time'],
+    summary: 'Stateless closed-loop procedural motion, 31 easings, cubic-bezier, boundary rubberband & momentum projection, choreography (stagger, dwell, anticipate, followThrough), seamless loopNoise, and 3D camera moves.',
+    triggers: ['procedural motion', 'camera moves', 'dolly zoom', 'spring easing', 'loop noise', 'stagger animation', 'stateless time', 'rubberband', 'momentum projection'],
     modules: {
       '@saxster/atlas/motion.js': [
         'TAU', 'clamp01', 'clamp', 'lerp', 'fract', 'mod', 'smooth', 'smoothstep', 'ease',
         'phase', 'win', 'warpTime', 'spring', 'settleShake', 'squashStretch', 'eases',
         'hash', 'rand', 'rrange', 'loopNoise',
         'planArea', 'planBounds', 'planPose', 'logFovLerp', 'glide',
-        'cubicBezier', 'bez', 'stagger', 'dwell', 'pingPong', 'anticipate', 'followThrough', 'pulseBeat', 'posterizeTime',
+        'cubicBezier', 'bez', 'rubberband', 'projectMomentum', 'stagger', 'dwell', 'pingPong', 'anticipate', 'followThrough', 'pulseBeat', 'posterizeTime',
         'camDolly', 'camZoom', 'camOrbit', 'camCrane', 'camDollyZoom', 'camHandheld',
       ],
     },

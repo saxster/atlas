@@ -4,12 +4,16 @@
   --hi: #26262a; --mid: #8a8a8f; --lo: #b4b4b8; --faint: #d4d4d6; --lit: #000;
   --red: #e5484d; --red-ink: #b8343a; --green-ink: #236b43;
   --serif: 'EB Garamond', Georgia, serif; --sans: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --lift: inset 0 1px 0 0 #fff, 0 0 0 1px #0000000f, 0 1px 1px -.5px #0000000a, 0 3px 3px -1.5px #0000000a, 0 6px 6px -3px #0000000a, 0 12px 12px -6px #0000000a, 0 24px 24px -12px #0000000a;
 }
 * { box-sizing: border-box; margin: 0; }
-html { background: var(--page); color: var(--text); font: 15px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+html { background: var(--page); color: var(--text); font: 15px/1.6 var(--sans); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
 body { background: var(--page); }
 a { color: inherit; }
+button, a, [role="button"], input, select, summary { touch-action: manipulation; }
+button, [role="button"] { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
 :focus-visible { outline: 2px solid var(--hi); outline-offset: 3px; }
 
 /* Page to page: a soft crossfade, under the book opening from its card and closing into it (engine/cover.js). */

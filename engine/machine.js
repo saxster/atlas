@@ -19,7 +19,7 @@
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, smooth, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
+import { createStage, smooth, wireModeBar, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playBoop } from './sound.js';
 
@@ -92,9 +92,14 @@ export function startMachine(figure) {
     if (cutBar && cutBar.mode !== 'solid') url.searchParams.set('cut', cutBar.mode);
     return url.toString();
   };
-  const syncMode = () => document.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  let modePill = null;
+  const syncMode = () => {
+    document.querySelectorAll('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    modePill?.sync();
+  };
   document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { mode = b.dataset.mode; idleWait = 0; localStorage.setItem(MODE_KEY, mode); syncMode(); if (mode === 'auto' && !k) wait = 0.4; });
   syncMode();
+  modePill = wireModeBar($('mode'));
   function press(n) { if (k || n !== done + 1) return; k = n; u = 0; }
   function startOver() { done = 0; k = 0; u = 0; wait = mode === 'auto' ? 0.6 : 0; cutBar?.reset(); S.select(null); }
   $('steps').addEventListener('click', e => { const b = e.target.closest('.step'); if (!b) return; if (mode === 'auto') { mode = 'manual'; idleWait = 0; syncMode(); } press(+b.dataset.k); });

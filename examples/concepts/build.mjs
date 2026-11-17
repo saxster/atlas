@@ -94,7 +94,7 @@ const html = `<!doctype html>
   <section class="hero">
     <h1>One idea, many subjects.</h1>
     <p>Every idea in the atlases, and the figures that show it</p>
-    <div class="concept-filter-wrap"><input type="search" id="concept-filter" class="concept-filter" placeholder="Filter concepts, formulas, or subjects… (or press ⌘K)" aria-label="Filter concepts"></div>
+    <div class="concept-filter-wrap"><input type="search" id="concept-filter" class="concept-filter" enterkeyhint="search" placeholder="Filter concepts, formulas, or subjects… (or press ⌘K)" aria-label="Filter concepts"></div>
   </section>
   <nav><div class="in"><a href="#threads">Threads</a>${bySubject.map(b => `<a href="#${b.subject}">${esc(NAMES[b.subject])}</a>`).join('')}<a href="../physics/equations/">AP equation sheets</a></div></nav>
   <main>

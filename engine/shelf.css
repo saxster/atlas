@@ -1,10 +1,10 @@
 /* The contents pages: the root shelf of subjects and each subject's shelf of chapters and figures (tools/site.mjs
    writes them). Cards are paper on the desk; a subject still in preparation is a dashed outline. */
-body { min-height: 100vh; padding: 0 16px 80px; }
+body { min-height: 100vh; min-height: 100svh; padding: 0 16px calc(80px + env(safe-area-inset-bottom, 0px)); }
 header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; align-items: center; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 header b, header .home { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); text-decoration: none; }
 header span { display: flex; align-items: center; gap: 18px; }
-header a { color: inherit; text-decoration: none; } header span a:hover { color: var(--strong); }
+header a { color: inherit; text-decoration: none; }
 .hero { text-align: center; margin: 72px auto 64px; max-width: 760px; }
 .hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; text-wrap: balance; }
 .hero p { font: italic 400 clamp(19px, 2.2vw, 24px)/1.4 var(--serif); color: var(--muted); margin-top: 16px; }
@@ -13,7 +13,11 @@ header a { color: inherit; text-decoration: none; } header span a:hover { color:
 .card { position: relative; background: var(--card); border-radius: 6px 14px 14px 6px; box-shadow: var(--lift), 2px 1px 0 0 #e6e1d6, 4px 2px 0 0 #dad3c5, 6px 3px 0 0 #cec6b6; padding: 18px 20px 20px 26px; text-decoration: none; display: flex; flex-direction: column; min-height: 360px; transform-origin: 0% 50%; transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s; }
 .card:not(.soon)::before { content: ''; position: absolute; top: 0; bottom: 0; left: 12px; width: 2px; background: linear-gradient(180deg, rgba(184,52,58,.35) 0 14px, rgba(0,0,0,.07) 14px calc(100% - 14px), rgba(184,52,58,.35) calc(100% - 14px) 100%); pointer-events: none; }
 a.card::after { content: ''; position: absolute; top: -1px; right: 24px; width: 10px; height: 16px; background: var(--red-ink, #b8343a); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%); opacity: .72; transform: translateY(0); transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .35s; pointer-events: none; }
-@media (hover: hover) { a.card:hover { transform: perspective(1400px) translateY(-4px) rotateY(-4deg) rotate(-.35deg); } a.card:hover::after { transform: translateY(3px); opacity: .95; } }
+@media (hover: hover) and (pointer: fine) {
+  header span a:hover { color: var(--strong); }
+  a.card:hover { transform: perspective(1400px) translateY(-4px) rotateY(-4deg) rotate(-.35deg); }
+  a.card:hover::after { transform: translateY(3px); opacity: .95; }
+}
 a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-4deg) rotate(-.35deg); }
 .card .no { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
 .card h2 { font: 400 30px/1.05 var(--serif); color: var(--strong); margin-top: 18px; }
@@ -26,7 +30,7 @@ a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-
 .foot a { color: var(--strong); text-underline-offset: 4px; text-decoration-color: var(--faint); }
 /* phones: each card a row, its picture beside its title, so the shelf can be taken in */
 @media (max-width: 600px) {
-  body { padding: 0 12px 56px; }
+  body { padding: 0 12px calc(56px + env(safe-area-inset-bottom, 0px)); }
   header { padding: 18px 4px; }
   .hero { margin: 36px auto 32px; }
   .section { margin: 36px auto 12px; }
@@ -38,8 +42,8 @@ a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-
   .card.soon { display: flex; }
 }
 /* instant search modal & header trigger (search.js) */
-.search-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--faint); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
-.search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+.search-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--faint); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; transition: scale 120ms var(--ease-out), border-color 150ms, color 150ms; }
+@media (prefers-reduced-motion: no-preference) { .search-trigger:active:not(:disabled) { scale: 0.97; } }
 .search-trigger kbd { font: 500 10px/1 var(--mono); color: var(--muted); border: 1px solid var(--faint); border-radius: 4px; padding: 2px 4px; background: var(--page, #f6f6f3); }
 .search-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(20, 20, 19, 0.32); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px 24px; }
 .search-backdrop[hidden] { display: none; }
@@ -49,7 +53,11 @@ a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-
 .search-bar .esc { border: 1px solid var(--faint); background: none; border-radius: 6px; padding: 4px 8px; font: 500 11px var(--mono); color: var(--muted); cursor: pointer; }
 .search-results { list-style: none; margin: 0; padding: 8px; overflow-y: auto; flex: 1; }
 .search-results li a { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: var(--text); }
-.search-results li a.active, .search-results li a:hover { background: #efefe9; }
+.search-results li a.active { background: #efefe9; }
+@media (hover: hover) and (pointer: fine) {
+  .search-trigger:hover { border-color: var(--mid); color: var(--strong); }
+  .search-results li a:hover { background: #efefe9; }
+}
 .search-results .sr-main { min-width: 0; flex: 1; }
 .search-results .sr-title { font: 500 15px/1.3 var(--sans); color: var(--strong); }
 .search-results .sr-sub { font: italic 14px/1.3 var(--serif); color: var(--muted); margin-left: 8px; }

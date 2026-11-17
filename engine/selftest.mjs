@@ -18,7 +18,7 @@ import {
   phase, win, warpTime, spring as motionSpring, settleShake, squashStretch, eases,
   hash, rand as motionRand, rrange, loopNoise,
   planArea, planBounds, planPose, logFovLerp, glide,
-  cubicBezier, bez, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
+  cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
 } from './motion.js';
 import { auditDeliverable } from './mesh-audit.js';
@@ -312,8 +312,8 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const lnVaries = Math.abs(loopNoise(0.2, 11, lnPeriod) - loopNoise(1.7, 11, lnPeriod)) > 1e-3;
   const [sx, sy, sz] = squashStretch(1.5, 0.75);
   const shake0 = settleShake(0), shakeMid = Math.abs(settleShake(0.04, 6, 0.25, 1)), shakeEnd = settleShake(1);
-  C.check('motion.js: spring & all 28 eases pin (0→0, 1→1) with physical overshoot, warpTime & loopNoise are exact-period seamless, and squashStretch/settleShake behave cleanly',
-    easeKeys.length === 28 && sp0 === 0 && sp1 === 1 && spPeak > 1.02 && eBoundaries && wtCycleOk && wtMonoOk && lnPeriodic && lnVaries
+  C.check('motion.js: spring & all 31 eases pin (0→0, 1→1) with physical overshoot, warpTime & loopNoise are exact-period seamless, and squashStretch/settleShake behave cleanly',
+    easeKeys.length === 31 && sp0 === 0 && sp1 === 1 && spPeak > 1.02 && eBoundaries && wtCycleOk && wtMonoOk && lnPeriodic && lnVaries
     && sy > 1 && sx < 1 && sz === sx && shake0 === 0 && shakeMid > 0.05 && shakeEnd === 0
     && near(TAU, Math.PI * 2, 1e-12) && clamp01(-2) === 0 && clamp01(2) === 1 && clamp(5, 1, 3) === 3
     && near(lerp(2, 6, 0.25), 3, 1e-12) && near(fract(-0.25), 0.75, 1e-12) && near(mod(-1, 4), 3, 1e-12)
@@ -1134,5 +1134,21 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && !faultyRes.ok
     && kinds.has('jump') && kinds.has('link-stretch') && kinds.has('reach-short') && kinds.has('bent-back-elbow') && kinds.has('loop-pop'),
     [...kinds].join(', '));
+}
+{ // UI motion curves, Apple progressive rubber-banding & exponential momentum projection (engine/motion.js)
+  const rb0 = rubberband(0, 100);
+  const rbPos = rubberband(25, 100, 0.55);
+  const rbNeg = rubberband(-25, 100, 0.55);
+  const rbHuge = rubberband(1e6, 100, 0.55);
+  const pm0 = projectMomentum(0);
+  const pmNorm = projectMomentum(1000, 0.998);
+  const pmSnap = projectMomentum(1000, 0.99);
+  C.check('engine/motion.js: eases.uiOut/uiInOut/drawer (31 easings), odd-symmetric bounded rubberband(), and exponential projectMomentum()',
+    Object.keys(eases).length === 31
+    && eases.uiOut(0) === 0 && eases.uiOut(1) === 1 && eases.uiOut(0.2) > 0.45
+    && eases.uiInOut(0) === 0 && eases.uiInOut(1) === 1 && eases.uiInOut(0.2) < 0.15 && eases.uiInOut(0.8) > 0.9
+    && eases.drawer(0) === 0 && eases.drawer(1) === 1 && eases.drawer(0.2) > 0.4
+    && rb0 === 0 && near(rbPos, -rbNeg, 1e-12) && rbPos > 0 && rbPos < 25 && rbHuge > 99 && rbHuge < 100
+    && pm0 === 0 && near(pmNorm, 499, 1e-9) && near(pmSnap, 99, 1e-9) && pmSnap < pmNorm);
 }
 C.report();

@@ -103,7 +103,7 @@ export function startSandbox(figure) {
     const step = figure.matrix.step ?? 0.1;
     matrixEl.innerHTML = `<div class="kicker">${figure.matrix.title || 'Matrix entries'}</div>
       <div class="mat-bracket"><div class="mat-grid">${keys.map((k, i) =>
-        `<label class="mat-cell"><span>${labels[i]}</span><input type="number" step="${step}" data-mkey="${k}" value="${(+params[k]).toFixed(2)}"></label>`).join('')}</div></div>`;
+        `<label class="mat-cell"><span>${labels[i]}</span><input type="number" step="${step}" inputmode="decimal" enterkeyhint="done" data-mkey="${k}" value="${(+params[k]).toFixed(2)}"></label>`).join('')}</div></div>`;
   }
   if (matrixEl) {
     renderMatrix();

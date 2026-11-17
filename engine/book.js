@@ -60,7 +60,7 @@ export function startBook(chapter) {
   let PRACTICE = {}, lastState = null;
   // practice questions live beside the chapter (practice.js: { pageIndex: [question, ...] }); a chapter may have none
   import(new URL('practice.js', location.href).href).then(m => { PRACTICE = m.PRACTICE || {}; shown = leafFor = -1; }, () => {});
-  const numHtml = q => q.numeric ? `<div class="numrow"><input type="number" step="any" class="numin" placeholder="${esc(q.numeric.placeholder || 'Type a number…')}" aria-label="Numeric answer">${q.numeric.unit ? `<span class="numunit">${q.numeric.unit}</span>` : ''}<button type="button" class="numcheck">Check</button><span class="numstatus" aria-live="polite"></span></div>` : '';
+  const numHtml = q => q.numeric ? `<div class="numrow"><input type="number" step="any" inputmode="decimal" enterkeyhint="done" class="numin" placeholder="${esc(q.numeric.placeholder || 'Type a number…')}" aria-label="Numeric answer">${q.numeric.unit ? `<span class="numunit">${q.numeric.unit}</span>` : ''}<button type="button" class="numcheck">Check</button><span class="numstatus" aria-live="polite"></span></div>` : '';
   const targetHtml = q => q.target ? `<div class="targetrow"><button type="button" class="targetcheck">${q.target.label || 'Check figure position'}</button><span class="targetstatus" aria-live="polite">${q.target.hint || 'Drag the point in the 3D figure, then check'}</span></div>` : '';
   const pickHtml = q => q.pickPart ? `<div class="targetrow"><button type="button" class="targetcheck pickbtn">${q.pickPart.label || 'Locate on the figure'}</button><span class="targetstatus pickstatus" aria-live="polite">${q.pickPart.hint || 'Click to arm, then tap the matching part in 3D'}</span></div>` : '';
   const practiceHtml = i => {
@@ -258,11 +258,8 @@ export function startBook(chapter) {
     $('sheet').innerHTML = sheetHtml(i);
     $('left').scrollTop = 0;
     $('pagenum').textContent = `${i + 1} / ${N}`;
-    const bookEl = $('book');
-    if (bookEl) {
-      bookEl.style.setProperty('--left-stack', (N > 1 ? i / (N - 1) : 0).toFixed(3));
-      bookEl.style.setProperty('--right-stack', (N > 1 ? 1 - i / (N - 1) : 0).toFixed(3));
-    }
+    $('left')?.style.setProperty('--left-stack', (N > 1 ? i / (N - 1) : 0).toFixed(3));
+    $('right')?.style.setProperty('--right-stack', (N > 1 ? 1 - i / (N - 1) : 0).toFixed(3));
     // the address names the page, so it can be bookmarked or linked: kinematics/#3
     history.replaceState(null, '', i ? `#${i}` : location.pathname);
     $('folio').textContent = i + 1;
@@ -378,7 +375,7 @@ export function startBook(chapter) {
   }
   let last = performance.now();
   const EMBED_PAGE = Math.min(Math.max(+Q.get('page') || 0, 0), N - 1);
-  let tourT = 0;
+  let tourT = 0, lastDwell = '', lastShade = '';
   function frame(now) {
     const dt = RENDER ? 1 / 60 : Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;   // a frame stamp can predate setup
     const s = RENDER ? tourAt(tourT) : EMBED ? EMBED_PAGE : Math.min(Math.max(scrollY / pageH, 0), N - 1);
@@ -403,10 +400,12 @@ export function startBook(chapter) {
       leaf.style.visibility = 'visible';
       leaf.style.transform = `rotateY(${-180 * flip}deg)`;
       leaf.querySelector('.leaf-front').style.opacity = 0.25 + 0.6 * smooth(0.15, 0.5, flip);
-      leaf.style.setProperty('--shade', (0.10 * Math.sin(flip * Math.PI)).toFixed(3));
+      const shadeStr = Math.sin(flip * Math.PI).toFixed(3);
+      if (shadeStr !== lastShade) { lastShade = shadeStr; leaf.style.setProperty('--shade-u', shadeStr); }
     } else leaf.style.visibility = 'hidden';
     $('cue').style.opacity = s < 0.05 ? 1 : 0;
-    $('folio')?.parentElement?.style?.setProperty('--dwell', clamp01(f / 0.5).toFixed(3));
+    const dwellStr = clamp01(f / 0.5).toFixed(3);
+    if (dwellStr !== lastDwell) { lastDwell = dwellStr; $('folio')?.parentElement?.style?.setProperty('--dwell', dwellStr); }
 
     // the figure: camera, time, world, labels (stage.js); time pauses while something is pointed at or open
     const state = S.step({ now, dt, s, litPage: shown, running: started && !userPaused, narrow: narrow(), narrowZoom: chapter.narrowZoom ?? 1,

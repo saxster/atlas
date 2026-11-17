@@ -384,6 +384,28 @@ export function cubicBezier(x1, y1, x2, y2) {
 }
 export const bez = cubicBezier;
 
+// Emil Kowalski / Apple UI custom cubic-bezier curves (registered on `eases` for uniform lookup).
+eases.uiOut = cubicBezier(0.23, 1, 0.32, 1);
+eases.uiInOut = cubicBezier(0.77, 0, 0.175, 1);
+eases.drawer = cubicBezier(0.32, 0.72, 0, 1);
+
+// Apple WWDC (Designing Fluid Interfaces) progressive boundary resistance:
+// returns a signed displacement strictly bounded by `dimension`, with initial slope `constant` at overshoot = 0.
+export function rubberband(overshoot, dimension, constant = 0.55) {
+  const d = Math.abs(dimension);
+  if (!overshoot || d <= 0 || constant <= 0) return 0;
+  const x = Math.abs(overshoot);
+  return Math.sign(overshoot) * ((x * d * constant) / (d + constant * x));
+}
+
+// Apple WWDC exponential-decay momentum projection: projects where a gesture with `velocity` (units/s)
+// comes to rest at `decelerationRate` (0.998 normal scroll feel, 0.99 snappier).
+export function projectMomentum(velocity, decelerationRate = 0.998) {
+  if (!velocity) return 0;
+  const d = clamp(decelerationRate, 0.5, 0.9999);
+  return ((velocity / 1000) * d) / (1 - d);
+}
+
 // #002 Stagger: maps overall progress u in [0, 1] to item `index` of `count` items.
 // `overlap` in [0, 0.95] controls how much adjacent items overlap in time (0 = sequential, 0.5 = half-overlap).
 // Guaranteed 0 at u <= 0 and 1 at u >= 1 for every item.

@@ -111,7 +111,7 @@ html.tk-scrubbing, html.tk-scrubbing * { cursor: ew-resize !important; user-sele
   color: var(--tk-col, #2c5697); border-bottom: 1.5px dashed currentColor; font-weight: 500;
   font-variant-numeric: tabular-nums; cursor: ew-resize; touch-action: pan-y;
 }
-.tk-scrub:hover, .tk-scrub:focus-visible, .tk-scrub.is-dragging {
+.tk-scrub:focus-visible, .tk-scrub.is-dragging {
   background: color-mix(in srgb, var(--tk-col, #2c5697) 12%, transparent);
 }
 .tk-scrub .tk-help {
@@ -120,7 +120,7 @@ html.tk-scrubbing, html.tk-scrubbing * { cursor: ew-resize !important; user-sele
   color: var(--tk-col, #2c5697); background: var(--card, #fbfbfa); border: 1px solid var(--faint, #d4d4d6);
   border-radius: 4px; padding: 2px 5px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s;
 }
-html:not(.tk-scrubbing) .tk-scrub:hover .tk-help, .tk-scrub.show-help .tk-help { opacity: 1; }
+.tk-scrub.show-help .tk-help { opacity: 1; }
 .tk-val { font-family: var(--mono, monospace); font-size: 0.92em; font-weight: 500; color: var(--strong, #18181a); font-variant-numeric: tabular-nums; }
 .tk-term, [data-part]:not(button):not(.byrne-chip) {
   border-bottom: 1.5px dotted var(--part-col, var(--mid, #8a8a8f)); border-radius: 3px; padding: 0 2px; cursor: pointer;
@@ -132,7 +132,7 @@ html:not(.tk-scrubbing) .tk-scrub:hover .tk-help, .tk-scrub.show-help .tk-help {
   display: inline-flex; align-items: center; vertical-align: -0.17em; margin: 0 1px; padding: 1px 3px;
   border: 0; border-radius: 4px; background: transparent; cursor: pointer;
 }
-.byrne-chip:hover, .byrne-chip:focus-visible { background: rgba(27, 25, 23, 0.08); }
+.byrne-chip:focus-visible { background: rgba(27, 25, 23, 0.08); }
 .tk-aside-btn {
   display: inline-flex; align-items: center; gap: 4px; border: 0; border-bottom: 1.5px dotted var(--mid, #8a8a8f);
   background: none; padding: 0 2px; font: inherit; color: var(--strong, #18181a); cursor: pointer;
@@ -143,10 +143,15 @@ html:not(.tk-scrubbing) .tk-scrub:hover .tk-help, .tk-scrub.show-help .tk-help {
 }
 .tk-aside-btn .tk-dots i:first-child { top: 0.34em; }
 .tk-aside-btn .tk-dots i:last-child { top: 0.68em; }
-.tk-aside-btn[aria-expanded="false"]:hover .tk-dots i:first-child { top: 0.2em; }
-.tk-aside-btn[aria-expanded="false"]:hover .tk-dots i:last-child { top: 0.82em; }
 .tk-aside-btn[aria-expanded="true"] .tk-dots i:first-child,
 .tk-aside-btn[aria-expanded="true"] .tk-dots i:last-child { top: 0.51em; }
+@media (hover: hover) and (pointer: fine) {
+  .tk-scrub:hover { background: color-mix(in srgb, var(--tk-col, #2c5697) 12%, transparent); }
+  html:not(.tk-scrubbing) .tk-scrub:hover .tk-help { opacity: 1; }
+  .byrne-chip:hover { background: rgba(27, 25, 23, 0.08); }
+  .tk-aside-btn[aria-expanded="false"]:hover .tk-dots i:first-child { top: 0.2em; }
+  .tk-aside-btn[aria-expanded="false"]:hover .tk-dots i:last-child { top: 0.82em; }
+}
 .tk-aside-card {
   display: block; margin: 10px 0 14px; padding: 12px 16px; border-radius: 14px;
   border: 1px solid var(--mid, #8a8a8f); background: var(--card, #fbfbfa); box-shadow: var(--lift, none);
