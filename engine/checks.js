@@ -109,3 +109,97 @@ export function checkLinkLengths(joints, links, tol = 1e-6) {
     return near(d, L, tol);
   });
 }
+
+// 60fps kinematic & biomechanical trajectory audit (ported from stick-scene/scripts/motion.mjs):
+// Samples sampleFn(t) -> { jointKey: [x, y, z?], ... } at steps+1 points across [t0, t1] and checks:
+// - 'jump': discrete 2nd-difference acceleration |p(t+dt) - 2p(t) + p(t-dt)| <= maxJump (catches unblended switches or IK branch flips)
+// - 'link-stretch': rigid bar conservation for links: [[keyA, keyB, L], ...]
+// - 'reach-short' & 'bent-back-elbow': for chains: [[baseKey, midKey, endKey, maxReach, branchSign], ...]
+// - 'loop-pop': when loop: true, verifies start/end seam continuity |p(t1) - p(t0)| <= loopTol
+// Returns { ok, findings, frames }.
+export function checkTrajectory(sampleFn, {
+  t0 = 0,
+  t1 = 1,
+  steps = 60,
+  maxJump = 0.25,
+  links = [],
+  chains = [],
+  loop = false,
+  loopTol = 1e-3,
+  tol = 1e-5,
+  sinTol = 0.05,
+} = {}) {
+  const frames = [];
+  const findings = [];
+  const pDist = (a, b) => Math.hypot((b[0] ?? 0) - (a[0] ?? 0), (b[1] ?? 0) - (a[1] ?? 0), (b[2] ?? 0) - (a[2] ?? 0));
+  const isPt = v => Array.isArray(v) && v.length >= 2 && typeof v[0] === 'number' && typeof v[1] === 'number';
+  const add = (kind, t, note) => {
+    const prev = findings.findLast(x => x.kind === kind && x.note === note);
+    if (prev && t - prev.to <= (t1 - t0) / Math.max(1, steps) * 2.5) {
+      prev.to = t;
+      return;
+    }
+    findings.push({ kind, from: t, to: t, note });
+  };
+
+  for (let i = 0; i <= steps; i++) {
+    const t = t0 + (t1 - t0) * (i / steps);
+    const state = sampleFn(t) || {};
+    frames.push({ t, state });
+
+    for (const [a, b, L] of links) {
+      const pa = state[a], pb = state[b];
+      if (!isPt(pa) || !isPt(pb) || !near(pDist(pa, pb), L, tol)) {
+        add('link-stretch', t, `${a}-${b}`);
+      }
+    }
+    for (const [baseKey, midKey, endKey, maxReach, branchSign] of chains) {
+      const sh = state[baseKey], el = state[midKey], h = state[endKey];
+      if (!isPt(sh) || !isPt(el) || !isPt(h)) continue;
+      if (maxReach != null && pDist(sh, h) > maxReach + tol) {
+        add('reach-short', t, `${baseKey}->${endKey}`);
+      }
+      if (branchSign != null && branchSign !== 0) {
+        const ux = el[0] - sh[0], uy = el[1] - sh[1];
+        const vx = h[0] - el[0], vy = h[1] - el[1];
+        const lu = Math.hypot(ux, uy), lv = Math.hypot(vx, vy);
+        if (lu > 1e-6 && lv > 1e-6) {
+          const crossNorm = (ux * vy - uy * vx) / (lu * lv);
+          if (crossNorm * Math.sign(branchSign) < -sinTol) {
+            add('bent-back-elbow', t, `${baseKey}->${midKey}->${endKey}`);
+          }
+        }
+      }
+    }
+  }
+
+  for (let i = 1; i < frames.length - 1; i++) {
+    const fa = frames[i - 1].state, fb = frames[i].state, fc = frames[i + 1].state;
+    const t = frames[i].t;
+    for (const k of Object.keys(fb)) {
+      const pa = fa[k], pb = fb[k], pc = fc[k];
+      if (!isPt(pa) || !isPt(pb) || !isPt(pc)) continue;
+      const acc = Math.hypot(
+        pc[0] - 2 * pb[0] + pa[0],
+        pc[1] - 2 * pb[1] + pa[1],
+        (pc[2] ?? 0) - 2 * (pb[2] ?? 0) + (pa[2] ?? 0),
+      );
+      if (acc > maxJump) {
+        add('jump', t, k);
+      }
+    }
+  }
+
+  if (loop && frames.length >= 2) {
+    const f0 = frames[0].state, fN = frames.at(-1).state;
+    for (const k of Object.keys(f0)) {
+      const p0 = f0[k], pN = fN[k];
+      if (!isPt(p0) || !isPt(pN)) continue;
+      if (pDist(p0, pN) > loopTol) {
+        add('loop-pop', t1, k);
+      }
+    }
+  }
+
+  return { ok: findings.length === 0, findings, frames };
+}

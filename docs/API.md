@@ -175,7 +175,7 @@ mountFigure(document.querySelector('#newton'), CHAPTER, { page: 2, height: 420 }
 
 `const C = checks()` gives `C.check(label, ok, info)` rows; `C.report()` prints them and exits 1 on any failure. Helpers: `near`, `deriv`, `integ`
 (Simpson), `bisect`, `rk4`, `mean`, `variance`, `meanWithin`, `chiSquare` with its exact CDF and critical value,
-`normalQuantile`, `binomial`, `checkLinkLengths(joints, links, tol?)`. `rng(seed)` (`rng.js`) is seeded randomness, so a stochastic model checks exactly.
+`normalQuantile`, `binomial`, `checkLinkLengths(joints, links, tol?)`, `checkTrajectory(sampleFn, { t0?, t1?, steps?, maxJump?, links?, chains?, loop?, loopTol? })`. `rng(seed)` (`rng.js`) is seeded randomness, so a stochastic model checks exactly.
 
 ## In a textbook
 

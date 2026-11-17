@@ -109,13 +109,13 @@ export const TARGETS = [
       '@saxster/atlas/kinematics.js': ['sliderCrank', 'fourBar', 'circleIntersect', 'gearRatio', 'rackPinion', 'differential', 'createSolver', 'twoLinkIK', 'fabrik', 'jacobianIK'],
       '@saxster/atlas/parts.js': ['part', 'box', 'cyl', 'rod', 'gearGeo', 'gear', 'rackGeo', 'rack', 'spring', 'applyClipPlanes'],
       '@saxster/atlas/prims.js': ['linkage', 'vector'],
-      '@saxster/atlas/checks.js': ['checks', 'near', 'deriv', 'checkLinkLengths'],
+      '@saxster/atlas/checks.js': ['checks', 'near', 'deriv', 'checkLinkLengths', 'checkTrajectory'],
     },
     templateDir: 'examples/minimal/teardown',
     templateFiles: ['model.js', 'checks.mjs', 'world.js', 'figure.js', 'main.js'],
     invariants: [
       'Use cuts: ["solid", "xray", "section"] with xrayKeys, cutKeys, and cutPlane on the figure spec.',
-      'Verify rigid linkage invariants in checks.mjs with checkLinkLengths() and analytical derivatives with deriv().',
+      'Verify rigid linkage invariants in checks.mjs with checkLinkLengths() / checkTrajectory() and analytical derivatives with deriv().',
     ],
   },
   {
@@ -159,11 +159,11 @@ export const TARGETS = [
     triggers: ['forward kinematics', 'inverse kinematics', 'slider crank', 'four bar linkage', 'fabrik', 'jacobian ik', 'constraint solver', 'gear ratio'],
     modules: {
       '@saxster/atlas/kinematics.js': ['circleIntersect', 'sliderCrank', 'fourBar', 'gearRatio', 'rackPinion', 'differential', 'createSolver', 'twoLinkIK', 'fabrik', 'jacobianIK'],
-      '@saxster/atlas/checks.js': ['checks', 'near', 'deriv', 'checkLinkLengths'],
+      '@saxster/atlas/checks.js': ['checks', 'near', 'deriv', 'checkLinkLengths', 'checkTrajectory'],
     },
     invariants: [
       'kinematics.js is pure math (zero DOM, zero three.js) and belongs in model.js and checks.mjs.',
-      'Always verify link lengths across multiple crank angles with checkLinkLengths() in checks.mjs.',
+      'Always verify link lengths and smooth joint trajectories across crank/cycle angles with checkLinkLengths() and checkTrajectory() in checks.mjs.',
     ],
   },
   {

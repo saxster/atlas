@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial, checkLinkLengths } from './checks.js';
+import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial, checkLinkLengths, checkTrajectory } from './checks.js';
 import { rng } from './rng.js';
 import { scale, samples, chart, textAdvanceEm, waterfallWalk, waterfallChart, sankeyLayout, sankeyChart } from './chart.js';
 import * as THREE from 'three';
@@ -1105,5 +1105,34 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && comicSheet.includes('Chapter-Opener-Diptych-2Panel')
     && comicSheet.includes('Chapter-Closer-Strip-3Panel')
     && !comicSheet.includes('skew(-15deg)'));
+}
+{
+  const L1 = 2, L2 = 1.5;
+  const smoothArm = u => {
+    const ang = 2 * Math.PI * u;
+    const tgt = [2.2 + 0.4 * Math.cos(ang), 0.5 + 0.4 * Math.sin(ang)];
+    const ik = twoLinkIK([0, 0], tgt, L1, L2, 1);
+    return { base: [0, 0], elbow: ik.elbowPt, hand: ik.endPt };
+  };
+  const cleanRes = checkTrajectory(smoothArm, {
+    t0: 0, t1: 1, steps: 60, maxJump: 0.15, loop: true, loopTol: 1e-6,
+    links: [['base', 'elbow', L1], ['elbow', 'hand', L2]],
+    chains: [['base', 'elbow', 'hand', L1 + L2, 1]],
+  });
+  const faultyRes = checkTrajectory(u => {
+    if (u > 0.48 && u < 0.52) return { base: [0, 0], elbow: [1, 1.5], hand: [5, 0] };
+    const s = smoothArm(u * 0.7);
+    return s;
+  }, {
+    t0: 0, t1: 1, steps: 60, maxJump: 0.15, loop: true, loopTol: 1e-3,
+    links: [['base', 'elbow', L1], ['elbow', 'hand', L2]],
+    chains: [['base', 'elbow', 'hand', L1 + L2, 1]],
+  });
+  const kinds = new Set(faultyRes.findings.map(f => f.kind));
+  C.check('checks.js checkTrajectory: passes smooth cyclic 2-link IK and flags jump, link-stretch, reach-short, bent-back-elbow, and loop-pop',
+    cleanRes.ok && cleanRes.findings.length === 0
+    && !faultyRes.ok
+    && kinds.has('jump') && kinds.has('link-stretch') && kinds.has('reach-short') && kinds.has('bent-back-elbow') && kinds.has('loop-pop'),
+    [...kinds].join(', '));
 }
 C.report();
