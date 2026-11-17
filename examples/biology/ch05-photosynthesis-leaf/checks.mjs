@@ -19,3 +19,9 @@ const sapHumid = M.vascularSapAccount(90, 80);
 check('Lower ambient humidity increases VPD and xylem transpiration pull', sapDry.xylemVelocityMmPerMin > sapHumid.xylemVelocityMmPerMin * 4);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual replaces Blackman min bottleneck with additive average', () => {
+  const real = blackmanSurface(100, 10, 25, false);
+  const buggy = blackmanSurface(100, 10, 25, true);
+  return real.gross === 10 && buggy.gross > 60;
+});

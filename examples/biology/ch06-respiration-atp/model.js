@@ -1,13 +1,20 @@
 // Chapter 6 pure model: aerobic respiration ATP relay, Lavoisier mass/RQ ledger, and anaerobic lactate/yeast fermentation.
-export function aerobicRelayAccount(o2Pct = 100, demandLevel = 50) {
+export function aerobicRelayAccount(o2Pct = 100, demandLevel = 50, buggyWorld = false) {
   const bounded = (v, fallback) => Number.isFinite(+v) ? Math.max(0, Math.min(100, +v)) : fallback;
-  const oxygenControl = bounded(o2Pct,100), activityControl = bounded(demandLevel,50);
-  const chainActive = oxygenControl > 0;
-  // An explanatory settled-state comparison, not a calibrated oxygen dose response.
-  // Animation speed has no biochemical clock, measured Hz or fixed ATP yield.
-  return { o2Pct:oxygenControl, demandLevel:activityControl, glycolysisAtp:2,
-    chainActive, animationRate:chainActive ? 0.5 + activityControl/200 : 0,
-    status:chainActive ? 'Oxygen-linked relay available' : 'Sustained absence: relay stalls after residual gradients dissipate' };
+  const oxygenControl = bounded(o2Pct, 100), activityControl = bounded(demandLevel, 50);
+  const chainActive = buggyWorld ? true : oxygenControl > 0;
+  return {
+    o2Pct: oxygenControl,
+    demandLevel: activityControl,
+    glycolysisAtp: 2,
+    chainActive,
+    animationRate: chainActive ? 0.5 + activityControl / 200 : 0,
+    status: buggyWorld
+      ? 'Buggy World: ETC & rotor spin without O₂ terminal electron acceptor'
+      : chainActive
+        ? 'Oxygen-linked relay available'
+        : 'Sustained absence: relay stalls after residual gradients dissipate',
+  };
 }
 
 export function respiratoryQuotientLedger(substrate = 'glucose', moles = 1) {

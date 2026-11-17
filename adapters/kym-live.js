@@ -13,7 +13,7 @@
 //   - Optional user-initiated Web Audio sonification (api.audio())
 //   - Optional user-initiated HTML5 sensor bridge (camera photometer, mic spirometer, device tilt)
 //   - Automatic 2D Canvas paper-and-ink fallback when WebGL is disabled
-import { createStage, DEFAULT_QUIRK, resolveQuirk } from '../engine/stage.js';
+import { createStage, QUIRKS, DEFAULT_QUIRK, resolveQuirk, mountQuirkBar } from '../engine/stage.js';
 import { readTheme, srgbLuminance } from '../engine/theme.js';
 
 const CSS = `
@@ -34,7 +34,7 @@ const CSS = `
 .atlas-stage .lbl.axis { font: italic 14px/1 Georgia, serif; color: var(--muted); transform: translate(-100%, -50%); }
 .atlas-stage .atlas-title { position: absolute; top: 10px; right: 14px; font: italic 15px/1.3 Georgia, serif; color: var(--ink); pointer-events: none; text-align: right; max-width: 72%; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 7px; border-radius: 4px; }
 .atlas-stage .atlas-badge { position: absolute; bottom: 8px; left: 12px; font: 500 11px/1.3 var(--sans, system-ui, sans-serif); color: var(--muted); pointer-events: none; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 6px; border-radius: 4px; }
-.atlas-parts, .atlas-cuts, .atlas-pages { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
+.atlas-parts, .atlas-cuts, .atlas-pages, .quirkbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
 `;
 let styled = false;
 let activeAtlasStage = null;
@@ -535,6 +535,49 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
   const partsWrap = document.createElement('div');
   partsWrap.className = 'atlas-parts';
   controlsEl.appendChild(partsWrap);
+
+  // ---------- 4b. 5-Stop Quirk Spectrum Bar & Buggy-World Counterfactual Toggle ----------
+  const initialQuirkObj = resolveQuirk(opts.quirk || chapter.quirk || DEFAULT_QUIRK);
+  const quirkBar = mountQuirkBar(partsWrap, { ...chapter, quirks: chapter.quirks || QUIRKS }, () => S, {
+    initialQuirk: initialQuirkObj.id,
+    place: 'after',
+    onChange: () => {
+      kick();
+      api._refresh?.();
+    },
+  });
+  if (quirkBar?.el) {
+    quirkBar.el.querySelectorAll('button').forEach(b => {
+      b.classList.add('live-ctl');
+      if (Array.isArray(api._buttons)) api._buttons.push(b);
+    });
+  }
+
+  const buggyKey = chapter.coherentWorldParamKey || 'buggyWorld';
+  chapter.params = chapter.params || {};
+  if (chapter.params[buggyKey] === undefined) chapter.params[buggyKey] = 0;
+  let buggyOn = Boolean(chapter.params[buggyKey]);
+  const buggyBtn = document.createElement('button');
+  buggyBtn.type = 'button';
+  buggyBtn.className = 'live-ctl atlas-buggy-toggle';
+  const syncBuggyBtn = () => {
+    buggyBtn.setAttribute('aria-pressed', String(buggyOn));
+    buggyBtn.dataset.buggy = String(buggyOn);
+    buggyBtn.textContent = buggyOn
+      ? (chapter.buggyWorldLabel || 'Buggy World: If My Hunch Were Law (Active)')
+      : (chapter.realWorldLabel || 'Compare: Physical Reality vs Buggy World');
+  };
+  syncBuggyBtn();
+  buggyBtn.addEventListener('click', () => {
+    buggyOn = !buggyOn;
+    chapter.params[buggyKey] = buggyOn ? 1 : 0;
+    syncBuggyBtn();
+    if (chapter.onParamChange) chapter.onParamChange(chapter.params, S, buggyKey, chapter.params[buggyKey]);
+    kick();
+    api._refresh?.();
+  });
+  controlsEl.appendChild(buggyBtn);
+  if (Array.isArray(api._buttons)) api._buttons.push(buggyBtn);
   let partBtnMap = new Map();
   let explodeBtn = null;
 

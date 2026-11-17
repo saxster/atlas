@@ -86,6 +86,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 0,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Spontaneous Generation Myth (Active)',
+  realWorldLabel: 'Compare: Biogenesis Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -93,7 +99,7 @@ export const CHAPTER = {
   xrayKeys: ['open_jar', 'gauze_jar', 'sealed_jar', 'flask_bulb'],
   cutKeys: ['open_jar', 'gauze_jar', 'sealed_jar', 'flask_bulb'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { lensRadiusMm: 0.75, neckDipMm: 20, tiltFlask: 0 },
+  defaultParams: { lensRadiusMm: 0.75, neckDipMm: 20, tiltFlask: 0, buggyWorld: 0 },
   controls: [
     { id: 'lensRadiusMm', label: 'Bead lens radius', min: 0.45, max: 1.5, step: 0.05, value: 0.75, unit: 'mm' },
     { id: 'neckDipMm', label: 'Swan-neck dip depth', min: 6, max: 30, step: 2, value: 20, unit: 'mm' },
@@ -120,21 +126,24 @@ export const CHAPTER = {
     const bflMm = M.backFocalLengthBallMm(p.lensRadiusMm, 1.52);
     const mag = M.ballLensMagnification(p.lensRadiusMm, 1.52);
     const dMinNm = M.rayleighLimitNm(550, Math.min(0.85, 0.35 + 0.3 / p.lensRadiusMm));
-    const trap = M.swanNeckSporeCapture(p.neckDipMm, 1.5, 1.4);
-    return { t, lensRadiusMm: p.lensRadiusMm, fMm, bflMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: p.tiltFlask > 0.5, trap };
+    const buggy = Boolean(p.buggyWorld);
+    const trap = M.swanNeckSporeCapture(p.neckDipMm, 1.5, 1.4, buggy);
+    return { t, lensRadiusMm: p.lensRadiusMm, fMm, bflMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: buggy || p.tiltFlask > 0.5, buggy, trap };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Redi’s Controlled Jars</b> · Open jar: flies enter → larvae on meat · Gauze jar: scent plume escapes, flies lay eggs on mesh only (0 larvae on meat) · Sealed jar: air & flies excluded.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Redi’s Controlled Jars</b> · Open jar: flies enter → larvae on meat · Gauze jar: scent plume escapes, flies lay eggs on mesh only (0 larvae on meat) · Sealed jar: air & flies excluded.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm (working clearance BFL = ${s.bflMm.toFixed(2)} mm) · Magnification <b>${s.mag.toFixed(0)}×</b> · Ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm (working clearance BFL = ${s.bflMm.toFixed(2)} mm) · Magnification <b>${s.mag.toFixed(0)}×</b> · Ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
     }
-    if (pageIdx === 2) {
+    if (idx === 2) {
       const status = s.tilted ? 'Tipped broth contacts trapped contamination; cloudiness represents subsequent growth under suitable conditions' : 'Upright bend keeps settled dust away from the broth in this schematic; the trapping estimate is illustrative, not a sterility prediction';
-      return `<b>Swan-neck dip = ${s.neckDipMm} mm</b> · Stokes settling v_s = ${(s.trap.vsMmPerSec * 1000).toFixed(1)} µm/s · ${status}.`;
+      return `${modeTag}<b>Swan-neck dip = ${s.neckDipMm} mm</b> · Stokes settling v_s = ${(s.trap.vsMmPerSec * 1000).toFixed(1)} µm/s · ${status}.`;
     }
-    return `<b>Schematic size-order columns</b> · Water at molecular scale (~0.3 nm O–O spacing) → T4 Phage (100 nm) → E. coli (2 µm) → Human RBC (8 µm) · Labelled sizes supply the comparisons; column heights are illustrative.`;
+    return `${modeTag}<b>Schematic size-order columns</b> · Water at molecular scale (~0.3 nm O–O spacing) → T4 Phage (100 nm) → E. coli (2 µm) → Human RBC (8 µm) · Labelled sizes supply the comparisons; column heights are illustrative.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -171,19 +180,19 @@ export const CHAPTER = {
       const pCloud = prims.particles(g, 10, { radius: 0.045, color: 'ink' });
       flyClouds.push({ lid: j.lid, cloud: pCloud });
     }
-    label('board', 'Open', () => V(-1.8, 2.15, 0));
+    label('board', 'Open', () => V(-1.8, 2.15, 0), { leader: [-20, -16] });
     label('board', 'Gauze mesh', () => V(0.0, 2.15, 0), { leader: [0, -22] });
-    label('board', 'Sealed', () => V(1.8, 2.15, 0));
+    label('board', 'Sealed', () => V(1.8, 2.15, 0), { leader: [20, -16] });
 
     // Station 1 (x = 14): Leeuwenhoek's Brass Microscope & Bead Lens
     const plateAsm = asm('brass_plate', root, { title: 'Twin brass plates', sub: 'Hand-beaten frame' });
-    plateAsm.position.set(14, 1.4, 0);
+    plateAsm.position.set(14, 1.4, -0.45);
     part(plateAsm, box(1.1, 2.1, 0.12, 0.03), { pal: 'ochre', tone: 'hi', pos: [0, 0, 0], ex: [0, 0, -0.35], name: 'Front brass plate' });
     part(plateAsm, box(1.1, 2.1, 0.12, 0.03), { pal: 'ochre', tone: 'mid', pos: [0, 0, -0.14], ex: [0, 0, -0.65], name: 'Back brass plate' });
     part(plateAsm, torus(0.22, 0.035, 12, 24), { pal: 'dark', tone: 'hi', pos: [0, 0.35, 0.06], ex: [0, 0.15, -0.2], name: 'Lens pinhole bezel' });
 
     const lensAsm = asm('bead_lens', root, { title: 'Soda-lime glass bead lens', sub: 'Spherical refractor' });
-    lensAsm.position.set(14, 1.75, 0);
+    lensAsm.position.set(14, 1.75, 0.15);
     const beadMesh = part(lensAsm, sphere(0.24, 24), { pal: 'blue', tone: 'lit', pos: [0, 0, 0], ex: [0, 0.35, 0.45], name: 'Spherical glass bead' });
     const rayUpper = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Refracted upper light ray' });
     const rayLower = rod(lensAsm, { r: 0.018, pal: 'red', tone: 'hi', name: 'Refracted lower light ray' });
@@ -191,11 +200,11 @@ export const CHAPTER = {
     const rayInLower = rod(lensAsm, { r: 0.015, pal: 'ochre', tone: 'hi', name: 'Incident specimen ray' });
 
     const screwAsm = asm('specimen_screw', root, { title: 'Specimen focus screw', sub: 'Sub-millimetre stage' });
-    screwAsm.position.set(14, 0.85, 0.35);
+    screwAsm.position.set(14, 0.85, 0.88);
     part(screwAsm, cyl(0.06, 1.3, 16), { pal: 'dark', tone: 'hi', pos: [0, 0, 0], ex: [0, -0.4, 0.3], name: 'Lead screw' });
     part(screwAsm, box(0.42, 0.12, 0.24, 0.02), { pal: 'ochre', tone: 'mid', pos: [0, 0.45, -0.05], ex: [0, -0.2, 0.25], name: 'Threaded specimen bracket' });
     part(screwAsm, sphere(0.11, 16), { pal: 'green', tone: 'hi', pos: [0, 0.9, -0.1], ex: [0, 0.25, 0.3], name: 'Pond-water drop' });
-    label('board', 'Glass bead lens', () => V(14, 2.25, 0), { leader: [36, -24] });
+    label('board', 'Glass bead lens', () => V(14, 2.25, 0.15), { leader: [36, -24] });
 
     // Station 2 (x = 28): Pasteur's Swan-Neck Flask
     const flaskAsm = asm('flask_bulb', root, { title: 'Boiled broth bulb', sub: 'Sterile nutrient reservoir' });
@@ -241,8 +250,8 @@ export const CHAPTER = {
         part(towerAsm, rbcGeo(0.16, 0), { pal: 'red', tone: 'lit', pos: [st.x, st.h + 0.12, 0], rot: [0.45, 0, 0], ex: [0, 0.5, 0], name: 'Biconcave RBC disc (8 µm)' });
       }
     }
-    label('board', 'Water: molecular scale', () => V(40.6, 2.35, 0));
-    label('board', 'Size-order columns', () => V(42.8, 2.55, 0));
+    label('board', 'Water: molecular scale', () => V(40.6, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'Size-order columns', () => V(42.8, 2.55, 0), { leader: [24, -18] });
 
     return {
       labels,

@@ -82,6 +82,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 4,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Enzymes Consumed / Melted Myth (Active)',
+  realWorldLabel: 'Compare: Catalytic Denaturation Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -89,7 +95,7 @@ export const CHAPTER = {
   xrayKeys: ['enzyme_blob', 'assay_rack'],
   cutKeys: ['enzyme_blob', 'assay_rack'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { substrateMm: 3.0, tempC: 37, inhibMm: 0.0 },
+  defaultParams: { substrateMm: 3.0, tempC: 37, inhibMm: 0.0, buggyWorld: 0 },
   controls: [
     { id: 'substrateMm', label: 'Substrate [S]', min: 0.0, max: 10.0, step: 0.5, value: 3.0, unit: 'mM' },
     { id: 'tempC', label: 'Assay temperature T', min: 10, max: 70, step: 2, value: 37, unit: '°C' },
@@ -113,20 +119,23 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const mm = M.michaelisMenten(p.substrateMm, p.tempC, 7.0, p.inhibMm);
-    return { t, mm, substrateMm: p.substrateMm, tempC: p.tempC, inhibMm: p.inhibMm };
+    const buggy = Boolean(p.buggyWorld);
+    const mm = M.michaelisMenten(p.substrateMm, p.tempC, 7.0, p.inhibMm, 1.0, buggy);
+    return { t, buggy, mm, substrateMm: p.substrateMm, tempC: p.tempC, inhibMm: p.inhibMm };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Schematic biomolecules</b> · α-D-Glucose (C₆H₁₂O₆ hexose ring) & planar peptide linkage (−CO−NH−) built by condensation (−H₂O).`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Schematic biomolecules</b> · α-D-Glucose (C₆H₁₂O₆ hexose ring) & planar peptide linkage (−CO−NH−) built by condensation (−H₂O).`;
     }
-    if (pageIdx === 1) {
-      return `<b>Ramachandran Folding Landscape</b> · Chosen α-helix (−60°, −45°) & β-sheet (−120°, +125°) basins · At T = ${s.tempC} °C: ${s.mm.denatured ? '<b>chosen distorted shape</b>' : '<b>chosen compact shape</b>'}; illustration, not measured protein stability.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Ramachandran Folding Landscape</b> · Chosen α-helix (−60°, −45°) & β-sheet (−120°, +125°) basins · At T = ${s.tempC} °C: ${s.mm.denatured ? '<b>chosen distorted shape</b>' : '<b>chosen compact shape</b>'}; illustration, not measured protein stability.`;
     }
-    if (pageIdx === 2) {
-      return `<b>[S] = ${s.substrateMm.toFixed(1)} mM · T = ${s.tempC} °C · [I] = ${s.inhibMm.toFixed(1)} mM</b> · Apparent K_m = ${s.mm.kmApp.toFixed(2)} mM · Reaction velocity <b>v = ${s.mm.v.toFixed(1)} µM/s</b> (${s.mm.vmaxEff.toFixed(0)}% chosen relative capacity). Model units and parameters are illustrative.`;
+    if (idx === 2) {
+      return `${modeTag}<b>[S] = ${s.substrateMm.toFixed(1)} mM · T = ${s.tempC} °C · [I] = ${s.inhibMm.toFixed(1)} mM</b> · Apparent K_m = ${s.mm.kmApp.toFixed(2)} mM · Reaction velocity <b>v = ${s.mm.v.toFixed(1)} µM/s</b> (${s.mm.vmaxEff.toFixed(0)}% chosen relative capacity). Model units and parameters are illustrative.`;
     }
-    return `<b>Thermal Profile & Food Assays</b> · T = ${s.tempC} °C (${(s.mm.tFrac * 100).toFixed(0)}% relative model activity; not folded fraction) · Schematic rack: iodine (starch), Benedict’s (reducing sugar), biuret (peptide bonds), ethanol (lipid), DCPIP (vitamin C).`;
+    return `${modeTag}<b>Thermal Profile & Food Assays</b> · T = ${s.tempC} °C (${(s.mm.tFrac * 100).toFixed(0)}% relative model activity; not folded fraction) · Schematic rack: iodine (starch), Benedict’s (reducing sugar), biuret (peptide bonds), ethanol (lipid), DCPIP (vitamin C).`;
   },
   buildWorld(E) {
     const { scene, asm, draggable } = E;
@@ -145,8 +154,8 @@ export const CHAPTER = {
     pepAsm.position.set(1.2, 1.35, 0);
     prims.molecule(pepAsm, MOLECULES.peptide.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.28, names: false });
     part(pepAsm, sphere(0.085, 14), { pal: 'blue', tone: 'lit', pos: [0.1, 0.58, 0.22], ex: [0, 0.35, 0.25], name: 'Condensation H₂O released' });
-    label('board', 'α-D-Glucose', () => V(-1.1, 2.35, 0));
-    label('board', 'Peptide bond', () => V(1.2, 2.35, 0));
+    label('board', 'α-D-Glucose', () => V(-1.1, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'Peptide bond', () => V(1.2, 2.35, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): Ramachandran Steric Surface & Folding Chain
     const ramaAsm = asm('rama_surface', root, { title: 'Ramachandran (φ, ψ) surface', sub: 'Steric clash hills vs α/β basins' });
@@ -171,8 +180,8 @@ export const CHAPTER = {
         link.set(resPts[i - 1], p);
       }
     }
-    label('board', 'Ramachandran surface', () => V(13.5, 2.15, -0.5));
-    label('board', '3D Folded chain', () => V(15.3, 2.35, 0));
+    label('board', 'Ramachandran surface', () => V(13.5, 2.15, -0.5), { leader: [-24, 18] });
+    label('board', '3D Folded chain', () => V(15.3, 2.35, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): Goodsell Globular Enzyme with Active Cleft & Draggable Substrate + MM Chart
     const enzAsm = asm('enzyme_blob', root, { title: 'Globular enzyme & active cleft', sub: 'Goodsell surface model' });
@@ -206,8 +215,8 @@ export const CHAPTER = {
     const axM = prims.axes(mmAsm, { x: [0, 10], y: [0, 105], size: [2.0, 1.65, 0.5] });
     const mmPlot = prims.plot(mmAsm, s => M.michaelisMenten(s, 37, 7.0, 0).v, { axes: axM, samples: 40, color: 'green', width: 0.064 });
     const mmCursor = part(mmAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: 'Operating point' });
-    label('board', 'Enzyme active cleft', () => V(26.8, 2.45, 0));
-    label('board', 'v = V_max[S]/(K_m+[S])', () => V(29.5, 2.15, -0.4));
+    label('board', 'Enzyme active cleft', () => V(26.8, 2.45, 0), { leader: [-24, 18] });
+    label('board', 'v = V_max[S]/(K_m+[S])', () => V(29.5, 2.15, -0.4), { leader: [24, 18] });
 
     // Station 3 (x = 42): 4 Biochemical Assay Cuvettes + Thermal Bell Curve
     const rackAsm = asm('assay_rack', root, { title: 'Biochemical assay cuvettes', sub: 'Iodine, Benedict, Biuret, Ethanol, DCPIP' });
@@ -228,10 +237,10 @@ export const CHAPTER = {
     const thAsm = asm('thermal_curve', root, { title: 'Thermal activity curve', sub: 'Invented relative activity curve' });
     thAsm.position.set(42.5, 0.25, -0.4);
     const axT = prims.axes(thAsm, { x: [10, 70], y: [0, 1.05], size: [1.9, 1.65, 0.5] });
-    prims.plot(thAsm, T => M.thermalActivity(T).frac, { axes: axT, samples: 44, color: 'red', width: 0.064 });
+    const thPlot = prims.plot(thAsm, T => M.thermalActivity(T).frac, { axes: axT, samples: 44, color: 'red', width: 0.064 });
     const tCursor = part(thAsm, sphere(0.085, 16), { pal: 'ochre', tone: 'lit', name: 'Assay temperature' });
-    label('board', '5 schematic test results', () => V(41.0, 2.05, 0));
-    label('board', 'Thermal denaturation', () => V(43.4, 2.15, -0.4));
+    label('board', '5 schematic test results', () => V(41.0, 2.05, 0), { leader: [-24, -18] });
+    label('board', 'Thermal denaturation', () => V(43.4, 2.15, -0.4), { leader: [24, 18] });
 
     return {
       labels,
@@ -247,8 +256,9 @@ export const CHAPTER = {
         inhibMesh.position.set(-0.18 - inhibFrac * 0.22, -0.12, 0.08);
         inhibMesh.scale.setScalar(0.75 + 0.35 * inhibFrac);
 
-        // Update MM curve & operating cursor
-        mmPlot.update(x => M.michaelisMenten(x, s.tempC, 7.0, s.inhibMm).v);
+        // Update MM & thermal curves & operating cursors
+        thPlot.update(T => M.thermalActivity(T, 37, 52, s.buggy).frac);
+        mmPlot.update(x => M.michaelisMenten(x, s.tempC, 7.0, s.inhibMm, 1.0, s.buggy).v);
         mmCursor.position.copy(axM.to(s.substrateMm, s.mm.v, 0));
         tCursor.position.copy(axT.to(s.tempC, s.mm.tFrac, 0));
       },

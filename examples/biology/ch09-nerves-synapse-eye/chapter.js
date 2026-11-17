@@ -87,6 +87,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 9,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Electron-Wire Nerve Impulse Myth (Active)',
+  realWorldLabel: 'Compare: Na⁺/K⁺ Membrane Wave vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -94,7 +100,7 @@ export const CHAPTER = {
   xrayKeys: ['synaptic_vesicles', 'retina_fovea'],
   cutKeys: ['retina_fovea'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { ttxBlockPct: 0, objectDistM: 0.35, lightAngleDeg: 30, lightPct: 55 },
+  defaultParams: { ttxBlockPct: 0, objectDistM: 0.35, lightAngleDeg: 30, lightPct: 55, buggyWorld: 0 },
   controls: [
     { id: 'ttxBlockPct', label: 'TTX Na⁺ channel block', min: 0, max: 100, step: 10, value: 0, unit: '%' },
     { id: 'objectDistM', label: 'Eye viewing distance d_o', min: 0.25, max: 5.0, step: 0.25, value: 0.35, unit: 'm' },
@@ -128,22 +134,25 @@ export const CHAPTER = {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.8 : clock;
     const tMs = (t * 1.6) % 5.0;
-    const ap = M.actionPotentialWave(tMs, 15, p.ttxBlockPct);
+    const buggy = Boolean(p.buggyWorld);
+    const ap = M.actionPotentialWave(tMs, 15, p.ttxBlockPct, buggy);
     const eye = M.eyeOpticsAccount(p.objectDistM, p.lightPct);
-    const aux = M.auxinTropismAccount(p.lightAngleDeg);
-    return { t, tMs, ap, eye, aux, ttxBlockPct: p.ttxBlockPct, objectDistM: p.objectDistM, lightAngleDeg: p.lightAngleDeg };
+    const aux = M.auxinTropismAccount(p.lightAngleDeg, buggy);
+    return { t, buggy, tMs, ap, eye, aux, ttxBlockPct: p.ttxBlockPct, objectDistM: p.objectDistM, lightAngleDeg: p.lightAngleDeg };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>t = ${s.tMs.toFixed(1)} ms · TTX block = ${s.ttxBlockPct}%</b> · Membrane V_m = <b>${s.ap.vMv.toFixed(0)} mV</b> · g_Na = ${s.ap.gNa.toFixed(1)} · g_K = ${s.ap.gK.toFixed(1)} relative units · <b>${s.ap.phase}</b>.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>t = ${s.tMs.toFixed(1)} ms · TTX block = ${s.ttxBlockPct}%</b> · Membrane V_m = <b>${s.ap.vMv.toFixed(0)} mV</b> · g_Na = ${s.ap.gNa.toFixed(1)} · g_K = ${s.ap.gK.toFixed(1)} relative units · <b>${s.ap.phase}</b>.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Chemical Synapse (20 nm cleft)</b> · Ca²⁺ influx → vesicle fusion → neurotransmitter diffusion → postsynaptic receptor opening (total synaptic delay is roughly milliseconds) (forward excitatory example; regulatory receptors also exist).`;
+    if (idx === 1) {
+      return `${modeTag}<b>Chemical Synapse (20 nm cleft)</b> · Ca²⁺ influx → vesicle fusion → neurotransmitter diffusion → postsynaptic receptor opening (total synaptic delay is roughly milliseconds) (forward excitatory example; regulatory receptors also exist).`;
     }
-    if (pageIdx === 2) {
-      return `<b>Object distance d_o = ${s.objectDistM.toFixed(2)} m</b> · Reduced-eye focal length f = <b>${s.eye.fRequiredMm.toFixed(2)} mm (${s.eye.powerDioptres.toFixed(1)} D)</b> · Chosen ciliary contraction = ${(s.eye.ciliaryTension * 100).toFixed(0)}%.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Object distance d_o = ${s.objectDistM.toFixed(2)} m</b> · Reduced-eye focal length f = <b>${s.eye.fRequiredMm.toFixed(2)} mm (${s.eye.powerDioptres.toFixed(1)} D)</b> · Chosen ciliary contraction = ${(s.eye.ciliaryTension * 100).toFixed(0)}%.`;
     }
-    return `<b>Light angle = ${s.lightAngleDeg}°</b> · Shaded-side IAA auxin = <b>${(s.aux.shadedFraction * 100).toFixed(0)}%</b> · Chosen shoot bend <b>${s.aux.bendAngleDeg.toFixed(1)}°</b> toward light. Auxin fractions and curvature are illustrative.`;
+    return `${modeTag}<b>Light angle = ${s.lightAngleDeg}°</b> · Shaded-side IAA auxin = <b>${(s.aux.shadedFraction * 100).toFixed(0)}%</b> · Chosen shoot bend <b>${s.aux.bendAngleDeg.toFixed(1)}°</b> toward light. Auxin fractions and curvature are illustrative.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -155,15 +164,15 @@ export const CHAPTER = {
 
     // Station 0 (x = 0): Axon Membrane Na_V & K_V Channels + HH Trace
     const navAsm = asm('nav_channel', root, { title: 'Voltage-gated Na⁺ channel (Na_V)', sub: 'Voltage gating and inactivation' });
-    navAsm.position.set(-1.1, 1.35, 0);
-    buildBilayer(navAsm, { cols: 5, rows: 3, x0: 0.4, y0: 0, z0: 0, skipCenter: true });
+    navAsm.position.set(-1.25, 1.35, 0);
+    buildBilayer(navAsm, { cols: 3, rows: 3, x0: 0, y0: 0, z0: 0, skipCenter: true });
     part(navAsm, cyl(0.28, 0.95, 20), { pal: 'red', tone: 'lit', pos: [0, 0, 0], ex: [-0.35, 0.35, 0], name: 'Na_V pore barrel' });
     const hBall = part(navAsm, sphere(0.14, 16), { pal: 'ochre', tone: 'lit', pos: [0, -0.62, 0], ex: [0, -0.45, 0], name: 'Inactivation h-ball' });
     const ttxPlug = part(navAsm, sphere(0.18, 16), { pal: 'ink', tone: 'lit', pos: [0, 0.62, 0], ex: [0, 0.55, 0], name: 'Tetrodotoxin (TTX) pore plug' });
     const naIon = part(navAsm, sphere(0.08, 12), { pal: 'red', tone: 'lit', pos: [0, 0.45, 0.12], name: 'Inward Na⁺ ion' });
 
     const kvAsm = asm('kv_channel', root, { title: 'Delayed-rectifier K⁺ channel (K_V)', sub: 'Repolarises membrane to −70 mV' });
-    kvAsm.position.set(-0.2, 1.35, 0);
+    kvAsm.position.set(-0.15, 1.35, 0);
     part(kvAsm, cyl(0.25, 0.92, 20), { pal: 'blue', tone: 'hi', pos: [0, 0, 0], ex: [0.35, 0.35, 0], name: 'K_V pore barrel' });
     const kIon = part(kvAsm, sphere(0.08, 12), { pal: 'blue', tone: 'lit', pos: [0, -0.42, 0.12], name: 'Outward K⁺ ion' });
 
@@ -173,8 +182,8 @@ export const CHAPTER = {
     const plotV = prims.plot(hhAsm, t => M.actionPotentialWave(t, 15, 0).vMv, { axes: axH, samples: 48, color: 'red', width: 0.032 });
     labels.push(...axH.labels, ...plotV.labels);
     const vDot = part(hhAsm, sphere(0.085, 16), { pal: 'ochre', tone: 'lit', name: 'Spike wavefront' });
-    label('board', 'Na_V & K_V channels', () => V(-0.7, 2.35, 0));
-    label('board', 'V_m(t) spike wave', () => V(1.6, 2.15, -0.3));
+    label('board', 'Na_V & K_V channels', () => V(-0.7, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'V_m(t) spike wave', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
 
     // Station 1 (x = 14): 3D Chemical Synapse & 20 nm Cleft
     const synAsm = asm('synaptic_vesicles', root, { title: 'Presynaptic bouton & vesicles', sub: 'Ca²⁺-triggered exocytosis' });
@@ -191,8 +200,8 @@ export const CHAPTER = {
     for (const sy of [-0.42, 0, 0.42]) {
       part(postAsm, cyl(0.14, 0.32, 16), { pal: 'red', tone: 'lit', pos: [-0.12, sy, 0], rot: [0, 0, Math.PI / 2], ex: [-0.25, 0, 0], name: 'Neurotransmitter receptor' });
     }
-    label('board', 'Presynaptic vesicles', () => V(13.3, 2.35, 0));
-    label('board', '20 nm Cleft & receptors', () => V(14.8, 2.35, 0));
+    label('board', 'Presynaptic vesicles', () => V(13.3, 2.35, 0), { leader: [-24, 18] });
+    label('board', '20 nm Cleft & receptors', () => V(14.8, 2.35, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): 3D Human Eye Cutaway (Iris, Ciliary Ring, Elastic Lens, Retina)
     const retAsm = asm('retina_fovea', root, { title: 'Sclera, retina & fovea', sub: 'Rods, cones & optic nerve' });
@@ -201,11 +210,11 @@ export const CHAPTER = {
     part(retAsm, cyl(0.18, 0.55, 16), { pal: 'ochre', tone: 'hi', pos: [1.1, -0.1, 0], rot: [0, 0, Math.PI / 2], ex: [0.65, 0, 0], name: 'Optic nerve head (blind spot)' });
 
     const irisAsm = asm('iris_pupil', root, { title: 'Iris & pupil reflex aperture', sub: 'Circular & radial muscles' });
-    irisAsm.position.set(27.1, 1.35, 0);
+    irisAsm.position.set(26.82, 1.35, 0);
     const irisRing = part(irisAsm, torus(0.46, 0.12, 12, 24), { pal: 'blue', tone: 'hi', rot: [0, Math.PI / 2, 0], ex: [-0.55, 0, 0], name: 'Iris diaphragm' });
 
     const lensAsm = asm('crystalline_lens', root, { title: 'Elastic crystalline lens & ciliary ring', sub: 'Fattens for near focus' });
-    lensAsm.position.set(27.35, 1.35, 0);
+    lensAsm.position.set(27.45, 1.35, 0);
     const eyeLens = part(lensAsm, sphere(0.42, 24), { pal: 'green', tone: 'lit', ex: [-0.25, 0.45, 0], name: 'Crystalline lens' });
     const ciliaryRing = part(lensAsm, torus(0.68, 0.06, 12, 24), { pal: 'red', tone: 'hi', rot: [0, Math.PI / 2, 0], ex: [0, 0.55, 0], name: 'Ciliary muscle ring' });
     const zonules = [];
@@ -221,8 +230,8 @@ export const CHAPTER = {
     eyeRayUp.set(V(-0.65, 0.25, 0), V(0.9, 0, 0));
     const eyeRayDn = rod(retAsm, { r: 0.015, pal: 'ochre', tone: 'lit', name: 'Refracted lower light ray to fovea' });
     eyeRayDn.set(V(-0.65, -0.25, 0), V(0.9, 0, 0));
-    label('board', 'Iris & elastic lens', () => V(27.2, 2.55, 0));
-    label('board', 'Retina & fovea', () => V(28.8, 2.55, 0));
+    label('board', 'Iris & elastic lens', () => V(27.2, 2.55, 0), { leader: [-24, 18] });
+    label('board', 'Retina & fovea', () => V(28.8, 2.55, 0), { leader: [24, 18] });
 
     // Station 3 (x = 42): Auxin Phototropism Coleoptile Shoot
     const shootAsm = asm('coleoptile_shoot', root, { title: 'Coleoptile shoot & IAA auxin gradient', sub: 'Shaded flank elongates faster' });
@@ -233,15 +242,15 @@ export const CHAPTER = {
       shootSegs.push(m);
     }
     const sunAsm = asm('light_source', root, { title: 'Directional blue-light stimulus', sub: 'Drives lateral IAA migration' });
-    sunAsm.position.set(42.0, 2.35, 0);
+    sunAsm.position.set(42.0, 2.75, 0);
     const sunOrb = part(sunAsm, sphere(0.24, 18), { pal: 'ochre', tone: 'lit', ex: [0, 0.4, 0], name: 'Directional light source' });
-    label('board', 'Auxin-bending shoot', () => V(42.0, 2.65, 0));
+    label('board', 'Auxin-bending shoot', () => V(42.0, 2.65, 0), { leader: [-24, -18] });
 
     return {
       labels,
       update(s) {
         // Update HH V_m plot & cursor
-        plotV.update(t => M.actionPotentialWave(t, 15, s.ttxBlockPct).vMv);
+        plotV.update(t => M.actionPotentialWave(t, 15, s.ttxBlockPct, s.buggy).vMv);
         vDot.position.copy(axH.to(s.tMs, s.ap.vMv, 0));
         ttxPlug.visible = s.ttxBlockPct > 5;
         hBall.position.y = s.ap.gK > 8 ? -0.38 : -0.68;

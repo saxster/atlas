@@ -11,7 +11,7 @@ export const PAGES = [
     fig: 'Figure 12.1–12.2 · Meselson–Stahl ¹⁵N/¹⁴N CsCl density tubes & semi-conservative fork',
     title: 'Semi-Conservative DNA Replication',
     alt: '3D CsCl centrifuge tubes showing heavy, hybrid, and light DNA bands across Generations 0 to 3 alongside a semi-conservative replication fork.',
-    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [0, 1.35, 0], az: 24, el: 20, dist: 10.8 },
     lit: 'cscl_tubes',
     parts: ['cscl_tubes', 'replication_fork'],
     look: { xray: 0.2, section: 0 },
@@ -21,7 +21,7 @@ export const PAGES = [
     fig: 'Figure 12.3–12.4 · 3D Mitotic spindle, kinetochore fibres & sister chromatid separation',
     title: 'Mitosis: Identical Diploid Clones (2n → 2n)',
     alt: '3D centrosome poles and spindle fibres pulling sister chromatids apart at anaphase to form two identical diploid nuclei.',
-    cam: { target: [14, 1.35, 0], az: -22, el: 20, dist: 7.2 },
+    cam: { target: [14, 1.35, 0], az: -22, el: 20, dist: 10.6 },
     lit: 'sister_chromatids',
     parts: ['spindle_poles', 'sister_chromatids'],
     look: { xray: 0, section: 0 },
@@ -31,7 +31,7 @@ export const PAGES = [
     fig: 'Figure 12.5–12.6 · Waddington’s 3D epigenetic stem-cell landscape & Gurdon/Yamanaka reprogramming',
     title: 'Stem Cells & Selective Gene Expression',
     alt: '3D branching epigenetic valley landscape where a pluripotent stem cell differentiates into specialized cell lineages while keeping the same genome.',
-    cam: { target: [28, 1.35, 0], az: 28, el: 24, dist: 7.4 },
+    cam: { target: [28, 1.35, 0], az: 28, el: 24, dist: 10.8 },
     lit: 'waddington_surface',
     parts: ['waddington_surface', 'reprogram_vector'],
     look: { xray: 0, section: 0 },
@@ -41,7 +41,7 @@ export const PAGES = [
     fig: 'Figure 12.7–12.9 · 3D Meiotic homologous bivalent, chiasma crossing-over & Janaki Ammal polyploidy',
     title: 'Meiosis: Halving Ploidy & Shuffling Alleles (2n → n)',
     alt: '3D maternal and paternal homologous chromosomes pairing as a bivalent and exchanging chromatid segments at a chiasma.',
-    cam: { target: [42, 1.35, 0], az: 20, el: 20, dist: 7.2 },
+    cam: { target: [42, 1.35, 0], az: 20, el: 20, dist: 10.6 },
     lit: 'bivalent_chiasma',
     parts: ['bivalent_chiasma', 'haploid_gametes'],
     look: { xray: 0, section: 0 },
@@ -79,6 +79,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 12,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Chromosome Number Doubles Every Division Myth (Active)',
+  realWorldLabel: 'Compare: S-Phase & Sister Separation vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -86,7 +92,7 @@ export const CHAPTER = {
   xrayKeys: ['cscl_tubes'],
   cutKeys: ['cscl_tubes'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { meselsonGen: 2, anaphasePull: 55 },
+  defaultParams: { meselsonGen: 2, anaphasePull: 55, buggyWorld: 0 },
   controls: [
     { id: 'meselsonGen', label: 'Meselson–Stahl generation in ¹⁴N', min: 0, max: 3, step: 1, value: 2, unit: 'gen' },
     { id: 'anaphasePull', label: 'Spindle anaphase separation', min: 0, max: 100, step: 5, value: 55, unit: '%' },
@@ -108,20 +114,23 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const ms = M.meselsonStahlAccount(p.meselsonGen);
-    return { t, ms, meselsonGen: p.meselsonGen, anaphasePull: (p.anaphasePull || 0) / 100 };
+    const buggy = Boolean(p.buggyWorld);
+    const ms = M.meselsonStahlAccount(p.meselsonGen, buggy);
+    return { t, buggy, ms, meselsonGen: p.meselsonGen, anaphasePull: (p.anaphasePull || 0) / 100 };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Generation G_${s.ms.generation} (${s.ms.totalDuplexes} DNA duplexes)</b> · Heavy ¹⁵N/¹⁵N: <b>${(s.ms.heavyFrac * 100).toFixed(0)}%</b> · Hybrid ¹⁵N/¹⁴N: <b>${(s.ms.hybridFrac * 100).toFixed(0)}%</b> · Light ¹⁴N/¹⁴N: <b>${(s.ms.lightFrac * 100).toFixed(0)}%</b>.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Generation G_${s.ms.generation} (${s.ms.totalDuplexes} DNA duplexes)</b> · Heavy ¹⁵N/¹⁵N: <b>${(s.ms.heavyFrac * 100).toFixed(0)}%</b> · Hybrid ¹⁵N/¹⁴N: <b>${(s.ms.hybridFrac * 100).toFixed(0)}%</b> · Light ¹⁴N/¹⁴N: <b>${(s.ms.lightFrac * 100).toFixed(0)}%</b>.`;
     }
-    if (pageIdx === 1) {
-      return `<b>3D Mitotic Spindle</b> · Anaphase separation = ${(s.anaphasePull * 100).toFixed(0)}% · 1 DNA replication + 1 nuclear division → <b>2 genetically identical 2n diploid cells</b>.`;
+    if (idx === 1) {
+      return `${modeTag}<b>3D Mitotic Spindle</b> · Anaphase separation = ${(s.anaphasePull * 100).toFixed(0)}% · 1 DNA replication + 1 nuclear division → <b>2 genetically identical 2n diploid cells</b>.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Waddington Stem-Cell Landscape</b> · These nucleated cells retain the inherited gene set; differential mRNA transcription carves neurone, muscle, and β-cell valleys.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Waddington Stem-Cell Landscape</b> · These nucleated cells retain the inherited gene set; differential mRNA transcription carves neurone, muscle, and β-cell valleys.`;
     }
-    return `<b>3D Meiosis & Chiasmata</b> · Homologous bivalents exchange alleles in Prophase I · 1 replication + 2 divisions → <b>4 haploid products (sperm model)</b> (2²³ = 8.4 million assortments).`;
+    return `${modeTag}<b>3D Meiosis & Chiasmata</b> · Homologous bivalents exchange alleles in Prophase I · 1 replication + 2 divisions → <b>4 haploid products (sperm model)</b> (2²³ = 8.4 million assortments).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -142,12 +151,12 @@ export const CHAPTER = {
     const forkAsm = asm('replication_fork', root, { title: 'Semi-conservative replication fork', sub: '1 old strand + 1 new strand per daughter' });
     buildHelix(forkAsm, { turns: -12 / 10.5, rungs: 12, radius: 0.5, height: 2.1, x0: 1.15, y0: 1.35, z0: 0, palA: 'ink', palB: 'ochre' });
     part(forkAsm, torus(0.54, 0.06, 10, 22), { pal: 'green', tone: 'lit', pos: [1.15, 2.35, 0], rot: [Math.PI / 2, 0, 0], ex: [0.35, 0.35, 0], name: 'Helicase unwinding ring' });
-    label('board', 'CsCl density bands', () => V(-0.9, 2.35, 0));
-    label('board', '¹⁵N/¹⁴N hybrid duplex', () => V(1.15, 2.55, 0));
+    label('board', 'CsCl density bands', () => V(-0.9, 2.35, 0), { leader: [-24, -18] });
+    label('board', '¹⁵N/¹⁴N hybrid duplex', () => V(1.15, 2.55, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): 3D Mitotic Spindle & Sister Chromatid Separation
     const poleAsm = asm('spindle_poles', root, { title: 'Centrosome poles & kinetochore spindle', sub: 'Microtubule traction apparatus' });
-    poleAsm.position.set(14.0, 1.35, 0);
+    poleAsm.position.set(14.0, 1.35, -0.38);
     part(poleAsm, sphere(0.2, 16), { pal: 'ochre', tone: 'lit', pos: [-1.45, 0, 0], ex: [-0.45, 0, 0], name: 'Left centrosome pole' });
     part(poleAsm, sphere(0.2, 16), { pal: 'ochre', tone: 'lit', pos: [1.45, 0, 0], ex: [0.45, 0, 0], name: 'Right centrosome pole' });
     part(poleAsm, torus(0.72, 0.018, 10, 24), { pal: 'paper', tone: 'mid', rot: [0, Math.PI / 2, 0], ex: [0, 0.35, 0], name: 'Metaphase equatorial plate' });
@@ -167,7 +176,7 @@ export const CHAPTER = {
       part(sisRight, capsule(0.09, 0.32, 8, 14), { pal, tone: 'lit', pos: [0, sy, 0], rot: [0, 0, -0.3], ex: [0.35, sy * 0.5, 0], name: `Right daughter chromosome ${idx + 1}` });
       part(sisRight, sphere(0.055, 10), { pal: 'ochre', tone: 'lit', pos: [0.05, sy, 0.08], ex: [0.35, sy * 0.5, 0.15], name: 'Centromere kinetochore complex' });
     }
-    label('board', 'Mitotic spindle (2n → 2n)', () => V(14.0, 2.35, 0));
+    label('board', 'Mitotic spindle (2n → 2n)', () => V(14.0, 2.35, 0), { leader: [-24, 18] });
 
     // Station 2 (x = 28): Waddington 3D Stem-Cell Landscape & Yamanaka Reprogramming Vector
     const wadAsm = asm('waddington_surface', root, { title: 'Waddington epigenetic landscape', sub: 'Pluripotent peak → specialized valleys' });
@@ -184,7 +193,7 @@ export const CHAPTER = {
     const repAsm = asm('reprogram_vector', root, { title: 'Yamanaka iPSC reprogramming vector', sub: 'Pushes adult somatic cell back to pluripotency' });
     repAsm.position.set(27.0, 0.25, -0.6);
     prims.vector(repAsm, [0.75, 0.9, M.waddingtonLandscapeHeight(0.75, 0.9) + 0.1], [0, -1.2, M.waddingtonLandscapeHeight(0, -1.2) + 0.1], { axes: axW, color: 'red' });
-    label('board', 'Waddington stem-cell valleys', () => V(28.1, 2.25, -0.6));
+    label('board', 'Waddington stem-cell valleys', () => V(28.1, 2.25, -0.6), { leader: [24, -18] });
 
     // Station 3 (x = 42): Meiotic Homologous Bivalent with Chiasma Crossing-Over
     const bivAsm = asm('bivalent_chiasma', root, { title: 'Homologous bivalent & chiasma crossover', sub: 'Maternal & paternal non-sister chromatid swap' });
@@ -206,8 +215,8 @@ export const CHAPTER = {
       const tail = rod(gamAsm, { r: 0.018, pal: gamPals[i], tone: 'mid', name: 'Sperm flagellum tail' });
       tail.set(V(gx, gy, -0.15), V(gx * 1.35, gy * 1.35 - 0.18, -0.45));
     }
-    label('board', 'Chiasma bivalent', () => V(41.2, 2.35, 0));
-    label('board', '4 Haploid (n) cells', () => V(43.0, 2.35, 0));
+    label('board', 'Chiasma bivalent', () => V(41.2, 2.35, 0), { leader: [-24, 18] });
+    label('board', '4 Haploid (n) cells', () => V(43.0, 2.35, 0), { leader: [24, 18] });
 
     return {
       labels,

@@ -11,7 +11,7 @@ export const PAGES = [
     fig: 'Figure 14.1–14.2 & 14.4 · Luria–Delbrück Petri dish mutation & antibiotic selection sweep',
     title: 'Random Mutation vs Non-Random Selection',
     alt: '3D Petri dish with susceptible and pre-existing mutant bacterial colonies undergoing directional selection when antibiotic is applied.',
-    cam: { target: [0, 1.35, 0], az: 24, el: 24, dist: 7.4 },
+    cam: { target: [0, 1.35, 0], az: 24, el: 24, dist: 10.8 },
     lit: 'petri_colony',
     parts: ['petri_colony', 'selection_curve'],
     look: { xray: 0.2, section: 0 },
@@ -21,7 +21,7 @@ export const PAGES = [
     fig: 'Figure 14.3 & 14.7 · Sewall Wright’s 3D adaptive fitness landscape W(x, y)',
     title: 'Adaptive Fitness Peaks & Valleys',
     alt: '3D two-peaked evolutionary fitness surface warping as environmental antibiotic pressure shifts the highest fitness peak.',
-    cam: { target: [14, 1.35, 0], az: -26, el: 24, dist: 7.4 },
+    cam: { target: [14, 1.35, 0], az: -26, el: 24, dist: 10.8 },
     lit: 'fitness_surface',
     parts: ['fitness_surface'],
     look: { xray: 0, section: 0 },
@@ -31,7 +31,7 @@ export const PAGES = [
     fig: 'Figure 14.5–14.6 · 3D Xerophyte sunken stomatal crypt vs Hydrophyte floating aerenchyma leaf',
     title: 'Structural Adaptations: Desert vs Pond',
     alt: '3D cutaway of a desert xerophyte sunken stomatal pit with humid trichome hairs versus a floating hydrophyte leaf with large air spaces.',
-    cam: { target: [28, 1.35, 0], az: 20, el: 22, dist: 7.4 },
+    cam: { target: [28, 1.35, 0], az: 20, el: 22, dist: 10.8 },
     lit: 'xerophyte_crypt',
     parts: ['xerophyte_crypt', 'hydrophyte_leaf'],
     look: { xray: 0.22, section: 0 },
@@ -41,7 +41,7 @@ export const PAGES = [
     fig: 'Figure 14.8–14.9 · Haldane’s HbA/HbS heterozygote advantage curve & Sahni’s Glossopteris strata',
     title: 'Balancing Selection & Deep-Time Fossils',
     alt: '3D illustrative mean population fitness curve peaking at q* = s1/(s1+s2) alongside Birbal Sahni Gondwana fossil strata.',
-    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 7.4 },
+    cam: { target: [42, 1.35, 0], az: 24, el: 20, dist: 10.8 },
     lit: 'balancing_curve',
     parts: ['balancing_curve', 'sahni_strata'],
     look: { xray: 0, section: 0 },
@@ -77,6 +77,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 14,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Need-Driven Lamarckian Mutation Myth (Active)',
+  realWorldLabel: 'Compare: Pre-Existing Variation Selection vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -84,7 +90,7 @@ export const CHAPTER = {
   xrayKeys: ['petri_colony', 'xerophyte_crypt'],
   cutKeys: ['xerophyte_crypt', 'hydrophyte_leaf'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { antibioticDose: 75, malariaPressure: 18 },
+  defaultParams: { antibioticDose: 75, malariaPressure: 18, buggyWorld: 0 },
   controls: [
     { id: 'antibioticDose', label: 'Antibiotic selection pressure', min: 0, max: 100, step: 5, value: 75, unit: '%' },
     { id: 'malariaPressure', label: 'Malaria selective coefficient s₁', min: 0, max: 35, step: 5, value: 18, unit: '%' },
@@ -115,20 +121,23 @@ export const CHAPTER = {
     const susceptibleSurvivors = 990 * (1 - 0.9 * abDose);
     const resistantSurvivors = 10 * (1 - 0.1 * abDose);
     const resPct = 100 * resistantSurvivors / (susceptibleSurvivors + resistantSurvivors);
-    const bal = M.balancingSelectionAccount(malariaS, 0.80, 0.15);
-    return { t, abDose, malariaS, resPct, bal };
+    const buggy = Boolean(p.buggyWorld);
+    const bal = M.balancingSelectionAccount(malariaS, 0.80, 0.15, buggy);
+    return { t, buggy, abDose, malariaS, resPct: buggy ? 100 * abDose : resPct, bal };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Antibiotic pressure = ${(s.abDose * 100).toFixed(0)}%</b> · Pre-existing resistant mutant share after selection = <b>${s.resPct.toFixed(0)}%</b> · Illustrative selection only: no patient, treatment course or clinical days are represented.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Antibiotic pressure = ${(s.abDose * 100).toFixed(0)}%</b> · Pre-existing resistant mutant share after selection = <b>${s.resPct.toFixed(0)}%</b> · Illustrative selection only: no patient, treatment course or clinical days are represented.`;
     }
-    if (pageIdx === 1) {
-      return `<b>3D Evolutionary Fitness Landscape W(x, y)</b> · Antibiotic pressure = ${(s.abDose * 100).toFixed(0)}% · ${s.abDose > 0.45 ? '<b>Resistant peak dominates; directional selection shifts population right</b>' : '<b>Wild-type peak dominates in antibiotic-free environment</b>'}.`;
+    if (idx === 1) {
+      return `${modeTag}<b>3D Evolutionary Fitness Landscape W(x, y)</b> · Antibiotic pressure = ${(s.abDose * 100).toFixed(0)}% · ${s.abDose > 0.45 ? '<b>Resistant peak dominates; directional selection shifts population right</b>' : '<b>Wild-type peak dominates in antibiotic-free environment</b>'}.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Adaptive Leaf Anatomy</b> · Xerophyte sunken crypt + trichomes trap humid air (reducing ΔΨ_w vapour gradient) · Hydrophyte aerenchyma provides buoyancy & internal O₂/CO₂ storage.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Adaptive Leaf Anatomy</b> · Xerophyte sunken crypt + trichomes trap humid air (reducing ΔΨ_w vapour gradient) · Hydrophyte aerenchyma provides buoyancy & internal O₂/CO₂ storage.`;
     }
-    return `<b>Malaria selection s₁ = ${(s.malariaS * 100).toFixed(0)}% (s₂ = 80% SS anaemia)</b> · Balancing equilibrium HbS allele frequency <b>q* = s₁/(s₁+s₂) = ${(s.bal.qEquilibrium * 100).toFixed(1)}%</b>.`;
+    return `${modeTag}<b>Malaria selection s₁ = ${(s.malariaS * 100).toFixed(0)}% (s₂ = 80% SS anaemia)</b> · Balancing equilibrium HbS allele frequency <b>q* = s₁/(s₁+s₂) = ${(s.bal.qEquilibrium * 100).toFixed(1)}%</b>.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -151,8 +160,8 @@ export const CHAPTER = {
     const axS = prims.axes(selAsm, { x: [0, 14], y: [0, 1050], size: [2.0, 1.65, 0.5] });
     prims.plot(selAsm, t => M.logisticColonyAccount(t).nLog, { axes: axS, samples: 40, color: 'green', width: 0.064 });
     const logDot = part(selAsm, sphere(0.075, 14), { pal: 'ochre', tone: 'lit', name: 'Colony population state N(t)' });
-    label('board', 'Petri dish selection', () => V(-0.95, 1.85, 0));
-    label('board', 'Logistic K = 1000', () => V(1.6, 2.15, -0.3));
+    label('board', 'Petri dish selection', () => V(-0.95, 1.85, 0), { leader: [-24, -18] });
+    label('board', 'Logistic K = 1000', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
 
     // Station 1 (x = 14): Sewall Wright 3D Fitness Landscape
     const fitAsm = asm('fitness_surface', root, { title: '3D Evolutionary fitness surface W(x, y)', sub: 'Wild-type vs resistant adaptive peaks' });
@@ -161,7 +170,7 @@ export const CHAPTER = {
     const surfF = prims.surface(fitAsm, (x, y) => M.fitnessLandscapeHeight(x, y, 0.75), { axes: axF, n: 26, pal: 'ochre' });
     const popPin = part(fitAsm, sphere(0.1, 16), { pal: 'red', tone: 'lit', name: 'Mean population phenotype' });
     const popDrop = rod(fitAsm, { r: 0.015, pal: 'red', tone: 'mid', name: 'Fitness altitude projection' });
-    label('board', 'Adaptive fitness peaks', () => V(14.1, 2.25, -0.6));
+    label('board', 'Adaptive fitness peaks', () => V(14.1, 2.25, -0.6), { leader: [-24, 18] });
 
     // Station 2 (x = 28): Xerophyte Sunken Crypt vs Hydrophyte Aerenchyma Leaf
     const xeroAsm = asm('xerophyte_crypt', root, { title: 'Xerophyte sunken stomatal crypt', sub: 'Thick cuticle + humid trichome pocket' });
@@ -180,8 +189,8 @@ export const CHAPTER = {
       part(hydroAsm, sphere(0.22, 16), { pal: 'paper', tone: 'lit', pos: [sx, 0, 0], ex: [0, 0.45, 0], name: 'Buoyant aerenchyma air sac' });
       part(hydroAsm, torus(0.08, 0.024, 8, 16), { pal: 'green', tone: 'lit', pos: [sx, 0.44, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.55, 0], name: 'Upper-epidermis stomatal pore' });
     }
-    label('board', 'Xerophyte sunken crypt', () => V(27.0, 2.25, 0));
-    label('board', 'Hydrophyte aerenchyma', () => V(29.0, 2.25, 0));
+    label('board', 'Xerophyte sunken crypt', () => V(27.0, 2.25, 0), { leader: [24, -18] });
+    label('board', 'Hydrophyte aerenchyma', () => V(29.0, 2.25, 0), { leader: [-24, 18] });
 
     // Station 3 (x = 42): Haldane Balancing Selection Curve & Sahni Fossil Strata
     const balAsm = asm('balancing_curve', root, { title: 'Heterozygote advantage w̄(q)', sub: 'Peaks at equilibrium q* = s₁/(s₁+s₂)' });
@@ -202,8 +211,8 @@ export const CHAPTER = {
     }
     part(sahAsm, capsule(0.07, 0.35, 8, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.25, 0.44], rot: [0, 0, 1.25], ex: [0.35, 0.08, 0.25], name: 'Glossopteris tongue-leaf fossil' });
     part(sahAsm, cyl(0.08, 0.38, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.75, 0.44], rot: [0, 0, 1.4], ex: [0.35, 0.22, 0.25], name: 'Pentoxylon gymnosperm stem fossil' });
-    label('board', 'Equilibrium q* peak', () => V(41.5, 2.15, -0.3));
-    label('board', 'Sahni fossil strata', () => V(43.2, 1.95, 0));
+    label('board', 'Equilibrium q* peak', () => V(40.5, 2.25, -0.3), { leader: [-28, -22] });
+    label('board', 'Sahni fossil strata', () => V(43.2, 1.95, 0), { leader: [28, 22] });
 
     return {
       labels,
@@ -236,9 +245,9 @@ export const CHAPTER = {
         popDrop.set(axF.to(px, 0, 0), popPin.position);
 
         // Update balancing selection curve & equilibrium pin
-        plotB.update(q => M.balancingSelectionAccount(s.malariaS, 0.80, q).wBar);
+        plotB.update(q => M.balancingSelectionAccount(s.malariaS, 0.80, q, s.buggy).wBar);
         const qEq = s.bal.qEquilibrium;
-        const wEq = M.balancingSelectionAccount(s.malariaS, 0.80, qEq).wBar;
+        const wEq = M.balancingSelectionAccount(s.malariaS, 0.80, qEq, s.buggy).wBar;
         qPin.position.copy(axB.to(qEq, wEq, 0));
       },
     };

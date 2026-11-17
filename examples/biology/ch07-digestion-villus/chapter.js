@@ -83,6 +83,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 7,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Acid-Only Stomach / Faeces=Excretion Myth (Active)',
+  realWorldLabel: 'Compare: Enzymatic Canal Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -90,7 +96,7 @@ export const CHAPTER = {
   xrayKeys: ['circular_muscle', 'villus_epithelium'],
   cutKeys: ['circular_muscle', 'villus_epithelium'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { lumenPh: 1.8, bileSplit: 4 },
+  defaultParams: { lumenPh: 1.8, bileSplit: 4, buggyWorld: 0 },
   controls: [
     { id: 'lumenPh', label: 'Regional gut lumen pH', min: 1.0, max: 9.5, step: 0.2, value: 1.8, unit: 'pH' },
     { id: 'bileSplit', label: 'Bile emulsification split factor k', min: 1, max: 6, step: 1, value: 4, unit: '×' },
@@ -116,22 +122,25 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const enz = M.regionalEnzymeRates(p.lumenPh);
-    const em = M.bileEmulsificationAccount(p.bileSplit);
+    const buggy = Boolean(p.buggyWorld);
+    const enz = M.regionalEnzymeRates(p.lumenPh, buggy);
+    const em = M.bileEmulsificationAccount(p.bileSplit, 120, buggy);
     const vil = M.villusAbsorptionFlux(20, 250);
-    return { t, enz, em, vil, lumenPh: p.lumenPh, bileSplit: p.bileSplit };
+    return { t, buggy, enz, em, vil, lumenPh: p.lumenPh, bileSplit: p.bileSplit };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Peristaltic Wave</b> · Circular smooth muscle contracts behind bolus while longitudinal muscle widens lumen ahead.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Peristaltic Wave</b> · Circular smooth muscle contracts behind bolus while longitudinal muscle widens lumen ahead.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Lumen pH = ${s.lumenPh.toFixed(1)}</b> · Pepsin: <b>${s.enz.pepsin.toFixed(0)}%</b> · Salivary amylase: <b>${s.enz.amylase.toFixed(0)}%</b> · Pancreatic trypsin/lipase: <b>${s.enz.trypsinLipase.toFixed(0)}%</b>.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Lumen pH = ${s.lumenPh.toFixed(1)}</b> · Pepsin: <b>${s.enz.pepsin.toFixed(0)}%</b> · Salivary amylase: <b>${s.enz.amylase.toFixed(0)}%</b> · Pancreatic trypsin/lipase: <b>${s.enz.trypsinLipase.toFixed(0)}%</b>.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Bile split factor k = ${s.em.splitFactor}×</b> · 1 fat globule → <b>${s.em.dropletCount} droplets</b> (r = ${s.em.dropletRadiusUm.toFixed(0)} µm) · Interfacial area = <b>${s.em.areaMultiplier}×</b> · <b>Geometry alone does not determine hydrolysis rate</b>`;
+    if (idx === 2) {
+      return `${modeTag}<b>Bile split factor k = ${s.em.splitFactor}×</b> · 1 fat globule → <b>${s.em.dropletCount} droplets</b> (r = ${s.em.dropletRadiusUm.toFixed(0)} µm) · Interfacial area = <b>${s.em.areaMultiplier}×</b> · <b>Geometry alone does not determine hydrolysis rate</b>`;
     }
-    return `<b>3D Intestinal Villus</b> · One-cell-thick brush border (20× area) · Capillary bed → <b>Hepatic portal vein</b> (glucose & amino acids) · Central lacteal → <b>Lymphatics</b> (chylomicron fats).`;
+    return `${modeTag}<b>3D Intestinal Villus</b> · One-cell-thick brush border (20× area) · Capillary bed → <b>Hepatic portal vein</b> (glucose & amino acids) · Central lacteal → <b>Lymphatics</b> (chylomicron fats).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -156,7 +165,7 @@ export const CHAPTER = {
     const bolAsm = asm('food_bolus', root, { title: 'Lubricated food bolus', sub: 'Propelled along gut lumen' });
     bolAsm.position.set(0, 1.35, 0);
     const bolusMesh = part(bolAsm, sphere(0.36, 20), { pal: 'ochre', tone: 'lit', ex: [0, -0.45, 0], name: 'Chyme bolus' });
-    label('board', 'Circular muscle rings', () => V(0, 2.25, 0));
+    label('board', 'Circular muscle rings', () => V(0, 2.25, 0), { leader: [-24, -18] });
 
     // Station 1 (x = 14): Regional pH Curves + Gastric Mucus Shield
     const phAsm = asm('ph_curves', root, { title: 'Regional pH enzyme activity curves', sub: 'Pepsin (1.8), Amylase (6.8), Lipase (8.0)' });
@@ -174,8 +183,8 @@ export const CHAPTER = {
     for (const [hx, hz] of [[-0.25, 0.15], [0.05, -0.18], [0.28, 0.12]]) {
       part(mucAsm, sphere(0.065, 12), { pal: 'red', tone: 'lit', pos: [hx, 0.42, hz], ex: [0, 0.55, 0], name: 'Lumen H⁺ acid blocked by mucus' });
     }
-    label('board', 'Pepsin · Amylase · Lipase', () => V(13.7, 2.15, -0.3));
-    label('board', 'Mucus barrier', () => V(15.5, 1.85, 0));
+    label('board', 'Pepsin · Amylase · Lipase', () => V(13.7, 2.15, -0.3), { leader: [24, 18] });
+    label('board', 'Mucus barrier', () => V(15.5, 1.85, 0), { leader: [-24, 18] });
 
     // Station 2 (x = 28): Bile Emulsification Droplets + Lipase Blob
     const bileAsm = asm('bile_droplets', root, { title: 'Emulsified lipid droplets', sub: 'k³ droplets multiply surface area k×' });
@@ -192,8 +201,8 @@ export const CHAPTER = {
     lipAsm.position.set(29.1, 1.35, 0);
     lipAsm.rotation.y = Math.PI;
     prims.blob(lipAsm, { r: 0.62, subdiv: 3, seed: 23, pal: 'blue', cleft: 0.55, name: 'Pancreatic lipase' });
-    label('board', 'Fat droplets', () => V(27.3, 2.35, 0));
-    label('board', 'Pancreatic lipase', () => V(29.1, 2.35, 0));
+    label('board', 'Fat droplets', () => V(27.3, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Pancreatic lipase', () => V(29.1, 2.35, 0), { leader: [-24, 18] });
 
     // Station 3 (x = 42): 3D Intestinal Villus Teardown
     const epAsm = asm('villus_epithelium', root, { title: 'One-cell-thick brush-border epithelium', sub: 'Microvilli & goblet cells' });
@@ -209,22 +218,21 @@ export const CHAPTER = {
     part(capAsm, torus(0.36, 0.055, 10, 24), { pal: 'blue', tone: 'hi', pos: [0, -0.75, 0], rot: [Math.PI / 2, 0, 0], ex: [0, -0.35, 0], name: 'Hepatic portal venule collector' });
 
     const lacAsm = asm('central_lacteal', root, { title: 'Central lymphatic lacteal', sub: 'Chylomicron fats → Thoracic duct' });
-    lacAsm.position.set(42, 1.2, 0);
-    part(lacAsm, capsule(0.16, 1.35, 10, 18), { pal: 'green', tone: 'lit', ex: [0, -0.45, 0.45], name: 'Central lacteal vessel' });
-    label('board', 'Brush-border dome', () => V(42, 2.55, 0));
-    label('board', 'Capillaries & Lacteal', () => V(42, 0.3, 0.85));
+    lacAsm.position.set(42, 1.32, 0);
+    part(lacAsm, capsule(0.13, 0.95, 10, 18), { pal: 'green', tone: 'lit', ex: [0, -0.45, 0.45], name: 'Central lacteal vessel' });
+    label('board', 'Brush-border dome', () => V(42, 2.55, 0), { leader: [24, 18] });
+    label('board', 'Capillaries & Lacteal', () => V(42, 0.3, 0.85), { leader: [-24, -18] });
 
     return {
       labels,
       update(s) {
-        // Peristaltic wave & bolus motion
-        const bx = ((s.t * 0.65) % 2.4) - 1.2;
+        // Smooth C-infinity peristaltic wave & bolus motion
+        const bx = Math.sin(s.t * 1.05) * 0.95;
         bolusMesh.position.x = bx;
         rings.forEach((r, idx) => {
           const rx = (idx - 4) * 0.34;
           const dist = rx - bx;
-          // Squeeze behind bolus (dist < 0 && dist > -0.6), relax ahead
-          const squeeze = dist < 0 && dist > -0.65 ? 0.62 : dist > 0 && dist < 0.55 ? 1.18 : 1.0;
+          const squeeze = 1.0 - 0.28 * Math.exp(-Math.pow((dist + 0.32) / 0.26, 2)) + 0.14 * Math.exp(-Math.pow((dist - 0.28) / 0.26, 2));
           r.scale.set(squeeze, squeeze, 1);
         });
 
@@ -233,7 +241,7 @@ export const CHAPTER = {
         phCursor.position.set(pPt.x, pPt.y, 0.05);
 
         // Bile emulsification droplet lattice
-        const k = Math.round(s.bileSplit);
+        const k = s.buggy ? 1 : Math.round(s.bileSplit);
         const totalVis = k * k * k;
         const rScale = 1 / k;
         let idx = 0;

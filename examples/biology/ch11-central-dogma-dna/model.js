@@ -2,18 +2,29 @@
 export const BP_RISE_NM = 0.34;
 export const BP_PER_TURN = 10.5;
 
-export function chargaffHelixAccount(gcFraction = 0.5, lengthBp = 30) {
+export function chargaffHelixAccount(gcFraction = 0.5, lengthBp = 30, buggyWorld = false) {
   const gc = Math.max(0, Math.min(1, gcFraction));
   const at = 1 - gc;
   const nGC = Math.round(lengthBp * gc);
   const nAT = lengthBp - nGC;
-  const totalHBonds = 3 * nGC + 2 * nAT;
+  const totalHBonds = buggyWorld ? 2 * lengthBp : 3 * nGC + 2 * nAT;
   const lengthNm = lengthBp * BP_RISE_NM;
   const turns = lengthBp / BP_PER_TURN;
   return { gcFraction: gc, atFraction: at, nGC, nAT, totalHBonds, lengthNm, turns };
 }
 
-export function betaGlobinMutationAccount(mode = 'wildtype') {
+export function betaGlobinMutationAccount(mode = 'wildtype', buggyWorld = false) {
+  if (buggyWorld && mode === 'silent') {
+    return {
+      mode: 'silent_buggy',
+      dnaCoding: 'GTG CAC CTT ACT CCT GAG GAG',
+      mrna: 'GUG CAC CUU ACU CCU GAG GAG',
+      codon6: 'Non-degenerate myth (every base swap alters protein)',
+      amino6: 'Misfolded variant (no synonymous codon degeneracy)',
+      polymerisesDeoxy: true,
+      rbcShape: 'Sickled crescent (buggy non-degenerate code myth)',
+    };
+  }
   if (mode === 'sickle') {
     return {
       mode,

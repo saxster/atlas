@@ -1,19 +1,19 @@
 // Chapter 2 pure model: eukaryotic/prokaryotic cell inventory, endosymbiotic membrane amplification, SA/V geometry, and specialist cell factors.
-export function cubeGeometry(sideUm = 20, dO2Um2PerSec = 2000) {
+export function cubeGeometry(sideUm = 20, dO2Um2PerSec = 2000, buggyWorld = false) {
   const L = Math.max(1, sideUm);
   const surfaceUm2 = 6 * L * L;
   const volumeUm3 = L * L * L;
-  const savPerUm = surfaceUm2 / volumeUm3; // 6 / L
+  const savPerUm = buggyWorld ? 0.6 : surfaceUm2 / volumeUm3; // 6 / L vs buggy flat SA/V
   const rCoreUm = L / 2;
-  const diffusionTimeSec = (rCoreUm * rCoreUm) / (6 * dO2Um2PerSec);
-  const innerCoreSide = Math.max(0, L - 10);
+  const diffusionTimeSec = buggyWorld ? 0.001 : (rCoreUm * rCoreUm) / (6 * dO2Um2PerSec);
+  const innerCoreSide = buggyWorld ? 0 : Math.max(0, L - 10);
   const wellFedFraction = 1 - Math.pow(innerCoreSide / L, 3);
   return { sideUm: L, surfaceUm2, volumeUm3, savPerUm, diffusionTimeSec, wellFedFraction };
 }
 
-export function cristaeFoldingGain(folds = 6) {
+export function cristaeFoldingGain(folds = 6, buggyWorld = false) {
   const f = Math.max(0, folds);
-  const areaMultiplier = 1 + 0.55 * f;
+  const areaMultiplier = buggyWorld ? 1.0 : 1 + 0.55 * f;
   const atpFluxRelative = areaMultiplier * 32;
   return { folds: f, areaMultiplier, atpFluxRelative };
 }

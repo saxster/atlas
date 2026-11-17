@@ -7,14 +7,14 @@ export function thoracicBoyleAccount(phaseRad = 0, tidalL = 0.5, restingVolL = 2
   return { volL, pAlveolarMmHg, inspiring };
 }
 
-export function doublePumpAccount(heartRateBpm = 72, strokeVolMl = 70, vsdShuntPct = 0) {
+export function doublePumpAccount(heartRateBpm = 72, strokeVolMl = 70, vsdShuntPct = 0, buggyWorld = false) {
   const coLPerMin = (heartRateBpm * strokeVolMl) / 1000;
-  const sysPeakMmHg = 120;
-  const pulmPeakMmHg = 25; // Chosen lower-pressure postnatal case, not a pressure prediction from shunt percentage.
-  // An uncomplicated left-to-right shunt recycles oxygenated blood without systemic desaturation.
-  const systemicO2SatPct = 98;
+  const sysPeakMmHg = buggyWorld ? 25 : 120;
+  const pulmPeakMmHg = 25;
+  const wallRatioLvToRv = buggyWorld ? 1.0 : 3.0;
+  const systemicO2SatPct = buggyWorld ? 65 : 98;
   const pulmonaryFlowLPerMin = coLPerMin * (1 + vsdShuntPct / 100);
-  return { heartRateBpm, strokeVolMl, coLPerMin, sysPeakMmHg, pulmPeakMmHg, wallRatioLvToRv: 3.0, systemicO2SatPct, pulmonaryFlowLPerMin };
+  return { heartRateBpm, strokeVolMl, coLPerMin, sysPeakMmHg, pulmPeakMmHg, wallRatioLvToRv, systemicO2SatPct, pulmonaryFlowLPerMin };
 }
 
 export function bicepLeverAccount(elbowDeg = 90, handLoadN = 40, rInsertionCm = 4.0, rLoadCm = 32.0) {

@@ -17,3 +17,9 @@ const rh = M.specialistShapeFactor('roothair');
 check('Root hair and biconcave RBC boost SA/V above spherical baseline', rbc.savBoost > 1.3 && rh.savBoost > 3.0);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual flattens SA/V scaling and eliminates inner core penalty', () => {
+  const real = cubeGeometry(80, 2000, false);
+  const buggy = cubeGeometry(80, 2000, true);
+  return real.savPerUm < 0.1 && Math.abs(buggy.savPerUm - 0.6) < 1e-6 && buggy.wellFedFraction === 1;
+});

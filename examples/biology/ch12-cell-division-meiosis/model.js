@@ -1,8 +1,18 @@
 // Chapter 12 pure model: Meselson-Stahl 15N/14N CsCl density fractions, mitotic vs meiotic C-value/ploidy ledger, and independent assortment.
-export function meselsonStahlAccount(generation = 1) {
+export function meselsonStahlAccount(generation = 1, buggyWorld = false) {
   const g = Math.max(0, Math.min(4, Math.round(generation)));
   const totalDuplexes = Math.pow(2, g);
   if (g === 0) return { generation: 0, totalDuplexes: 1, heavyFrac: 1, hybridFrac: 0, lightFrac: 0 };
+  if (buggyWorld) {
+    // Conservative replication myth: original heavy duplex stays intact, all new duplexes are pure light
+    return {
+      generation: g,
+      totalDuplexes,
+      heavyFrac: 1 / totalDuplexes,
+      hybridFrac: 0,
+      lightFrac: (totalDuplexes - 1) / totalDuplexes,
+    };
+  }
   const hybridDuplexes = 2;
   const lightDuplexes = totalDuplexes - 2;
   return {

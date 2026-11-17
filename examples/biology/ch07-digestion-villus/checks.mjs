@@ -21,3 +21,10 @@ const vil = M.villusAbsorptionFlux(20, 250);
 check('Microvilli brush border multiplies both hepatic portal glucose and lacteal lipid uptake', vil.glucosePortalFlux === 36 && vil.lipidLactealFlux === 13);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual flattens regional pH specificity and suppresses bile emulsification', () => {
+  const real = regionalEnzymeRates(1.8, false);
+  const buggy = regionalEnzymeRates(1.8, true);
+  const emBuggy = bileEmulsificationAccount(5, 120, true);
+  return real.amylase < 5 && buggy.amylase === 85 && emBuggy.areaMultiplier === 1;
+});

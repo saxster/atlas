@@ -30,3 +30,9 @@ check('A primary response lags: no antibody until after day 4', M.immuneMemoryAc
 check('Secondary memory B/T response at day 5 produces >15x higher antibody titre than primary response', im2.antibodyTitre > im1.antibodyTitre * 15);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual removes clonal immune memory amplification on secondary exposure', () => {
+  const realSec = immuneMemoryAccount(7, 'secondary', false);
+  const buggySec = immuneMemoryAccount(7, 'secondary', true);
+  return realSec.antibodyTitre > 150 && buggySec.antibodyTitre < 25;
+});

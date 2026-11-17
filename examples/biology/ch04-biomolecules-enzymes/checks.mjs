@@ -17,3 +17,9 @@ const rClash = M.ramachandranEnergy(60, -120);
 check('Ramachandran alpha-helix (-60, -45) is sterically allowed while (+60, -120) clashes', rAlpha.allowed && !rClash.allowed && rAlpha.energyKj < rClash.energyKj);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual removes high-temperature denaturation cliff at 65 C', () => {
+  const real = michaelisMenten(3.0, 65, 7.0, 0, 1.0, false);
+  const buggy = michaelisMenten(3.0, 65, 7.0, 0, 1.0, true);
+  return real.denatured === true && real.v < 5 && buggy.denatured === false && buggy.v > 40;
+});

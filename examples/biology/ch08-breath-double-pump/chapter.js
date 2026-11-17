@@ -87,6 +87,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 8,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Single-Loop / Blue Deoxygenated Blood Myth (Active)',
+  realWorldLabel: 'Compare: Double-Pump Pressure Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -94,7 +100,7 @@ export const CHAPTER = {
   xrayKeys: ['ribcage_bell', 'right_ventricle'],
   cutKeys: ['ribcage_bell', 'right_ventricle', 'left_ventricle'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { heartRateBpm: 72, vsdShuntPct: 0, elbowDeg: 85 },
+  defaultParams: { heartRateBpm: 72, vsdShuntPct: 0, elbowDeg: 85, buggyWorld: 0 },
   controls: [
     { id: 'heartRateBpm', label: 'Heart rate', min: 45, max: 160, step: 5, value: 72, unit: 'bpm' },
     { id: 'vsdShuntPct', label: 'Septal defect shunt (VSD)', min: 0, max: 50, step: 5, value: 0, unit: '%' },
@@ -124,22 +130,25 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.2 : clock;
+    const buggy = Boolean(p.buggyWorld);
     const boyle = M.thoracicBoyleAccount(t * 2.1, 0.5, 2.5);
-    const dp = M.doublePumpAccount(p.heartRateBpm, 70, p.vsdShuntPct);
+    const dp = M.doublePumpAccount(p.heartRateBpm, 70, p.vsdShuntPct, buggy);
     const lev = M.bicepLeverAccount(p.elbowDeg, 40);
-    return { t, boyle, dp, lev, heartRateBpm: p.heartRateBpm, vsdShuntPct: p.vsdShuntPct, elbowDeg: p.elbowDeg };
+    return { t, buggy, boyle, dp, lev, heartRateBpm: p.heartRateBpm, vsdShuntPct: p.vsdShuntPct, elbowDeg: p.elbowDeg };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Open-air ventilation schematic</b> · Lung volume = <b>${s.boyle.volL.toFixed(2)} L</b> · Alveolar ΔP = <b>${s.boyle.pAlveolarMmHg >= 0 ? '+' : ''}${s.boyle.pAlveolarMmHg.toFixed(1)} mmHg</b> (${s.boyle.inspiring ? 'Inspiration' : 'Expiration'}).`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Open-air ventilation schematic</b> · Lung volume = <b>${s.boyle.volL.toFixed(2)} L</b> · Alveolar ΔP = <b>${s.boyle.pAlveolarMmHg >= 0 ? '+' : ''}${s.boyle.pAlveolarMmHg.toFixed(1)} mmHg</b> (${s.boyle.inspiring ? 'Inspiration' : 'Expiration'}).`;
     }
-    if (pageIdx === 1) {
-      return `<b>Double Circulation & Harvey’s Valves</b> · Pulmonary loop: 25/8 mmHg · Systemic loop: 120/80 mmHg · Venous pocket valves enforce one-way return.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Double Circulation & Harvey’s Valves</b> · Pulmonary loop: 25/8 mmHg · Systemic loop: 120/80 mmHg · Venous pocket valves enforce one-way return.`;
     }
-    if (pageIdx === 2) {
-      return `<b>HR = ${s.heartRateBpm} bpm · Cardiac output = ${s.dp.coLPerMin.toFixed(2)} L/min</b> · Hollow symbols: four chambers, LV rim ≈3× RV · VSD shunt = ${s.vsdShuntPct}% (chosen pulmonary peak ${s.dp.pulmPeakMmHg.toFixed(0)} mmHg; lung flow ${s.dp.pulmonaryFlowLPerMin.toFixed(2)} L/min; systemic O₂ ${s.dp.systemicO2SatPct.toFixed(1)}%).`;
+    if (idx === 2) {
+      return `${modeTag}<b>HR = ${s.heartRateBpm} bpm · Cardiac output = ${s.dp.coLPerMin.toFixed(2)} L/min</b> · Hollow symbols: four chambers, LV rim ≈3× RV · VSD shunt = ${s.vsdShuntPct}% (chosen pulmonary peak ${s.dp.pulmPeakMmHg.toFixed(0)} mmHg; lung flow ${s.dp.pulmonaryFlowLPerMin.toFixed(2)} L/min; systemic O₂ ${s.dp.systemicO2SatPct.toFixed(1)}%).`;
     }
-    return `<b>Vessel Mechanics & Antagonistic Lever</b> · Elbow θ = ${s.elbowDeg}° · Hand load = 40 N (at 32 cm) → Biceps tension = <b>${s.lev.bicepTensionN.toFixed(0)} N</b> (at 4 cm insertion).`;
+    return `${modeTag}<b>Vessel Mechanics & Antagonistic Lever</b> · Elbow θ = ${s.elbowDeg}° · Hand load = 40 N (at 32 cm) → Biceps tension = <b>${s.lev.bicepTensionN.toFixed(0)} N</b> (at 4 cm insertion).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -175,8 +184,8 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       part(alvAsm, torus(0.61, 0.045, 10, 24), { pal: i < 2 ? 'red' : 'blue', tone: 'hi', rot: [i * 0.78, i * 0.5, 0], ex: [0.35, 0, 0], name: 'Pulmonary capillary loop' });
     }
-    label('board', 'Thorax & diaphragm', () => V(-0.9, 0.15, 0));
-    label('board', 'Alveolus + capillaries', () => V(1.15, 0.10, 0));
+    label('board', 'Thorax & diaphragm', () => V(-0.9, 0.15, 0), { leader: [-24, -18] });
+    label('board', 'Alveolus + capillaries', () => V(1.15, 0.10, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): Double Circulation Figure-8 & Venous Pocket Valve
     const fig8Asm = asm('double_figure8', root, { title: 'Figure-eight double circulation', sub: 'Pulmonary (top) & Systemic (bottom) loops' });
@@ -191,8 +200,8 @@ export const CHAPTER = {
     part(valveAsm, cyl(0.45, 1.5, 22), { pal: 'blue', tone: 'mid', mat: shadeMat('blue', { opacity: 0.4 }), name: 'Vein wall' });
     part(valveAsm, box(0.38, 0.42, 0.06, 0.02), { pal: 'ochre', tone: 'lit', pos: [-0.14, 0, 0], rot: [0, 0, -0.45], ex: [-0.35, 0.25, 0], name: 'Left valve cusp' });
     part(valveAsm, box(0.38, 0.42, 0.06, 0.02), { pal: 'ochre', tone: 'lit', pos: [0.14, 0, 0], rot: [0, 0, 0.45], ex: [0.35, 0.25, 0], name: 'Right valve cusp' });
-    label('board', 'Figure-8 double loop', () => V(13.1, 2.35, 0));
-    label('board', 'Venous valve cusps', () => V(15.2, 2.35, 0));
+    label('board', 'Figure-8 double loop', () => V(13.1, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'Venous valve cusps', () => V(15.2, 2.35, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): 3D Four-Chambered Heart Cutaway
     const rvAsm = asm('right_ventricle', root, { title: 'Right atrium & right ventricle', sub: 'Deoxygenated pump to lungs (25 mmHg)' });
@@ -215,8 +224,8 @@ export const CHAPTER = {
       part(sepAsm, torus(0.09, 0.03), { pal: 'ochre', tone: 'hi', pos: [x, 0.30, 0.60], name: x < 0 ? 'Pulmonary valve symbol' : 'Aortic valve symbol' });
     }
     const vsdJet = part(sepAsm, cyl(0.045, 0.38, 12), { pal: 'red', tone: 'lit', pos: [0, -0.1, 0.25], rot: [0, 0, Math.PI / 2], ex: [0, 0.35, 0.35], name: 'Left-to-right VSD shunt stream' });
-    label('board', 'RA → RV (25 mmHg peak)', () => V(26.9, 0.4, 0.2));
-    label('board', 'LA → LV (120 mmHg peak)', () => V(29.1, 0.4, 0.2));
+    label('board', 'RA → RV (25 mmHg peak)', () => V(26.9, 0.4, 0.2), { leader: [-24, 18] });
+    label('board', 'LA → LV (120 mmHg peak)', () => V(29.1, 0.4, 0.2), { leader: [24, 18] });
 
     // Station 3 (x = 42): Artery/Vein/Capillary Trio + Antagonistic Arm Lever
     const vesAsm = asm('vessel_trio', root, { title: 'Artery, Vein & Capillary walls', sub: 'Cross-sectional wall-to-lumen ratios' });
@@ -234,8 +243,8 @@ export const CHAPTER = {
     const bicepBelly = rod(armAsm, { r: 0.085, pal: 'red', tone: 'lit', name: 'Biceps brachii flexor' });
     const tricepBelly = rod(armAsm, { r: 0.065, pal: 'ochre', tone: 'mid', name: 'Triceps brachii extensor' });
     const handWeight = part(armAsm, sphere(0.16, 16), { pal: 'ink', tone: 'lit', name: '40 N Hand load' });
-    label('board', 'Artery · Vein · Capillary', () => V(40.7, 2.25, 0));
-    label('board', 'Biceps / Triceps lever', () => V(43.2, 2.35, 0));
+    label('board', 'Artery · Vein · Capillary', () => V(40.7, 2.25, 0), { leader: [-24, -18] });
+    label('board', 'Biceps / Triceps lever', () => V(43.2, 2.35, 0), { leader: [24, 18] });
 
     return {
       labels,
@@ -252,11 +261,12 @@ export const CHAPTER = {
         pulmCorpuscle.position.set(0.55 * Math.cos(omegaC), 0.52 + 0.55 * Math.sin(omegaC), 0.05);
         sysCorpuscle.position.set(0.72 * Math.cos(-omegaC), -0.35 + 0.72 * Math.sin(-omegaC), 0.05);
 
-        // Heartbeat systole/diastole pulse
-        const beat = Math.pow(Math.max(0, Math.sin(s.t * (s.heartRateBpm / 60) * Math.PI * 2)), 4);
-        const sysScale = 1 - beat * 0.14;
-        rvMesh.scale.set(sysScale, 1 + beat * 0.06, sysScale);
-        lvMesh.scale.set(sysScale, 1 + beat * 0.08, sysScale);
+        // Smooth heartbeat systole/diastole pulse
+        const beat = 0.5 * (1 - Math.cos(s.t * (s.heartRateBpm / 60) * Math.PI * 2));
+        const sysScale = 1 - beat * 0.055;
+        rvMesh.scale.set(sysScale, 1 + beat * 0.03, sysScale);
+        const lvWallScale = s.buggy ? sysScale * 0.78 : sysScale;
+        lvMesh.scale.set(lvWallScale, 1 + beat * 0.04, lvWallScale);
         sepWall.scale.y = 1 - (s.vsdShuntPct / 100) * 0.45;
         vsdJet.visible = s.vsdShuntPct > 0;
 

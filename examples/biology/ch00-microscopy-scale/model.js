@@ -27,10 +27,10 @@ export function stokesSettlingUmPerSec(radiusUm = 1.2, rhoP = 1150, rhoF = 1.2, 
   return vMps * 1e6;
 }
 
-export function swanNeckSporeCapture(neckDipMm = 18, airflowMmPerSec = 2.0, radiusUm = 1.2) {
-  const vs = stokesSettlingUmPerSec(radiusUm) * 1e-3; // mm/s
+export function swanNeckSporeCapture(neckDipMm = 18, airflowMmPerSec = 2.0, radiusUm = 1.2, buggyWorld = false) {
+  const vs = buggyWorld ? 0 : stokesSettlingUmPerSec(radiusUm) * 1e-3; // mm/s
   const transitSec = Math.max(1, (neckDipMm * 2.4) / Math.max(0.2, airflowMmPerSec));
   const dropMm = vs * transitSec;
-  const fractionTrapped = Math.min(1, Math.max(0, 1 - Math.exp(-(dropMm / Math.max(1, neckDipMm * 0.35)) * 2.2)));
-  return { vsMmPerSec: vs, transitSec, dropMm, fractionTrapped };
+  const fractionTrapped = buggyWorld ? 0 : Math.min(1, Math.max(0, 1 - Math.exp(-(dropMm / Math.max(1, neckDipMm * 0.35)) * 2.2)));
+  return { vsMmPerSec: vs, transitSec, dropMm, fractionTrapped, spontaneousGrowth: Boolean(buggyWorld) };
 }

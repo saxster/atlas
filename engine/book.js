@@ -160,7 +160,7 @@ export function startBook(chapter) {
   const prologueHtml = i => (i === 0 && chapter.PROLOGUE_STRIP) ? renderComicStripHTML(chapter.PROLOGUE_STRIP) : '';
   const openerHtml = i => PAGES[i].openerStrip ? renderComicStripHTML(PAGES[i].openerStrip) : '';
   const closerHtml = i => PAGES[i].closerStrip ? renderComicStripHTML(PAGES[i].closerStrip) : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `${prologueHtml(i)}<div class="kicker">${p.kicker}</div><h1>${p.title}</h1>${openerHtml(i)}<div class="sub">${p.sub}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${closerHtml(i)}${turnHtml(i)}`; };
+  const sheetHtml = i => { const p = PAGES[i]; return `${prologueHtml(i)}<div class="kicker">${p.kicker ?? p.fig ?? ''}</div><h1>${p.title ?? p.tab ?? ''}</h1>${openerHtml(i)}<div class="sub">${p.sub ?? p.alt ?? ''}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body ?? ''}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${closerHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice, check a numeric answer, or check a dragged 3D target position
   const markRight = (q, item) => {
     q.classList.add('done');
@@ -414,7 +414,9 @@ export function startBook(chapter) {
     lastState = state;
     paused.classList.toggle('on', !reduced && started && !userPaused && !!(S.selected || S.hovered));
 
-    $('readout').textContent = chapter.readout(state, PAGES[shown]);
+    const rawReadout = chapter.readout(state, PAGES[shown], shown) || '';
+    const firstSeg = rawReadout.replace(/<[^>]+>/g, '').split('·')[0].trim();
+    $('readout').textContent = firstSeg.length > 30 ? firstSeg.slice(0, 29).trimEnd() + '…' : firstSeg;
     prose.sync(state, params);
     if (soundCtl?.on && soundCtl.ctx && chapter.sonify) {
       try { chapter.sonify(soundCtl.ctx, state, shown, params); } catch {}
@@ -439,8 +441,16 @@ export function startBook(chapter) {
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;
-    window.__atlas.tour = { dwells: PAGES.map((_, i) => dwell(i)), turn: TURN };
-    window.__atlas.events = chapter.events || [];
+    const dwells = PAGES.map((_, i) => dwell(i));
+    window.__atlas.tour = { dwells, turn: TURN };
+    const turnEvents = [];
+    let acc = 0;
+    for (let i = 0; i < N - 1; i++) {
+      const tStart = acc + dwells[i];
+      turnEvents.push(tStart, tStart + TURN * 0.25, tStart + TURN * 0.5, tStart + TURN * 0.75, tStart + TURN);
+      acc = tStart + TURN;
+    }
+    window.__atlas.events = [...(chapter.events || []), ...turnEvents];
     window.seek = t => { tourT = Math.min(Math.max(t, 0), DURATION); frame(tourT * 1000); return tourT; };
   }
 }

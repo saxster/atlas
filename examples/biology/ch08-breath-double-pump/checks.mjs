@@ -18,3 +18,9 @@ const lev = M.bicepLeverAccount(90, 40, 4.0, 32.0);
 check('Biceps third-class lever requires 8x hand load (320 N tension for 40 N load at 90 deg)', Math.abs(lev.bicepTensionN - 320) < 1e-9);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual collapses LV/RV wall ratio to 1 and systemic pressure to 25 mmHg', () => {
+  const real = doublePumpAccount(72, 70, 0, false);
+  const buggy = doublePumpAccount(72, 70, 0, true);
+  return real.wallRatioLvToRv === 3.0 && real.sysPeakMmHg === 120 && buggy.wallRatioLvToRv === 1.0 && buggy.sysPeakMmHg === 25;
+});

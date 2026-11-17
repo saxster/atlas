@@ -85,6 +85,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 15,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Energy Recycles in Ecosystems Myth (Active)',
+  realWorldLabel: 'Compare: One-Way Energy & Cycled Matter vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -92,7 +98,7 @@ export const CHAPTER = {
   xrayKeys: ['lake_column', 'cooling_jacket'],
   cutKeys: ['cooling_jacket'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { trophicEtaPct: 10, fermTempC: 37, runoffLoad: 30 },
+  defaultParams: { trophicEtaPct: 10, fermTempC: 37, runoffLoad: 30, buggyWorld: 0 },
   controls: [
     { id: 'trophicEtaPct', label: 'Trophic transfer efficiency η', min: 5, max: 20, step: 1, value: 10, unit: '%' },
     { id: 'fermTempC', label: 'Fermenter jacket temperature', min: 20, max: 60, step: 2, value: 37, unit: '°C' },
@@ -118,22 +124,25 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const pyr = M.trophicPyramidAccount(10000, p.trophicEtaPct);
+    const buggy = Boolean(p.buggyWorld);
+    const pyr = M.trophicPyramidAccount(10000, p.trophicEtaPct, buggy);
     const ferm = M.fermenterBiotechAccount(p.fermTempC, 90);
-    return { t, pyr, ferm, trophicEtaPct: p.trophicEtaPct, fermTempC: p.fermTempC, runoffLoad: p.runoffLoad };
+    return { t, buggy, pyr, ferm, trophicEtaPct: pyr.transferPct, fermTempC: p.fermTempC, runoffLoad: p.runoffLoad };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Trophic transfer η = ${s.trophicEtaPct}%</b> · Producers: 10,000 kJ → Herbivores: <b>${energyText(s.pyr.herbivoreKj)} kJ</b> → Primary carnivores: <b>${energyText(s.pyr.primaryCarnKj)} kJ</b> → Apex: <b>${energyText(s.pyr.apexCarnKj)} kJ</b>. Horizontal block areas show the energy ratios; heights are fixed for display.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Trophic transfer η = ${s.trophicEtaPct}%</b> · Producers: 10,000 kJ → Herbivores: <b>${energyText(s.pyr.herbivoreKj)} kJ</b> → Primary carnivores: <b>${energyText(s.pyr.primaryCarnKj)} kJ</b> → Apex: <b>${energyText(s.pyr.apexCarnKj)} kJ</b>. Horizontal block areas show the energy ratios; heights are fixed for display.`;
     }
-    if (pageIdx === 1) {
+    if (idx === 1) {
       const eutro = s.runoffLoad > 60 ? 'Illustrative high-runoff state: bloom and low-oxygen risk' : 'Illustrative lower-runoff state; oxygen also depends on mixing and respiration';
-      return `<b>Rhizobium N₂ Fixation & Lake Column (Runoff = ${s.runoffLoad}%)</b> · ${eutro}.`;
+      return `${modeTag}<b>Rhizobium N₂ Fixation & Lake Column (Runoff = ${s.runoffLoad}%)</b> · ${eutro}.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Jacketed Fermenter T = ${s.fermTempC} °C</b> · Active enzyme fraction = ${(s.ferm.tFactor * 100).toFixed(0)}% · Illustrative processed insulin yield = <b>${s.ferm.insulinYieldMgL.toFixed(0)} mg/L</b>.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Jacketed Fermenter T = ${s.fermTempC} °C</b> · Active enzyme fraction = ${(s.ferm.tFactor * 100).toFixed(0)}% · Illustrative processed insulin yield = <b>${s.ferm.insulinYieldMgL.toFixed(0)} mg/L</b>.`;
     }
-    return `<b>Recombinant Insulin Plasmid & CRISPR-Cas9</b> · Restriction enzyme cuts sticky ends · DNA ligase seals human insulin insert · guide RNA directs Cas9 near a suitable PAM; cell repair makes the edit.`;
+    return `${modeTag}<b>Recombinant Insulin Plasmid & CRISPR-Cas9</b> · Restriction enzyme cuts sticky ends · DNA ligase seals human insulin insert · guide RNA directs Cas9 near a suitable PAM; cell repair makes the edit.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -163,7 +172,7 @@ export const CHAPTER = {
     const lvDot = part(lvAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: '(Prey R, Predator F) state' });
     let energyCaption = 'Energy tiers · η = 10%';
     label('board', 'Energy tiers', () => V(-1.1, 2.15, 0), { text: () => energyCaption });
-    label('board', 'V(R, F) example states', () => V(1.45, 2.05, -0.5));
+    label('board', 'V(R, F) example states', () => V(1.45, 2.05, -0.5), { leader: [-24, -18] });
 
     // Station 1 (x = 14): 3D Root Nodule + Eutrophication Lake Column
     const nodAsm = asm('root_nodule', root, { title: 'Legume Rhizobium root nodule', sub: 'Leghaemoglobin O₂ buffer & nitrogenase' });
@@ -179,8 +188,8 @@ export const CHAPTER = {
     part(lakeAsm, cyl(0.68, 1.75, 24), { pal: 'blue', tone: 'mid', pos: [0, 0.88, 0], mat: shadeMat('blue', { opacity: 0.38 }), name: 'Water column' });
     const bloomMat = part(lakeAsm, cyl(0.67, 0.18, 24), { pal: 'green', tone: 'lit', pos: [0, 1.68, 0], ex: [0, 0.45, 0], name: 'Eutrophic algal bloom layer' });
     part(lakeAsm, cyl(0.66, 0.22, 24), { pal: 'ink', tone: 'mid', pos: [0, 0.12, 0], ex: [0, -0.35, 0], name: 'Benthic hypoxic decomposer zone' });
-    label('board', 'Rhizobium nodule', () => V(13.0, 2.35, 0));
-    label('board', 'Eutrophication column', () => V(15.0, 2.25, 0));
+    label('board', 'Rhizobium nodule', () => V(13.0, 2.35, 0), { leader: [24, 18] });
+    label('board', 'Eutrophication column', () => V(15.0, 2.25, 0), { leader: [-24, 18] });
 
     // Station 2 (x = 28): 3D Jacketed Industrial Fermenter Cutaway
     const jackAsm = asm('cooling_jacket', root, { title: 'Stainless vessel & water cooling jacket', sub: 'Maintains 37 °C enzyme optimum' });
@@ -192,18 +201,18 @@ export const CHAPTER = {
     impAsm.position.set(28.0, 1.25, 0);
     const impGroup = new THREE.Group();
     impAsm.add(impGroup);
-    part(impGroup, cyl(0.06, 1.85, 14), { pal: 'ink', tone: 'hi', ex: [0, 0.55, 0], name: 'Drive shaft' });
-    gear(impGroup, { teeth: 8, r: 0.46, width: 0.12, pal: 'ochre', tone: 'lit', pos: [0, -0.25, 0], rot: [Math.PI / 2, 0, 0], ex: [0, -0.25, 0], name: 'Lower Rushton impeller' });
-    gear(impGroup, { teeth: 8, r: 0.46, width: 0.12, pal: 'ochre', tone: 'lit', pos: [0, 0.32, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.32, 0], name: 'Upper Rushton impeller' });
+    part(impGroup, cyl(0.06, 1.15, 14), { pal: 'ink', tone: 'hi', pos: [0, 0.35, 0], ex: [0, 0.55, 0], name: 'Drive shaft' });
+    gear(impGroup, { teeth: 8, r: 0.46, width: 0.12, pal: 'ochre', tone: 'lit', pos: [0, -0.15, 0], rot: [Math.PI / 2, 0, 0], ex: [0, -0.25, 0], name: 'Lower Rushton impeller' });
+    gear(impGroup, { teeth: 8, r: 0.46, width: 0.12, pal: 'ochre', tone: 'lit', pos: [0, 0.38, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.32, 0], name: 'Upper Rushton impeller' });
 
     const spargAsm = asm('air_sparger', root, { title: 'Sterile O₂ ring sparger', sub: 'Aerobic bubble diffuser' });
-    spargAsm.position.set(28.0, 0.55, 0);
+    spargAsm.position.set(28.0, 0.42, 0);
     part(spargAsm, torus(0.42, 0.055, 10, 24), { pal: 'green', tone: 'lit', rot: [Math.PI / 2, 0, 0], ex: [0, -0.45, 0], name: 'Sterile air sparger ring' });
     const o2Bubbles = [0, 1, 2, 3].map(i => {
       const a = (i * Math.PI) / 2 + 0.3;
-      return part(spargAsm, sphere(0.055, 10), { pal: 'blue', tone: 'lit', pos: [0.35 * Math.cos(a), 0.15 + i * 0.25, 0.35 * Math.sin(a)], ex: [0, -0.35, 0], name: 'Sterile O₂ bubble' });
+      return part(spargAsm, sphere(0.045, 10), { pal: 'blue', tone: 'lit', pos: [0.62 * Math.cos(a), 0.12 + i * 0.12, 0.62 * Math.sin(a)], ex: [0, -0.35, 0], name: 'Sterile O₂ bubble' });
     });
-    label('board', 'Jacketed fermenter', () => V(28.0, 2.45, 0));
+    label('board', 'Jacketed fermenter', () => V(28.0, 2.45, 0), { leader: [24, -18] });
 
     // Station 3 (x = 42): 3D Recombinant Plasmid Ring + CRISPR-Cas9
     const plasAsm = asm('recombinant_plasmid', root, { title: 'Recombinant plasmid vector + insulin cDNA', sub: 'EcoRI sticky ends sealed by DNA ligase' });
@@ -217,8 +226,8 @@ export const CHAPTER = {
     part(casAsm, cyl(0.06, 1.35, 14), { pal: 'ochre', tone: 'lit', rot: [0, 0, 0.45], ex: [0.4, 0.3, 0], name: 'Target DNA + 20-nt sgRNA' });
     part(casAsm, torus(0.22, 0.045, 10, 20, Math.PI * 1.4), { pal: 'red', tone: 'lit', pos: [-0.15, 0.25, 0.35], ex: [-0.25, 0.35, 0.45], name: 'Single-guide RNA (sgRNA) scaffold loop' });
     part(casAsm, sphere(0.11, 14), { pal: 'blue', tone: 'lit', pos: [0.22, -0.35, 0.22], ex: [0.45, -0.35, 0.35], name: '5′-NGG-3′ PAM recognition site' });
-    label('board', 'Recombinant plasmid', () => V(41.0, 2.35, 0));
-    label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.0, 2.35, 0));
+    label('board', 'Recombinant plasmid', () => V(41.0, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.0, 2.35, 0), { leader: [24, 18] });
 
     return {
       labels,
@@ -243,10 +252,10 @@ export const CHAPTER = {
         // Algal bloom thickness scales with runoffLoad
         bloomMat.scale.y = 0.25 + (s.runoffLoad / 100) * 2.2;
 
-        // Spin fermenter impellers & animate rising O2 bubbles
+        // Spin fermenter impellers & animate rising O2 bubbles in the sparger zone below the lower impeller
         impGroup.rotation.y = s.t * 3.8;
         o2Bubbles.forEach((b, i) => {
-          b.position.y = 0.08 + ((s.t * 0.55 + i * 0.25) % 1.15);
+          b.position.y = 0.08 + ((s.t * 0.35 + i * 0.1) % 0.38);
         });
       },
     };

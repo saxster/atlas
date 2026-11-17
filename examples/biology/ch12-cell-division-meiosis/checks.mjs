@@ -16,3 +16,9 @@ const mei = M.divisionPloidyAccount('meiosis', 46);
 check('Human mitosis yields 2 diploid (46) clones; meiosis yields 4 haploid (23) gametes with 2^23 = 8,388,608 combinations', mit.daughterCells === 2 && mit.chromosomesPerDaughter === 46 && mei.daughterCells === 4 && mei.chromosomesPerDaughter === 23 && mei.assortmentCombinations === 8388608);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual switches Meselson-Stahl G1 from 100% hybrid to conservative 50% heavy + 50% light', () => {
+  const realG1 = meselsonStahlAccount(1, false);
+  const buggyG1 = meselsonStahlAccount(1, true);
+  return realG1.hybridFrac === 1 && buggyG1.hybridFrac === 0 && buggyG1.heavyFrac === 0.5 && buggyG1.lightFrac === 0.5;
+});

@@ -89,6 +89,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 2,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Constant SA/V Giant-Cell Myth (Active)',
+  realWorldLabel: 'Compare: 6/L Geometry Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -96,7 +102,7 @@ export const CHAPTER = {
   xrayKeys: ['cell_wall_vacuole', 'sav_cubes'],
   cutKeys: ['cell_wall_vacuole', 'nucleus_asm', 'cristae_folds', 'thylakoid_grana'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { cellSideUm: 40, cristaeFolds: 6 },
+  defaultParams: { cellSideUm: 40, cristaeFolds: 6, buggyWorld: 0 },
   controls: [
     { id: 'cellSideUm', label: 'Cell cube width L', min: 10, max: 100, step: 5, value: 40, unit: 'µm' },
     { id: 'cristaeFolds', label: 'Mitochondrial cristae folds', min: 1, max: 10, step: 1, value: 6, unit: 'folds' },
@@ -116,21 +122,24 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.0 : clock;
-    const geo = M.cubeGeometry(p.cellSideUm);
-    const cr = M.cristaeFoldingGain(p.cristaeFolds);
-    return { t, geo, cr };
+    const buggy = Boolean(p.buggyWorld);
+    const geo = M.cubeGeometry(p.cellSideUm, 2000, buggy);
+    const cr = M.cristaeFoldingGain(p.cristaeFolds, buggy);
+    return { t, buggy, geo, cr };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>3D representative green plant cell</b> · Cellulose wall + central vacuole (turgor) + nucleus (DNA blueprint) + mitochondria (ATP) + chloroplasts (solar sugar).`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>3D representative green plant cell</b> · Cellulose wall + central vacuole (turgor) + nucleus (DNA blueprint) + mitochondria (ATP) + chloroplasts (solar sugar).`;
     }
-    if (pageIdx === 1) {
-      return `<b>Endosymbiosis</b> · Chosen cristae folds = ${s.cr.folds} → Inner membrane area <b>${s.cr.areaMultiplier.toFixed(2)}×</b> · Both organelles retain DNA and bacterial-related ribosomes. The fold-area multiplier is an invented geometry model.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Endosymbiosis</b> · Chosen cristae folds = ${s.cr.folds} → Inner membrane area <b>${s.cr.areaMultiplier.toFixed(2)}×</b> · Both organelles retain DNA and bacterial-related ribosomes. The fold-area multiplier is an invented geometry model.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Cell width L = ${s.geo.sideUm} µm</b> · SA = ${s.geo.surfaceUm2.toLocaleString()} µm² · Vol = ${s.geo.volumeUm3.toLocaleString()} µm³ · <b>SA/V = ${s.geo.savPerUm.toFixed(2)} µm⁻¹</b> · Assumed diffusion timescale τ = ${(s.geo.diffusionTimeSec * 1000).toFixed(1)} ms.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Cell width L = ${s.geo.sideUm} µm</b> · SA = ${s.geo.surfaceUm2.toLocaleString()} µm² · Vol = ${s.geo.volumeUm3.toLocaleString()} µm³ · <b>SA/V = ${s.geo.savPerUm.toFixed(2)} µm⁻¹</b> · Assumed diffusion timescale τ = ${(s.geo.diffusionTimeSec * 1000).toFixed(1)} ms.`;
     }
-    return `<b>Specialist Cell Shapes</b> · Biconcave RBC (thin, no nucleus) · Root hair (extended contact area) · Myelinated axon (saltatory conduction).`;
+    return `${modeTag}<b>Specialist Cell Shapes</b> · Biconcave RBC (thin, no nucleus) · Root hair (extended contact area) · Myelinated axon (saltatory conduction).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -187,8 +196,8 @@ export const CHAPTER = {
         part(granAsm, cyl(0.18, 0.06, 18), { pal: 'green', tone: 'lit', pos: [sx, k * 0.09, 0], ex: [0, k * 0.14 + 0.3, 0], name: 'Thylakoid disc' });
       }
     }
-    label('board', 'Cristae & mtDNA', () => V(13.0, 2.2, 0));
-    label('board', 'Grana & cpDNA', () => V(15.2, 2.2, 0));
+    label('board', 'Cristae & mtDNA', () => V(13.0, 2.2, 0), { leader: [-24, -18] });
+    label('board', 'Grana & cpDNA', () => V(15.2, 2.2, 0), { leader: [24, 18] });
 
     // Station 2 (x = 28): SA/V Cubes + Starved Core + 3D Hyperbola Plot
     const cubesAsm = asm('sav_cubes', root, { title: 'Chosen surface layer and inner core', sub: 'Geometric layer, not oxygen data' });
@@ -199,11 +208,11 @@ export const CHAPTER = {
     const chartAsm = asm('sav_chart', root, { title: 'SA/V = 6/L hyperbola', sub: 'Geometric scaling curve' });
     chartAsm.position.set(28.6, 0.25, -0.4);
     const ax = prims.axes(chartAsm, { x: [10, 100], y: [0, 0.65], size: [2.0, 1.7, 0.8] });
-    prims.plot(chartAsm, L => 6 / L, { axes: ax, samples: 48, color: 'green', width: 0.064 });
+    const savPlot = prims.plot(chartAsm, L => 6 / L, { axes: ax, samples: 48, color: 'green', width: 0.064 });
     const cursorDot = part(chartAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: 'Current cell size' });
     const cursorDrop = rod(chartAsm, { r: 0.014, pal: 'red', tone: 'mid', name: 'SA/V coordinate drop line' });
-    label('board', 'Chosen inner core', () => V(27.0, 2.3, 0));
-    label('board', 'SA/V = 6/L', () => V(29.6, 2.15, -0.4));
+    label('board', 'Chosen inner core', () => V(27.0, 2.3, 0), { leader: [-24, 18] });
+    label('board', 'SA/V = 6/L', () => V(29.6, 2.15, -0.4), { leader: [24, -18] });
 
     // Station 3 (x = 42): Specialist Cells (RBC, Root Hair, Myelinated Neurone)
     const rbcAsm = asm('rbc_specialist', root, { title: 'Biconcave red blood cell', sub: 'No nucleus, high SA/V' });
@@ -228,9 +237,9 @@ export const CHAPTER = {
     for (const sx of [-0.12, 0.12]) {
       part(neuAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'lit', pos: [sx, -0.92, 0], ex: [sx * 2, -0.35, 0], name: 'Synaptic terminal bouton' });
     }
-    label('board', 'Biconcave RBC', () => V(40.5, 2.25, 0));
-    label('board', 'Root hair', () => V(42.2, 2.25, 0));
-    label('board', 'Myelin nodes', () => V(43.6, 2.4, 0));
+    label('board', 'Biconcave RBC', () => V(40.5, 2.25, 0), { leader: [-24, 18] });
+    label('board', 'Root hair', () => V(42.2, 2.25, 0), { leader: [24, 18] });
+    label('board', 'Myelin nodes', () => V(43.6, 2.4, 0), { leader: [-24, -18] });
 
     return {
       labels,
@@ -238,9 +247,10 @@ export const CHAPTER = {
         // Scale SA/V cube & starved core
         const sc = 0.45 + (s.geo.sideUm / 100) * 0.85;
         outerCube.scale.setScalar(sc);
-        const coreRatio = Math.max(0, (s.geo.sideUm - 10) / s.geo.sideUm);
-        starvedCore.visible = s.geo.sideUm > 10;
-        starvedCore.scale.setScalar(coreRatio * sc * 2);
+        savPlot.update(L => M.cubeGeometry(L, 2000, s.buggy).savPerUm);
+        const coreRatio = s.buggy ? 0 : Math.max(0, (s.geo.sideUm - 10) / s.geo.sideUm);
+        starvedCore.visible = !s.buggy && s.geo.sideUm > 10;
+        starvedCore.scale.setScalar(Math.max(0.01, coreRatio * sc * 2));
         const ptTop = ax.to(s.geo.sideUm, s.geo.savPerUm, 0);
         const ptBot = ax.to(s.geo.sideUm, 0, 0);
         cursorDot.position.copy(ptTop);
@@ -248,7 +258,7 @@ export const CHAPTER = {
 
         // Cristae fold density
         cristaSlabs.forEach((m, idx) => {
-          m.visible = idx < s.cr.folds;
+          m.visible = idx < (s.buggy ? 1 : s.cr.folds);
         });
       },
     };

@@ -83,6 +83,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 10,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Kidney Creates Urea / Vessels Move Myth (Active)',
+  realWorldLabel: 'Compare: Liver Urea & Arteriolar Shunt vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -90,7 +96,7 @@ export const CHAPTER = {
   xrayKeys: ['sweat_gland', 'glomerulus_bowman'],
   cutKeys: ['sweat_gland', 'glomerulus_bowman'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { insulinPct: 100, adhPct: 65, responseDay: 7 },
+  defaultParams: { insulinPct: 100, adhPct: 65, responseDay: 7, buggyWorld: 0 },
   controls: [
     { id: 'insulinPct', label: 'β-cell insulin capacity', min: 10, max: 100, step: 10, value: 100, unit: '%' },
     { id: 'responseDay', label: 'Days after recognised exposure', min: 0, max: 28, step: 1, value: 7, unit: 'd' },
@@ -118,21 +124,24 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const gl = M.glucoseHomeostasisAccount(65, p.insulinPct);
+    const buggy = Boolean(p.buggyWorld);
+    const gl = M.glucoseHomeostasisAccount(65, p.insulinPct, buggy);
     const ne = M.nephronLedgerAccount(125, p.adhPct, gl.peakBloodGlucoseMgDl);
-    return { t, gl, ne, insulinPct: p.insulinPct, adhPct: p.adhPct, responseDay: p.responseDay ?? 7, primary: M.immuneMemoryAccount(p.responseDay ?? 7, 'primary'), secondary: M.immuneMemoryAccount(p.responseDay ?? 7, 'secondary') };
+    return { t, buggy, gl, ne, insulinPct: p.insulinPct, adhPct: p.adhPct, responseDay: p.responseDay ?? 7, primary: M.immuneMemoryAccount(p.responseDay ?? 7, 'primary', buggy), secondary: M.immuneMemoryAccount(p.responseDay ?? 7, 'secondary', buggy) };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Insulin capacity = ${s.insulinPct}%</b> · Post-meal peak glucose = <b>${s.gl.peakBloodGlucoseMgDl.toFixed(0)} mg/dL</b> · Liver glycogen banked = ${s.gl.glycogenStoredG.toFixed(1)} g · Model excretion = <b>${s.gl.renalGlucoseExcretionMgMin.toFixed(1)} mg/min</b>.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Insulin capacity = ${s.insulinPct}%</b> · Post-meal peak glucose = <b>${s.gl.peakBloodGlucoseMgDl.toFixed(0)} mg/dL</b> · Liver glycogen banked = ${s.gl.glycogenStoredG.toFixed(1)} g · Model excretion = <b>${s.gl.renalGlucoseExcretionMgMin.toFixed(1)} mg/min</b>.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Mumbai Summer Skin Balance</b> · Evaporation removes about 2.42 kJ/g. Arteriole dilation changes surface blood flow; dry heat transfer depends on surrounding temperatures. These are structures, not a thermal prediction.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Mumbai Summer Skin Balance</b> · Evaporation removes about 2.42 kJ/g. Arteriole dilation changes surface blood flow; dry heat transfer depends on surrounding temperatures. These are structures, not a thermal prediction.`;
     }
-    if (pageIdx === 2) {
-      return `<b>GFR = 125 mL/min (180 L/day) · ADH = ${s.adhPct}%</b> · PCT glucose reabsorbed = <b>${s.ne.glucoseReabsorbedPct.toFixed(0)}%</b> · Urine output = <b>${s.ne.urineLPerDay.toFixed(2)} L/day (${s.ne.urineOsmolarityMosm.toFixed(0)} mOsm/L)</b>.`;
+    if (idx === 2) {
+      return `${modeTag}<b>GFR = 125 mL/min (180 L/day) · ADH = ${s.adhPct}%</b> · PCT glucose reabsorbed = <b>${s.ne.glucoseReabsorbedPct.toFixed(0)}%</b> · Urine output = <b>${s.ne.urineLPerDay.toFixed(2)} L/day (${s.ne.urineOsmolarityMosm.toFixed(0)} mOsm/L)</b>.`;
     }
-    return `<b>Antibody recognition & memory: Day ${s.responseDay}</b> · Primary ${s.primary.antibodyTitre.toFixed(1)} AU; secondary ${s.secondary.antibodyTitre.toFixed(1)} AU in the same illustrative curves as the 2D model. Memory can strengthen later defence; protection varies. The paired 2D figure explains ORS: sodium–glucose uptake supports osmotic water absorption.`;
+    return `${modeTag}<b>Antibody recognition & memory: Day ${s.responseDay}</b> · Primary ${s.primary.antibodyTitre.toFixed(1)} AU; secondary ${s.secondary.antibodyTitre.toFixed(1)} AU in the same illustrative curves as the 2D model. Memory can strengthen later defence; protection varies. The paired 2D figure explains ORS: sodium–glucose uptake supports osmotic water absorption.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -150,9 +159,9 @@ export const CHAPTER = {
     const livAsm = asm('liver_glycogen', root, { title: 'Liver hepatocytes & glycogen bank', sub: 'Stores glucose & synthesizes urea' });
     livAsm.position.set(1.1, 1.35, 0);
     const livMesh = part(livAsm, box(1.15, 0.85, 0.75, 0.12), { pal: 'red', tone: 'hi', ex: [0.45, 0.3, 0], name: 'Hepatic lobe' });
-    part(livAsm, torus(1.1, 0.045, 10, 28), { pal: 'blue', tone: 'hi', pos: [-1.1, 0, 0], ex: [0, -0.35, 0], name: 'Negative-feedback blood loop' });
-    label('board', 'Pancreas β/α islet', () => V(-1.1, 2.25, 0));
-    label('board', 'Liver glycogen bank', () => V(1.1, 2.25, 0));
+    part(livAsm, torus(1.1, 0.045, 10, 28), { pal: 'blue', tone: 'hi', pos: [-1.1, 0, -0.55], ex: [0, -0.35, 0], name: 'Negative-feedback blood loop' });
+    label('board', 'Pancreas β/α islet', () => V(-1.1, 2.25, 0), { leader: [-24, -18] });
+    label('board', 'Liver glycogen bank', () => V(1.1, 2.25, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): 3D Skin Cross-Section (Sweat Gland & Dilating Arterioles)
     const swAsm = asm('sweat_gland', root, { title: 'Coiled eccrine sweat gland & pore', sub: '2.4 kJ/g evaporative latent cooling' });
@@ -167,8 +176,8 @@ export const CHAPTER = {
     const artAsm = asm('dermal_arterioles', root, { title: 'Dermal arteriolar loops', sub: 'Vasodilate in heat, vasoconstrict in cold' });
     artAsm.position.set(14.45, 1.25, 0);
     part(artAsm, torus(0.34, 0.075, 12, 22, Math.PI), { pal: 'red', tone: 'lit', ex: [0.45, 0.35, 0], name: 'Superficial arteriolar shunt' });
-    label('board', 'Sweat gland & duct', () => V(13.5, 2.3, 0));
-    label('board', 'Dermal arteriole', () => V(14.6, 2.3, 0));
+    label('board', 'Sweat gland & duct', () => V(13.5, 2.3, 0), { leader: [-24, 18] });
+    label('board', 'Dermal arteriole', () => V(14.6, 2.3, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): 3D Kidney Nephron (Glomerulus, Bowman, PCT/Henle, Collecting Duct)
     const glomAsm = asm('glomerulus_bowman', root, { title: 'Glomerulus & Bowman’s capsule', sub: 'Filtration (180 L/day across both kidneys)' });
@@ -189,8 +198,8 @@ export const CHAPTER = {
     for (const sy of [-0.45, 0, 0.45]) {
       part(cdAsm, torus(0.16, 0.025, 10, 20), { pal: 'ochre', tone: 'lit', pos: [0, sy, 0], rot: [Math.PI / 2, 0, 0], ex: [0.55, 0, 0.2], name: 'ADH-recruited Aquaporin-2 ring' });
     }
-    label('board', 'Glomerulus & Bowman', () => V(26.9, 2.55, 0));
-    label('board', 'Loop of Henle & ADH duct', () => V(28.4, 2.35, 0));
+    label('board', 'Glomerulus & Bowman', () => V(26.9, 2.55, 0), { leader: [-24, 18] });
+    label('board', 'Loop of Henle & ADH duct', () => V(28.4, 2.35, 0), { leader: [24, 18] });
 
     // Station 3 (x = 42): 3D Y-Shaped IgG Antibody + Vaccine Primary/Secondary Curves
     const iggAsm = asm('igg_antibody', root, { title: 'Y-shaped IgG Antibody', sub: 'Heavy/light chains & antigen-binding paratopes' });
@@ -207,15 +216,16 @@ export const CHAPTER = {
     const axV = prims.axes(vacAsm, { x: [0, 28], y: [0, 240], size: [2.0, 1.65, 0.5], ticks: 3, names: { x: 'Days', y: 'Antibody AU' } });
     labels.push(...axV.labels);
     prims.plot(vacAsm, d => M.immuneMemoryAccount(d, 'primary').antibodyTitre, { axes: axV, samples: 80, color: 'ochre', width: 0.03 });
-    prims.plot(vacAsm, d => M.immuneMemoryAccount(d, 'secondary').antibodyTitre, { axes: axV, samples: 80, color: 'green', width: 0.034 });
+    const secPlot = prims.plot(vacAsm, d => M.immuneMemoryAccount(d, 'secondary').antibodyTitre, { axes: axV, samples: 80, color: 'green', width: 0.034 });
     const primaryMarker = part(vacAsm, sphere(0.065, 12), { pal: 'ochre', name: 'Selected primary response' });
     const secondaryMarker = part(vacAsm, sphere(0.065, 12), { pal: 'green', name: 'Selected secondary response' });
-    label('board', 'Y-shaped IgG', () => V(40.9, 0.2, 0));
-    label('board', 'Primary: ochre · Secondary: green', () => V(43.2, -0.55, -0.3));
+    label('board', 'Y-shaped IgG', () => V(40.9, 0.2, 0), { leader: [-24, -18] });
+    label('board', 'Primary: ochre · Secondary: green', () => V(43.2, -0.55, -0.3), { leader: [24, 18] });
 
     return {
       labels,
       update(s) {
+        secPlot.update(d => M.immuneMemoryAccount(d, 'secondary', s.buggy).antibodyTitre);
         primaryMarker.position.copy(axV.to(s.responseDay, s.primary.antibodyTitre));
         secondaryMarker.position.copy(axV.to(s.responseDay, s.secondary.antibodyTitre));
         // Scale liver glycogen store with insulin capacity

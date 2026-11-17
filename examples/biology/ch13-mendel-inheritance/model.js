@@ -1,6 +1,9 @@
 // Chapter 13 pure model: Mendelian segregation & binomial sampling convergence, ABO codominance, and X-linked inheritance.
-export function mendelCrossAccount(crossType = 'f1_self', sampleN = 400) {
+export function mendelCrossAccount(crossType = 'f1_self', sampleN = 400, buggyWorld = false) {
   const n = Math.max(4, sampleN);
+  if (buggyWorld) {
+    return { crossType, pDominant: 1.0, pRecessive: 0.0, genoTT: 0, genoTt: 1.0, genott: 0, stdError: 0, ratioLabel: 'Paint-pot blending myth (100% intermediate, 0% recessive recovery)' };
+  }
   if (crossType === 'test_hetero') {
     // Tt x tt -> 50% Tt (tall), 50% tt (dwarf)
     const se = Math.sqrt((0.5 * 0.5) / n);

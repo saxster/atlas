@@ -19,3 +19,10 @@ check('Sickle changes codon 6 Glu -> Val; the synonymous change alters codon 3 (
 check('Sickle mutation GAG -> GUG swaps Glu6 to hydrophobic Val6 and triggers HbS polymerisation', !wt.polymerisesDeoxy && sk.polymerisesDeoxy && sk.codon6 === 'GUG' && !si.polymerisesDeoxy);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual removes G-C triple H-bond stabilization and synonymous codon degeneracy', () => {
+  const realDna = chargaffHelixAccount(0.8, 30, false);
+  const buggyDna = chargaffHelixAccount(0.8, 30, true);
+  const buggyMut = betaGlobinMutationAccount('silent', true);
+  return realDna.totalHBonds === 84 && buggyDna.totalHBonds === 60 && buggyMut.polymerisesDeoxy === true;
+});

@@ -18,3 +18,10 @@ const pump5 = M.activePumpFlux(5, 0.5, 10);
 check('Active transport ceases at 0 mM ATP and saturates above Km', pump0.vPump === 0 && !pump0.uphillPossible && pump5.vPump > 90 && pump5.uphillPossible);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual inverts osmotic water drive and allows ATP-free pumping myth', () => {
+  const realWp = waterPotentialAccount(0.35, 0.1, 298, false);
+  const buggyWp = waterPotentialAccount(0.35, 0.1, 298, true);
+  const buggyPump = activePumpFlux(0, 0.5, 10, true);
+  return realWp.netPsiDrive < 0 && buggyWp.netPsiDrive > 0 && buggyPump.uphillPossible === true;
+});

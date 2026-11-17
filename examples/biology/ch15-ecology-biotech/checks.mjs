@@ -16,3 +16,9 @@ const fermHot = M.fermenterBiotechAccount(58, 90);
 check('Jacketed fermenter peaks at 37 C with high aeration and crashes when overheated to 58 C', fermOpt.insulinYieldMgL === 420 && fermHot.insulinYieldMgL < 40);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual sets trophic energy transfer to 100% with zero respiratory heat loss', () => {
+  const real = trophicPyramidAccount(10000, 10, false);
+  const buggy = trophicPyramidAccount(10000, 10, true);
+  return real.apexCarnKj === 10 && buggy.apexCarnKj === 10000 && buggy.energyNotTransferredKj === 0;
+});

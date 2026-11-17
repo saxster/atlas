@@ -1,9 +1,9 @@
 // Chapter 10 pure model: insulin/glucagon glucose feedback, skin thermoregulation, kidney nephron filtration/reabsorption, and vaccine memory.
-export function glucoseHomeostasisAccount(mealCarbG = 60, insulinCapacityPct = 100) {
-  const ins = Math.max(5, Math.min(100, insulinCapacityPct)) / 100;
+export function glucoseHomeostasisAccount(mealCarbG = 60, insulinCapacityPct = 100, buggyWorld = false) {
+  const ins = buggyWorld ? 0.05 : Math.max(5, Math.min(100, insulinCapacityPct)) / 100;
   const peakBloodGlucoseMgDl = 90 + (mealCarbG * 1.45) / (0.25 + 0.75 * ins);
   const glycogenStoredG = mealCarbG * 0.65 * ins;
-  const renalGlucoseExcretionMgMin = Math.max(0, peakBloodGlucoseMgDl / 100 * 125 - 330); // Chosen recovery rate, GFR125.
+  const renalGlucoseExcretionMgMin = Math.max(0, peakBloodGlucoseMgDl / 100 * 125 - 330);
   return { mealCarbG, insulinCapacityPct, peakBloodGlucoseMgDl, glycogenStoredG, renalGlucoseExcretionMgMin };
 }
 
@@ -31,8 +31,9 @@ function antibodyAU(day, memoryPct) {
   return round1(28 * (t / 10) * Math.exp(1 - t / 10));
 }
 
-export function immuneMemoryAccount(day = 6, responseType = 'secondary') {
+export function immuneMemoryAccount(day = 6, responseType = 'secondary', buggyWorld = false) {
   const n = Number(day), d = Number.isFinite(n) ? Math.max(0, Math.min(42, n)) : 0;
-  return { day: d, responseType, antibodyTitre: antibodyAU(d, responseType === 'primary' ? 0 : 90),
-    peakDay: responseType === 'primary' ? 14 : 7 };
+  const mem = (responseType === 'primary' || buggyWorld) ? 0 : 90;
+  return { day: d, responseType, antibodyTitre: antibodyAU(d, mem),
+    peakDay: mem === 0 ? 14 : 7 };
 }

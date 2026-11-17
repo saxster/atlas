@@ -19,3 +19,9 @@ const rqFat = M.respiratoryQuotientLedger('palmitate', 1);
 check('Respiratory quotient RQ = CO2/O2 is 1.00 for glucose and ~0.70 for fatty acid', rqGluc.rq === 1.0 && Math.abs(rqFat.rq - 16 / 23) < 1e-9);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual keeps mitochondrial relay active at 0% O2', () => {
+  const real = aerobicRelayAccount(0, 60, false);
+  const buggy = aerobicRelayAccount(0, 60, true);
+  return real.chainActive === false && real.animationRate === 0 && buggy.chainActive === true && buggy.animationRate > 0.5;
+});

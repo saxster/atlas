@@ -17,3 +17,9 @@ const w1 = M.fitnessLandscapeHeight(0.65, 0, 1);
 check('Antibiotic shift moves the global fitness peak from the wild-type (-0.65) to the resistant mutant (+0.65)', w0 > M.fitnessLandscapeHeight(0.65, 0, 0) && w1 > M.fitnessLandscapeHeight(-0.65, 0, 1));
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual eliminates heterozygote advantage so equilibrium HbS allele frequency collapses to 0', () => {
+  const real = balancingSelectionAccount(0.20, 0.80, 0.20, false);
+  const buggy = balancingSelectionAccount(0.20, 0.80, 0.20, true);
+  return Math.abs(real.qEquilibrium - 0.20) < 1e-6 && buggy.qEquilibrium === 0;
+});

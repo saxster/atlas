@@ -84,11 +84,17 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 13,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Paint-Pot Blending Inheritance Myth (Active)',
+  realWorldLabel: 'Compare: Discrete Mendelian Alleles vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
   cuts: true,
-  defaultParams: { crossMode: 0, sampleN: 400, aboChoice: 2 },
+  defaultParams: { crossMode: 0, sampleN: 400, aboChoice: 2, buggyWorld: 0 },
   controls: [
     { id: 'crossMode', label: 'Cross (0=Tt×Tt, 1=Tt×tt, 2=TT×tt)', min: 0, max: 2, step: 1, value: 0, unit: '' },
     { id: 'sampleN', label: 'Sample size N', min: 20, max: 2000, step: 20, value: 400, unit: 'peas' },
@@ -111,25 +117,28 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
+    const buggy = Boolean(p.buggyWorld);
     const cKey = p.crossMode === 1 ? 'test_hetero' : p.crossMode === 2 ? 'test_homo' : 'f1_self';
-    const mc = M.mendelCrossAccount(cKey, p.sampleN);
+    const mc = M.mendelCrossAccount(cKey, p.sampleN, buggy);
     const aboPairs = [['IA', 'i'], ['IB', 'i'], ['IA', 'IB'], ['i', 'i']];
     const [a1, a2] = aboPairs[p.aboChoice] || aboPairs[2];
     const abo = M.aboPhenotypeAccount(a1, a2);
     const xl = M.xLinkedCarrierAccount(true, false);
-    return { t, mc, abo, xl, sampleN: p.sampleN, aboChoice: p.aboChoice };
+    return { t, buggy: Boolean(p.buggyWorld), mc, abo, xl, sampleN: p.sampleN, aboChoice: p.aboChoice };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>${crossName(s)} · ${s.mc.ratioLabel} (N = ${s.sampleN} peas)</b> · TT = ${(s.mc.genoTT * 100).toFixed(0)}% · Tt = ${(s.mc.genoTt * 100).toFixed(0)}% · tt = ${(s.mc.genott * 100).toFixed(0)}% · SE of the tall fraction = ${(s.mc.stdError * 100).toFixed(1)} percentage points. Bars show expected proportions.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>${crossName(s)} · ${s.mc.ratioLabel} (N = ${s.sampleN} peas)</b> · TT = ${(s.mc.genoTT * 100).toFixed(0)}% · Tt = ${(s.mc.genoTt * 100).toFixed(0)}% · tt = ${(s.mc.genott * 100).toFixed(0)}% · SE of the tall fraction = ${(s.mc.stdError * 100).toFixed(1)} percentage points. Bars show expected proportions.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Homologous Loci & Pedigree Detective</b> · Recessive test cross (T? × tt): a dwarf offspring establishes Tt; an all-tall sample supports TT but does not prove it.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Homologous Loci & Pedigree Detective</b> · Recessive test cross (T? × tt): a dwarf offspring establishes Tt; an all-tall sample supports TT but does not prove it.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Genotype ${s.abo.genotype} → Blood Group ${s.abo.bloodGroup}</b> · Surface antigens: <b>${s.abo.antigens}</b> · Plasma antibodies: ${s.abo.antibodies}. Standard ABO model; rare variants can alter typing.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Genotype ${s.abo.genotype} → Blood Group ${s.abo.bloodGroup}</b> · Surface antigens: <b>${s.abo.antigens}</b> · Plasma antibodies: ${s.abo.antibodies}. Standard ABO model; rare variants can alter typing.`;
     }
-    return `<b>X-Linked Recessive Cross (Carrier Mother X^R X^r × Father X^R Y)</b> · Sons affected: <b>50%</b> · Daughters carrier: <b>50%</b> · Daughters affected: <b>0%</b> (father never passes X to sons).`;
+    return `${modeTag}<b>X-Linked Recessive Cross (Carrier Mother X^R X^r × Father X^R Y)</b> · Sons affected: <b>50%</b> · Daughters carrier: <b>50%</b> · Daughters affected: <b>0%</b> (father never passes X to sons).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -158,7 +167,7 @@ export const CHAPTER = {
       squares.push(tile);
       label('mark', '', () => tile.getWorldPosition(V()).add(V(0, 0, .12)), { text: () => `<span style="background:var(--sheet);color:var(--ink);padding:1px 3px;border-radius:3px;font:600 12px/1.2 ui-monospace,monospace">${tile.userData.genotype || ''}</span>` });
     }
-    label('board', 'TT · Tt · tt', () => V(-1.5, maxBarHeight + .55, 0));
+    label('board', 'TT · Tt · tt', () => V(-1.5, maxBarHeight + .55, 0), { leader: [-24, -18] });
     label('board', 'Selected cross', () => V(1.15, 2.25, 0), { text: () => selectedCross + ' grid' });
 
     // Station 1 (x = 14): 3D Homologous Chromosome Pair with Loci + Pedigree Tree
@@ -182,8 +191,8 @@ export const CHAPTER = {
     l1.set(V(-0.45, 0.45, 0), V(0.45, 0.45, 0));
     const l2 = rod(pedAsm, { r: 0.02, pal: 'dark', tone: 'mid', name: 'Descent line' });
     l2.set(V(0, 0.45, 0), V(0, -0.45, 0));
-    label('board', 'Homologous loci', () => V(13.1, 2.4, 0));
-    label('board', 'Pedigree Aa × Aa', () => V(15.1, 2.25, 0));
+    label('board', 'Homologous loci', () => V(13.1, 2.4, 0), { leader: [24, 18] });
+    label('board', 'Pedigree Aa × Aa', () => V(15.1, 2.25, 0), { leader: [-24, 18] });
 
     // Station 2 (x = 28): 3D ABO Red Blood Cell Surface Antigens
     const aboOtherAsm = asm('a_b_rbcs', root, { title: 'Group A, B & O red blood cells', sub: 'Single or null surface antigens' });
@@ -208,8 +217,8 @@ export const CHAPTER = {
       agA.push(mA);
       agB.push(mB);
     }
-    label('board', 'A · B · O cells', () => V(27.0, 2.35, 0));
-    label('board', 'Selected ABO antigens', () => V(29.0, 2.35, 0));
+    label('board', 'A · B · O cells', () => V(27.0, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Selected ABO antigens', () => V(29.0, 2.35, 0), { leader: [-24, 18] });
 
     // Station 3 (x = 42): 3D X (155 Mb) vs Y (57 Mb) Sex Chromosomes
     const xyAsm = asm('xy_chromosomes', root, { title: 'X (155 Mb) vs Y (57 Mb) chromosomes', sub: 'Non-homologous X-linked loci on X' });
@@ -225,8 +234,8 @@ export const CHAPTER = {
     xlAsm.position.set(42.9, 0.1, 0);
     part(xlAsm, box(0.45, 1.4, 0.45, 0.03), { pal: 'red', tone: 'lit', pos: [-0.35, 0.7, 0], ex: [-0.25, 0.3, 0], name: 'Hemizygous X^r Y sons (50% affected)' });
     part(xlAsm, box(0.45, 1.4, 0.45, 0.03), { pal: 'blue', tone: 'hi', pos: [0.35, 0.7, 0], ex: [0.25, 0.3, 0], name: 'Heterozygous X^R X^r daughters (50% carrier)' });
-    label('board', 'X (155 Mb) vs Y (57 Mb)', () => V(41.1, 2.45, 0));
-    label('board', 'X-linked outcomes', () => V(42.9, 2.25, 0));
+    label('board', 'X (155 Mb) vs Y (57 Mb)', () => V(41.1, 2.45, 0), { leader: [24, 18] });
+    label('board', 'X-linked outcomes', () => V(42.9, 2.25, 0), { leader: [-24, -18] });
 
     return {
       labels,

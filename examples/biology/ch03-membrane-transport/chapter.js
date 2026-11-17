@@ -81,6 +81,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 3,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Teleological Directed-Diffusion Myth (Active)',
+  realWorldLabel: 'Compare: Random-Walk Reality vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -88,7 +94,7 @@ export const CHAPTER = {
   xrayKeys: ['aquaporin_pore', 'plant_osmosis'],
   cutKeys: ['aquaporin_pore', 'plant_osmosis', 'atpase_carrier'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { extMolarity: 0.15, permRate: 0.4, atpLevel: 3.0 },
+  defaultParams: { extMolarity: 0.15, permRate: 0.4, atpLevel: 3.0, buggyWorld: 0 },
   controls: [
     { id: 'extMolarity', label: 'External salt concentration', min: 0.0, max: 0.45, step: 0.05, value: 0.15, unit: 'M' },
     { id: 'permRate', label: 'Membrane permeability k', min: 0.1, max: 0.9, step: 0.1, value: 0.4, unit: 's⁻¹' },
@@ -110,23 +116,26 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 2.0 : clock;
-    const fick = M.fickRelaxation(t % 10, p.permRate, 80);
+    const buggy = Boolean(p.buggyWorld);
+    const fick = M.fickRelaxation(t % 10, p.permRate, 80, buggy);
     const turgor = Math.max(0, 0.55 - p.extMolarity * 1.6);
-    const wp = M.waterPotentialAccount(p.extMolarity, turgor);
-    const pump = M.activePumpFlux(p.atpLevel, 0.5, 10);
-    return { t, fick, wp, pump, extMolarity: p.extMolarity, permRate: p.permRate, atpLevel: p.atpLevel };
+    const wp = M.waterPotentialAccount(p.extMolarity, turgor, 298, buggy);
+    const pump = M.activePumpFlux(p.atpLevel, 0.5, 10, buggy);
+    return { t, buggy, fick, wp, pump, extMolarity: p.extMolarity, permRate: p.permRate, atpLevel: p.atpLevel };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Invented equal-volume model · Permeability k = ${s.permRate.toFixed(1)} s⁻¹</b> · Left chamber: <b>${(s.fick.fracLeft * 100).toFixed(1)}%</b> · Right chamber: <b>${(s.fick.fracRight * 100).toFixed(1)}%</b> · Relaxing exponentially to 50/50 equilibrium.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Invented equal-volume model · Permeability k = ${s.permRate.toFixed(1)} s⁻¹</b> · Left chamber: <b>${(s.fick.fracLeft * 100).toFixed(1)}%</b> · Right chamber: <b>${(s.fick.fracRight * 100).toFixed(1)}%</b> · Relaxing exponentially to 50/50 equilibrium.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Schematic aquaporin · chosen water-potential example</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Schematic aquaporin · chosen water-potential example</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Chosen qualitative cell-state model · External salt = ${s.extMolarity.toFixed(2)} M</b> · Animal RBC: <b>${s.wp.rbcState}</b> · Walled plant cell: <b>${s.wp.plantState}</b> (Ψ_p = ${s.wp.turgorMPa.toFixed(2)} MPa).`;
+    if (idx === 2) {
+      return `${modeTag}<b>Chosen qualitative cell-state model · External salt = ${s.extMolarity.toFixed(2)} M</b> · Animal RBC: <b>${s.wp.rbcState}</b> · Walled plant cell: <b>${s.wp.plantState}</b> (Ψ_p = ${s.wp.turgorMPa.toFixed(2)} MPa).`;
     }
-    return `<b>ATP = ${s.atpLevel.toFixed(1)} mM</b> · Chosen carrier activity = <b>${s.pump.vPump.toFixed(0)}% V_max</b> · ${s.pump.uphillPossible ? 'Illustrative carrier operating against chosen 10× concentration ratio' : 'Chosen ATP-dependent carrier inactive; stored gradients may remain'}.`;
+    return `${modeTag}<b>ATP = ${s.atpLevel.toFixed(1)} mM</b> · Chosen carrier activity = <b>${s.pump.vPump.toFixed(0)}% V_max</b> · ${s.pump.uphillPossible ? 'Illustrative carrier operating against chosen 10× concentration ratio' : 'Chosen ATP-dependent carrier inactive; stored gradients may remain'}.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -148,8 +157,8 @@ export const CHAPTER = {
     const ax0 = prims.axes(curveAsm, { x: [0, 10], y: [0, 1], size: [2.0, 1.7, 0.6] });
     const plot0 = prims.plot(curveAsm, x => M.fickRelaxation(x, 0.4).fracLeft, { axes: ax0, samples: 40, color: 'red', width: 0.06 });
     const fickCursor = part(curveAsm, sphere(0.075, 14), { pal: 'blue', tone: 'lit', name: 'Relaxation time cursor' });
-    label('board', 'Lipid bilayer', () => V(-0.9, 2.35, 0));
-    label('board', 'N_L(t)/N → 0.5', () => V(1.6, 2.15, -0.3));
+    label('board', 'Lipid bilayer', () => V(-0.9, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'N_L(t)/N → 0.5', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
 
     // Station 1 (x = 14): Aquaporin Hourglass Channel
     const aqpAsm = asm('aquaporin_pore', root, { title: 'Aquaporin-1 hourglass pore', sub: 'Schematic water-selective pore' });
@@ -166,7 +175,7 @@ export const CHAPTER = {
       h2oSpheres.push(part(h2oAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', pos: [0, (i - 3) * 0.24, 0], ex: [0.35, 0, 0], name: 'Water molecule' }));
     }
     part(h2oAsm, sphere(0.13, 14), { pal: 'green', tone: 'hi', pos: [0.38, 0.72, 0], ex: [0.45, 0.3, 0], name: 'Excluded hydrated ion' });
-    label('board', 'Aquaporin-1 pore', () => V(14, 2.35, 0));
+    label('board', 'Aquaporin-1 pore', () => V(14, 2.35, 0), { leader: [-24, 18] });
 
     // Station 2 (x = 28): RBC vs Walled Plant Cell Osmosis
     const rbcAsm = asm('rbc_osmosis', root, { title: 'Animal red blood cell', sub: 'No cell wall (lyses or crenates)' });
@@ -178,8 +187,8 @@ export const CHAPTER = {
     part(plantAsm, box(1.5, 1.5, 1.3, 0.08), { pal: 'green', tone: 'mid', mat: shadeMat('green', { opacity: 0.35 }), ex: [0, 0.45, 0], name: 'Rigid cellulose cell wall' });
     const vacuoleMesh = part(plantAsm, sphere(0.58, 24), { pal: 'blue', tone: 'hi', ex: [0.45, 0, 0], name: 'Protoplast & vacuole' });
     const tonoplastRing = part(plantAsm, torus(0.61, 0.025, 10, 24), { pal: 'ochre', tone: 'hi', ex: [0.45, 0.15, 0], name: 'Plasma membrane / tonoplast boundary' });
-    label('board', 'Animal RBC', () => V(26.9, 2.35, 0));
-    label('board', 'Walled plant cell', () => V(29.0, 2.35, 0));
+    label('board', 'Animal RBC', () => V(26.9, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Walled plant cell', () => V(29.0, 2.35, 0), { leader: [-24, 18] });
 
     // Station 3 (x = 42): Active Transport Carrier Pump
     const pumpAsm = asm('atpase_carrier', root, { title: 'Conformational ATPase carrier', sub: 'E₁ / E₂ alternating access' });
@@ -193,13 +202,13 @@ export const CHAPTER = {
     atpSiteAsm.position.set(42, 0.72, 0.25);
     const atpOrb = part(atpSiteAsm, sphere(0.14, 16), { pal: 'red', tone: 'lit', ex: [0, -0.4, 0.35], name: 'Bound ATP/Pi' });
     const adpOrb = part(atpSiteAsm, sphere(0.09, 14), { pal: 'ochre', tone: 'hi', pos: [0.24, -0.1, 0], ex: [0.2, -0.45, 0.35], name: 'Released ADP' });
-    label('board', 'E₁/E₂ carrier pump', () => V(42, 2.35, 0));
+    label('board', 'E₁/E₂ carrier pump', () => V(42, 2.35, 0), { leader: [24, 18] });
 
     return {
       labels,
       update(s) {
         // Update solute cloud & Fick curve
-        plot0.update(x => M.fickRelaxation(x, s.permRate).fracLeft);
+        plot0.update(x => M.fickRelaxation(x, s.permRate, 200, s.buggy).fracLeft);
         const tMod = s.t % 10;
         fickCursor.position.copy(ax0.to(tMod, s.fick.fracLeft, 0));
         const netDrive = Math.max(0.05, (s.fick.fracLeft - s.fick.fracRight) * 1.15);
@@ -224,7 +233,7 @@ export const CHAPTER = {
         });
 
         // Osmotic swelling / shrinkage of RBC and plant vacuole
-        const swell = Math.max(0.48, Math.min(1.38, 1.25 - s.extMolarity * 1.65));
+        const swell = s.buggy ? Math.max(0.48, Math.min(1.38, 0.55 + s.extMolarity * 1.65)) : Math.max(0.48, Math.min(1.38, 1.25 - s.extMolarity * 1.65));
         rbcMesh.scale.set(swell, swell * (s.extMolarity < 0.08 ? 1.45 : 1), swell);
         vacuoleMesh.scale.setScalar(swell);
         tonoplastRing.scale.setScalar(swell);

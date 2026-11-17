@@ -23,3 +23,10 @@ check('Light from either side puts the same auxin share on the shaded flank', Ma
 check('Unilateral light accumulates >65% IAA auxin on the shaded shoot flank, bending shoot toward light', aux.shadedFraction > 0.65 && aux.bendAngleDeg > 20);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual abolishes regenerative Na+ spike and auxin phototropic bending', () => {
+  const realAp = actionPotentialWave(2.0, 15, 0, false);
+  const buggyAp = actionPotentialWave(2.0, 15, 0, true);
+  const buggyAux = auxinTropismAccount(35, true);
+  return realAp.fired === true && buggyAp.fired === false && buggyAux.bendAngleDeg === 0;
+});

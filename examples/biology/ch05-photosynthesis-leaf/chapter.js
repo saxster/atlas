@@ -84,6 +84,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 5,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Soil-Mass Plant Growth Myth (Active)',
+  realWorldLabel: 'Compare: Atmospheric CO₂ Fixation vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -91,7 +97,7 @@ export const CHAPTER = {
   xrayKeys: ['hydrilla_jar', 'chloro_envelope'],
   cutKeys: ['chloro_envelope', 'palisade_layer'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { lightCap: 65, co2Cap: 70, leafTempC: 25, humidityPct: 45 },
+  defaultParams: { lightCap: 65, co2Cap: 70, leafTempC: 25, humidityPct: 45, buggyWorld: 0 },
   controls: [
     { id: 'lightCap', label: 'Light capacity', min: 0, max: 100, step: 5, value: 65, unit: '%' },
     { id: 'co2Cap', label: 'CO₂ capacity', min: 0, max: 100, step: 5, value: 70, unit: '%' },
@@ -119,22 +125,25 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
+    const buggy = Boolean(p.buggyWorld);
     const st = M.photosynthesisStoichiometry(1);
-    const bm = M.blackmanSurface(p.lightCap, p.co2Cap, p.leafTempC);
+    const bm = M.blackmanSurface(p.lightCap, p.co2Cap, p.leafTempC, buggy);
     const sap = M.vascularSapAccount(p.humidityPct ?? 45, p.lightCap);
-    return { t, st, bm, sap, lightCap: p.lightCap, co2Cap: p.co2Cap, leafTempC: p.leafTempC };
+    return { t, buggy, st, bm, sap, lightCap: p.lightCap, co2Cap: p.co2Cap, leafTempC: p.leafTempC };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>Stoichiometric Mass Balance</b> · 6 CO₂ (${s.st.co2Moles * 44} g) + 6 H₂O (${s.st.h2oMoles * 18} g) = <b>${s.st.massInG} g</b> → C₆H₁₂O₆ (180 g) + 6 O₂ (192 g) = <b>${s.st.massOutG} g</b> · This net equation is formal accounting, not an atom-route map. Released O₂ comes from water; chosen net output = ${s.bm.net.toFixed(0)}.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>Stoichiometric Mass Balance</b> · 6 CO₂ (${s.st.co2Moles * 44} g) + 6 H₂O (${s.st.h2oMoles * 18} g) = <b>${s.st.massInG} g</b> → C₆H₁₂O₆ (180 g) + 6 O₂ (192 g) = <b>${s.st.massOutG} g</b> · This net equation is formal accounting, not an atom-route map. Released O₂ comes from water; chosen net output = ${s.bm.net.toFixed(0)}.`;
     }
-    if (pageIdx === 1) {
-      return `<b>3D Chloroplast</b> · Light-supported machinery oxidises water, releasing O₂, and supplies ATP and NADPH. Carbon fixation supplies small organic products; later reactions can make glucose.`;
+    if (idx === 1) {
+      return `${modeTag}<b>3D Chloroplast</b> · Light-supported machinery oxidises water, releasing O₂, and supplies ATP and NADPH. Carbon fixation supplies small organic products; later reactions can make glucose.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Invented capacity model · Light = ${s.lightCap}% · Chosen CO₂ capacity = ${s.co2Cap}% · T = ${s.leafTempC} °C</b> · Gross rate = <b>${s.bm.gross.toFixed(0)}</b> · Net rate = <b>${s.bm.net.toFixed(0)}</b> · Limiting factor: <b>${s.bm.limiting}</b>.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Invented capacity model · Light = ${s.lightCap}% · Chosen CO₂ capacity = ${s.co2Cap}% · T = ${s.leafTempC} °C</b> · Gross rate = <b>${s.bm.gross.toFixed(0)}</b> · Net rate = <b>${s.bm.net.toFixed(0)}</b> · Limiting factor: <b>${s.bm.limiting}</b>.`;
     }
-    return `<b>3D Dicot Leaf & Vascular Bundle</b> · Stomatal aperture = ${(s.sap.stomatalAperture * 100).toFixed(0)}% · Chosen xylem activity = <b>${s.sap.xylemVelocityMmPerMin.toFixed(1)} relative units</b> · Phloem sucrose translocation = <b>${s.sap.phloemSucroseFlux.toFixed(1)}</b>.`;
+    return `${modeTag}<b>3D Dicot Leaf & Vascular Bundle</b> · Stomatal aperture = ${(s.sap.stomatalAperture * 100).toFixed(0)}% · Chosen xylem activity = <b>${s.sap.xylemVelocityMmPerMin.toFixed(1)} relative units</b> · Phloem sucrose translocation = <b>${s.sap.phloemSucroseFlux.toFixed(1)}</b>.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -157,8 +166,8 @@ export const CHAPTER = {
     part(jarAsm, cyl(0.68, 1.9, 24), { pal: 'paper', tone: 'mid', pos: [0, 0.95, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Inverted glass funnel & tube' });
     part(jarAsm, capsule(0.18, 0.65, 8, 14), { pal: 'green', tone: 'lit', pos: [0, 0.55, 0], ex: [0, -0.3, 0], name: 'Submerged Hydrilla shoot' });
     const o2Bubbles = prims.particles(jarAsm, 20, { radius: 0.048, color: 'blue' });
-    label('board', '372 g In = 372 g Out', () => V(-1.1, 2.35, 0));
-    label('board', 'O₂ bubble plume', () => V(1.1, 2.35, 0));
+    label('board', '372 g In = 372 g Out', () => V(-1.1, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'O₂ bubble plume', () => V(1.1, 2.35, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): 3D Chloroplast Cutaway + Glucose Molecule
     const envAsm = asm('chloro_envelope', root, { title: 'Chloroplast double envelope', sub: 'Outer & inner membranes' });
@@ -180,8 +189,8 @@ export const CHAPTER = {
     const gluAsm = asm('stroma_glucose', root, { title: 'Glucose summary product', sub: 'Made through later reactions' });
     gluAsm.position.set(15.5, 1.35, 0);
     prims.molecule(gluAsm, MOLECULES.glucose.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.22, names: false });
-    label('board', 'Thylakoid grana', () => V(13.5, 2.35, 0));
-    label('board', 'Glucose product', () => V(15.5, 2.35, 0));
+    label('board', 'Thylakoid grana', () => V(13.5, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'Glucose product', () => V(15.5, 2.35, 0), { leader: [24, -18] });
 
     // Station 2 (x = 28): Blackman 3D Limiting-Factor Surface
     const bmAsm = asm('blackman_surf', root, { title: 'Blackman 3D limiting surface', sub: 'r = min(Light, CO₂, Temp)' });
@@ -190,7 +199,7 @@ export const CHAPTER = {
     const surfB = prims.surface(bmAsm, (L, C) => M.blackmanSurface(L, C, 25).gross, { axes: axB, n: 24, pal: 'green' });
     const bmPin = part(bmAsm, sphere(0.095, 16), { pal: 'red', tone: 'lit', name: 'Current operating state' });
     const bmDrop = rod(bmAsm, { r: 0.016, pal: 'red', tone: 'mid', name: 'Operating rate projection line' });
-    label('board', 'Blackman surface r(L, CO₂)', () => V(28.1, 2.25, -0.6));
+    label('board', 'Blackman surface r(L, CO₂)', () => V(28.1, 2.25, -0.6), { leader: [-24, 18] });
 
     // Station 3 (x = 42): 3D Dicot Leaf Cross-Section + Guard Stoma + Xylem/Phloem
     const palAsm = asm('palisade_layer', root, { title: 'Cuticle, epidermis & palisade mesophyll', sub: 'Solar collector slab' });
@@ -218,8 +227,8 @@ export const CHAPTER = {
     for (const sy of [-0.45, 0.0, 0.45]) {
       part(vascAsm, cyl(0.21, 0.03, 18), { pal: 'ochre', tone: 'lit', pos: [0.28, sy, 0], ex: [0.45, 0, 0.2], name: 'Perforated phloem sieve plate' });
     }
-    label('board', 'Palisade & stoma', () => V(41.2, 2.45, 0));
-    label('board', 'Xylem & Phloem', () => V(43.1, 2.45, 0));
+    label('board', 'Palisade & stoma', () => V(41.2, 2.45, 0), { leader: [24, 18] });
+    label('board', 'Xylem & Phloem', () => V(43.1, 2.45, 0), { leader: [-24, -18] });
 
     return {
       labels,
@@ -236,7 +245,7 @@ export const CHAPTER = {
         bPts.forEach((xyz, i) => o2Bubbles.set(i, xyz));
 
         // Update Blackman 3D surface for leafTempC & move operating pin
-        surfB.update((L, C) => M.blackmanSurface(L, C, s.leafTempC).gross);
+        surfB.update((L, C) => M.blackmanSurface(L, C, s.leafTempC, s.buggy).gross);
         const topB = axB.to(s.lightCap, s.co2Cap, s.bm.gross);
         const botB = axB.to(s.lightCap, s.co2Cap, 0);
         bmPin.position.copy(topB);

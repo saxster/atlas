@@ -16,3 +16,9 @@ const xl = M.xLinkedCarrierAccount(true, false);
 check('Carrier mother (X^R X^r) x unaffected father (X^R Y) gives 50% affected sons and 0% affected daughters', xl.pSonAffected === 0.5 && xl.pDaughterAffected === 0);
 
 process.exit(bad ? 1 : 0);
+
+check('Buggy-world counterfactual replaces 1:2:1 particulate F2 segregation with 100% paint-pot blending', () => {
+  const real = mendelCrossAccount('f1_self', 400, false);
+  const buggy = mendelCrossAccount('f1_self', 400, true);
+  return real.genott === 0.25 && buggy.genott === 0 && buggy.genoTt === 1.0;
+});

@@ -1,7 +1,7 @@
 // Chapter 9 pure model: Hodgkin-Huxley action potential wave & TTX block, synaptic cleft delay, eye lens accommodation, and auxin phototropism.
-export function actionPotentialWave(tMs = 2.0, stimUa = 12, ttxBlockPct = 0) {
-  const gNaScale = Math.max(0, 1 - ttxBlockPct / 100);
-  const thresholdReached = stimUa * gNaScale >= 8.0;
+export function actionPotentialWave(tMs = 2.0, stimUa = 12, ttxBlockPct = 0, buggyWorld = false) {
+  const gNaScale = buggyWorld ? 0 : Math.max(0, 1 - ttxBlockPct / 100);
+  const thresholdReached = !buggyWorld && stimUa * gNaScale >= 8.0;
   if (!thresholdReached) {
     const subV = -70 + stimUa * gNaScale * 1.6 * Math.exp(-Math.max(0, tMs - 1) / 1.5);
     return { tMs, vMv: subV, gNa: 0.5 * gNaScale, gK: 1.0, fired: false, phase: 'Subthreshold (resting −70 mV)' };
@@ -32,8 +32,8 @@ export function eyeOpticsAccount(objectDistM = 0.35, luxLevel = 50, retinaDistMm
   return { objectDistM, fRequiredMm, powerDioptres, ciliaryTension, pupilDiamMm };
 }
 
-export function auxinTropismAccount(lightAngleDeg = 30) {
-  const shadedFraction = 0.5 + 0.32 * Math.abs(Math.sin((lightAngleDeg * Math.PI) / 180));
-  const bendAngleDeg = lightAngleDeg * 0.78;
+export function auxinTropismAccount(lightAngleDeg = 30, buggyWorld = false) {
+  const shadedFraction = buggyWorld ? 0.5 : 0.5 + 0.32 * Math.abs(Math.sin((lightAngleDeg * Math.PI) / 180));
+  const bendAngleDeg = buggyWorld ? 0 : lightAngleDeg * 0.78;
   return { lightAngleDeg, shadedFraction, illuminatedFraction: 1 - shadedFraction, bendAngleDeg };
 }

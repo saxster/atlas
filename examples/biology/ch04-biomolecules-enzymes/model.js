@@ -2,8 +2,12 @@
 export const VMAX_DEFAULT = 100;
 export const KM_DEFAULT = 1.5;
 
-export function thermalActivity(tempC = 37, tOpt = 37, tCrit = 52) {
+export function thermalActivity(tempC = 37, tOpt = 37, tCrit = 52, buggyWorld = false) {
   const q10Grow = Math.pow(2, (tempC - 20) / 10);
+  if (buggyWorld) {
+    const frac = Math.min(1.05, Math.max(0.05, q10Grow / Math.pow(2, (70 - 20) / 10)));
+    return { tempC, frac, denatured: false };
+  }
   const denature = 1 / (1 + Math.exp((tempC - (tOpt + 6)) / 2.2));
   const raw = q10Grow * denature;
   const optRaw = Math.pow(2, (tOpt - 20) / 10) / (1 + Math.exp(-6 / 2.2));
@@ -16,10 +20,10 @@ export function phActivity(ph = 7.0, phOpt = 7.0, width = 1.8) {
   return Math.exp(-d * d);
 }
 
-export function michaelisMenten(subMm = 3.0, tempC = 37, ph = 7.0, compInhibMm = 0, ki = 1.0) {
+export function michaelisMenten(subMm = 3.0, tempC = 37, ph = 7.0, compInhibMm = 0, ki = 1.0, buggyWorld = false) {
   const s = Math.max(0, subMm);
   const kmApp = KM_DEFAULT * (1 + Math.max(0, compInhibMm) / Math.max(0.1, ki));
-  const tAct = thermalActivity(tempC);
+  const tAct = thermalActivity(tempC, 37, 52, buggyWorld);
   const pAct = phActivity(ph);
   const vmaxEff = VMAX_DEFAULT * tAct.frac * pAct;
   const v = s === 0 ? 0 : (vmaxEff * s) / (kmApp + s);

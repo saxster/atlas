@@ -83,6 +83,12 @@ export const PLATES = {
 export const CHAPTER = {
   subject: SUBJECT,
   no: 11,
+  quirk: 'slightly-quirky',
+  medium: 'pencil-wash',
+  quirks: ['bland', 'atelier', 'slightly-quirky', 'playful', 'wild'],
+  coherentWorldParamKey: 'buggyWorld',
+  buggyWorldLabel: 'Buggy World: Amino Acids Reverse-Translate to DNA Myth (Active)',
+  realWorldLabel: 'Compare: Crick Central Dogma vs Buggy World',
   PAGES,
   PLATES,
   clock0: 0,
@@ -90,7 +96,7 @@ export const CHAPTER = {
   xrayKeys: ['rnapol_bubble', 'ribosome_large', 'hbs_sickle_rbc'],
   cutKeys: ['ribosome_large', 'hbs_sickle_rbc'],
   cutPlane: [0, 0, -1, 0.05],
-  defaultParams: { gcPct: 50, codonStep: 2, mutationMode: 1 },
+  defaultParams: { gcPct: 50, codonStep: 2, mutationMode: 1, buggyWorld: 0 },
   controls: [
     { id: 'gcPct', label: 'DNA G≡C base-pair content', min: 20, max: 80, step: 5, value: 50, unit: '%' },
     { id: 'codonStep', label: 'Ribosome codon step', min: 1, max: 5, step: 1, value: 2, unit: 'codon' },
@@ -113,22 +119,25 @@ export const CHAPTER = {
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
     const t = reduced ? 1.5 : clock;
-    const dna = M.chargaffHelixAccount(p.gcPct / 100, 30);
+    const buggy = Boolean(p.buggyWorld);
+    const dna = M.chargaffHelixAccount(p.gcPct / 100, 30, buggy);
     const modeKey = p.mutationMode === 0 ? 'wildtype' : p.mutationMode === 2 ? 'silent' : 'sickle';
-    const mut = M.betaGlobinMutationAccount(modeKey);
-    return { t, dna, mut, gcPct: p.gcPct, codonStep: p.codonStep, mutationMode: p.mutationMode };
+    const mut = M.betaGlobinMutationAccount(modeKey, buggy);
+    return { t, buggy, dna, mut, gcPct: p.gcPct, codonStep: p.codonStep, mutationMode: p.mutationMode };
   },
   readout(s, page, pageIdx) {
-    if (pageIdx === 0) {
-      return `<b>B-DNA (30 bp = ${s.dna.lengthNm.toFixed(1)} nm, ${s.dna.turns.toFixed(1)} turns)</b> · G≡C = ${s.gcPct}% (${s.dna.nGC} bp × 3 H-bonds) · A=T = ${100 - s.gcPct}% (${s.dna.nAT} bp × 2 H-bonds) · Total = <b>${s.dna.totalHBonds} H-bonds</b>.`;
+    const idx = pageIdx ?? PAGES.indexOf(page);
+    const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
+    if (idx === 0) {
+      return `${modeTag}<b>B-DNA (30 bp = ${s.dna.lengthNm.toFixed(1)} nm, ${s.dna.turns.toFixed(1)} turns)</b> · G≡C = ${s.gcPct}% (${s.dna.nGC} bp × 3 H-bonds) · A=T = ${100 - s.gcPct}% (${s.dna.nAT} bp × 2 H-bonds) · Total = <b>${s.dna.totalHBonds} H-bonds</b>.`;
     }
-    if (pageIdx === 1) {
-      return `<b>Transcription & Khorana’s 64 Codons</b> · RNA polymerase reads template DNA 3′→5′ to synthesize 5′→3′ mRNA: <b>${s.mut.mrna}</b>.`;
+    if (idx === 1) {
+      return `${modeTag}<b>Transcription & Khorana’s 64 Codons</b> · RNA polymerase reads template DNA 3′→5′ to synthesize 5′→3′ mRNA: <b>${s.mut.mrna}</b>.`;
     }
-    if (pageIdx === 2) {
-      return `<b>Ribosome Translocation Step ${s.codonStep} / 5</b> · Small 40S subunit decodes mRNA triplets · Large 60S subunit catalyses peptide bond across P → A sites.`;
+    if (idx === 2) {
+      return `${modeTag}<b>Ribosome Translocation Step ${s.codonStep} / 5</b> · Small 40S subunit decodes mRNA triplets · Large 60S subunit catalyses peptide bond across P → A sites.`;
     }
-    return `<b>β-Globin Codon 6 = ${s.mut.codon6} (${s.mut.amino6})</b> · Outcome: <b>${s.mut.rbcShape}</b>.`;
+    return `${modeTag}<b>β-Globin Codon 6 = ${s.mut.codon6} (${s.mut.amino6})</b> · Outcome: <b>${s.mut.rbcShape}</b>.`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -153,8 +162,8 @@ export const CHAPTER = {
       const mArc = rod(p51Asm, { r: 0.032, pal: 'red', tone: 'lit', name: '10th layer line (0.34 nm base-pair rise)' });
       mArc.set(V(-0.24, ly, 0.06), V(0.24, ly, 0.06));
     }
-    label('board', 'B-DNA double helix', () => V(-0.7, 2.75, 0));
-    label('board', 'Photo 51 X-cross', () => V(1.25, 2.4, 0));
+    label('board', 'B-DNA double helix', () => V(-0.7, 2.75, 0), { leader: [-24, -18] });
+    label('board', 'Photo 51 X-cross', () => V(1.25, 2.4, 0), { leader: [24, 18] });
 
     // Station 1 (x = 14): RNA Polymerase Transcription Bubble & mRNA Ribbon
     const polAsm = asm('rnapol_bubble', root, { title: 'RNA Polymerase transcription bubble', sub: 'Unwinds DNA locally at 37 °C' });
@@ -167,8 +176,8 @@ export const CHAPTER = {
     mrnaAsm.position.set(14.0, 1.35, 0.25);
     const mPts = [V(-1.3, 0, 0), V(-0.4, 0.15, 0.2), V(0.4, -0.25, 0.35), V(1.35, -0.65, 0.45)];
     part(mrnaAsm, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(mPts), 32, 0.055, 10, false), { pal: 'red', tone: 'lit', ex: [0, -0.45, 0.45], name: '5′→3′ mRNA transcript' });
-    label('board', 'RNA Polymerase', () => V(14.0, 2.4, 0));
-    label('board', 'mRNA transcript', () => V(15.1, 0.85, 0.45));
+    label('board', 'RNA Polymerase', () => V(14.0, 2.4, 0), { leader: [-24, 18] });
+    label('board', 'mRNA transcript', () => V(15.1, 0.85, 0.45), { leader: [24, -18] });
 
     // Station 2 (x = 28): 3D Two-Subunit Ribosome (60S + 40S) & E/P/A tRNA Adaptors
     const lgAsm = asm('ribosome_large', root, { title: 'Large 60S ribosomal subunit', sub: 'Peptidyl-transferase catalytic dome' });
@@ -182,7 +191,7 @@ export const CHAPTER = {
     mrnaTape.set(V(-0.85, 0.22, 0.32), V(0.85, 0.22, 0.32));
 
     const trnaAsm = asm('trna_adaptors', root, { title: 'E, P & A site tRNAs + nascent peptide', sub: 'Steps 3 bases per translocation cycle' });
-    trnaAsm.position.set(28.0, 1.25, 0.38);
+    trnaAsm.position.set(28.0, 1.32, 0.82);
     const trnaGroup = new THREE.Group();
     trnaAsm.add(trnaGroup);
     for (const [idx, pal, nm] of [[-1, 'dark', 'E-site tRNA'], [0, 'green', 'P-site peptidyl-tRNA'], [1, 'red', 'A-site aminoacyl-tRNA']]) {
@@ -192,8 +201,8 @@ export const CHAPTER = {
     for (let k = 0; k < 6; k++) {
       pepChain.push(part(trnaGroup, sphere(0.11, 14), { pal: k % 2 === 0 ? 'green' : 'blue', tone: 'lit', pos: [0, 0.38 + k * 0.19, 0.1], ex: [0, 0.55, 0.35], name: `Amino acid ${k + 1}` }));
     }
-    label('board', '60S + 40S Ribosome', () => V(28.0, 2.65, 0));
-    label('board', 'E · P · A tRNAs', () => V(28.0, 1.25, 0.95));
+    label('board', '60S + 40S Ribosome', () => V(28.0, 2.65, 0), { leader: [-24, 18] });
+    label('board', 'E · P · A tRNAs', () => V(28.0, 1.25, 0.95), { leader: [24, 18] });
 
     // Station 3 (x = 42): Normal HbA RBC vs Sickled HbS RBC & Fibres
     const hbaAsm = asm('hba_normal_rbc', root, { title: 'Wild-type HbA (Glu6) or Silent RBC', sub: 'Flexible biconcave disc' });
@@ -208,8 +217,8 @@ export const CHAPTER = {
     const sickleRbc = part(hbsAsm, rbcGeo(0.78, 1), { pal: 'ochre', tone: 'lit', rot: [0.45, -0.2, 0], ex: [0.45, 0.3, 0], name: 'Selected sickled RBC' });
     normalRbc.visible = false;
     const fibreRod = part(hbsAsm, cyl(0.08, 1.65, 14), { pal: 'ink', tone: 'lit', rot: [0, 0, 1.15], ex: [0.45, -0.35, 0.35], name: 'Polymerised HbS rod fibre' });
-    label('board', 'Soluble HbA disc', () => V(40.8, 2.35, 0));
-    label('board', 'Selected cell outcome', () => V(43.0, 2.35, 0));
+    label('board', 'Soluble HbA disc', () => V(40.8, 2.35, 0), { leader: [-24, -18] });
+    label('board', 'Selected cell outcome', () => V(43.0, 2.35, 0), { leader: [24, 18] });
 
     return {
       labels,

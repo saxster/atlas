@@ -7,16 +7,20 @@ export function photosynthesisStoichiometry(molesGlucose = 1) {
   return { k, co2Moles, h2oMoles, o2Moles, massInG, massOutG, atomsC: 6 * k, atomsH: 12 * k, atomsO: 18 * k };
 }
 
-export function blackmanSurface(light = 60, co2 = 60, tempC = 25) {
+export function blackmanSurface(light = 60, co2 = 60, tempC = 25, buggyWorld = false) {
   const lCap = Math.max(0, Math.min(100, light));
   const cCap = Math.max(0, Math.min(100, co2));
   const tCap = Math.max(0, 100 - Math.pow(tempC - 25, 2) / 4);
-  const gross = Math.min(lCap, cCap, tCap);
+  const gross = buggyWorld ? (lCap + cCap + tCap) / 3 : Math.min(lCap, cCap, tCap);
   const net = gross - 10; // basal leaf respiration = 10
   const limiting = [];
-  if (Math.abs(gross - lCap) < 1e-6) limiting.push('Light');
-  if (Math.abs(gross - cCap) < 1e-6) limiting.push('CO₂');
-  if (Math.abs(gross - tCap) < 1e-6) limiting.push('Temperature');
+  if (buggyWorld) {
+    limiting.push('Additive sum myth (no bottleneck)');
+  } else {
+    if (Math.abs(gross - lCap) < 1e-6) limiting.push('Light');
+    if (Math.abs(gross - cCap) < 1e-6) limiting.push('CO₂');
+    if (Math.abs(gross - tCap) < 1e-6) limiting.push('Temperature');
+  }
   return { light: lCap, co2: cCap, tempC, tCap, gross, net, limiting: limiting.join(' & ') || 'None' };
 }
 
