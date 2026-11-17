@@ -28,6 +28,7 @@ const TEXT_INK = {
 };
 
 const normTargets = t => (Array.isArray(t) ? t.join(',') : String(t || '').trim());
+const isoAttr = iso => (iso === 'wash' ? ' data-isolate="wash"' : iso ? ' data-isolate="1"' : '');
 
 // Bret Victor Tangle-inspired inline scrubbable parameter span (accessible spinbutton + 5px/step horizontal drag).
 export function scrub(key, {
@@ -51,8 +52,7 @@ export function term(targets, text, { color = '', isolate = false } = {}) {
   const t = normTargets(targets);
   const ink = TEXT_INK[color] || '';
   const st = ink ? ` style="--part-col:${ink};color:${ink}"` : '';
-  const iso = isolate ? ' data-isolate="1"' : '';
-  return `<span class="tk-term" data-part="${esc(t)}"${iso}${st} tabindex="0" role="button">${text}</span>`;
+  return `<span class="tk-term" data-part="${esc(t)}"${isoAttr(isolate)}${st} tabindex="0" role="button">${text}</span>`;
 }
 
 // Oliver Byrne (1847 Chiswick Press / c82.net) inline SVG geometric proof tokens replacing algebraic letter labels.
@@ -60,8 +60,7 @@ export const byrne = {
   seg(targets, { color = 'red', angle = 0, dashed = false, label = 'segment', isolate = true } = {}) {
     const stroke = HUE_HEX[color] || color;
     const dash = dashed ? ' stroke-dasharray="3.2 2.4"' : '';
-    const iso = isolate ? ' data-isolate="1"' : '';
-    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${iso} aria-label="${esc(label)}"><svg width="1.75em" height="0.95em" viewBox="0 0 28 14" aria-hidden="true"><g transform="rotate(${angle} 14 7)"><line x1="2.5" y1="7" x2="25.5" y2="7" stroke="#1b1917" stroke-width="3.8" stroke-linecap="round"${dash}/><line x1="2.5" y1="7" x2="25.5" y2="7" stroke="${esc(stroke)}" stroke-width="2.2" stroke-linecap="round"${dash}/></g></svg></button>`;
+    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${isoAttr(isolate)} aria-label="${esc(label)}"><svg width="1.75em" height="0.95em" viewBox="0 0 28 14" aria-hidden="true"><g transform="rotate(${angle} 14 7)"><line x1="2.5" y1="7" x2="25.5" y2="7" stroke="#1b1917" stroke-width="3.8" stroke-linecap="round"${dash}/><line x1="2.5" y1="7" x2="25.5" y2="7" stroke="${esc(stroke)}" stroke-width="2.2" stroke-linecap="round"${dash}/></g></svg></button>`;
   },
 
   angle(targets, { color = 'blue', start = -25, sweep = 52, label = 'angle', isolate = true } = {}) {
@@ -74,13 +73,11 @@ export const byrne = {
     const lx1 = cx + rl * Math.cos(a1), ly1 = cy + rl * Math.sin(a1);
     const large = Math.abs(sweep) > 180 ? 1 : 0;
     const dir = sweep >= 0 ? 1 : 0;
-    const iso = isolate ? ' data-isolate="1"' : '';
-    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${iso} aria-label="${esc(label)}"><svg width="1.2em" height="1.05em" viewBox="0 0 20 18" aria-hidden="true"><path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 ${large} ${dir} ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${esc(fill)}" stroke="#1b1917" stroke-width="1"/><line x1="${cx}" y1="${cy}" x2="${lx0.toFixed(1)}" y2="${ly0.toFixed(1)}" stroke="#1b1917" stroke-width="1.35" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${lx1.toFixed(1)}" y2="${ly1.toFixed(1)}" stroke="#1b1917" stroke-width="1.35" stroke-linecap="round"/></svg></button>`;
+    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${isoAttr(isolate)} aria-label="${esc(label)}"><svg width="1.2em" height="1.05em" viewBox="0 0 20 18" aria-hidden="true"><path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 ${large} ${dir} ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${esc(fill)}" stroke="#1b1917" stroke-width="1"/><line x1="${cx}" y1="${cy}" x2="${lx0.toFixed(1)}" y2="${ly0.toFixed(1)}" stroke="#1b1917" stroke-width="1.35" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${lx1.toFixed(1)}" y2="${ly1.toFixed(1)}" stroke="#1b1917" stroke-width="1.35" stroke-linecap="round"/></svg></button>`;
   },
 
   poly(targets, { shape = 'tri', color = 'ochre', label = shape, isolate = true } = {}) {
     const fill = HUE_HEX[color] || color;
-    const iso = isolate ? ' data-isolate="1"' : '';
     let inner = '';
     if (shape === 'circle') {
       inner = `<circle cx="9" cy="9" r="6.8" fill="${esc(fill)}" stroke="#1b1917" stroke-width="1.3"/>`;
@@ -92,9 +89,84 @@ export const byrne = {
       const pts = shape === 'tri' ? '9,2.2 16.2,15.4 1.8,15.4' : shape;
       inner = `<polygon points="${esc(pts)}" fill="${esc(fill)}" stroke="#1b1917" stroke-width="1.3" stroke-linejoin="round"/>`;
     }
-    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${iso} aria-label="${esc(label)}"><svg width="1.12em" height="1.05em" viewBox="0 0 18 18" aria-hidden="true">${inner}</svg></button>`;
+    return `<button type="button" class="byrne-chip" data-part="${esc(normTargets(targets))}"${isoAttr(isolate)} aria-label="${esc(label)}"><svg width="1.12em" height="1.05em" viewBox="0 0 18 18" aria-hidden="true">${inner}</svg></button>`;
   },
 };
+
+// Discrete inline parameter pill ("Mad-Libs" clickable code/formula constant cycling through preset choices).
+export function paramChip(key, {
+  value, choices = [], unit = '', label = key, part = '', color = 'ochre', isolate = false,
+} = {}) {
+  const normChoices = choices.map(c => (c && typeof c === 'object'
+    ? { value: c.value, label: String(c.label ?? `${c.value}${unit}`) }
+    : { value: c, label: `${c}${unit}` }));
+  const curVal = value !== undefined ? value : normChoices[0]?.value ?? '';
+  const match = normChoices.find(c => String(c.value) === String(curVal));
+  const shown = match ? match.label : `${curVal}${unit}`;
+  const ink = TEXT_INK[color] || TEXT_INK.ochre;
+  const pAttr = part ? ` data-part="${esc(normTargets(part))}"` : '';
+  const cAttr = normChoices.length ? ` data-choices="${esc(JSON.stringify(normChoices))}"` : '';
+  return `<button type="button" class="tk-param" data-param="${esc(key)}" data-value="${esc(curVal)}"${cAttr}${pAttr}${isoAttr(isolate)} style="--tk-col:${ink}" aria-label="${esc(label)}">${esc(shown)}</button>`;
+}
+
+// Read-only numbered code / equation trace block where lines can embed scrub(), paramChip(), val(), and term(),
+// and bindProse().sync(state) highlights state[lineVar] in sync with the live simulation.
+export function codeBlock(lines = [], { title = '', lineVar = 'activeLine', startLine = 1 } = {}) {
+  const head = title ? `<figcaption class="tk-code-head">${esc(title)}</figcaption>` : '';
+  const rows = lines.map((entry, idx) => {
+    const ln = startLine + idx;
+    const isObj = entry && typeof entry === 'object';
+    const html = isObj ? (entry.html ?? '') : String(entry ?? '');
+    const pAttr = isObj && entry.part ? ` data-part="${esc(normTargets(entry.part))}"` : '';
+    return `<div class="tk-code-line" data-line="${ln}"${pAttr}><span class="tk-ln" aria-hidden="true">${ln}</span><span class="tk-src">${html}</span></div>`;
+  }).join('');
+  const vAttr = lineVar ? ` data-line-var="${esc(lineVar)}"` : '';
+  return `<figure class="tk-code"${vAttr}>${head}<div class="tk-code-body" role="group" aria-label="${esc(title || 'Execution trace')}">${rows}</div></figure>`;
+}
+
+// Epistemic honesty & structural-diff pills ('eg', 'unobserved', 'vantage', 'added', 'removed', 'changed').
+const BADGE_META = {
+  eg: { text: 'E.G.', cls: 'tk-badge-eg', title: 'Illustrative example value — varies across real captures or runs' },
+  unobserved: { text: '··', cls: 'tk-badge-unobs', title: 'Unobserved, encrypted, or hidden from this vantage point' },
+  vantage: { text: 'Vantage', cls: 'tk-badge-vant', title: 'Observation vantage point' },
+  added: { prefix: '+ ', cls: 'tk-badge-add', title: 'Added in this step' },
+  removed: { prefix: '− ', cls: 'tk-badge-rem', title: 'Removed in this step' },
+  changed: { prefix: '~ ', cls: 'tk-badge-chg', title: 'Changed in this step' },
+};
+export function badge(kind = 'eg', text = '', { title = '' } = {}) {
+  const meta = BADGE_META[kind] || BADGE_META.eg;
+  const raw = String(text || meta.text || '').trim();
+  const shown = meta.prefix && raw && !/^[+−~-]/.test(raw) ? `${meta.prefix}${raw}` : raw;
+  const tip = title || meta.title || '';
+  return `<span class="tk-badge ${meta.cls}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(shown)}</span>`;
+}
+
+// 1-tap "Don't confuse with …" lookalike foil callout (wires into book.js data-turn, data-part, or subject/chapter/page href).
+export function foilCard(foil, { currentDir = '', kicker = 'Don’t confuse with' } = {}) {
+  if (!foil) return '';
+  const list = (Array.isArray(foil) ? foil : [foil]).filter(Boolean);
+  if (!list.length) return '';
+  const rows = list.map(item => {
+    const label = esc(item.label || item.title || 'Lookalike');
+    const note = item.note ? ` ${item.note}` : '';
+    if (item.page !== undefined) {
+      return `<p><button type="button" class="foil-jump" data-turn="${Number(item.page)}">${label} →</button>${note}</p>`;
+    }
+    if (item.part) {
+      return `<p><button type="button" class="foil-jump" data-part="${esc(normTargets(item.part))}">${label} →</button>${note}</p>`;
+    }
+    if (item.to) {
+      const to = String(item.to);
+      const d = to.slice(0, to.lastIndexOf('/')), k = to.slice(to.lastIndexOf('/') + 1);
+      const subj = d.split('/')[0], curSubj = currentDir ? currentDir.split('/')[0] : subj;
+      const prefix = subj && subj !== curSubj ? `${subj[0].toUpperCase()}${subj.slice(1)} · ` : '';
+      const href = d === currentDir ? `#${esc(k)}` : `../../${esc(d)}/#${esc(k)}`;
+      return `<p><a class="foil-jump" href="${href}">${esc(prefix)}${label} →</a>${note}</p>`;
+    }
+    return `<p><strong>${label}</strong>${note}</p>`;
+  }).join('');
+  return `<aside class="xref foil"><div class="kicker">${esc(kicker)}</div>${rows}</aside>`;
+}
 
 // Nicky Case (:nutshell) inline expandable aside with two-dot expand/pinch micro-affordance.
 let asideSeq = 0;
@@ -158,6 +230,47 @@ html.tk-scrubbing, html.tk-scrubbing * { cursor: ew-resize !important; user-sele
   font: 14.5px/1.55 var(--sans, sans-serif); color: var(--text, #57575a);
 }
 .tk-aside-card[hidden] { display: none; }
+.tk-param {
+  display: inline-flex; align-items: baseline; padding: 1px 6px; margin: 0 1px; border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--tk-col, #825b00) 42%, transparent);
+  background: color-mix(in srgb, var(--tk-col, #825b00) 11%, var(--card, #fbfbfa));
+  color: var(--tk-col, #825b00); font: 600 0.92em/1.25 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.tk-code {
+  margin: 12px 0 16px; border-radius: 10px; border: 1px solid var(--faint, #d4d4d6);
+  background: var(--card, #fbfbfa); overflow: hidden; font: 13px/1.6 var(--mono, ui-monospace, monospace);
+}
+.tk-code-head {
+  padding: 5px 12px; border-bottom: 1px solid var(--faint, #d4d4d6);
+  font: 600 11px/1.3 var(--mono, ui-monospace, monospace); letter-spacing: .03em; color: var(--text, #57575a);
+}
+.tk-code-body { padding: 6px 0; overflow-x: auto; }
+.tk-code-line {
+  display: flex; align-items: baseline; gap: 10px; padding: 1px 12px; border-left: 3px solid transparent;
+  color: var(--strong, #18181a); white-space: pre-wrap;
+}
+.tk-code-line.is-active {
+  border-left-color: #825b00;
+  background: color-mix(in srgb, #e5ad16 14%, transparent);
+}
+.tk-ln { min-width: 2ch; text-align: right; color: var(--mid, #6e6e73); user-select: none; font-size: 0.86em; }
+.tk-src { flex: 1; min-width: 0; }
+.tk-badge {
+  display: inline-flex; align-items: center; padding: 1px 5px; margin: 0 2px; border-radius: 4px;
+  font: 600 10.5px/1.3 var(--mono, ui-monospace, monospace); letter-spacing: .02em; vertical-align: 0.06em;
+  border: 1px solid var(--faint, #d4d4d6); background: var(--card, #fbfbfa); color: var(--strong, #18181a);
+}
+.tk-badge-eg, .tk-badge-chg { color: #825b00; border-color: color-mix(in srgb, #825b00 35%, transparent); }
+.tk-badge-unobs { color: var(--text, #57575a); border-style: dashed; }
+.tk-badge-vant { color: #2c5697; border-color: color-mix(in srgb, #2c5697 35%, transparent); }
+.tk-badge-add { color: #236b43; border-color: color-mix(in srgb, #236b43 35%, transparent); }
+.tk-badge-rem { color: #b8343a; border-color: color-mix(in srgb, #b8343a 35%, transparent); }
+.xref.foil { border-left-color: var(--red-ink, #b8343a); }
+.foil-jump {
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 500;
+  color: var(--red-ink, #b8343a); text-decoration: none; cursor: pointer; white-space: nowrap;
+}
 `;
 
 function ensureProseStyles() {
@@ -195,7 +308,8 @@ export function bindProse(rootEl, {
     const keys = partsOfEl(pEl);
     if (!keys.length) return;
     const S = getStage();
-    S?.hoverExtern?.(keys, { isolate: pEl.dataset.isolate === '1' });
+    const iso = pEl.dataset.isolate;
+    S?.hoverExtern?.(keys, { isolate: iso === 'wash' ? 'wash' : iso === '1' });
     highlightPart(keys);
   });
 
@@ -220,6 +334,12 @@ export function bindProse(rootEl, {
         asideBtn.setAttribute('aria-expanded', String(nextOpen));
         onSound?.('aside', nextOpen ? 1 : -1);
       }
+      return;
+    }
+    // Discrete .tk-param pill click (cycles preset choices; Shift+Click steps backward)
+    const paramBtn = e.target.closest?.('.tk-param[data-param]');
+    if (paramBtn && rootEl.contains(paramBtn) && setParam) {
+      stepParamChip(paramBtn, e.shiftKey ? -1 : 1);
       return;
     }
     // Inline .tk-term or .byrne-chip click (note: button[data-part] inside .parts list is already handled by book.js)
@@ -322,6 +442,12 @@ export function bindProse(rootEl, {
       }
       return;
     }
+    const paramBtn = e.target.closest?.('.tk-param[data-param]');
+    if (paramBtn && setParam && ['ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      stepParamChip(paramBtn, (e.key === 'ArrowRight' || e.key === 'ArrowUp') ? 1 : -1);
+      return;
+    }
     const termEl = e.target.closest?.('.tk-term[data-part]');
     if (termEl && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
@@ -332,6 +458,31 @@ export function bindProse(rootEl, {
       }
     }
   });
+
+  function parseParamChoices(btn) {
+    try { return JSON.parse(btn.dataset.choices || '[]'); } catch { return []; }
+  }
+
+  function updateParamChip(btn, v) {
+    const choices = parseParamChoices(btn);
+    const match = choices.find(c => String(c.value) === String(v));
+    const txt = match ? String(match.label) : String(v);
+    if (btn.textContent !== txt) btn.textContent = txt;
+    btn.dataset.value = String(v);
+  }
+
+  function stepParamChip(btn, dir) {
+    const choices = parseParamChoices(btn);
+    if (!choices.length || !setParam) return;
+    const key = btn.dataset.param;
+    const params = getParams?.() || {};
+    const cur = key in params ? params[key] : btn.dataset.value;
+    const idx = Math.max(0, choices.findIndex(c => String(c.value) === String(cur)));
+    const next = choices[(idx + dir + choices.length) % choices.length];
+    setParam(key, next.value);
+    updateParamChip(btn, next.value);
+    onSound?.('scrub', dir);
+  }
 
   function updateScrubSpan(sc, key, v) {
     const numEl = sc.querySelector('.tk-num');
@@ -357,6 +508,10 @@ export function bindProse(rootEl, {
         const k = sc.dataset.param;
         if (k in params) updateScrubSpan(sc, k, params[k]);
       });
+      rootEl.querySelectorAll('.tk-param[data-param]').forEach(btn => {
+        const k = btn.dataset.param;
+        if (k in params) updateParamChip(btn, params[k]);
+      });
     }
     if (state) {
       rootEl.querySelectorAll('output[data-var]').forEach(out => {
@@ -369,6 +524,21 @@ export function bindProse(rootEl, {
           out._lastTxt = txt;
           out.textContent = txt;
         }
+      });
+      rootEl.querySelectorAll('.tk-code[data-line-var]').forEach(fig => {
+        const raw = state[fig.dataset.lineVar];
+        const activeSet = raw instanceof Set ? raw
+          : Array.isArray(raw) ? new Set(raw.map(String))
+          : (raw !== null && raw !== undefined && raw !== 0 && raw !== false) ? new Set([String(raw)])
+          : new Set();
+        fig.querySelectorAll('.tk-code-line[data-line]').forEach(row => {
+          const on = activeSet.has(row.dataset.line);
+          if (row.classList.contains('is-active') !== on) {
+            row.classList.toggle('is-active', on);
+            if (on) row.setAttribute('aria-current', 'step');
+            else row.removeAttribute('aria-current');
+          }
+        });
       });
     }
   }

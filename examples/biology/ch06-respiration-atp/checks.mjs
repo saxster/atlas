@@ -17,11 +17,10 @@ check('Yeast fermentation releases 2 CO2 and takes no O2, so its RQ is undefined
 const rqGluc = M.respiratoryQuotientLedger('glucose', 1);
 const rqFat = M.respiratoryQuotientLedger('palmitate', 1);
 check('Respiratory quotient RQ = CO2/O2 is 1.00 for glucose and ~0.70 for fatty acid', rqGluc.rq === 1.0 && Math.abs(rqFat.rq - 16 / 23) < 1e-9);
+const fat10 = M.fatOxidationMassLedger(10);
+check('Meerman & Brown (2014): 10 kg fat + ~29.02 kg O2 === ~28.14 kg CO2 + ~10.88 kg H2O (~84.2% fat mass exhaled)', Math.abs((fat10.fatKg + fat10.o2InKg) - (fat10.co2OutKg + fat10.h2oOutKg)) < 1e-9 && Math.abs(fat10.fatMassToCo2Frac - 724 / 860) < 1e-9);
+const realRel = M.aerobicRelayAccount(0, 60, false);
+const buggyRel = M.aerobicRelayAccount(0, 60, true);
+check('Buggy-world counterfactual keeps mitochondrial relay active at 0% O2', realRel.chainActive === false && realRel.animationRate === 0 && buggyRel.chainActive === true && buggyRel.animationRate > 0.5);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual keeps mitochondrial relay active at 0% O2', () => {
-  const real = aerobicRelayAccount(0, 60, false);
-  const buggy = aerobicRelayAccount(0, 60, true);
-  return real.chainActive === false && real.animationRate === 0 && buggy.chainActive === true && buggy.animationRate > 0.5;
-});

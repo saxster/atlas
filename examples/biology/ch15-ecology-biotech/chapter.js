@@ -57,6 +57,7 @@ export const PLATES = {
   },
   lv_bowl: {
     text: 'Lotka–Volterra conserved phase surface V(R, F) = δR − γ ln R + βF − α ln F: V stays constant along solutions of the idealised two-population equations. Here the moving point scans chosen example states to reveal the surface; it is not a solved population trajectory.',
+    facts: s => [['Island S=cA^z (10% area)', `${(s.isl.retainedSpeciesFraction * 100).toFixed(1)}% species kept`], ['Pisaster keystone', `${s.isl.intertidalSpeciesRichness} intertidal spp.`]],
   },
   root_nodule: {
     text: 'Beijerinck’s symbiotic *Rhizobium* bacteroids inside legume root nodules: pink leghaemoglobin buffers free O₂ so nitrogenase can reduce atmospheric N≡N into NH₃ for plant amino acids.',
@@ -127,7 +128,8 @@ export const CHAPTER = {
     const buggy = Boolean(p.buggyWorld);
     const pyr = M.trophicPyramidAccount(10000, p.trophicEtaPct, buggy);
     const ferm = M.fermenterBiotechAccount(p.fermTempC, 90);
-    return { t, buggy, pyr, ferm, trophicEtaPct: pyr.transferPct, fermTempC: p.fermTempC, runoffLoad: p.runoffLoad };
+    const isl = M.islandSpeciesAreaAccount(10, 0.30, !buggy);
+    return { t, buggy, pyr, ferm, isl, trophicEtaPct: pyr.transferPct, fermTempC: p.fermTempC, runoffLoad: p.runoffLoad };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -172,7 +174,7 @@ export const CHAPTER = {
     const lvDot = part(lvAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: '(Prey R, Predator F) state' });
     let energyCaption = 'Energy tiers · η = 10%';
     label('board', 'Energy tiers', () => V(-1.1, 2.15, 0), { text: () => energyCaption });
-    label('board', 'V(R, F) example states', () => V(1.45, 2.05, -0.5), { leader: [-24, -18] });
+    label('board', 'V(R, F) example states', () => V(1.8, 2.2, -0.5), { leader: true, anchor: () => V(1.3, 1.35, -0.5) });
 
     // Station 1 (x = 14): 3D Root Nodule + Eutrophication Lake Column
     const nodAsm = asm('root_nodule', root, { title: 'Legume Rhizobium root nodule', sub: 'Leghaemoglobin O₂ buffer & nitrogenase' });
@@ -188,8 +190,8 @@ export const CHAPTER = {
     part(lakeAsm, cyl(0.68, 1.75, 24), { pal: 'blue', tone: 'mid', pos: [0, 0.88, 0], mat: shadeMat('blue', { opacity: 0.38 }), name: 'Water column' });
     const bloomMat = part(lakeAsm, cyl(0.67, 0.18, 24), { pal: 'green', tone: 'lit', pos: [0, 1.68, 0], ex: [0, 0.45, 0], name: 'Eutrophic algal bloom layer' });
     part(lakeAsm, cyl(0.66, 0.22, 24), { pal: 'ink', tone: 'mid', pos: [0, 0.12, 0], ex: [0, -0.35, 0], name: 'Benthic hypoxic decomposer zone' });
-    label('board', 'Rhizobium nodule', () => V(13.0, 2.35, 0), { leader: [24, 18] });
-    label('board', 'Eutrophication column', () => V(15.0, 2.25, 0), { leader: [-24, 18] });
+    label('board', 'Rhizobium nodule', () => V(12.6, 2.45, 0), { leader: true, anchor: () => V(13.28, 1.45, 0) });
+    label('board', 'Eutrophication column', () => V(15.4, 2.35, 0), { leader: true, anchor: () => V(15.0, 1.68, 0) });
 
     // Station 2 (x = 28): 3D Jacketed Industrial Fermenter Cutaway
     const jackAsm = asm('cooling_jacket', root, { title: 'Stainless vessel & water cooling jacket', sub: 'Maintains 37 °C enzyme optimum' });
@@ -212,7 +214,7 @@ export const CHAPTER = {
       const a = (i * Math.PI) / 2 + 0.3;
       return part(spargAsm, sphere(0.045, 10), { pal: 'blue', tone: 'lit', pos: [0.62 * Math.cos(a), 0.12 + i * 0.12, 0.62 * Math.sin(a)], ex: [0, -0.35, 0], name: 'Sterile O₂ bubble' });
     });
-    label('board', 'Jacketed fermenter', () => V(28.0, 2.45, 0), { leader: [24, -18] });
+    label('board', 'Jacketed fermenter', () => V(28.4, 2.55, 0), { leader: true, anchor: () => V(28.0, 1.85, 0) });
 
     // Station 3 (x = 42): 3D Recombinant Plasmid Ring + CRISPR-Cas9
     const plasAsm = asm('recombinant_plasmid', root, { title: 'Recombinant plasmid vector + insulin cDNA', sub: 'EcoRI sticky ends sealed by DNA ligase' });
@@ -226,8 +228,8 @@ export const CHAPTER = {
     part(casAsm, cyl(0.06, 1.35, 14), { pal: 'ochre', tone: 'lit', rot: [0, 0, 0.45], ex: [0.4, 0.3, 0], name: 'Target DNA + 20-nt sgRNA' });
     part(casAsm, torus(0.22, 0.045, 10, 20, Math.PI * 1.4), { pal: 'red', tone: 'lit', pos: [-0.15, 0.25, 0.35], ex: [-0.25, 0.35, 0.45], name: 'Single-guide RNA (sgRNA) scaffold loop' });
     part(casAsm, sphere(0.11, 14), { pal: 'blue', tone: 'lit', pos: [0.22, -0.35, 0.22], ex: [0.45, -0.35, 0.35], name: '5′-NGG-3′ PAM recognition site' });
-    label('board', 'Recombinant plasmid', () => V(41.0, 2.35, 0), { leader: [-24, 18] });
-    label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.0, 2.35, 0), { leader: [24, 18] });
+    label('board', 'Recombinant plasmid', () => V(40.6, 2.45, 0), { leader: true, anchor: () => V(41.0, 1.85, 0) });
+    label('board', 'CRISPR-Cas9 + sgRNA', () => V(43.4, 2.45, 0), { leader: true, anchor: () => V(43.0, 1.85, 0) });
 
     return {
       labels,

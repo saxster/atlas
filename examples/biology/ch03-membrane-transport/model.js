@@ -23,3 +23,10 @@ export function activePumpFlux(atpMm = 3.0, kmAtp = 0.5, gradientRatio = 10, bug
   const deltaGKj = 5.7 * Math.log10(Math.max(1, gradientRatio));
   return { atpMm: a, vPump, deltaGKj, uphillPossible: buggyWorld ? true : a > 0.05 };
 }
+
+// Reference J (Peter Agre Aquaporin-1 single-file throughput, BNID 103018: ~3e9 H2O molecules/s per channel):
+export function aquaporinSingleFileThroughput(channelsPerCell = 2e5, perChannelPerSec = 3e9, buggyWorld = false) {
+  const ratePerChannel = buggyWorld ? 0 : perChannelPerSec;
+  const cellMoleculesPerSec = channelsPerCell * ratePerChannel;
+  return { channelsPerCell, ratePerChannel, cellMoleculesPerSec };
+}

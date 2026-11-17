@@ -14,11 +14,11 @@ check('Lotka-Volterra invariant V(R,F) has unique global minimum V=2 at equilibr
 const fermOpt = M.fermenterBiotechAccount(37, 90);
 const fermHot = M.fermenterBiotechAccount(58, 90);
 check('Jacketed fermenter peaks at 37 C with high aeration and crashes when overheated to 58 C', fermOpt.insulinYieldMgL === 420 && fermHot.insulinYieldMgL < 40);
+const mw = M.islandSpeciesAreaAccount(10, 0.30, true);
+const mwNoStar = M.islandSpeciesAreaAccount(10, 0.30, false);
+check('MacArthur & Wilson (1967) 10x habitat area with z=0.30 doubles species (~2.00x); Paine (1966) Pisaster removal drops richness from 15 to 8', Math.abs(mw.speciesRatio - Math.pow(10, 0.3)) < 1e-9 && mw.intertidalSpeciesRichness === 15 && mwNoStar.intertidalSpeciesRichness === 8);
+const realPyr = M.trophicPyramidAccount(10000, 10, false);
+const buggyPyr = M.trophicPyramidAccount(10000, 10, true);
+check('Buggy-world counterfactual sets trophic energy transfer to 100% with zero respiratory heat loss', realPyr.apexCarnKj === 10 && buggyPyr.apexCarnKj === 10000 && buggyPyr.energyNotTransferredKj === 0);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual sets trophic energy transfer to 100% with zero respiratory heat loss', () => {
-  const real = trophicPyramidAccount(10000, 10, false);
-  const buggy = trophicPyramidAccount(10000, 10, true);
-  return real.apexCarnKj === 10 && buggy.apexCarnKj === 10000 && buggy.energyNotTransferredKj === 0;
-});

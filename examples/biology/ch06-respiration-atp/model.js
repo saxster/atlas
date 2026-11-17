@@ -28,3 +28,13 @@ export function respiratoryQuotientLedger(substrate = 'glucose', moles = 1) {
   }
   return { substrate: 'glucose', o2In: 6 * moles, co2Out: 6 * moles, rq: 1.0 };
 }
+
+// Reference J (Meerman & Brown 2014 BMJ fat oxidation stoichiometry C55H104O6 + 78 O2 -> 55 CO2 + 52 H2O):
+export function fatOxidationMassLedger(fatKg = 10.0) {
+  const mFat = 860, mO2 = 78 * 32, mCO2 = 55 * 44, mH2O = 52 * 18;
+  const o2InKg = fatKg * (mO2 / mFat);
+  const co2OutKg = fatKg * (mCO2 / mFat);
+  const h2oOutKg = fatKg * (mH2O / mFat);
+  const fatMassToCo2Frac = (55 * 12 + 4 * 16) / mFat; // 724 / 860 ~ 0.8419
+  return { fatKg, o2InKg, co2OutKg, h2oOutKg, fatMassToCo2Frac, fatMassToH2oFrac: 1 - fatMassToCo2Frac };
+}

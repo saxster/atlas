@@ -15,11 +15,10 @@ check('Competitive inhibitor triples apparent Km at [I] = 2 Ki, but high [S] sti
 const rAlpha = M.ramachandranEnergy(-60, -45);
 const rClash = M.ramachandranEnergy(60, -120);
 check('Ramachandran alpha-helix (-60, -45) is sterically allowed while (+60, -120) clashes', rAlpha.allowed && !rClash.allowed && rAlpha.energyKj < rClash.energyKj);
+const gc = M.goodsellCrowdingAndTurnover(250, 6e5, 0.15);
+check('Goodsell crowding (25% volume at 250 mg/mL, BNID 105938) & carbonic anhydrase 4e6x acceleration (BNID 101646)', Math.abs(gc.volumeFractionOccupied - 0.25) < 1e-9 && Math.abs(gc.rateEnhancement - 4e6) < 1e-3);
+const realMm = M.michaelisMenten(3.0, 65, 7.0, 0, 1.0, false);
+const buggyMm = M.michaelisMenten(3.0, 65, 7.0, 0, 1.0, true);
+check('Buggy-world counterfactual removes high-temperature denaturation cliff at 65 C', realMm.denatured === true && realMm.v < 5 && buggyMm.denatured === false && buggyMm.v > 40);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual removes high-temperature denaturation cliff at 65 C', () => {
-  const real = michaelisMenten(3.0, 65, 7.0, 0, 1.0, false);
-  const buggy = michaelisMenten(3.0, 65, 7.0, 0, 1.0, true);
-  return real.denatured === true && real.v < 5 && buggy.denatured === false && buggy.v > 40;
-});

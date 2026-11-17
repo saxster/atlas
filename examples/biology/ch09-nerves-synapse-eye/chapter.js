@@ -61,6 +61,7 @@ export const PLATES = {
   },
   synaptic_vesicles: {
     text: 'Presynaptic bouton: arriving depolarization opens voltage-gated Ca²⁺ channels, triggering synaptic vesicles to fuse with the membrane and exocytose neurotransmitter into the 20 nm cleft.',
+    facts: s => [['20 nm cleft τ_diff', `${s.para.cleftDiffusionUs.toFixed(1)} µs`], ['para^ts gate (22 °C)', s.para.naChannelOpen ? 'Open' : 'Paralysed']],
   },
   postsynaptic_receptors: {
     text: 'This excitatory chemical relay receives transmitter through postsynaptic ligand-gated channels. Other receptors can regulate release presynaptically, and other synapses inhibit firing. Diffusion is only part of the total delay.',
@@ -138,7 +139,8 @@ export const CHAPTER = {
     const ap = M.actionPotentialWave(tMs, 15, p.ttxBlockPct, buggy);
     const eye = M.eyeOpticsAccount(p.objectDistM, p.lightPct);
     const aux = M.auxinTropismAccount(p.lightAngleDeg, buggy);
-    return { t, buggy, tMs, ap, eye, aux, ttxBlockPct: p.ttxBlockPct, objectDistM: p.objectDistM, lightAngleDeg: p.lightAngleDeg };
+    const para = M.siddiqiParaThermalGate(22, 20, 400);
+    return { t, buggy, tMs, ap, eye, aux, para, ttxBlockPct: p.ttxBlockPct, objectDistM: p.objectDistM, lightAngleDeg: p.lightAngleDeg };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -182,8 +184,8 @@ export const CHAPTER = {
     const plotV = prims.plot(hhAsm, t => M.actionPotentialWave(t, 15, 0).vMv, { axes: axH, samples: 48, color: 'red', width: 0.032 });
     labels.push(...axH.labels, ...plotV.labels);
     const vDot = part(hhAsm, sphere(0.085, 16), { pal: 'ochre', tone: 'lit', name: 'Spike wavefront' });
-    label('board', 'Na_V & K_V channels', () => V(-0.7, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'V_m(t) spike wave', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
+    label('board', 'Na_V & K_V channels', () => V(-1.1, 2.45, 0), { leader: true, anchor: () => V(-0.7, 1.65, 0) });
+    label('board', 'V_m(t) spike wave', () => V(1.9, 2.3, -0.3), { leader: true, anchor: () => V(1.3, 1.45, -0.3) });
 
     // Station 1 (x = 14): 3D Chemical Synapse & 20 nm Cleft
     const synAsm = asm('synaptic_vesicles', root, { title: 'Presynaptic bouton & vesicles', sub: 'Ca²⁺-triggered exocytosis' });
@@ -200,8 +202,8 @@ export const CHAPTER = {
     for (const sy of [-0.42, 0, 0.42]) {
       part(postAsm, cyl(0.14, 0.32, 16), { pal: 'red', tone: 'lit', pos: [-0.12, sy, 0], rot: [0, 0, Math.PI / 2], ex: [-0.25, 0, 0], name: 'Neurotransmitter receptor' });
     }
-    label('board', 'Presynaptic vesicles', () => V(13.3, 2.35, 0), { leader: [-24, 18] });
-    label('board', '20 nm Cleft & receptors', () => V(14.8, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Presynaptic vesicles', () => V(12.9, 2.45, 0), { leader: true, anchor: () => V(13.3, 1.65, 0) });
+    label('board', '20 nm Cleft & receptors', () => V(15.2, 2.45, 0), { leader: true, anchor: () => V(14.8, 1.65, 0) });
 
     // Station 2 (x = 28): 3D Human Eye Cutaway (Iris, Ciliary Ring, Elastic Lens, Retina)
     const retAsm = asm('retina_fovea', root, { title: 'Sclera, retina & fovea', sub: 'Rods, cones & optic nerve' });
@@ -230,8 +232,8 @@ export const CHAPTER = {
     eyeRayUp.set(V(-0.65, 0.25, 0), V(0.9, 0, 0));
     const eyeRayDn = rod(retAsm, { r: 0.015, pal: 'ochre', tone: 'lit', name: 'Refracted lower light ray to fovea' });
     eyeRayDn.set(V(-0.65, -0.25, 0), V(0.9, 0, 0));
-    label('board', 'Iris & elastic lens', () => V(27.2, 2.55, 0), { leader: [-24, 18] });
-    label('board', 'Retina & fovea', () => V(28.8, 2.55, 0), { leader: [24, 18] });
+    label('board', 'Iris & elastic lens', () => V(26.8, 2.65, 0), { leader: true, anchor: () => V(27.2, 1.75, 0) });
+    label('board', 'Retina & fovea', () => V(29.2, 2.65, 0), { leader: true, anchor: () => V(28.8, 1.75, 0) });
 
     // Station 3 (x = 42): Auxin Phototropism Coleoptile Shoot
     const shootAsm = asm('coleoptile_shoot', root, { title: 'Coleoptile shoot & IAA auxin gradient', sub: 'Shaded flank elongates faster' });
@@ -244,7 +246,7 @@ export const CHAPTER = {
     const sunAsm = asm('light_source', root, { title: 'Directional blue-light stimulus', sub: 'Drives lateral IAA migration' });
     sunAsm.position.set(42.0, 2.75, 0);
     const sunOrb = part(sunAsm, sphere(0.24, 18), { pal: 'ochre', tone: 'lit', ex: [0, 0.4, 0], name: 'Directional light source' });
-    label('board', 'Auxin-bending shoot', () => V(42.0, 2.65, 0), { leader: [-24, -18] });
+    label('board', 'Auxin-bending shoot', () => V(41.5, 2.75, 0), { leader: true, anchor: () => V(42.0, 1.95, 0) });
 
     return {
       labels,

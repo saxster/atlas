@@ -15,11 +15,10 @@ check('Mitochondrial cristae folding amplifies inner membrane area > 4x', cr.are
 const rbc = M.specialistShapeFactor('rbc');
 const rh = M.specialistShapeFactor('roothair');
 check('Root hair and biconcave RBC boost SA/V above spherical baseline', rbc.savBoost > 1.3 && rh.savBoost > 3.0);
+const census = M.humanCellCensus(70);
+check('Sender, Fuchs & Milo (2016) BNID 109716: ~3.0e13 human cells, ~83.3% enucleated RBCs', Math.abs(census.totalHumanCells - 3.0e13) < 1e9 && Math.abs(census.rbcFraction - 2.5 / 3.0) < 1e-9);
+const realCube = M.cubeGeometry(80, 2000, false);
+const buggyCube = M.cubeGeometry(80, 2000, true);
+check('Buggy-world counterfactual flattens SA/V scaling and eliminates inner core penalty', realCube.savPerUm < 0.1 && Math.abs(buggyCube.savPerUm - 0.6) < 1e-6 && buggyCube.wellFedFraction === 1);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual flattens SA/V scaling and eliminates inner core penalty', () => {
-  const real = cubeGeometry(80, 2000, false);
-  const buggy = cubeGeometry(80, 2000, true);
-  return real.savPerUm < 0.1 && Math.abs(buggy.savPerUm - 0.6) < 1e-6 && buggy.wellFedFraction === 1;
-});

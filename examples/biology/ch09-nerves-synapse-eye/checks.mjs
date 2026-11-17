@@ -21,12 +21,12 @@ check('Near focus requires shorter focal length (higher dioptre power & ciliary 
 const aux = M.auxinTropismAccount(35);
 check('Light from either side puts the same auxin share on the shaded flank', Math.abs(M.auxinTropismAccount(-35).shadedFraction - aux.shadedFraction) < 1e-12);
 check('Unilateral light accumulates >65% IAA auxin on the shaded shoot flank, bending shoot toward light', aux.shadedFraction > 0.65 && aux.bendAngleDeg > 20);
+const para22 = M.siddiqiParaThermalGate(22, 20, 400);
+const para31 = M.siddiqiParaThermalGate(31, 20, 400);
+check('Siddiqi & Benzer (1976): para^ts Na+ channel conducts at 22 C, blocks >29 C; 20 nm cleft diffusion is ~0.5 us', para22.paraChannelOpenable && !para31.paraChannelOpenable && Math.abs(para22.cleftDiffusionUs - 0.5) < 1e-9);
+const realAp = M.actionPotentialWave(2.0, 15, 0, false);
+const buggyAp = M.actionPotentialWave(2.0, 15, 0, true);
+const buggyAux = M.auxinTropismAccount(35, true);
+check('Buggy-world counterfactual abolishes regenerative Na+ spike and auxin phototropic bending', realAp.fired === true && buggyAp.fired === false && buggyAux.bendAngleDeg === 0);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual abolishes regenerative Na+ spike and auxin phototropic bending', () => {
-  const realAp = actionPotentialWave(2.0, 15, 0, false);
-  const buggyAp = actionPotentialWave(2.0, 15, 0, true);
-  const buggyAux = auxinTropismAccount(35, true);
-  return realAp.fired === true && buggyAp.fired === false && buggyAux.bendAngleDeg === 0;
-});

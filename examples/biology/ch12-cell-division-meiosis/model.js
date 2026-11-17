@@ -54,3 +54,10 @@ export function waddingtonLandscapeHeight(x = 0, y = 0) {
   const well = Math.min(v1, v2) + 0.15 * x * x;
   return 1.35 * (1 - 0.55 * u) + 0.65 * well;
 }
+
+// Reference J (Uncoiled diploid DNA length per cell ~2.18 m BNID 103249 & whole-body nuclear DNA ~1.09e10 km):
+export function diploidGenomeLengthAccount(diploidBp = 6.4e9, bpRiseNm = 0.34, nucleatedCells = 5e12) {
+  const lengthPerCellM = (diploidBp * bpRiseNm) * 1e-9;
+  const totalBodyLengthKm = (lengthPerCellM * nucleatedCells) / 1000;
+  return { diploidBp, lengthPerCellM, nucleatedCells, totalBodyLengthKm };
+}

@@ -58,6 +58,7 @@ export const PLATES = {
   },
   sweat_gland: {
     text: 'Coiled eccrine sweat gland: secretes water + NaCl onto the epidermis where evaporation removes 2.4 kJ of latent heat per gram of sweat.',
+    facts: s => [['Evap cooling (335 g/h)', `${s.ors.evaporativeCoolingWatts.toFixed(0)} W`], ['Bongaon ORS mortality', `${(s.ors.ivUnassistedMortality * 100).toFixed(0)}% → ${(s.ors.orsBongaonMortality * 100).toFixed(1)}%`]],
   },
   dermal_arterioles: {
     text: 'Vasodilation vs vasoconstriction: in heat, superficial arterioles dilate to radiate warmth (vessels stay in place; flow through surface beds changes); in cold, they constrict.',
@@ -127,7 +128,8 @@ export const CHAPTER = {
     const buggy = Boolean(p.buggyWorld);
     const gl = M.glucoseHomeostasisAccount(65, p.insulinPct, buggy);
     const ne = M.nephronLedgerAccount(125, p.adhPct, gl.peakBloodGlucoseMgDl);
-    return { t, buggy, gl, ne, insulinPct: p.insulinPct, adhPct: p.adhPct, responseDay: p.responseDay ?? 7, primary: M.immuneMemoryAccount(p.responseDay ?? 7, 'primary', buggy), secondary: M.immuneMemoryAccount(p.responseDay ?? 7, 'secondary', buggy) };
+    const ors = M.orsAndEvaporativeLedger(335, 2420);
+    return { t, buggy, gl, ne, ors, insulinPct: p.insulinPct, adhPct: p.adhPct, responseDay: p.responseDay ?? 7, primary: M.immuneMemoryAccount(p.responseDay ?? 7, 'primary', buggy), secondary: M.immuneMemoryAccount(p.responseDay ?? 7, 'secondary', buggy) };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -160,8 +162,8 @@ export const CHAPTER = {
     livAsm.position.set(1.1, 1.35, 0);
     const livMesh = part(livAsm, box(1.15, 0.85, 0.75, 0.12), { pal: 'red', tone: 'hi', ex: [0.45, 0.3, 0], name: 'Hepatic lobe' });
     part(livAsm, torus(1.1, 0.045, 10, 28), { pal: 'blue', tone: 'hi', pos: [-1.1, 0, -0.55], ex: [0, -0.35, 0], name: 'Negative-feedback blood loop' });
-    label('board', 'Pancreas β/α islet', () => V(-1.1, 2.25, 0), { leader: [-24, -18] });
-    label('board', 'Liver glycogen bank', () => V(1.1, 2.25, 0), { leader: [24, 18] });
+    label('board', 'Pancreas β/α islet', () => V(-1.5, 2.35, 0), { leader: true, anchor: () => V(-1.1, 1.55, 0) });
+    label('board', 'Liver glycogen bank', () => V(1.5, 2.35, 0), { leader: true, anchor: () => V(1.1, 1.55, 0) });
 
     // Station 1 (x = 14): 3D Skin Cross-Section (Sweat Gland & Dilating Arterioles)
     const swAsm = asm('sweat_gland', root, { title: 'Coiled eccrine sweat gland & pore', sub: '2.4 kJ/g evaporative latent cooling' });
@@ -176,8 +178,8 @@ export const CHAPTER = {
     const artAsm = asm('dermal_arterioles', root, { title: 'Dermal arteriolar loops', sub: 'Vasodilate in heat, vasoconstrict in cold' });
     artAsm.position.set(14.45, 1.25, 0);
     part(artAsm, torus(0.34, 0.075, 12, 22, Math.PI), { pal: 'red', tone: 'lit', ex: [0.45, 0.35, 0], name: 'Superficial arteriolar shunt' });
-    label('board', 'Sweat gland & duct', () => V(13.5, 2.3, 0), { leader: [-24, 18] });
-    label('board', 'Dermal arteriole', () => V(14.6, 2.3, 0), { leader: [24, -18] });
+    label('board', 'Sweat gland & duct', () => V(13.1, 2.4, 0), { leader: true, anchor: () => V(13.55, 1.65, 0) });
+    label('board', 'Dermal arteriole', () => V(15.0, 2.4, 0), { leader: true, anchor: () => V(14.45, 1.55, 0) });
 
     // Station 2 (x = 28): 3D Kidney Nephron (Glomerulus, Bowman, PCT/Henle, Collecting Duct)
     const glomAsm = asm('glomerulus_bowman', root, { title: 'Glomerulus & Bowman’s capsule', sub: 'Filtration (180 L/day across both kidneys)' });
@@ -198,8 +200,8 @@ export const CHAPTER = {
     for (const sy of [-0.45, 0, 0.45]) {
       part(cdAsm, torus(0.16, 0.025, 10, 20), { pal: 'ochre', tone: 'lit', pos: [0, sy, 0], rot: [Math.PI / 2, 0, 0], ex: [0.55, 0, 0.2], name: 'ADH-recruited Aquaporin-2 ring' });
     }
-    label('board', 'Glomerulus & Bowman', () => V(26.9, 2.55, 0), { leader: [-24, 18] });
-    label('board', 'Loop of Henle & ADH duct', () => V(28.4, 2.35, 0), { leader: [24, 18] });
+    label('board', 'Glomerulus & Bowman', () => V(26.5, 2.65, 0), { leader: true, anchor: () => V(26.9, 1.95, 0) });
+    label('board', 'Loop of Henle & ADH duct', () => V(28.9, 2.45, 0), { leader: true, anchor: () => V(28.4, 1.65, 0) });
 
     // Station 3 (x = 42): 3D Y-Shaped IgG Antibody + Vaccine Primary/Secondary Curves
     const iggAsm = asm('igg_antibody', root, { title: 'Y-shaped IgG Antibody', sub: 'Heavy/light chains & antigen-binding paratopes' });
@@ -219,8 +221,8 @@ export const CHAPTER = {
     const secPlot = prims.plot(vacAsm, d => M.immuneMemoryAccount(d, 'secondary').antibodyTitre, { axes: axV, samples: 80, color: 'green', width: 0.034 });
     const primaryMarker = part(vacAsm, sphere(0.065, 12), { pal: 'ochre', name: 'Selected primary response' });
     const secondaryMarker = part(vacAsm, sphere(0.065, 12), { pal: 'green', name: 'Selected secondary response' });
-    label('board', 'Y-shaped IgG', () => V(40.9, 0.2, 0), { leader: [-24, -18] });
-    label('board', 'Primary: ochre · Secondary: green', () => V(43.2, -0.55, -0.3), { leader: [24, 18] });
+    label('board', 'Y-shaped IgG', () => V(40.5, 0.15, 0), { leader: true, anchor: () => V(40.9, 0.85, 0) });
+    label('board', 'Primary: ochre · Secondary: green', () => V(43.5, -0.55, -0.3), { leader: true, anchor: () => V(43.0, 0.25, -0.3) });
 
     return {
       labels,

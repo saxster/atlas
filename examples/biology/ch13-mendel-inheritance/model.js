@@ -34,3 +34,11 @@ export function xLinkedCarrierAccount(motherCarrier = true, fatherAffected = fal
   const pDaughterAffected = motherCarrier && fatherAffected ? 0.5 : 0.0;
   return { motherCarrier, fatherAffected, pSonAffected, pDaughterCarrier, pDaughterAffected };
 }
+
+// Reference J (Mendel 1866 Brno ledger: 14,949 dominant : 5,010 recessive across 19,959 F2 outcomes = 2.98 : 1):
+export function mendelBrnoLedger(dominantCount = 14949, recessiveCount = 5010) {
+  const totalCount = dominantCount + recessiveCount;
+  const dominantFraction = dominantCount / totalCount;
+  const ratioToOne = dominantCount / recessiveCount;
+  return { dominantCount, recessiveCount, totalCount, dominantFraction, ratioToOne };
+}

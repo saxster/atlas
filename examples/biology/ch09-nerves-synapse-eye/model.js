@@ -37,3 +37,11 @@ export function auxinTropismAccount(lightAngleDeg = 30, buggyWorld = false) {
   const bendAngleDeg = buggyWorld ? 0 : lightAngleDeg * 0.78;
   return { lightAngleDeg, shadedFraction, illuminatedFraction: 1 - shadedFraction, bendAngleDeg };
 }
+
+// Reference J (Siddiqi & Benzer 1976 para^ts Drosophila thermal paralysis & synaptic cleft 20 nm diffusion):
+export function siddiqiParaThermalGate(tempC = 22, cleftNm = 20, dUm2PerSec = 400) {
+  const paraChannelOpenable = tempC < 29.0;
+  const xUm = cleftNm / 1000;
+  const cleftDiffusionUs = ((xUm * xUm) / (2 * dUm2PerSec)) * 1e6;
+  return { tempC, paraChannelOpenable, cleftNm, cleftDiffusionUs };
+}

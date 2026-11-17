@@ -17,12 +17,11 @@ const CODE = { CUG: 'Leu', CUU: 'Leu', GAG: 'Glu', GUG: 'Val' }, codon = (m, i) 
 check('Every mRNA is its coding DNA strand with T -> U', [wt, sk, si].every(m => m.dnaCoding.replace(/T/g, 'U') === m.mrna));
 check('Sickle changes codon 6 Glu -> Val; the synonymous change alters codon 3 (CUG -> CUU) and keeps Leu', CODE[codon(wt, 6)] === 'Glu' && CODE[codon(sk, 6)] === 'Val' && codon(si, 3) !== codon(wt, 3) && CODE[codon(si, 3)] === CODE[codon(wt, 3)] && codon(si, 6) === codon(wt, 6));
 check('Sickle mutation GAG -> GUG swaps Glu6 to hydrophobic Val6 and triggers HbS polymerisation', !wt.polymerisesDeoxy && sk.polymerisesDeoxy && sk.codon6 === 'GUG' && !si.polymerisesDeoxy);
+const kho = M.khoranaTripletCombinatorics(4, 3);
+check('Khorana triplet dictionary: 4^3 = 64 codons (61 sense + 3 stop) and Photo 51 pitch = 3.4 nm (BNID 103777)', kho.totalWords === 64 && kho.senseCodons === 61 && kho.photo51PitchNm === 3.4);
+const realDna = M.chargaffHelixAccount(0.8, 30, false);
+const buggyDna = M.chargaffHelixAccount(0.8, 30, true);
+const buggyMut = M.betaGlobinMutationAccount('silent', true);
+check('Buggy-world counterfactual removes G-C triple H-bond stabilization and synonymous codon degeneracy', realDna.totalHBonds === 84 && buggyDna.totalHBonds === 60 && buggyMut.polymerisesDeoxy === true);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual removes G-C triple H-bond stabilization and synonymous codon degeneracy', () => {
-  const realDna = chargaffHelixAccount(0.8, 30, false);
-  const buggyDna = chargaffHelixAccount(0.8, 30, true);
-  const buggyMut = betaGlobinMutationAccount('silent', true);
-  return realDna.totalHBonds === 84 && buggyDna.totalHBonds === 60 && buggyMut.polymerisesDeoxy === true;
-});

@@ -284,3 +284,67 @@ export function sankeyChart({ stages, links, w = 420, h = 190, nodeW = 10, pad =
     <rect class="frame" x="${P.l}" y="${P.t}" width="${w - P.l - P.r}" height="${h - P.t - P.b}"/>${ribbonSvg}${nodeSvg}${masks.join('')}${texts.join('')}
   </svg>`;
 }
+
+// ---------- Stepped 2D SVG cinematography (geometric-zoom viewBox framing & constant-speed arc-length beads) ----------
+// Interpolates center linearly and width/height geometrically (2D analogue of logFovLerp) so 5x zoom-ins feel uniform.
+export function interpViewBox(boxA, boxB = boxA, u = 0) {
+  const t = clamp(u, 0, 1);
+  const [x0, y0, w0, h0] = boxA;
+  const [x1, y1, w1, h1] = boxB || boxA;
+  const cx = (x0 + w0 * 0.5) + ((x1 + w1 * 0.5) - (x0 + w0 * 0.5)) * t;
+  const cy = (y0 + h0 * 0.5) + ((y1 + h1 * 0.5) - (y0 + h0 * 0.5)) * t;
+  const w = Math.exp(Math.log(Math.max(1e-6, w0)) * (1 - t) + Math.log(Math.max(1e-6, w1)) * t);
+  const h = Math.exp(Math.log(Math.max(1e-6, h0)) * (1 - t) + Math.log(Math.max(1e-6, h1)) * t);
+  return `${(cx - w * 0.5).toFixed(1)} ${(cy - h * 0.5).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
+}
+
+// Mutates svg[data-stage="key"] viewBox in place at 60fps across sheet elements without re-parsing SVG.
+export function focusViewBox(sheets, key, boxA, boxB = boxA, u = 0) {
+  const vb = interpViewBox(boxA, boxB, u);
+  const roots = Array.isArray(sheets) ? sheets : [sheets];
+  for (const el of roots) {
+    el?.querySelectorAll?.(`svg[data-stage="${key}"]`).forEach(svg => svg.setAttribute('viewBox', vb));
+  }
+  return vb;
+}
+
+// Samples [x, y, angleDeg] at normalized Euclidean arc-length fraction u in [0, 1) so beads travel at constant speed.
+export function samplePolyline(pts, u = 0) {
+  if (!Array.isArray(pts) || !pts.length) return [0, 0, 0];
+  if (pts.length === 1) return [pts[0][0], pts[0][1], 0];
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) {
+    cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  const total = cum.at(-1);
+  if (total < 1e-9) return [pts[0][0], pts[0][1], 0];
+  const d = (((u % 1) + 1) % 1) * total;
+  let seg = 0;
+  while (seg < pts.length - 2 && cum[seg + 1] < d) seg++;
+  const segLen = Math.max(1e-9, cum[seg + 1] - cum[seg]);
+  const f = clamp((d - cum[seg]) / segLen, 0, 1);
+  const ax = pts[seg][0], ay = pts[seg][1], bx = pts[seg + 1][0], by = pts[seg + 1][1];
+  const deg = (Math.atan2(by - ay, bx - ax) * 180) / Math.PI;
+  return [ax + (bx - ax) * f, ay + (by - ay) * f, deg];
+}
+
+export function beadSlots(key, count = 6, r = 3.2) {
+  return `<g class="svg-beads" data-beads="${esc(key)}">${Array.from({ length: count }, () => `<circle class="svg-bead" r="${r}"/>`).join('')}</g>`;
+}
+
+// Statelessly positions <g data-beads="key"> circles along pts at phaseOffset (order-independent for ?render seeking).
+export function pathBeads(sheets, key, pts, phaseOffset = 0) {
+  const roots = Array.isArray(sheets) ? sheets : [sheets];
+  for (const el of roots) {
+    el?.querySelectorAll?.(`g[data-beads="${key}"]`).forEach(g => {
+      const dots = g.querySelectorAll('circle');
+      const n = dots.length;
+      if (!n) return;
+      dots.forEach((c, idx) => {
+        const [x, y] = samplePolyline(pts, idx / n + phaseOffset);
+        c.setAttribute('cx', x.toFixed(1));
+        c.setAttribute('cy', y.toFixed(1));
+      });
+    });
+  }
+}

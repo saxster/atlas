@@ -58,6 +58,7 @@ export const PLATES = {
   },
   fitness_surface: {
     text: '3D adaptive fitness surface W(x, y): without antibiotics the wild-type peak is tallest; adding antibiotic collapses the wild-type peak so variants near the resistant peak can leave more descendants.',
+    facts: s => [['Grant 1977 S', `+${s.finch.selectionDifferentialMm.toFixed(2)} mm`], ['Heritability h²', `${s.finch.heritabilityH2.toFixed(2)}`], ['1978 response R', `+${s.finch.evolutionaryResponseMm.toFixed(2)} mm`]],
   },
   xerophyte_crypt: {
     text: 'Desert xerophyte (*Nerium oleander* / marram grass): thick waxy cuticle, rolled leaf, and sunken stomatal crypts lined with trichome hairs that trap a humid boundary layer to slash transpiration.',
@@ -70,7 +71,7 @@ export const PLATES = {
     facts: s => [['s_malaria', `${(s.malariaS * 100).toFixed(0)}%`], ['Equilibrium q*', `${(s.bal.qEquilibrium * 100).toFixed(1)}%`]],
   },
   sahni_strata: {
-    text: 'Schematic fossil strata: undisturbed lower layers are usually older. Sahni described Pentoxyleae in1948 as Jurassic; relevant Rajmahal material was later dated Early Cretaceous. Fossil features and sequences provide complementary evidence with uncertainty.',
+    text: 'Schematic fossil strata: undisturbed lower layers are usually older. Sahni described Pentoxyleae in 1948 as Jurassic; relevant Rajmahal material was later dated Early Cretaceous. Fossil features and sequences provide complementary evidence with uncertainty.',
   },
 };
 
@@ -123,7 +124,8 @@ export const CHAPTER = {
     const resPct = 100 * resistantSurvivors / (susceptibleSurvivors + resistantSurvivors);
     const buggy = Boolean(p.buggyWorld);
     const bal = M.balancingSelectionAccount(malariaS, 0.80, 0.15, buggy);
-    return { t, buggy, abDose, malariaS, resPct: buggy ? 100 * abDose : resPct, bal };
+    const finch = M.grantFinchSelectionResponse(9.42, 9.96, 0.74);
+    return { t, buggy, abDose, malariaS, resPct: buggy ? 100 * abDose : resPct, bal, finch };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -160,8 +162,8 @@ export const CHAPTER = {
     const axS = prims.axes(selAsm, { x: [0, 14], y: [0, 1050], size: [2.0, 1.65, 0.5] });
     prims.plot(selAsm, t => M.logisticColonyAccount(t).nLog, { axes: axS, samples: 40, color: 'green', width: 0.064 });
     const logDot = part(selAsm, sphere(0.075, 14), { pal: 'ochre', tone: 'lit', name: 'Colony population state N(t)' });
-    label('board', 'Petri dish selection', () => V(-0.95, 1.85, 0), { leader: [-24, -18] });
-    label('board', 'Logistic K = 1000', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
+    label('board', 'Petri dish selection', () => V(-1.3, 1.95, 0), { leader: true, anchor: () => V(-0.95, 0.55, 0) });
+    label('board', 'Logistic K = 1000', () => V(1.9, 2.3, -0.3), { leader: true, anchor: () => V(1.3, 1.45, -0.3) });
 
     // Station 1 (x = 14): Sewall Wright 3D Fitness Landscape
     const fitAsm = asm('fitness_surface', root, { title: '3D Evolutionary fitness surface W(x, y)', sub: 'Wild-type vs resistant adaptive peaks' });
@@ -170,7 +172,7 @@ export const CHAPTER = {
     const surfF = prims.surface(fitAsm, (x, y) => M.fitnessLandscapeHeight(x, y, 0.75), { axes: axF, n: 26, pal: 'ochre' });
     const popPin = part(fitAsm, sphere(0.1, 16), { pal: 'red', tone: 'lit', name: 'Mean population phenotype' });
     const popDrop = rod(fitAsm, { r: 0.015, pal: 'red', tone: 'mid', name: 'Fitness altitude projection' });
-    label('board', 'Adaptive fitness peaks', () => V(14.1, 2.25, -0.6), { leader: [-24, 18] });
+    label('board', 'Adaptive fitness peaks', () => V(14.4, 2.4, -0.6), { leader: true, anchor: () => V(14.0, 1.55, -0.6) });
 
     // Station 2 (x = 28): Xerophyte Sunken Crypt vs Hydrophyte Aerenchyma Leaf
     const xeroAsm = asm('xerophyte_crypt', root, { title: 'Xerophyte sunken stomatal crypt', sub: 'Thick cuticle + humid trichome pocket' });
@@ -189,8 +191,8 @@ export const CHAPTER = {
       part(hydroAsm, sphere(0.22, 16), { pal: 'paper', tone: 'lit', pos: [sx, 0, 0], ex: [0, 0.45, 0], name: 'Buoyant aerenchyma air sac' });
       part(hydroAsm, torus(0.08, 0.024, 8, 16), { pal: 'green', tone: 'lit', pos: [sx, 0.44, 0], rot: [Math.PI / 2, 0, 0], ex: [0, 0.55, 0], name: 'Upper-epidermis stomatal pore' });
     }
-    label('board', 'Xerophyte sunken crypt', () => V(27.0, 2.25, 0), { leader: [24, -18] });
-    label('board', 'Hydrophyte aerenchyma', () => V(29.0, 2.25, 0), { leader: [-24, 18] });
+    label('board', 'Xerophyte sunken crypt', () => V(26.6, 2.35, 0), { leader: true, anchor: () => V(27.0, 1.65, 0) });
+    label('board', 'Hydrophyte aerenchyma', () => V(29.4, 2.35, 0), { leader: true, anchor: () => V(29.0, 1.65, 0) });
 
     // Station 3 (x = 42): Haldane Balancing Selection Curve & Sahni Fossil Strata
     const balAsm = asm('balancing_curve', root, { title: 'Heterozygote advantage w̄(q)', sub: 'Peaks at equilibrium q* = s₁/(s₁+s₂)' });
@@ -211,8 +213,8 @@ export const CHAPTER = {
     }
     part(sahAsm, capsule(0.07, 0.35, 8, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.25, 0.44], rot: [0, 0, 1.25], ex: [0.35, 0.08, 0.25], name: 'Glossopteris tongue-leaf fossil' });
     part(sahAsm, cyl(0.08, 0.38, 12), { pal: 'paper', tone: 'lit', pos: [0, 0.75, 0.44], rot: [0, 0, 1.4], ex: [0.35, 0.22, 0.25], name: 'Pentoxylon gymnosperm stem fossil' });
-    label('board', 'Equilibrium q* peak', () => V(40.5, 2.25, -0.3), { leader: [-28, -22] });
-    label('board', 'Sahni fossil strata', () => V(43.2, 1.95, 0), { leader: [28, 22] });
+    label('board', 'Equilibrium q* peak', () => V(40.2, 2.35, -0.3), { leader: true, anchor: () => V(40.9, 1.45, -0.3) });
+    label('board', 'Sahni fossil strata', () => V(43.6, 2.1, 0), { leader: true, anchor: () => V(43.2, 1.35, 0) });
 
     return {
       labels,

@@ -15,11 +15,10 @@ check('With no selection on either homozygote there is no defined equilibrium (n
 const w0 = M.fitnessLandscapeHeight(-0.65, 0, 0);
 const w1 = M.fitnessLandscapeHeight(0.65, 0, 1);
 check('Antibiotic shift moves the global fitness peak from the wild-type (-0.65) to the resistant mutant (+0.65)', w0 > M.fitnessLandscapeHeight(0.65, 0, 0) && w1 > M.fitnessLandscapeHeight(-0.65, 0, 1));
+const finch = M.grantFinchSelectionResponse(9.42, 9.96, 0.74);
+check('HHMI Grant Daphne Major 1977 drought: R = h^2 * S shifts Geospiza fortis beak depth by +0.40 mm', Math.abs(finch.selectionDifferentialMm - 0.54) < 1e-9 && Math.abs(finch.predictedResponseMm - 0.74 * 0.54) < 1e-9);
+const realBal = M.balancingSelectionAccount(0.20, 0.80, 0.20, false);
+const buggyBal = M.balancingSelectionAccount(0.20, 0.80, 0.20, true);
+check('Buggy-world counterfactual eliminates heterozygote advantage so equilibrium HbS allele frequency collapses to 0', Math.abs(realBal.qEquilibrium - 0.20) < 1e-6 && buggyBal.qEquilibrium === 0);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual eliminates heterozygote advantage so equilibrium HbS allele frequency collapses to 0', () => {
-  const real = balancingSelectionAccount(0.20, 0.80, 0.20, false);
-  const buggy = balancingSelectionAccount(0.20, 0.80, 0.20, true);
-  return Math.abs(real.qEquilibrium - 0.20) < 1e-6 && buggy.qEquilibrium === 0;
-});

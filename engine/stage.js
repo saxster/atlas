@@ -310,7 +310,7 @@ export function draggable(target, opts = {}) {
 // chapter: { PAGES, buildWorld(E), lookKeys, state(clock, reduced), medium?, quirk?, forceLook?(selected, look), clock0? }
 // opts: { reduced, touch, theme (see parts.js applyTheme), medium, quirk, dprCap }
 // hooks (assign after creating): onHover(key | null), onSelect(key | null), onPointerDown(), onDrag(spec, pt)
-export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, medium = null, quirk = null, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
+export function createStage(canvas, labelsEl, chapter, { reduced = false, touch = false, theme = null, medium = null, quirk = null, transparent = false, dprCap, frameParts = false, labelTopInset = () => 24, retainContext = false } = {}) {
   const { PAGES } = chapter;
   const N = PAGES.length;
   const urlParams = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
@@ -323,7 +323,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     document.documentElement.dataset.quirk = activeQuirk.id;
     document.documentElement.dataset.medium = activeMedium;
   }
-  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, theme: theme || chapter.theme || null, medium: activeMedium, quirk: activeQuirk.id, retainContext });
+  const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, transparent: Boolean(transparent || chapter.transparent), theme: theme || chapter.theme || null, medium: activeMedium, quirk: activeQuirk.id, retainContext });
   E.draggable = draggable;
   const W = chapter.buildWorld(E);
   E.setMedium(activeMedium);                     // apply headlight/poche uniforms to newly built world meshes
@@ -456,7 +456,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   const relight = () => E.setLit(externLit || hovered || selected || litOverride || pageLit);
   function hoverExtern(keys = null, { isolate = false } = {}) {
     externLit = keys || null;
-    externIso = keys && isolate ? keys : null;
+    externIso = keys && isolate ? (isolate === 'wash' ? { keys, mode: 'wash' } : keys) : null;
     if (externIso) E.setIsolate(externIso);
     else E.setIsolate(lastLook?.isolate ?? null);
     relight();

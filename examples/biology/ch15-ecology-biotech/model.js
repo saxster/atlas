@@ -21,3 +21,10 @@ export function fermenterBiotechAccount(tempC = 37, aerationPct = 85) {
   const insulinYieldMgL = 420 * tFactor * o2Factor;
   return { tempC, aerationPct, tFactor, o2Factor, insulinYieldMgL };
 }
+
+// Reference J (MacArthur & Wilson 1967 island species-area S = c * A^z & Paine 1966 Pisaster keystone diversity):
+export function islandSpeciesAreaAccount(areaMultiplier = 10, zExponent = 0.30, pisasterPresent = true) {
+  const speciesRatio = Math.pow(Math.max(0.01, areaMultiplier), zExponent);
+  const intertidalSpeciesRichness = pisasterPresent ? 15 : 8;
+  return { areaMultiplier, zExponent, speciesRatio, pisasterPresent, intertidalSpeciesRichness };
+}

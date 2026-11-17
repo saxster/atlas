@@ -4,7 +4,7 @@
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
 import { createStage, smooth, ease, clamp01, mountShareButton } from './stage.js';
-import { bindProse } from './prose.js';
+import { bindProse, foilCard } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
 import { renderComicStripHTML } from './comic.js';
 
@@ -160,7 +160,8 @@ export function startBook(chapter) {
   const prologueHtml = i => (i === 0 && chapter.PROLOGUE_STRIP) ? renderComicStripHTML(chapter.PROLOGUE_STRIP) : '';
   const openerHtml = i => PAGES[i].openerStrip ? renderComicStripHTML(PAGES[i].openerStrip) : '';
   const closerHtml = i => PAGES[i].closerStrip ? renderComicStripHTML(PAGES[i].closerStrip) : '';
-  const sheetHtml = i => { const p = PAGES[i]; return `${prologueHtml(i)}<div class="kicker">${p.kicker ?? p.fig ?? ''}</div><h1>${p.title ?? p.tab ?? ''}</h1>${openerHtml(i)}<div class="sub">${p.sub ?? p.alt ?? ''}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body ?? ''}${partsHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${closerHtml(i)}${turnHtml(i)}`; };
+  const foilHtml = i => PAGES[i].foil ? foilCard(PAGES[i].foil, { currentDir: DIR }) : '';
+  const sheetHtml = i => { const p = PAGES[i]; return `${prologueHtml(i)}<div class="kicker">${p.kicker ?? p.fig ?? ''}</div><h1>${p.title ?? p.tab ?? ''}</h1>${openerHtml(i)}<div class="sub">${p.sub ?? p.alt ?? ''}</div>${moleculeHtml(i)}${specimenHtml(i)}${p.body ?? ''}${partsHtml(i)}${foilHtml(i)}${xrefHtml(i)}${practiceHtml(i)}${closerHtml(i)}${turnHtml(i)}`; };
   // answering: click a choice, check a numeric answer, or check a dragged 3D target position
   const markRight = (q, item) => {
     q.classList.add('done');

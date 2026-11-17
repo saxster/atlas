@@ -292,6 +292,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
         theme: readTheme(stage),
         quirk: q.id,
         medium: opts.medium || chapter.medium || q.medium,
+        transparent: Boolean(opts.transparent || chapter.transparent),
         dprCap: 2,
         frameParts: true,
         labelTopInset: () => title.offsetHeight || 24,
@@ -359,10 +360,13 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     );
   }
 
-  // The book's frames; dt > 0 means it is playing
+  // The book's frames; dt > 0 means it is playing. Skip WebGL redraws while scrolled completely out of view.
+  let inViewport = true, hasInitialDraw = false;
   api.loop((dt, t) => {
     lastT = t;
     if (dt > 0) hostAt = performance.now();
+    if (!inViewport && hasInitialDraw) return;
+    hasInitialDraw = true;
     draw(dt, dt > 0);
   });
 
@@ -378,7 +382,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     raf = 0;
     const dt = ownLast ? Math.min((ts - ownLast) / 1000, 0.05) : 1 / 60;
     ownLast = ts;
-    if (performance.now() - hostAt > 120) draw(dt, false);
+    if (inViewport && performance.now() - hostAt > 120) draw(dt, false);
     if (performance.now() < kickUntil || S?.dragging || Math.abs(page - sPos) > 0.005) {
       raf = requestAnimationFrame(own);
     } else {
@@ -402,7 +406,8 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
   const resizeObs = new ResizeObserver(kick);
   resizeObs.observe(wrap);
   const visibilityObs = new IntersectionObserver(entries => {
-    if (entries.some(entry => entry.isIntersecting)) kick();
+    for (const entry of entries) inViewport = entry.isIntersecting;
+    if (inViewport) kick();
   });
   visibilityObs.observe(wrap);
   window.addEventListener('resize', kick, { passive: true });

@@ -64,9 +64,10 @@ export const PLATES = {
   },
   stroma_glucose: {
     text: 'Aqueous stroma housing RuBisCO and the carbon-fixation cycle, which uses ATP and NADPH to supply small three-carbon products. Later reactions can make glucose; the molecule shown is an overall summary product.',
+    facts: s => [['RuBisCO sites', `${s.rub.activeSites} (L₈S₈)`], ['Holoenzyme rate', `${s.rub.holoenzymeRatePerSec.toFixed(1)} CO₂/s`], ['Leaf protein share', `${(s.rub.leafProteinShare * 100).toFixed(0)}%`]],
   },
   blackman_surf: {
-    text: 'Invented bottleneck model: gross rate is the minimum of chosen light, CO₂ and temperature capacities. The peak at25 °C and respiratory baseline10 are teaching assumptions, not measured universal plant properties.',
+    text: 'Invented bottleneck model: gross rate is the minimum of chosen light, CO₂ and temperature capacities. The peak at 25 °C and respiratory baseline 10 are teaching assumptions, not measured universal plant properties.',
     facts: s => [['Gross', `${s.bm.gross.toFixed(0)}`], ['Net', `${s.bm.net.toFixed(0)}`], ['Limiter', s.bm.limiting]],
   },
   palisade_layer: {
@@ -129,7 +130,8 @@ export const CHAPTER = {
     const st = M.photosynthesisStoichiometry(1);
     const bm = M.blackmanSurface(p.lightCap, p.co2Cap, p.leafTempC, buggy);
     const sap = M.vascularSapAccount(p.humidityPct ?? 45, p.lightCap);
-    return { t, buggy, st, bm, sap, lightCap: p.lightCap, co2Cap: p.co2Cap, leafTempC: p.leafTempC };
+    const rub = M.rubiscoKineticsAccount(8, 3.3, 0.25);
+    return { t, buggy, st, bm, sap, rub, lightCap: p.lightCap, co2Cap: p.co2Cap, leafTempC: p.leafTempC };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -166,8 +168,8 @@ export const CHAPTER = {
     part(jarAsm, cyl(0.68, 1.9, 24), { pal: 'paper', tone: 'mid', pos: [0, 0.95, 0], mat: shadeMat('paper', { opacity: 0.38 }), name: 'Inverted glass funnel & tube' });
     part(jarAsm, capsule(0.18, 0.65, 8, 14), { pal: 'green', tone: 'lit', pos: [0, 0.55, 0], ex: [0, -0.3, 0], name: 'Submerged Hydrilla shoot' });
     const o2Bubbles = prims.particles(jarAsm, 20, { radius: 0.048, color: 'blue' });
-    label('board', '372 g In = 372 g Out', () => V(-1.1, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'O₂ bubble plume', () => V(1.1, 2.35, 0), { leader: [24, 18] });
+    label('board', '372 g In = 372 g Out', () => V(-1.4, 2.45, 0), { leader: true, anchor: () => V(-1.1, 1.65, 0) });
+    label('board', 'O₂ bubble plume', () => V(1.4, 2.45, 0), { leader: true, anchor: () => V(1.1, 1.55, 0) });
 
     // Station 1 (x = 14): 3D Chloroplast Cutaway + Glucose Molecule
     const envAsm = asm('chloro_envelope', root, { title: 'Chloroplast double envelope', sub: 'Outer & inner membranes' });
@@ -189,8 +191,8 @@ export const CHAPTER = {
     const gluAsm = asm('stroma_glucose', root, { title: 'Glucose summary product', sub: 'Made through later reactions' });
     gluAsm.position.set(15.5, 1.35, 0);
     prims.molecule(gluAsm, MOLECULES.glucose.atoms.map(a => a.join(' ')).join('\n'), { scale: 0.22, names: false });
-    label('board', 'Thylakoid grana', () => V(13.5, 2.35, 0), { leader: [-24, 18] });
-    label('board', 'Glucose product', () => V(15.5, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Thylakoid grana', () => V(13.1, 2.45, 0), { leader: true, anchor: () => V(13.5, 1.55, 0) });
+    label('board', 'Glucose product', () => V(15.9, 2.45, 0), { leader: true, anchor: () => V(15.5, 1.55, 0) });
 
     // Station 2 (x = 28): Blackman 3D Limiting-Factor Surface
     const bmAsm = asm('blackman_surf', root, { title: 'Blackman 3D limiting surface', sub: 'r = min(Light, CO₂, Temp)' });
@@ -199,7 +201,7 @@ export const CHAPTER = {
     const surfB = prims.surface(bmAsm, (L, C) => M.blackmanSurface(L, C, 25).gross, { axes: axB, n: 24, pal: 'green' });
     const bmPin = part(bmAsm, sphere(0.095, 16), { pal: 'red', tone: 'lit', name: 'Current operating state' });
     const bmDrop = rod(bmAsm, { r: 0.016, pal: 'red', tone: 'mid', name: 'Operating rate projection line' });
-    label('board', 'Blackman surface r(L, CO₂)', () => V(28.1, 2.25, -0.6), { leader: [-24, 18] });
+    label('board', 'Blackman surface r(L, CO₂)', () => V(28.4, 2.45, -0.6), { leader: true, anchor: () => V(28.0, 1.55, -0.6) });
 
     // Station 3 (x = 42): 3D Dicot Leaf Cross-Section + Guard Stoma + Xylem/Phloem
     const palAsm = asm('palisade_layer', root, { title: 'Cuticle, epidermis & palisade mesophyll', sub: 'Solar collector slab' });
@@ -227,8 +229,8 @@ export const CHAPTER = {
     for (const sy of [-0.45, 0.0, 0.45]) {
       part(vascAsm, cyl(0.21, 0.03, 18), { pal: 'ochre', tone: 'lit', pos: [0.28, sy, 0], ex: [0.45, 0, 0.2], name: 'Perforated phloem sieve plate' });
     }
-    label('board', 'Palisade & stoma', () => V(41.2, 2.45, 0), { leader: [24, 18] });
-    label('board', 'Xylem & Phloem', () => V(43.1, 2.45, 0), { leader: [-24, -18] });
+    label('board', 'Palisade & stoma', () => V(40.8, 2.55, 0), { leader: true, anchor: () => V(41.2, 1.85, 0) });
+    label('board', 'Xylem & Phloem', () => V(43.5, 2.55, 0), { leader: true, anchor: () => V(43.1, 1.85, 0) });
 
     return {
       labels,

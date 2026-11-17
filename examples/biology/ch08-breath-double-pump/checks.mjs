@@ -16,11 +16,10 @@ check('A left-to-right shunt adds pulmonary flow (Qp = CO x 1.5 at 50%) without 
 check('Cardiac output CO = HR * SV = 5.04 L/min at rest and systemic peak (120 mmHg) >> pulmonary (25 mmHg)', Math.abs(dp.coLPerMin - 5.04) < 1e-9 && dp.sysPeakMmHg > dp.pulmPeakMmHg * 4);
 const lev = M.bicepLeverAccount(90, 40, 4.0, 32.0);
 check('Biceps third-class lever requires 8x hand load (320 N tension for 40 N load at 90 deg)', Math.abs(lev.bicepTensionN - 320) < 1e-9);
+const harv = M.harveyThroughputAccount(1000, 4, 3.888);
+check('Harvey (1628) Ch IX: 4 drachms/beat x 1000 beats in 30 min = ~15.55 kg (>3x total blood volume)', harv.halfHourMassKg > 15.5 && harv.alveoliMeanMillions === 480);
+const realDp = M.doublePumpAccount(72, 70, 0, false);
+const buggyDp = M.doublePumpAccount(72, 70, 0, true);
+check('Buggy-world counterfactual collapses LV/RV wall ratio to 1 and systemic pressure to 25 mmHg', realDp.wallRatioLvToRv === 3.0 && realDp.sysPeakMmHg === 120 && buggyDp.wallRatioLvToRv === 1.0 && buggyDp.sysPeakMmHg === 25);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual collapses LV/RV wall ratio to 1 and systemic pressure to 25 mmHg', () => {
-  const real = doublePumpAccount(72, 70, 0, false);
-  const buggy = doublePumpAccount(72, 70, 0, true);
-  return real.wallRatioLvToRv === 3.0 && real.sysPeakMmHg === 120 && buggy.wallRatioLvToRv === 1.0 && buggy.sysPeakMmHg === 25;
-});

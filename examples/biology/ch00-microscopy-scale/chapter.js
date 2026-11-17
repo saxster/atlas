@@ -62,8 +62,8 @@ export const PLATES = {
     text: 'Hand-beaten twin brass plates clamping the tiny spherical soda-lime glass bead between aligned pinhole apertures.',
   },
   bead_lens: {
-    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1) and working distance BFL = f − R; smaller radius gives greater magnification in this ideal ball-lens model; usable magnification also depends on resolving detail.',
-    facts: s => [['f', `${s.fMm.toFixed(2)} mm`], ['BFL', `${s.bflMm.toFixed(2)} mm`], ['M', `${s.mag.toFixed(0)}×`], ['d_min', `${s.dMinNm.toFixed(0)} nm`]],
+    text: 'Spherical glass bead lens: radius R sets focal length f = nR / 2(n − 1) and working distance BFL = f − R; smaller radius gives greater magnification in this ideal ball-lens model (used in both Leeuwenhoek’s 1674 brass paddle and Manu Prakash’s 2014 origami Foldscope); usable magnification also depends on resolving detail.',
+    facts: s => [['f', `${s.fMm.toFixed(2)} mm`], ['BFL', `${s.bflMm.toFixed(2)} mm`], ['M', `${s.mag.toFixed(0)}×`], ['d_min', `${s.dMinNm.toFixed(0)} nm`], ['Foldscope (R=1.2mm)', `${s.foldscope.mag.toFixed(0)}× (~${s.foldscope.resolutionUm.toFixed(1)} µm)`]],
   },
   specimen_screw: {
     text: 'Threaded focus and elevation screws position the specimen relative to the lens; the chosen focal length changes with the lens-radius control.',
@@ -128,7 +128,8 @@ export const CHAPTER = {
     const dMinNm = M.rayleighLimitNm(550, Math.min(0.85, 0.35 + 0.3 / p.lensRadiusMm));
     const buggy = Boolean(p.buggyWorld);
     const trap = M.swanNeckSporeCapture(p.neckDipMm, 1.5, 1.4, buggy);
-    return { t, lensRadiusMm: p.lensRadiusMm, fMm, bflMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: buggy || p.tiltFlask > 0.5, buggy, trap };
+    const foldscope = M.foldscopeComparison(1.2, 1.52);
+    return { t, lensRadiusMm: p.lensRadiusMm, fMm, bflMm, mag, dMinNm, neckDipMm: p.neckDipMm, tilted: buggy || p.tiltFlask > 0.5, buggy, trap, foldscope };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -137,7 +138,7 @@ export const CHAPTER = {
       return `${modeTag}<b>Redi’s Controlled Jars</b> · Open jar: flies enter → larvae on meat · Gauze jar: scent plume escapes, flies lay eggs on mesh only (0 larvae on meat) · Sealed jar: air & flies excluded.`;
     }
     if (idx === 1) {
-      return `${modeTag}<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm (working clearance BFL = ${s.bflMm.toFixed(2)} mm) · Magnification <b>${s.mag.toFixed(0)}×</b> · Ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm.`;
+      return `${modeTag}<b>Bead radius R = ${s.lensRadiusMm.toFixed(2)} mm</b> · Focal length f = ${s.fMm.toFixed(2)} mm (working clearance BFL = ${s.bflMm.toFixed(2)} mm) · Magnification <b>${s.mag.toFixed(0)}×</b> · Ideal-optics estimate d_min ≈ ${s.dMinNm.toFixed(0)} nm (Prakash 1.2 mm Foldscope benchmark: ${s.foldscope.mag.toFixed(0)}×, ~${s.foldscope.resolutionUm.toFixed(1)} µm).`;
     }
     if (idx === 2) {
       const status = s.tilted ? 'Tipped broth contacts trapped contamination; cloudiness represents subsequent growth under suitable conditions' : 'Upright bend keeps settled dust away from the broth in this schematic; the trapping estimate is illustrative, not a sterility prediction';
@@ -180,9 +181,9 @@ export const CHAPTER = {
       const pCloud = prims.particles(g, 10, { radius: 0.045, color: 'ink' });
       flyClouds.push({ lid: j.lid, cloud: pCloud });
     }
-    label('board', 'Open', () => V(-1.8, 2.15, 0), { leader: [-20, -16] });
-    label('board', 'Gauze mesh', () => V(0.0, 2.15, 0), { leader: [0, -22] });
-    label('board', 'Sealed', () => V(1.8, 2.15, 0), { leader: [20, -16] });
+    label('board', 'Open', () => V(-2.2, 2.25, 0), { leader: true, anchor: () => V(-1.8, 1.55, 0) });
+    label('board', 'Gauze mesh', () => V(0.0, 2.35, 0), { leader: true, anchor: () => V(0.0, 1.65, 0) });
+    label('board', 'Sealed', () => V(2.2, 2.25, 0), { leader: true, anchor: () => V(1.8, 1.62, 0) });
 
     // Station 1 (x = 14): Leeuwenhoek's Brass Microscope & Bead Lens
     const plateAsm = asm('brass_plate', root, { title: 'Twin brass plates', sub: 'Hand-beaten frame' });
@@ -204,7 +205,7 @@ export const CHAPTER = {
     part(screwAsm, cyl(0.06, 1.3, 16), { pal: 'dark', tone: 'hi', pos: [0, 0, 0], ex: [0, -0.4, 0.3], name: 'Lead screw' });
     part(screwAsm, box(0.42, 0.12, 0.24, 0.02), { pal: 'ochre', tone: 'mid', pos: [0, 0.45, -0.05], ex: [0, -0.2, 0.25], name: 'Threaded specimen bracket' });
     part(screwAsm, sphere(0.11, 16), { pal: 'green', tone: 'hi', pos: [0, 0.9, -0.1], ex: [0, 0.25, 0.3], name: 'Pond-water drop' });
-    label('board', 'Glass bead lens', () => V(14, 2.25, 0.15), { leader: [36, -24] });
+    label('board', 'Glass bead lens', () => V(14.5, 2.45, 0.15), { leader: true, anchor: () => V(14, 1.75, 0.15) });
 
     // Station 2 (x = 28): Pasteur's Swan-Neck Flask
     const flaskAsm = asm('flask_bulb', root, { title: 'Boiled broth bulb', sub: 'Sterile nutrient reservoir' });
@@ -223,7 +224,7 @@ export const CHAPTER = {
     const tippedSlug = part(neckAsm, sphere(0.14, 14), { pal: 'red', tone: 'hi', pos: [1.55, -0.42, 0], ex: [0.5, 0.2, 0], name: 'Tipped broth contacting trapped dust' });
     const brothMaterials = { clear: shadeMat('ochre'), cloudy: shadeMat('red') };
     const sporeParticles = prims.particles(neckAsm, 18, { radius: 0.04, color: 'red' });
-    label('board', 'Settled spores in dip', () => V(29.65, 1.4, 0), { leader: [38, 22] });
+    label('board', 'Settled spores in dip', () => V(30.2, 2.0, 0), { leader: true, anchor: () => V(29.65, 1.4, 0) });
 
     // Station 3 (x = 42): Logarithmic Scale Ladder & Real Water Molecule Cluster
     const molAsm = asm('water_mol', root, { title: 'H₂O Hydrogen-bond cluster', sub: '0.28 nm molecular scale' });
@@ -250,8 +251,8 @@ export const CHAPTER = {
         part(towerAsm, rbcGeo(0.16, 0), { pal: 'red', tone: 'lit', pos: [st.x, st.h + 0.12, 0], rot: [0.45, 0, 0], ex: [0, 0.5, 0], name: 'Biconcave RBC disc (8 µm)' });
       }
     }
-    label('board', 'Water: molecular scale', () => V(40.6, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'Size-order columns', () => V(42.8, 2.55, 0), { leader: [24, -18] });
+    label('board', 'Water: molecular scale', () => V(40.1, 2.45, 0), { leader: true, anchor: () => V(40.6, 1.65, 0) });
+    label('board', 'Size-order columns', () => V(43.4, 2.65, 0), { leader: true, anchor: () => V(42.8, 1.9, 0) });
 
     return {
       labels,

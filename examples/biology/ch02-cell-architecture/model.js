@@ -23,3 +23,12 @@ export function specialistShapeFactor(kind = 'rbc') {
   if (kind === 'roothair') return { name: 'Root hair cell', savBoost: 3.15, maxPathUm: 6.5 };
   return { name: 'Myelinated motor neurone', savBoost: 2.2, maxPathUm: 8.0 };
 }
+
+// Reference J (Sender, Fuchs & Milo 2016 / BioNumbers BNID 109716 reference human cell census):
+export function humanCellCensus(bodyMassKg = 70) {
+  const scale = Math.max(0.2, bodyMassKg / 70);
+  const totalHumanCells = 3.0e13 * scale;
+  const rbcCount = 2.5e13 * scale;
+  const rbcFraction = rbcCount / totalHumanCells;
+  return { bodyMassKg, totalHumanCells, rbcCount, rbcFraction };
+}

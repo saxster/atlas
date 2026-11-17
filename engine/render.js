@@ -117,6 +117,15 @@ const toKeySet = keys => {
   return new Set(String(keys).split(',').map(s => s.trim()).filter(Boolean));
 };
 
+// Pure normal-pass tone classifier: excludes ghosted shells (_isolatedDim / high _xray / noEdge) so interior lit
+// parts keep crisp ink outlines, and shifts paper-washed assemblies (_isolatedWash) into the +2.0 alpha band while
+// preserving exact sub-bucket idOff seam offsets.
+export function normalPassTone(o) {
+  if (!o || o.userData?.noEdge || o.userData?._isolatedDim === 1 || (o.userData?._xray || 0) > 0.45) return null;
+  const base = (o.userData?.tone ?? TONE.mid) + (o.userData?.idOff ?? 0);
+  return o.userData?._isolatedWash === 1 ? 2.0 + base : base;
+}
+
 // Assembly controller: manages named 3D subsystems (ASM), lit/hover tones (single or multi-target),
 // section clipping planes (setCutaway), translucent housing ghosting (setXray), subsystem isolation (setIsolate),
 // and spring-damped exploded views. Pure Three.js scene-graph logic (no WebGL context required).
@@ -140,8 +149,9 @@ export function createAssemblyController(ASM = {}) {
   const syncMeshAppearance = m => {
     const on = !!m.userData.lit;
     const dim = !!m.userData._isolatedDim;
+    const wash = !!m.userData._isolatedWash;
     const xr = m.userData._xray || 0;
-    m.userData.tone = on ? TONE.lit : (dim || xr > 0.05) ? TONE.faint : m.userData.baseTone;
+    m.userData.tone = on ? TONE.lit : (dim || wash || xr > 0.05) ? TONE.faint : m.userData.baseTone;
     if (dim || xr > 0 || m.userData._ownMat) {
       const mat = ensureOwnMat(m);
       const op = dim ? 0.14 : (1 - 0.78 * xr);
@@ -199,13 +209,17 @@ export function createAssemblyController(ASM = {}) {
       }
     }
   }
-  function setIsolate(keyOrKeys = null) {
-    isolatedSet = toKeySet(keyOrKeys);
+  function setIsolate(keyOrKeys = null, opts = {}) {
+    const isSpec = keyOrKeys && typeof keyOrKeys === 'object' && !(keyOrKeys instanceof Set) && !Array.isArray(keyOrKeys);
+    const rawKeys = isSpec ? keyOrKeys.keys : keyOrKeys;
+    const mode = (isSpec ? keyOrKeys.mode : opts?.mode) === 'wash' ? 'wash' : 'ghost';
+    isolatedSet = toKeySet(rawKeys);
     const active = isolatedSet.size > 0;
     for (const [k, g] of Object.entries(ASM)) {
-      const dim = active && !isolatedSet.has(k) ? 1 : 0;
+      const off = active && !isolatedSet.has(k) ? 1 : 0;
       for (const m of meshesOf(g)) {
-        m.userData._isolatedDim = dim;
+        m.userData._isolatedDim = mode === 'ghost' ? off : 0;
+        m.userData._isolatedWash = mode === 'wash' ? off : 0;
         syncMeshAppearance(m);
       }
     }
@@ -246,13 +260,15 @@ export function createAssemblyController(ASM = {}) {
 
 // theme: a host book's colours ({ sheet, ink, red?, blue?, … }, see parts.js applyTheme); without one, the atlas's paper
 // quirk: design expressiveness preset ('bland' [0.0] -> 'atelier' [0.25] -> 'slightly-quirky' [0.5, default] -> 'playful' [0.75] -> 'wild' [1.0])
-export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', theme = null, medium = null, quirk = DEFAULT_QUIRK, retainContext = false } = {}) {
+export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#fbfbfa', transparent = false, theme = null, medium = null, quirk = DEFAULT_QUIRK, retainContext = false } = {}) {
   const th = applyTheme(theme);
   let curQuirk = resolveQuirk(quirk);
-  const bgLinear = new THREE.Color(th ? th.sheet : bg).convertSRGBToLinear();
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
+  const isTransparent = Boolean(transparent || bg === 'transparent');
+  const sheetHex = th ? th.sheet : (bg === 'transparent' ? '#fbfbfa' : bg);
+  const bgLinear = new THREE.Color(sheetHex).convertSRGBToLinear();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: isTransparent, premultipliedAlpha: true, preserveDrawingBuffer: true });
   renderer.resetState();
-  renderer.setClearColor(bgLinear);
+  renderer.setClearColor(bgLinear, isTransparent ? 0 : 1);
   renderer.localClippingEnabled = true;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(fov, 1, near, far);
@@ -314,14 +330,16 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
       tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null },
       uRes: { value: new THREE.Vector2() }, uPx: { value: 1 }, cameraNear: { value: near }, cameraFar: { value: far },
       uInk: { value: (th ? th.inks : ATLAS_INKS).map(c => new THREE.Color(c)) },
+      uPaper: { value: new THREE.Color(sheetHex) },
+      uTransparent: { value: isTransparent ? 1 : 0 },
       uMedium: { value: 0 }, uBoil: { value: 0 }, uQuirk: { value: curQuirk.level },
     },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: `
       #include <packing>
       uniform sampler2D tDiffuse, tNormal, tDepth;
-      uniform vec2 uRes; uniform float uPx, cameraNear, cameraFar, uMedium, uBoil, uQuirk;
-      uniform vec3 uInk[5];
+      uniform vec2 uRes; uniform float uPx, cameraNear, cameraFar, uMedium, uBoil, uQuirk, uTransparent;
+      uniform vec3 uInk[5]; uniform vec3 uPaper;
       varying vec2 vUv;
 
       float hash21(vec2 p) {
@@ -340,7 +358,18 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
         return (vec2(vnoise(q), vnoise(q + 5.2)) - 0.5) * 2.0 * amp * uPx / uRes;
       }
       float vz(vec2 uv){ return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, cameraNear, cameraFar); }
-      vec3 ink(float tone){ int i = int(clamp(floor(tone * 5. - 0.5), 0., 4.)); return uInk[i]; }
+      float rawTone(float a){ return a > 1.5 ? a - 2.0 : a; }
+      vec3 ink(float tone){ float rt = rawTone(tone); int i = int(clamp(floor(rt * 5. - 0.5), 0., 4.)); return tone > 1.5 ? mix(uInk[0], uPaper, 0.35) : uInk[i]; }
+      vec3 applyWash(vec3 c, float a){
+        if (a <= 1.5) return c;
+        float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        return mix(mix(c, vec3(lum), 0.72), uPaper, 0.76);
+      }
+      vec4 composeOut(vec3 surf, vec3 inkCol, float edgeAmt, bool isFg){
+        float ea = clamp(edgeAmt, 0.0, 1.0);
+        if (uTransparent > 0.5 && !isFg) return vec4(inkCol * ea, ea);
+        return vec4(mix(surf, inkCol, ea), 1.0);
+      }
 
       vec2 edgeSample(vec2 uv, float pxScale) {
         vec4 n0 = texture2D(tNormal, uv); float z0 = vz(uv);
@@ -354,7 +383,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
           else if (a0) {
             float crease = smoothstep(0.12, 0.3, 1. - dot(n0.rgb * 2. - 1., n1.rgb * 2. - 1.));
             float gap = smoothstep(0.004, 0.012, abs(z0 - z1) / max(0.001, min(z0, z1)));
-            float id0 = fract(n0.a * 5.0 - 0.5), id1 = fract(n1.a * 5.0 - 0.5);
+            float id0 = fract(rawTone(n0.a) * 5.0 - 0.5), id1 = fract(rawTone(n1.a) * 5.0 - 0.5);
             float seam = smoothstep(0.015, 0.035, abs(id0 - id1)) * 0.86;
             ek = max(max(crease, gap), seam);
           }
@@ -413,7 +442,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
           vec2 es2 = edgeSample(vUv - wildWob * 0.65, 0.9);
           float e = clamp(max(es1.x, es2.x * 0.7), 0.0, 1.0);
           float tone = es1.x >= es2.x * 0.7 ? es1.y : es2.y;
-          gl_FragColor = vec4(mix(col, ink(tone), e * 0.98), 1.);
+          gl_FragColor = composeOut(applyWash(col, nCenter.a), ink(tone), e * 0.98, fg);
           return;
         }
 
@@ -431,7 +460,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
           float press = mix(1.0, 0.72 + 0.36 * vnoise(fp / max(1.0, uPx * 36.0) + uBoil), clamp(qScale, 0.0, 1.0));
           float e = clamp(max(es1.x, es2.x * 0.58 * clamp(qScale, 0.0, 1.0)) * press, 0.0, 1.0);
           float tone = es1.x >= es2.x * 0.58 ? es1.y : es2.y;
-          gl_FragColor = vec4(mix(col, ink(tone), e * 0.92), 1.);
+          gl_FragColor = composeOut(applyWash(col, nCenter.a), ink(tone), e * 0.92, fg);
           return;
         }
 
@@ -451,7 +480,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
             col = mix(col, uInk[3], h);
           }
           vec2 es = edgeSample(vUv + disp, 1.15);
-          gl_FragColor = vec4(mix(col, ink(es.y), es.x * 0.96), 1.);
+          gl_FragColor = composeOut(applyWash(col, nCenter.a), ink(es.y), es.x * 0.96, fg);
           return;
         }
 
@@ -472,7 +501,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
             col = mix(col, paper, 0.58);
           }
           vec2 es = edgeSample(vUv + wob(fp, uBoil, 0.45 * max(0.0, qScale - 0.5)), 1.0);
-          gl_FragColor = vec4(mix(col, ink(es.y), es.x * 0.96), 1.);
+          gl_FragColor = composeOut(applyWash(col, nCenter.a), ink(es.y), es.x * 0.96, fg);
           return;
         }
 
@@ -481,10 +510,10 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
         vec2 subWob = uQuirk > 0.12 ? wob(fp, uBoil, 0.45 * uQuirk) : vec2(0.0);
         vec2 es = edgeSample(vUv + subWob, 1.0);
         vec3 edgeCol = ink(es.y);
-        if (uMedium > 0.5 && uMedium < 1.5) {
+        if (uMedium > 0.5 && uMedium < 1.5 && es.y <= 1.5) {
           edgeCol = mix(base * 0.48, edgeCol, 0.28);
         }
-        gl_FragColor = vec4(mix(base, edgeCol, es.x * 0.95), 1.);
+        gl_FragColor = composeOut(applyWash(base, nCenter.a), edgeCol, es.x * 0.95, fg);
       }`,
   });
   edges.material.extensions = { ...(edges.material.extensions || {}), derivatives: true };
@@ -494,7 +523,7 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   composer.addPass(new OutputPass());
 
   const MEDIUM_BG = {
-    'paper-ink': bg,
+    'paper-ink': sheetHex,
     ciechanow: '#f8f8f8',
     'pencil-wash': '#faf7ef',
     moebius: '#f6f4ee',
@@ -505,7 +534,9 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
     const mName = MEDIUMS.includes(nextMedium) ? nextMedium : curQuirk.medium;
     curMedium = mName;
     if (!th) {
-      renderer.setClearColor(new THREE.Color(MEDIUM_BG[mName] || bg).convertSRGBToLinear());
+      const mHex = MEDIUM_BG[mName] || sheetHex;
+      renderer.setClearColor(new THREE.Color(mHex).convertSRGBToLinear(), isTransparent ? 0 : 1);
+      edges.uniforms.uPaper.value.set(mHex);
     }
     const id = MEDIUM_ID[mName] ?? 0;
     edges.uniforms.uMedium.value = id;
@@ -560,14 +591,23 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
       if (!o.visible) return;
       if (o.isLine || o.isLineSegments || o.isPoints || o.isSprite || o.userData.noEdge) { swap.push([o, null]); o.visible = false; return; }
       if (o.isMesh) {
+        const t = normalPassTone(o);
+        if (t === null) { swap.push([o, null]); o.visible = false; return; }
         swap.push([o, o.material]);
-        const t = (o.userData.tone ?? TONE.mid) + (o.userData.idOff ?? 0);
-        o.material = normalMat(t, o.material?.clippingPlanes);
+        const customN = o.userData?.normalMat;
+        if (customN) {
+          if (customN.uniforms?.uTone) customN.uniforms.uTone.value = t;
+          o.material = customN;
+        } else {
+          o.material = normalMat(t, o.material?.clippingPlanes);
+        }
       }
     });
     renderer.setRenderTarget(normalRT); renderer.setClearColor(0x000000, 0); renderer.clear();
     renderer.render(scene, camera);
-    renderer.setRenderTarget(null); renderer.setClearColor(bgLinear, 1);
+    renderer.setRenderTarget(null);
+    const activeHex = !th ? (MEDIUM_BG[curMedium] || sheetHex) : sheetHex;
+    renderer.setClearColor(new THREE.Color(activeHex).convertSRGBToLinear(), isTransparent ? 0 : 1);
     for (const [o, m] of swap) { if (m) o.material = m; else o.visible = true; }
     composer.render();
   }
@@ -638,7 +678,13 @@ export function createEngine(canvas, { fov = 18, near = 0.1, far = 400, bg = '#f
   function toScreen(p, w, h) { v.copy(p).project(camera); return [(v.x * 0.5 + 0.5) * w, (-v.y * 0.5 + 0.5) * h, v.z < 1]; }
 
   function dispose() {
-    scene.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.geometry) o.geometry.dispose(); const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach(x => x.dispose()); });
+    scene.traverse(o => {
+      if (o.isInstancedMesh) o.dispose();
+      if (o.geometry) o.geometry.dispose();
+      if (o.userData?.normalMat) o.userData.normalMat.dispose();
+      const m = o.material;
+      if (m) (Array.isArray(m) ? m : [m]).forEach(x => x.dispose());
+    });
     for (const m of nmats.values()) m.dispose();
     normalRT.dispose(); colorRT.dispose(); composer.dispose?.();
     renderer.setRenderTarget(null); renderer.dispose();

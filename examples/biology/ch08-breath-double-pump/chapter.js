@@ -61,6 +61,7 @@ export const PLATES = {
   },
   double_figure8: {
     text: 'Mammalian figure-eight double circulation: right heart supplies a lower-pressure lung circuit; left heart supplies a higher-pressure body circuit. Arterial pressures are about 25/8 and 120/80 mmHg; pressure falls before capillaries.',
+    facts: s => [['Harvey 30-min bound', `${s.harvey.ejectedKg.toFixed(1)} kg (1,000 beats)`], ['Adult alveoli', `${(s.harvey.alveoliCount / 1e6).toFixed(0)} million`]],
   },
   venous_valve: {
     text: 'William Harvey’s 1628 proof: semilunar pocket valves inside veins open toward the heart and snap shut against backflow when pressed distally.',
@@ -134,7 +135,8 @@ export const CHAPTER = {
     const boyle = M.thoracicBoyleAccount(t * 2.1, 0.5, 2.5);
     const dp = M.doublePumpAccount(p.heartRateBpm, 70, p.vsdShuntPct, buggy);
     const lev = M.bicepLeverAccount(p.elbowDeg, 40);
-    return { t, buggy, boyle, dp, lev, heartRateBpm: p.heartRateBpm, vsdShuntPct: p.vsdShuntPct, elbowDeg: p.elbowDeg };
+    const harvey = M.harveyThroughputAccount(1000, 4, 3.888);
+    return { t, buggy, boyle, dp, lev, harvey, heartRateBpm: p.heartRateBpm, vsdShuntPct: p.vsdShuntPct, elbowDeg: p.elbowDeg };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -184,8 +186,8 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       part(alvAsm, torus(0.61, 0.045, 10, 24), { pal: i < 2 ? 'red' : 'blue', tone: 'hi', rot: [i * 0.78, i * 0.5, 0], ex: [0.35, 0, 0], name: 'Pulmonary capillary loop' });
     }
-    label('board', 'Thorax & diaphragm', () => V(-0.9, 0.15, 0), { leader: [-24, -18] });
-    label('board', 'Alveolus + capillaries', () => V(1.15, 0.10, 0), { leader: [24, 18] });
+    label('board', 'Thorax & diaphragm', () => V(-1.3, 0.15, 0), { leader: true, anchor: () => V(-0.9, 0.65, 0) });
+    label('board', 'Alveolus + capillaries', () => V(1.5, 0.10, 0), { leader: true, anchor: () => V(1.15, 0.85, 0) });
 
     // Station 1 (x = 14): Double Circulation Figure-8 & Venous Pocket Valve
     const fig8Asm = asm('double_figure8', root, { title: 'Figure-eight double circulation', sub: 'Pulmonary (top) & Systemic (bottom) loops' });
@@ -200,8 +202,8 @@ export const CHAPTER = {
     part(valveAsm, cyl(0.45, 1.5, 22), { pal: 'blue', tone: 'mid', mat: shadeMat('blue', { opacity: 0.4 }), name: 'Vein wall' });
     part(valveAsm, box(0.38, 0.42, 0.06, 0.02), { pal: 'ochre', tone: 'lit', pos: [-0.14, 0, 0], rot: [0, 0, -0.45], ex: [-0.35, 0.25, 0], name: 'Left valve cusp' });
     part(valveAsm, box(0.38, 0.42, 0.06, 0.02), { pal: 'ochre', tone: 'lit', pos: [0.14, 0, 0], rot: [0, 0, 0.45], ex: [0.35, 0.25, 0], name: 'Right valve cusp' });
-    label('board', 'Figure-8 double loop', () => V(13.1, 2.35, 0), { leader: [-24, 18] });
-    label('board', 'Venous valve cusps', () => V(15.2, 2.35, 0), { leader: [24, -18] });
+    label('board', 'Figure-8 double loop', () => V(12.7, 2.45, 0), { leader: true, anchor: () => V(13.1, 1.85, 0) });
+    label('board', 'Venous valve cusps', () => V(15.6, 2.45, 0), { leader: true, anchor: () => V(15.2, 1.55, 0) });
 
     // Station 2 (x = 28): 3D Four-Chambered Heart Cutaway
     const rvAsm = asm('right_ventricle', root, { title: 'Right atrium & right ventricle', sub: 'Deoxygenated pump to lungs (25 mmHg)' });
@@ -224,8 +226,8 @@ export const CHAPTER = {
       part(sepAsm, torus(0.09, 0.03), { pal: 'ochre', tone: 'hi', pos: [x, 0.30, 0.60], name: x < 0 ? 'Pulmonary valve symbol' : 'Aortic valve symbol' });
     }
     const vsdJet = part(sepAsm, cyl(0.045, 0.38, 12), { pal: 'red', tone: 'lit', pos: [0, -0.1, 0.25], rot: [0, 0, Math.PI / 2], ex: [0, 0.35, 0.35], name: 'Left-to-right VSD shunt stream' });
-    label('board', 'RA → RV (25 mmHg peak)', () => V(26.9, 0.4, 0.2), { leader: [-24, 18] });
-    label('board', 'LA → LV (120 mmHg peak)', () => V(29.1, 0.4, 0.2), { leader: [24, 18] });
+    label('board', 'RA → RV (25 mmHg peak)', () => V(26.6, 0.35, 0.2), { leader: true, anchor: () => V(27.55, 1.15, 0.2) });
+    label('board', 'LA → LV (120 mmHg peak)', () => V(29.3, 0.35, 0.2), { leader: true, anchor: () => V(28.35, 1.15, 0.2) });
 
     // Station 3 (x = 42): Artery/Vein/Capillary Trio + Antagonistic Arm Lever
     const vesAsm = asm('vessel_trio', root, { title: 'Artery, Vein & Capillary walls', sub: 'Cross-sectional wall-to-lumen ratios' });
@@ -243,8 +245,8 @@ export const CHAPTER = {
     const bicepBelly = rod(armAsm, { r: 0.085, pal: 'red', tone: 'lit', name: 'Biceps brachii flexor' });
     const tricepBelly = rod(armAsm, { r: 0.065, pal: 'ochre', tone: 'mid', name: 'Triceps brachii extensor' });
     const handWeight = part(armAsm, sphere(0.16, 16), { pal: 'ink', tone: 'lit', name: '40 N Hand load' });
-    label('board', 'Artery · Vein · Capillary', () => V(40.7, 2.25, 0), { leader: [-24, -18] });
-    label('board', 'Biceps / Triceps lever', () => V(43.2, 2.35, 0), { leader: [24, 18] });
+    label('board', 'Artery · Vein · Capillary', () => V(40.3, 2.35, 0), { leader: true, anchor: () => V(40.7, 1.55, 0) });
+    label('board', 'Biceps / Triceps lever', () => V(43.6, 2.45, 0), { leader: true, anchor: () => V(42.9, 1.65, 0) });
 
     return {
       labels,

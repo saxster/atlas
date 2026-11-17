@@ -37,3 +37,10 @@ export function ramachandranEnergy(phiDeg = -60, psiDeg = -45) {
   const e = 12 * (1 - 0.78 * Math.exp(-dAlpha * dAlpha) - 0.72 * Math.exp(-dBeta * dBeta));
   return { phiDeg, psiDeg, energyKj: e, allowed: e < 5.5 };
 }
+
+// Reference J (David Goodsell cytoplasm crowding BNID 105938 ~250 mg/mL & Carbonic Anhydrase k_cat ~6e5 s^-1 BNID 101646):
+export function goodsellCrowdingAndTurnover(proteinMgPerMl = 250, kcatPerSec = 6e5, uncatalysedPerSec = 0.15) {
+  const volumeFractionOccupied = Math.min(0.45, Math.max(0.05, proteinMgPerMl / 1000));
+  const rateEnhancement = kcatPerSec / Math.max(1e-6, uncatalysedPerSec);
+  return { proteinMgPerMl, volumeFractionOccupied, kcatPerSec, uncatalysedPerSec, rateEnhancement };
+}

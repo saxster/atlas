@@ -48,6 +48,24 @@ export function atpTurnoverSchedule(poolG = 50, dailyTurnoverG = 40000) {
   return { poolG, dailyTurnoverG, poolEquivalentsPerDay, minutesPerCycle };
 }
 
+// Harvard BioVisions / BioNumbers (BNID 101502) & Noji, Yasuda, Yoshida & Kinosita (Nature, 1997):
+// Kinesin-1 takes 1 discrete 8 nm centre-of-mass step per hydrolysed ATP; F1-ATPase steps 120° per ATP (3 ATP per 360° turn).
+export const KINESIN_STEP_NM = 8;
+export const F1_STEP_DEG = 120;
+
+export function kinesinWalkState(atpHydrolysed = 100, stepsPerSec = 100, buggyWorld = false) {
+  const nAtp = Math.max(0, atpHydrolysed);
+  if (buggyWorld) {
+    // Buggy-world myth: ATP hydrolysed in bulk solution beside the motor produces 0 directed steps
+    return { nAtp, distanceNm: 0, velocityNmPerSec: 0, f1Revolutions: 0, f1AngleDeg: 0, buggyWorld: true };
+  }
+  const distanceNm = nAtp * KINESIN_STEP_NM;
+  const velocityNmPerSec = Math.max(0, stepsPerSec) * KINESIN_STEP_NM;
+  const f1AngleDeg = nAtp * F1_STEP_DEG;
+  const f1Revolutions = f1AngleDeg / 360;
+  return { nAtp, distanceNm, velocityNmPerSec, f1Revolutions, f1AngleDeg, buggyWorld: false };
+}
+
 export function capsidTriangulation(h = 2, k = 1) {
   const hi = Math.max(0, h | 0), ki = Math.max(0, k | 0);
   const T = hi * hi + hi * ki + ki * ki;

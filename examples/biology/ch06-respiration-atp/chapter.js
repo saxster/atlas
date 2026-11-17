@@ -67,7 +67,8 @@ export const PLATES = {
     facts: s => [['Relay',s.rel.chainActive?'Available':'Stalled'],['ATP yield','Not calculated']],
   },
   respirometer_chamber: {
-    text: 'Sealed respirometer with a laboratory CO₂ absorber that absorb evolved CO₂, so a controlled change in gas volume can support an oxygen-uptake measurement after accounting for temperature, pressure, leaks and apparatus calibration; historical laboratory apparatus, not a home activity.',
+    text: 'Sealed respirometer with a laboratory CO₂ absorber that absorbs evolved CO₂, so a controlled change in gas volume can support an oxygen-uptake measurement after accounting for temperature, pressure, leaks and apparatus calibration; historical laboratory apparatus, not a home activity.',
+    facts: s => [['RQ (glucose)', `${s.rq.rq.toFixed(2)}`], ['10 kg fat → CO₂', `${s.fat.co2OutKg} kg (${(s.fat.exhaledFractionOfFat * 100).toFixed(1)}%)`], ['10 kg fat → H₂O', `${s.fat.h2oOutKg} kg`]],
   },
   atp_yield_bars: {
     text: 'Two pathway markers: glycolysis supplies two net ATP per glucose in the taught route; the membrane relay can supply additional ATP. Marker height is not an ATP count and no universal ratio is assigned.',
@@ -121,15 +122,17 @@ export const CHAPTER = {
     const t = reduced ? 1.5 : clock;
     const buggy = Boolean(p.buggyWorld);
     const rel = M.aerobicRelayAccount(p.o2Supply, p.demandLevel, buggy);
-    return { t, buggy, rel, o2Supply: p.o2Supply, demandLevel: p.demandLevel };
+    const rq = M.respiratoryQuotientLedger('glucose', 1);
+    const fat = M.fatOxidationMassLedger(10);
+    return { t, buggy, rel, rq, fat, o2Supply: p.o2Supply, demandLevel: p.demandLevel };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
     const modeTag = s.buggy ? '<b>[Buggy World Myth]</b> · ' : '';
-    const scope='Manual schematic: no measured rotation speed, oxygen-dose curve or total ATP yield. Activity changes animation only.';
-    if (idx === 0)return `${modeTag}<b>Mitochondrial compartments</b> · ${s.rel.status}. Carbon processing in the matrix and electron transfer at the inner membrane follow separate routes. ${scope}`;
-    if (idx === 1)return `${modeTag}<b>Membrane energy relay</b> · ${s.rel.status}. Electron transfer supports H⁺ export; controlled return drives rotor/shaft motion and catalytic shape changes. ${scope}`;
-    if (idx === 2)return `${modeTag}<b>Gas measurements and cellular pathways</b> · A controlled respirometer can infer O₂ uptake when CO₂ is absorbed. Glycolysis supplies 2 net ATP in the taught route; additional membrane-linked ATP has no fixed yield here. ${scope}`;
+    const scope = 'Manual schematic: no measured rotation speed, oxygen-dose curve or total ATP yield. Activity changes animation only.';
+    if (idx === 0) return `${modeTag}<b>Mitochondrial compartments</b> · ${s.rel.status}. Carbon processing in the matrix and electron transfer at the inner membrane follow separate routes. ${scope}`;
+    if (idx === 1) return `${modeTag}<b>Membrane energy relay</b> · ${s.rel.status}. Electron transfer supports H⁺ export; controlled return drives rotor/shaft motion and catalytic shape changes. ${scope}`;
+    if (idx === 2) return `${modeTag}<b>Gas measurements and cellular pathways</b> · A controlled respirometer can infer O₂ uptake when CO₂ is absorbed. Glycolysis supplies 2 net ATP in the taught route; additional membrane-linked ATP has no fixed yield here. ${scope}`;
     return `${modeTag}<b>Carrier recycling and root gas routes</b> · ${s.rel.status}. Yeast can form ethanol and CO₂; muscle lactate formation restores NAD⁺ without releasing CO₂ in that route. Lactate can form with oxygen present and be reused. Rice gas spaces improve delivery; no survival time is predicted. ${scope}`;
   },
   buildWorld(E) {
@@ -157,8 +160,8 @@ export const CHAPTER = {
     for (const ang of [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]) {
       part(krebsWheel, sphere(0.065, 12), { pal: 'ochre', tone: 'lit', pos: [0.32 * Math.cos(ang), 0.32 * Math.sin(ang), 0], name: 'Reduced carrier (NADH/FADH₂)' });
     }
-    label('board', 'Cristae folds', () => V(0, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'Krebs cycle', () => V(0, 0.55, 0.75), { leader: [24, 18] });
+    label('board', 'Cristae folds', () => V(-0.4, 2.45, 0), { leader: true, anchor: () => V(0, 1.65, 0) });
+    label('board', 'Krebs cycle', () => V(0.55, 0.45, 0.75), { leader: true, anchor: () => V(0, 1.15, 0.45) });
 
     // Station 1 (x = 14): ETC Complexes I-IV + Rotary F0F1 ATP Synthase
     const etcAsm = asm('etc_complexes', root, { title: 'Electron Transport Chain (I–IV)', sub: 'NADH → O₂ proton pumps' });
@@ -172,8 +175,8 @@ export const CHAPTER = {
 
     const turbAsm = asm('f0f1_turbine', root, { title: 'Rotary F₀F₁ ATP Synthase', sub: 'Proton-motive molecular rotor' });
     const synth = buildAtpSynthase(turbAsm, { x0: 15.1, y0: 1.35, z0: 0, scale: 1.05 });
-    label('board', 'Complexes I–IV & H⁺', () => V(12.9, 2.35, 0), { leader: [-24, 18] });
-    label('board', 'F₀F₁ rotor', () => V(15.1, 2.5, 0), { leader: [24, -18] });
+    label('board', 'Complexes I–IV & H⁺', () => V(12.5, 2.45, 0), { leader: true, anchor: () => V(12.9, 1.55, 0) });
+    label('board', 'F₀F₁ rotor', () => V(15.5, 2.6, 0), { leader: true, anchor: () => V(15.1, 1.75, 0) });
 
     // Station 2 (x = 28): Respirometer and qualitative ATP-pathway markers
     const respAsm = asm('respirometer_chamber', root, { title: 'Respirometer chamber', sub: 'Controlled gas-volume inference' });
@@ -189,8 +192,8 @@ export const CHAPTER = {
     barAsm.position.set(29.0, 0.1, 0);
     const aeroBar = part(barAsm, box(0.55, 0.8, 0.55, 0.04), { pal: 'green', tone: 'lit', pos: [-0.42, 0.4, 0], ex: [-0.3, 0.3, 0], name: 'Membrane-linked ATP pathway' });
     part(barAsm, box(0.55, 0.8, 0.55, 0.03), { pal: 'red', tone: 'hi', pos: [0.42, 0.4, 0], ex: [0.3, 0.2, 0], name: 'Glycolysis: two net ATP' });
-    label('board', 'KOH Respirometer', () => V(27.0, 2.15, 0), { leader: [-24, 18] });
-    label('board', 'Two ATP pathways', () => V(29.0, 2.4, 0), { leader: [24, 18] });
+    label('board', 'KOH Respirometer', () => V(26.6, 2.3, 0), { leader: true, anchor: () => V(27.0, 1.45, 0) });
+    label('board', 'Two ATP pathways', () => V(29.4, 2.5, 0), { leader: true, anchor: () => V(29.0, 0.85, 0) });
 
     // Station 3 (x = 42): Fermentation & Flooded Rice Root Aerenchyma
     const yeastAsm = asm('yeast_fermenter', root, { title: 'Yeast & muscle fermentation', sub: 'Carrier recycling; distinct products' });
@@ -205,8 +208,8 @@ export const CHAPTER = {
       const a = (i * Math.PI) / 3;
       part(aerAsm, cyl(0.14, 1.85, 14), { pal: 'blue', tone: 'lit', pos: [0.42 * Math.cos(a), 0, 0.42 * Math.sin(a)], ex: [0.3 * Math.cos(a), 0.3, 0.3 * Math.sin(a)], name: 'Aerenchyma air channel' });
     }
-    label('board', 'Anaerobic vessel', () => V(40.9, 2.05, 0), { leader: [-24, -18] });
-    label('board', 'Root aerenchyma', () => V(42.9, 2.3, 0), { leader: [24, 18] });
+    label('board', 'Anaerobic vessel', () => V(40.5, 2.2, 0), { leader: true, anchor: () => V(40.9, 1.35, 0) });
+    label('board', 'Root aerenchyma', () => V(43.3, 2.45, 0), { leader: true, anchor: () => V(42.9, 1.65, 0) });
 
     return {
       labels,

@@ -71,6 +71,7 @@ export const PLATES = {
   },
   villus_epithelium: {
     text: 'One-cell-thick columnar epithelium crowned with a microscopic microvilli brush border (20× area boost) and mucus-secreting goblet cells.',
+    facts: s => [['Small intestine', `${s.muc.smallIntestineM2.toFixed(1)} m²`], ['Total gut mucosa', `${s.muc.totalGutM2.toFixed(1)} m²`]],
   },
   capillary_bed: {
     text: 'After selective transport across epithelial cells, glucose and amino acids cross tissue fluid into capillaries and travel in portal blood to the liver. Sodium-coupled uptake occurs at the epithelial membrane, not at a capillary pump.',
@@ -126,7 +127,8 @@ export const CHAPTER = {
     const enz = M.regionalEnzymeRates(p.lumenPh, buggy);
     const em = M.bileEmulsificationAccount(p.bileSplit, 120, buggy);
     const vil = M.villusAbsorptionFlux(20, 250);
-    return { t, buggy, enz, em, vil, lumenPh: p.lumenPh, bileSplit: p.bileSplit };
+    const muc = M.mucosalSurfaceAmplification(0.33, 3, 4.5, 6.7);
+    return { t, buggy, enz, em, vil, muc, lumenPh: p.lumenPh, bileSplit: p.bileSplit };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -165,7 +167,7 @@ export const CHAPTER = {
     const bolAsm = asm('food_bolus', root, { title: 'Lubricated food bolus', sub: 'Propelled along gut lumen' });
     bolAsm.position.set(0, 1.35, 0);
     const bolusMesh = part(bolAsm, sphere(0.36, 20), { pal: 'ochre', tone: 'lit', ex: [0, -0.45, 0], name: 'Chyme bolus' });
-    label('board', 'Circular muscle rings', () => V(0, 2.25, 0), { leader: [-24, -18] });
+    label('board', 'Circular muscle rings', () => V(-0.4, 2.35, 0), { leader: true, anchor: () => V(0, 1.65, 0) });
 
     // Station 1 (x = 14): Regional pH Curves + Gastric Mucus Shield
     const phAsm = asm('ph_curves', root, { title: 'Regional pH enzyme activity curves', sub: 'Pepsin (1.8), Amylase (6.8), Lipase (8.0)' });
@@ -183,8 +185,8 @@ export const CHAPTER = {
     for (const [hx, hz] of [[-0.25, 0.15], [0.05, -0.18], [0.28, 0.12]]) {
       part(mucAsm, sphere(0.065, 12), { pal: 'red', tone: 'lit', pos: [hx, 0.42, hz], ex: [0, 0.55, 0], name: 'Lumen H⁺ acid blocked by mucus' });
     }
-    label('board', 'Pepsin · Amylase · Lipase', () => V(13.7, 2.15, -0.3), { leader: [24, 18] });
-    label('board', 'Mucus barrier', () => V(15.5, 1.85, 0), { leader: [-24, 18] });
+    label('board', 'Pepsin · Amylase · Lipase', () => V(12.2, 2.55, -0.3), { leader: true, anchor: () => V(13.5, 1.45, -0.3) });
+    label('board', 'Mucus barrier', () => V(15.9, 0.35, 0.2), { leader: true, anchor: () => V(15.5, 0.95, 0) });
 
     // Station 2 (x = 28): Bile Emulsification Droplets + Lipase Blob
     const bileAsm = asm('bile_droplets', root, { title: 'Emulsified lipid droplets', sub: 'k³ droplets multiply surface area k×' });
@@ -201,8 +203,8 @@ export const CHAPTER = {
     lipAsm.position.set(29.1, 1.35, 0);
     lipAsm.rotation.y = Math.PI;
     prims.blob(lipAsm, { r: 0.62, subdiv: 3, seed: 23, pal: 'blue', cleft: 0.55, name: 'Pancreatic lipase' });
-    label('board', 'Fat droplets', () => V(27.3, 2.35, 0), { leader: [24, -18] });
-    label('board', 'Pancreatic lipase', () => V(29.1, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'Fat droplets', () => V(26.9, 2.45, 0), { leader: true, anchor: () => V(27.3, 1.65, 0) });
+    label('board', 'Pancreatic lipase', () => V(29.5, 2.45, 0), { leader: true, anchor: () => V(29.1, 1.65, 0) });
 
     // Station 3 (x = 42): 3D Intestinal Villus Teardown
     const epAsm = asm('villus_epithelium', root, { title: 'One-cell-thick brush-border epithelium', sub: 'Microvilli & goblet cells' });
@@ -220,8 +222,8 @@ export const CHAPTER = {
     const lacAsm = asm('central_lacteal', root, { title: 'Central lymphatic lacteal', sub: 'Chylomicron fats → Thoracic duct' });
     lacAsm.position.set(42, 1.32, 0);
     part(lacAsm, capsule(0.13, 0.95, 10, 18), { pal: 'green', tone: 'lit', ex: [0, -0.45, 0.45], name: 'Central lacteal vessel' });
-    label('board', 'Brush-border dome', () => V(42, 2.55, 0), { leader: [24, 18] });
-    label('board', 'Capillaries & Lacteal', () => V(42, 0.3, 0.85), { leader: [-24, -18] });
+    label('board', 'Brush-border dome', () => V(42.4, 2.65, 0), { leader: true, anchor: () => V(42, 2.15, 0) });
+    label('board', 'Capillaries & Lacteal', () => V(41.4, 0.25, 0.85), { leader: true, anchor: () => V(42, 0.85, 0.35) });
 
     return {
       labels,

@@ -31,3 +31,9 @@ export function vascularSapAccount(humidityPct = 50, light = 60) {
   const phloemSucroseFlux = Math.max(0, (light - 15) * 0.45);
   return { vpd, stomatalAperture, xylemVelocityMmPerMin, phloemSucroseFlux };
 }
+
+// Reference J (RuBisCO turnover ~3.3 s^-1 per active site, BNID 100022 & global abundance ~0.7 Gt):
+export function rubiscoKineticsAccount(activeSites = 8, kcatPerSiteSec = 3.3, o2CompetitionFrac = 0.22) {
+  const carboxylationPerHoloenzymeSec = activeSites * kcatPerSiteSec * (1 - Math.max(0, Math.min(0.8, o2CompetitionFrac)));
+  return { activeSites, kcatPerSiteSec, o2CompetitionFrac, carboxylationPerHoloenzymeSec };
+}

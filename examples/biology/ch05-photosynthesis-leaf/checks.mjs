@@ -17,11 +17,10 @@ check('Blackman law of limiting factors identifies the exact minimum ceiling', b
 const sapDry = M.vascularSapAccount(20, 80);
 const sapHumid = M.vascularSapAccount(90, 80);
 check('Lower ambient humidity increases VPD and xylem transpiration pull', sapDry.xylemVelocityMmPerMin > sapHumid.xylemVelocityMmPerMin * 4);
+const rub = M.rubiscoKineticsAccount(8, 3.3, 0.25);
+check('RuBisCO L8S8 holoenzyme (BNID 100022, ~3.3 s^-1/site) fixes ~19.8 CO2/s after 25% photorespiration', Math.abs(rub.carboxylationPerHoloenzymeSec - 19.8) < 1e-9);
+const realBm = M.blackmanSurface(100, 10, 25, false);
+const buggyBm = M.blackmanSurface(100, 10, 25, true);
+check('Buggy-world counterfactual replaces Blackman min bottleneck with additive average', realBm.gross === 10 && buggyBm.gross > 60);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual replaces Blackman min bottleneck with additive average', () => {
-  const real = blackmanSurface(100, 10, 25, false);
-  const buggy = blackmanSurface(100, 10, 25, true);
-  return real.gross === 10 && buggy.gross > 60;
-});

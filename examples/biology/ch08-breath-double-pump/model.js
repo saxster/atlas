@@ -23,3 +23,10 @@ export function bicepLeverAccount(elbowDeg = 90, handLoadN = 40, rInsertionCm = 
   const bicepTensionN = (handLoadN * Math.sin(thRad)) / mechanicalAdvantage;
   return { elbowDeg, handLoadN, mechanicalAdvantage, bicepTensionN };
 }
+
+// Reference J (Harvey 1628 De Motu Cordis Ch. IX conservative lower-bound throughput & Ochs et al. 2004 ~480M alveoli):
+export function harveyThroughputAccount(beatsPerHalfHour = 1000, drachmsPerBeat = 1, gramPerDrachm = 3.888) {
+  const halfHourMassKg = (beatsPerHalfHour * drachmsPerBeat * gramPerDrachm) / 1000;
+  const hourlyMassKg = halfHourMassKg * 2;
+  return { beatsPerHalfHour, drachmsPerBeat, halfHourMassKg, hourlyMassKg, alveoliMeanMillions: 480 };
+}

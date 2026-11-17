@@ -15,11 +15,10 @@ const dLim = M.rayleighLimitNm(550, 0.65);
 check('Rayleigh diffraction limit at 550 nm, NA 0.65 is ~516 nm', Math.abs(dLim - (0.61 * 550) / 0.65) < 1e-9);
 const cap = M.swanNeckSporeCapture(22, 1.5, 1.5);
 check('Deep swan-neck dip traps >85% of airborne dust/spores at low airflow', cap.fractionTrapped > 0.85 && cap.fractionTrapped <= 1);
+const fold = M.foldscopeComparison(1.2, 1.52);
+check('Stanford Foldscope 1.2 mm ball lens gives ~142x magnification and ~1.5 um Rayleigh limit', fold.mag > 135 && fold.mag < 150 && fold.resolutionUm > 1.4 && fold.resolutionUm < 1.7);
+const realTrap = M.swanNeckSporeCapture(22, 1.5, 1.4, false);
+const buggyTrap = M.swanNeckSporeCapture(22, 1.5, 1.4, true);
+check('Buggy-world counterfactual zeroes Stokes spore trapping under spontaneous generation myth', realTrap.fractionTrapped > 0.8 && buggyTrap.fractionTrapped === 0 && buggyTrap.spontaneousGrowth === true);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual zeroes Stokes spore trapping under spontaneous generation myth', () => {
-  const real = swanNeckSporeCapture(22, 1.5, 1.4, false);
-  const buggy = swanNeckSporeCapture(22, 1.5, 1.4, true);
-  return real.fractionTrapped > 0.8 && buggy.fractionTrapped === 0 && buggy.spontaneousGrowth === true;
-});

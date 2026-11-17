@@ -34,3 +34,11 @@ export function swanNeckSporeCapture(neckDipMm = 18, airflowMmPerSec = 2.0, radi
   const fractionTrapped = buggyWorld ? 0 : Math.min(1, Math.max(0, 1 - Math.exp(-(dropMm / Math.max(1, neckDipMm * 0.35)) * 2.2)));
   return { vsMmPerSec: vs, transitSec, dropMm, fractionTrapped, spontaneousGrowth: Boolean(buggyWorld) };
 }
+
+// Reference J (Stanford Manu Prakash Foldscope vs Leeuwenhoek soda-lime ball lens):
+export function foldscopeComparison(radiusMm = 1.2, refIndex = 1.52) {
+  const fMm = focalLengthBallMm(radiusMm, refIndex);
+  const mag = ballLensMagnification(radiusMm, refIndex);
+  const resolutionUm = rayleighLimitNm(550, 0.22) / 1000;
+  return { radiusMm, refIndex, fMm, mag, resolutionUm };
+}

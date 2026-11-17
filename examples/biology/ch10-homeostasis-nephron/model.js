@@ -37,3 +37,10 @@ export function immuneMemoryAccount(day = 6, responseType = 'secondary', buggyWo
   return { day: d, responseType, antibodyTitre: antibodyAU(d, mem),
     peakDay: mem === 0 ? 14 : 7 };
 }
+
+// Reference J (Dilip Mahalanabis 1971 Bongaon ORS SGLT1 symport & sweat latent heat 2420 J/g):
+export function orsAndEvaporativeLedger(sweatEvapGPerHr = 335, latentJPerG = 2420) {
+  const coolingWatts = (sweatEvapGPerHr * latentJPerG) / 3600;
+  const bongaonMortalityDropPct = 30.0 - 3.6;
+  return { sweatEvapGPerHr, latentJPerG, coolingWatts, sglt1NaPerGlucose: 2, bongaonMortalityDropPct };
+}

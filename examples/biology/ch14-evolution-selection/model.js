@@ -24,3 +24,11 @@ export function fitnessLandscapeHeight(x = 0, y = 0, antibioticShift = 0) {
   const peakMutant = (0.35 + antibioticShift * 0.85) * Math.exp(-d2 * 2.2);
   return 0.15 + 1.45 * Math.max(peakWild, peakMutant);
 }
+
+// Reference J (HHMI Peter & Rosemary Grant 1977 Daphne Major Geospiza fortis beak-depth selection response R = h^2 * S):
+export function grantFinchSelectionResponse(meanBeforeMm = 9.42, meanSurvivorsMm = 9.96, heritabilityH2 = 0.74) {
+  const selectionDifferentialMm = meanSurvivorsMm - meanBeforeMm;
+  const predictedResponseMm = heritabilityH2 * selectionDifferentialMm;
+  const nextGenMeanMm = meanBeforeMm + predictedResponseMm;
+  return { meanBeforeMm, meanSurvivorsMm, heritabilityH2, selectionDifferentialMm, predictedResponseMm, nextGenMeanMm };
+}

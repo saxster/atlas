@@ -57,3 +57,11 @@ export function betaGlobinMutationAccount(mode = 'wildtype', buggyWorld = false)
     rbcShape: 'Normal biconcave disc (soluble HbA)',
   };
 }
+
+// Reference J (Rosalind Franklin Photo 51 BNID 103777 3.4 nm pitch & Khorana 4^3 = 64 triplet code):
+export function khoranaTripletCombinatorics(alphabetSize = 4, wordLength = 3) {
+  const totalWords = Math.pow(alphabetSize, wordLength);
+  const stopCodons = wordLength === 3 ? 3 : 0;
+  const senseCodons = totalWords - stopCodons;
+  return { alphabetSize, wordLength, totalWords, senseCodons, stopCodons, photo51PitchNm: 3.4 };
+}

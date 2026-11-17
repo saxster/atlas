@@ -51,6 +51,7 @@ export const PAGES = [
 export const PLATES = {
   seed_testa: {
     text: 'Protective seed coat (testa). Water enters permeable regions; the model uses a chosen opening threshold to reveal the root symbol, not a measured germination rule.',
+    facts: s => [['Dry → hydrated mass', `${s.hyd.dryTotalG} g → ${s.hyd.wetTotalG.toFixed(1)} g`], ['Water gain', `+${s.hyd.waterGainG.toFixed(1)} g`]],
   },
   cotyledons: {
     text: 'Twin embryonic seed leaves packed with starch and storage globulins that hydrate and mobilise into maltose and amino acids.',
@@ -67,10 +68,12 @@ export const PLATES = {
     facts: s => [['Captured', `${s.ox.capturedKj.toFixed(0)} kJ/mol`], ['Unassigned ΔG', `${s.ox.heatKj.toFixed(0)} kJ/mol`], ['Chosen share', `${(s.ox.efficiency * 100).toFixed(1)}%`]],
   },
   atp_molecule: {
-    text: 'ATP has three phosphate groups. The whole hydrolysis reaction, including water and product interactions, has a standard transformed free-energy change near −30.5 kJ/mol. Breaking a bond alone requires energy; actual cellular conditions change the reaction free energy.',
+    text: 'ATP has three phosphate groups. The whole hydrolysis reaction, including water and product interactions, has a standard transformed free-energy change near −30.5 kJ/mol. In Harvard’s Inner Life of the Cell (BNID 101502), a kinesin-1 motor couples each ATP reaction to one 8 nm step along a microtubule.',
+    facts: s => [['Kinesin walk', `${s.kw.distanceNm} nm (${s.kw.nAtp} ATP × 8 nm)`], ['F₁ rotation', `${s.kw.f1Revolutions.toFixed(1)} turns (${s.kw.f1AngleDeg}°)`]],
   },
   atp_synthase: {
-    text: 'Rotary F₀F₁ ATP synthase nanomachine: proton flow spins the F₀ c-ring and central γ-shaft, coupling rotation to ATP synthesis from ADP and phosphate.',
+    text: 'Rotary F₀F₁ ATP synthase nanomachine (Noji, Yasuda, Yoshida & Kinosita, 1997): proton flow spins the F₀ c-ring and central γ-shaft in 120° steps, coupling 360° of rotation to 3 ATP synthesized from ADP and phosphate.',
+    facts: s => [['Daily turnover', `${s.turn.cyclesPerDay}× pool (${s.turn.minutesPerCycle.toFixed(1)} min/cycle)`]],
   },
   phage_capsid: {
     text: 'Schematic protein capsid enclosing viral DNA. The chosen T = 7 geometry is illustrative, not a structural measurement of a named phage; outside a host the particle has no independent cellular metabolism.',
@@ -126,9 +129,12 @@ export const CHAPTER = {
     const t = reduced ? 1.5 : clock;
     const buggy = Boolean(p.buggyWorld);
     const imb = M.imbibitionState(p.imbibeHours, -95, 0.28, buggy);
+    const hyd = M.hydrationMassBalance(45, 0.10, 0.65);
     const ox = M.coupledOxidationBudget(p.atpYield, null, buggy);
+    const kw = M.kinesinWalkState(p.atpYield, 100, buggy);
+    const turn = M.atpTurnoverSchedule(50, 40000);
     const cap = M.capsidTriangulation(2, 1);
-    return { t, imb, ox, cap, buggy, phageInject: (p.phageInject || 0) / 100 };
+    return { t, imb, hyd, ox, kw, turn, cap, buggy, phageInject: (p.phageInject || 0) / 100 };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -140,7 +146,7 @@ export const CHAPTER = {
       return `${modeTag}<b>Chosen standard-state account (2870 kJ/mol available)</b> · Banked: <b>${s.ox.nAtp} ATP (${s.ox.capturedKj.toFixed(0)} kJ/mol, ${(s.ox.efficiency * 100).toFixed(1)}%)</b> · Unassigned free-energy difference: ${s.ox.heatKj.toFixed(0)} kJ/mol. These are not measured heat or cellular-efficiency values.`;
     }
     if (idx === 2) {
-      return `${modeTag}<b>ATP/ADP Cycle & Rotary F₀F₁ Turbine</b> · Whole hydrolysis reaction: standard transformed ΔG ≈ −30.5 kJ/mol; conditions matter · ${s.buggy ? 'Uncoupled hydrolysis: 0 mechanical shaft work' : '3 ATP synthesized per 360° γ-shaft revolution'}.`;
+      return `${modeTag}<b>ATP/ADP Cycle & Rotary F₀F₁ Turbine</b> · Whole hydrolysis reaction: standard transformed ΔG ≈ −30.5 kJ/mol · ${s.buggy ? 'Uncoupled hydrolysis: 0 nm kinesin walk & 0° shaft work' : `3 ATP per 360° γ-shaft turn · ${s.kw.nAtp} ATP drives ${s.kw.distanceNm} nm kinesin walk (8 nm/ATP)`}.`;
     }
     return `${modeTag}<b>Viral Borderland</b> · Icosahedral capsid T = ${s.cap.T} (${s.cap.capsomeres} capsomeres) · Tail contraction = ${(s.phageInject * 100).toFixed(0)}% · ${s.phageInject > 0.5 ? 'Viral DNA injected into host cytoplasm' : 'Adsorbed to bacterial cell wall'}.`;
   },
@@ -168,8 +174,8 @@ export const CHAPTER = {
     const radMesh = part(radAsm, cone(0.22, 0.95, 20), { pal: 'green', tone: 'lit', pos: [0, -0.35, 0.2], rot: [Math.PI * 0.78, 0, 0], ex: [0, -0.5, 0.5], name: 'Radicle root tip' });
     const plumuleL = part(radAsm, capsule(0.065, 0.22, 6, 12), { pal: 'green', tone: 'hi', pos: [-0.08, 0.28, -0.12], rot: [0.2, 0, -0.35], ex: [-0.15, 0.35, 0.2], name: 'Plumule embryonic shoot' });
     const plumuleR = part(radAsm, capsule(0.065, 0.22, 6, 12), { pal: 'green', tone: 'hi', pos: [0.08, 0.28, -0.12], rot: [0.2, 0, 0.35], ex: [0.15, 0.35, 0.2], name: 'Plumule embryonic shoot' });
-    label('board', 'Testa & micropyle', () => V(-0.9, 2.25, 0), { leader: [-24, -18] });
-    label('board', 'Emerging radicle', () => V(0.55, 0.5, 0.85), { leader: [34, 18] });
+    label('board', 'Testa coat & water entry', () => V(-0.9, 2.25, 0), { leader: true, anchor: () => V(-0.45, 1.85, 0.35) });
+    label('board', 'Emerging radicle root', () => V(0.55, 0.5, 0.85), { leader: true, anchor: () => V(0.0, 0.62, 0.82) });
 
     // Station 1 (x = 14): Flame Cliff vs Stepped Enzymatic Staircase
     const flameAsm = asm('flame_drop', root, { title: 'Conceptual flame account', sub: 'Fuel reactions release heat and light' });
@@ -189,8 +195,8 @@ export const CHAPTER = {
       atpTokens.push(tok);
     }
     const stepOrb = part(stairAsm, sphere(0.12, 16), { pal: 'red', tone: 'lit', pos: [0, 2.34, -0.14], ex: [0, 0.55, 0], name: 'Stepping substrate state' });
-    label('board', 'Flame thermal cliff', () => V(12.2, 2.55, 0), { leader: [-24, -18] });
-    label('board', 'Coupled ATP steps', () => V(15.3, 2.25, 0), { leader: [16, -24] });
+    label('board', 'Flame thermal cliff', () => V(12.2, 2.65, 0), { leader: true, anchor: () => V(12.4, 2.15, 0) });
+    label('board', 'Coupled ATP steps', () => V(15.6, 1.95, 0), { leader: true, anchor: () => V(15.34, 1.75, 0.16) });
 
     // Station 2 (x = 28): Real ATP Molecule + Rotary F0F1 ATP Synthase
     const molAsm = asm('atp_molecule', root, { title: 'ATP triphosphate molecule', sub: 'SubbaRow’s energy currency' });
@@ -203,8 +209,8 @@ export const CHAPTER = {
     for (let i = 0; i < 4; i++) {
       hProtons.push(part(synth.group, sphere(0.065, 12), { pal: 'red', tone: 'lit', pos: [-0.45, -0.55, 0], ex: [0, -0.55, 0], name: 'Driving H⁺ proton' }));
     }
-    label('board', 'ATP core', () => V(26.5, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'ATP synthase rotor', () => V(29.5, 2.55, 0), { leader: [24, -18] });
+    label('board', 'ATP core', () => V(26.3, 2.05, 0), { leader: true, anchor: () => V(26.5, 1.65, 0) });
+    label('board', 'ATP synthase rotor', () => V(29.6, 2.65, 0), { leader: true, anchor: () => V(29.2, 1.85, 0) });
 
     // Station 3 (x = 42): Bacteriophage on Host Bacterium
     const hostAsm = asm('host_bacterium', root, { title: 'Metabolising host bacterium', sub: 'Living MRS GREN cell' });
@@ -229,8 +235,8 @@ export const CHAPTER = {
       const r = rod(tailAsm, { r: 0.02, pal: 'dark', tone: 'hi', name: 'Tail fibre' });
       r.set(V(0.12 * Math.cos(a), -0.2, 0.12 * Math.sin(a)), V(0.55 * Math.cos(a), -0.45, 0.55 * Math.sin(a)));
     }
-    label('board', 'Icosahedral capsid', () => V(42, 3.15, 0), { leader: [-24, -16] });
-    label('board', 'Host bacterium', () => V(42, 0.25, 0.85), { leader: [28, 16] });
+    label('board', 'Capsid + DNA (no ribosomes)', () => V(42, 3.15, 0), { leader: true, anchor: () => V(42, 2.65, 0) });
+    label('board', 'Host bacterium: 70S ribosomes + ATP', () => V(42, 0.25, 0.85), { leader: true, anchor: () => V(42, 0.55, 0.45) });
 
     return {
       labels,

@@ -57,7 +57,8 @@ export const PLATES = {
     text: 'Exponential relaxation curve N_L(t)/N = ½(1 + e^{−2kt}): steep initial net flux flattens to zero net change even while individual molecules keep crossing.',
   },
   aquaporin_pore: {
-    text: 'Aquaporin-1 has water-selective pathways. Chemical interactions in the pore help exclude ions; the enlarged hourglass is schematic, not atomic coordinates.',
+    text: 'Aquaporin-1 has water-selective pathways (~3 × 10⁹ H₂O molecules/s per channel in single file). Chemical interactions in the pore help exclude ions; the enlarged hourglass is schematic, not atomic coordinates.',
+    facts: s => [['Single channel', `${(s.aqp.perChannelPerSec / 1e9).toFixed(0)}×10⁹ H₂O/s`], ['Protons (H₃O⁺)', s.aqp.protonsBlocked ? 'Blocked (NPA)' : 'Leaky (Buggy)']],
   },
   single_file_water: {
     text: 'Water crosses in both directions. Unequal total water potentials favour net transfer; the moving markers illustrate exchange, not a calibrated molecular rate.',
@@ -120,8 +121,9 @@ export const CHAPTER = {
     const fick = M.fickRelaxation(t % 10, p.permRate, 80, buggy);
     const turgor = Math.max(0, 0.55 - p.extMolarity * 1.6);
     const wp = M.waterPotentialAccount(p.extMolarity, turgor, 298, buggy);
+    const aqp = M.aquaporinSingleFileThroughput(2e5, 3e9, buggy);
     const pump = M.activePumpFlux(p.atpLevel, 0.5, 10, buggy);
-    return { t, buggy, fick, wp, pump, extMolarity: p.extMolarity, permRate: p.permRate, atpLevel: p.atpLevel };
+    return { t, buggy, fick, wp, aqp, pump, extMolarity: p.extMolarity, permRate: p.permRate, atpLevel: p.atpLevel };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -130,7 +132,7 @@ export const CHAPTER = {
       return `${modeTag}<b>Invented equal-volume model · Permeability k = ${s.permRate.toFixed(1)} s⁻¹</b> · Left chamber: <b>${(s.fick.fracLeft * 100).toFixed(1)}%</b> · Right chamber: <b>${(s.fick.fracRight * 100).toFixed(1)}%</b> · Relaxing exponentially to 50/50 equilibrium.`;
     }
     if (idx === 1) {
-      return `${modeTag}<b>Schematic aquaporin · chosen water-potential example</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
+      return `${modeTag}<b>Schematic aquaporin (~${(s.aqp.perChannelPerSec / 1e9).toFixed(0)}×10⁹ H₂O/s per pore) · chosen water-potential example</b> · External Ψ_s = ${s.wp.psiSoluteExt.toFixed(2)} MPa · Cell Ψ = ${s.wp.psiCell.toFixed(2)} MPa · Net water drive ΔΨ = <b>${s.wp.netPsiDrive >= 0 ? '+' : ''}${s.wp.netPsiDrive.toFixed(2)} MPa</b>.`;
     }
     if (idx === 2) {
       return `${modeTag}<b>Chosen qualitative cell-state model · External salt = ${s.extMolarity.toFixed(2)} M</b> · Animal RBC: <b>${s.wp.rbcState}</b> · Walled plant cell: <b>${s.wp.plantState}</b> (Ψ_p = ${s.wp.turgorMPa.toFixed(2)} MPa).`;
@@ -157,8 +159,8 @@ export const CHAPTER = {
     const ax0 = prims.axes(curveAsm, { x: [0, 10], y: [0, 1], size: [2.0, 1.7, 0.6] });
     const plot0 = prims.plot(curveAsm, x => M.fickRelaxation(x, 0.4).fracLeft, { axes: ax0, samples: 40, color: 'red', width: 0.06 });
     const fickCursor = part(curveAsm, sphere(0.075, 14), { pal: 'blue', tone: 'lit', name: 'Relaxation time cursor' });
-    label('board', 'Lipid bilayer', () => V(-0.9, 2.35, 0), { leader: [-24, -18] });
-    label('board', 'N_L(t)/N → 0.5', () => V(1.6, 2.15, -0.3), { leader: [24, 18] });
+    label('board', 'Lipid bilayer', () => V(-1.3, 2.45, 0), { leader: true, anchor: () => V(-0.9, 1.55, 0) });
+    label('board', 'N_L(t)/N → 0.5', () => V(1.9, 2.3, -0.3), { leader: true, anchor: () => V(1.3, 1.4, -0.3) });
 
     // Station 1 (x = 14): Aquaporin Hourglass Channel
     const aqpAsm = asm('aquaporin_pore', root, { title: 'Aquaporin-1 hourglass pore', sub: 'Schematic water-selective pore' });
@@ -175,7 +177,7 @@ export const CHAPTER = {
       h2oSpheres.push(part(h2oAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', pos: [0, (i - 3) * 0.24, 0], ex: [0.35, 0, 0], name: 'Water molecule' }));
     }
     part(h2oAsm, sphere(0.13, 14), { pal: 'green', tone: 'hi', pos: [0.38, 0.72, 0], ex: [0.45, 0.3, 0], name: 'Excluded hydrated ion' });
-    label('board', 'Aquaporin-1 pore', () => V(14, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'Aquaporin-1 pore', () => V(14.5, 2.45, 0), { leader: true, anchor: () => V(14, 1.55, 0) });
 
     // Station 2 (x = 28): RBC vs Walled Plant Cell Osmosis
     const rbcAsm = asm('rbc_osmosis', root, { title: 'Animal red blood cell', sub: 'No cell wall (lyses or crenates)' });
@@ -187,8 +189,8 @@ export const CHAPTER = {
     part(plantAsm, box(1.5, 1.5, 1.3, 0.08), { pal: 'green', tone: 'mid', mat: shadeMat('green', { opacity: 0.35 }), ex: [0, 0.45, 0], name: 'Rigid cellulose cell wall' });
     const vacuoleMesh = part(plantAsm, sphere(0.58, 24), { pal: 'blue', tone: 'hi', ex: [0.45, 0, 0], name: 'Protoplast & vacuole' });
     const tonoplastRing = part(plantAsm, torus(0.61, 0.025, 10, 24), { pal: 'ochre', tone: 'hi', ex: [0.45, 0.15, 0], name: 'Plasma membrane / tonoplast boundary' });
-    label('board', 'Animal RBC', () => V(26.9, 2.35, 0), { leader: [24, -18] });
-    label('board', 'Walled plant cell', () => V(29.0, 2.35, 0), { leader: [-24, 18] });
+    label('board', 'Animal RBC', () => V(26.5, 2.45, 0), { leader: true, anchor: () => V(26.9, 1.45, 0) });
+    label('board', 'Walled plant cell', () => V(29.4, 2.45, 0), { leader: true, anchor: () => V(29.0, 1.55, 0) });
 
     // Station 3 (x = 42): Active Transport Carrier Pump
     const pumpAsm = asm('atpase_carrier', root, { title: 'Conformational ATPase carrier', sub: 'E₁ / E₂ alternating access' });
@@ -202,7 +204,7 @@ export const CHAPTER = {
     atpSiteAsm.position.set(42, 0.72, 0.25);
     const atpOrb = part(atpSiteAsm, sphere(0.14, 16), { pal: 'red', tone: 'lit', ex: [0, -0.4, 0.35], name: 'Bound ATP/Pi' });
     const adpOrb = part(atpSiteAsm, sphere(0.09, 14), { pal: 'ochre', tone: 'hi', pos: [0.24, -0.1, 0], ex: [0.2, -0.45, 0.35], name: 'Released ADP' });
-    label('board', 'E₁/E₂ carrier pump', () => V(42, 2.35, 0), { leader: [24, 18] });
+    label('board', 'E₁/E₂ carrier pump', () => V(42.5, 2.45, 0), { leader: true, anchor: () => V(42, 1.55, 0) });
 
     return {
       labels,

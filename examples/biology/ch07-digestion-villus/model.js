@@ -24,3 +24,10 @@ export function villusAbsorptionFlux(microvilliFold = 20, portalFlowMlMin = 250)
   const lipidLactealFlux = 0.65 * brushBorderGain;
   return { brushBorderGain, glucosePortalFlux, lipidLactealFlux };
 }
+
+// Reference J (Helander & Fandriks 2014 BNID 111560 mucosal surface area ~32 m^2 total, ~30 m^2 small intestine):
+export function mucosalSurfaceAmplification(cylinderAreaM2 = 0.33, plicaeGain = 3, villiGain = 4.5, microvilliGain = 6.7) {
+  const smallIntestineM2 = cylinderAreaM2 * plicaeGain * villiGain * microvilliGain;
+  const colonM2 = 2.0;
+  return { cylinderAreaM2, smallIntestineM2, colonM2, totalMucosalM2: smallIntestineM2 + colonM2 };
+}

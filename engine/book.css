@@ -205,10 +205,13 @@
 }
 @media (min-width: 901px) { .page.left { display: flex; flex-direction: column; } .page.left > .sheet { flex: 1 0 auto; } }
 
-/* ---- compare: analogies with other chapters ---- */
+/* ---- compare: analogies with other chapters & lookalike foils ---- */
 .xref { margin: 22px 0 6px; padding: 12px 0 2px 16px; border-left: 2px solid #3d63a8; max-width: 62ch; }
 .xref p { margin: 8px 0 10px; font-size: 15px; }
 .xref a { color: #3d63a8; text-decoration: none; font-weight: 500; white-space: nowrap; }
+.xref.foil { border-left-color: var(--red-ink); }
+.xref.foil .foil-jump { border: 0; background: none; padding: 0; font: inherit; font-weight: 500; color: var(--red-ink); text-decoration: none; cursor: pointer; white-space: nowrap; }
+.svg-bead { fill: var(--red-ink, #b8343a); stroke: var(--card, #fbfbfa); stroke-width: 1.2; }
 
 /* ---- practice: AP-style questions under each page ---- */
 .practice { margin: 30px 0 8px; padding-top: 18px; border-top: 1px solid var(--faint); max-width: 62ch; }

@@ -30,10 +30,14 @@
 //   than 1.15 × the sum of their covalent radii.
 // linkage(parent, { joints, links, r = 0.028, pinR = 0.048, pinDepth = 0.09, z = 0, axes?, pal = 'ink', pinPal = 'paper', name = 'Linkage' })
 //   → { object, labels, bars, pins, update(joints) }
+// canvasPlate(parent, drawFn, { width = 1.2, height = 0.75, pxWidth = 256, pxHeight = 160, bezel = 0.04, pal = 'ink', pos = [0, 0, 0], rot, axes?, name = 'Readout plate' })
+//   → { object, screen, texture, labels, update(state, t?) }   stateless 2D-canvas-on-3D instrument screen/gauge
+// billboard(parent, { kind = 'flame' | 'plume' | 'ring', width = 0.8, height = 1.1, color = 'red', pos = [0, 0, 0], rot, faceCamera?, axes?, name = 'Phenomenon' })
+//   → { object, mesh, labels, update(phase, { amp?, pos?, visible? }?) }   cel-banded SDF plane synced to the ink-outline pass
 // Colours: 'hi' (ink), 'grey', any PALETTE name ('red', 'blue', 'paper' …), 'ochre', 'green', or '#hex'.
 // update/set rewrite geometry in place, so they can run every frame.
 import * as THREE from 'three';
-import { part, arrow, setArrow, rod, cyl, zAxis, lines, liveTube, shadeMat, PALETTE, TONE, V } from './parts.js';
+import { part, box, arrow, setArrow, rod, cyl, zAxis, lines, liveTube, shadeMat, PALETTE, TONE, V } from './parts.js';
 import { rng } from './rng.js';
 
 const EXTRA = { ochre: '#c8962e', amber: '#c8962e', green: '#3f8a63' };
@@ -614,4 +618,256 @@ export function flowBeads(parent, pathOrFn, {
   }
   update(0);
   return { object: inst, labels: [], update };
+}
+
+function makeHeadless2DContext(w, h, data) {
+  const noop = () => {};
+  return {
+    canvas: { width: w, height: h },
+    fillStyle: '#fbfbfa', strokeStyle: '#18181a', lineWidth: 1, font: '12px monospace',
+    textAlign: 'left', textBaseline: 'alphabetic', globalAlpha: 1,
+    save: noop, restore: noop, beginPath: noop, closePath: noop, moveTo: noop, lineTo: noop,
+    arc: noop, quadraticCurveTo: noop, bezierCurveTo: noop, rect: noop, roundRect: noop,
+    fill: noop, stroke: noop, strokeRect: noop, fillText: noop, strokeText: noop,
+    setLineDash: noop, translate: noop, rotate: noop, scale: noop, setTransform: noop, clip: noop,
+    clearRect() { data.fill(0); },
+    fillRect() { if (data.length >= 4) data[3] = 255; },
+    measureText: s => ({ width: String(s ?? '').length * 7 }),
+  };
+}
+
+// Diegetic 2D-canvas-on-3D instrument screen, OLED, gauge, or reticle. Redraws purely from (state, t) so ?render
+// seeking stays 100% stateless, and degrades cleanly to a DataTexture in headless Node checks.
+export function canvasPlate(parent, drawFn, {
+  axes,
+  width = 1.2,
+  height = 0.75,
+  pxWidth = 256,
+  pxHeight = 160,
+  bezel = 0.04,
+  pal = 'ink',
+  screenBg = '#fbfbfa',
+  tone = 'hi',
+  pos = [0, 0, 0],
+  rot,
+  name = 'Readout plate',
+} = {}) {
+  const map = toOf(axes);
+  const object = new THREE.Group();
+  object.name = name;
+  point(map, pos, object.position);
+  if (rot) object.rotation.set(...rot);
+  parent.add(object);
+
+  if (bezel > 0) {
+    part(object, box(width + bezel * 2, height + bezel * 2, bezel, Math.min(0.03, bezel * 0.45)), {
+      pal: palOf(pal),
+      tone,
+      name: `${name} bezel`,
+    });
+  }
+
+  let ctx = null, texture = null;
+  if (typeof document !== 'undefined') {
+    const cv = document.createElement('canvas');
+    cv.width = pxWidth; cv.height = pxHeight;
+    ctx = cv.getContext('2d');
+    texture = new THREE.CanvasTexture(cv);
+  } else if (typeof OffscreenCanvas !== 'undefined') {
+    const cv = new OffscreenCanvas(pxWidth, pxHeight);
+    ctx = cv.getContext('2d');
+    texture = new THREE.CanvasTexture(cv);
+  }
+  if (!ctx || !texture) {
+    const buf = new Uint8Array(pxWidth * pxHeight * 4);
+    ctx = makeHeadless2DContext(pxWidth, pxHeight, buf);
+    texture = new THREE.DataTexture(buf, pxWidth, pxHeight, THREE.RGBAFormat);
+  }
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+
+  const screenGeo = new THREE.PlaneGeometry(width, height);
+  const screenMat = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
+  const screen = new THREE.Mesh(screenGeo, screenMat);
+  screen.position.z = bezel > 0 ? bezel * 0.5 + 0.004 : 0;
+  screen.userData = {
+    tone: TONE[tone] ?? TONE.hi,
+    baseTone: TONE[tone] ?? TONE.hi,
+    idOff: 0.03,
+    part: name,
+    home: screen.position.clone(),
+    ex: V(),
+  };
+  object.add(screen);
+
+  function update(state = null, t = 0) {
+    if (ctx) {
+      ctx.save();
+      if (screenBg) {
+        ctx.fillStyle = screenBg;
+        ctx.fillRect(0, 0, pxWidth, pxHeight);
+      } else {
+        ctx.clearRect(0, 0, pxWidth, pxHeight);
+      }
+      drawFn?.(ctx, { w: pxWidth, h: pxHeight, state, t });
+      ctx.restore();
+    }
+    texture.needsUpdate = true;
+  }
+  update(null, 0);
+  return { object, screen, texture, labels: [], update };
+}
+
+const BILLBOARD_SDF = `
+  float billboardField(vec2 uv, float kind, float ph, float amp) {
+    float tau = 6.28318530718;
+    if (kind < 0.5) {
+      // 'flame': tapered teardrop tongue with exact 1-period harmonic sway (loop-clean)
+      float y = clamp(uv.y, 0.0, 1.0);
+      float sway = (0.11 * sin(y * 7.0 - ph * tau) + 0.05 * sin(y * 13.0 - ph * tau * 2.0 + 1.3)) * y * amp;
+      float halfW = mix(0.36, 0.02, pow(y, 0.82)) * smoothstep(0.0, 0.14, y) * max(0.25, amp);
+      float dx = abs(uv.x - 0.5 - sway) / max(0.02, halfW);
+      float dy = max(0.0, (y - 0.94) * 8.0);
+      return max(dx, dy);
+    }
+    if (kind < 1.5) {
+      // 'plume': scalloped 5-lobe cloud puff
+      vec2 p = (uv - 0.5) * 2.25;
+      float ang = atan(p.y, p.x);
+      float r = length(p) / max(0.25, amp);
+      float lobes = 0.84 + 0.12 * sin(ang * 5.0 + ph * tau) + 0.05 * cos(ang * 3.0 - ph * tau);
+      return r / lobes;
+    }
+    // 'ring': concentric wave annulus (e.g. sonar, RF, ripple)
+    vec2 p = (uv - 0.5) * 2.15;
+    float rad = mix(0.22, 0.86, fract(ph));
+    float halfBand = 0.085 * max(0.35, amp);
+    return abs(length(p) - rad) / halfBand;
+  }
+`;
+
+// Stateless cel-shaded procedural phenomenon plane ('flame', 'plume', 'ring') whose curved SDF silhouette
+// writes directly into render.js's normal/ink pass via userData.normalMat so outlines wrap animated tongues/rings.
+export function billboard(parent, {
+  axes,
+  kind = 'flame',
+  width = 0.8,
+  height = 1.1,
+  color = 'red',
+  tone = 'hi',
+  pos = [0, 0, 0],
+  rot,
+  faceCamera = kind !== 'ring',
+  name = 'Phenomenon',
+} = {}) {
+  const map = toOf(axes);
+  const palName = palOf(color);
+  const [topHex, midHex, darkHex] = PALETTE[palName] || PALETTE.red;
+  const kindId = kind === 'plume' ? 1 : kind === 'ring' ? 2 : 0;
+
+  const object = new THREE.Group();
+  object.name = name;
+  point(map, pos, object.position);
+  if (rot) object.rotation.set(...rot);
+  parent.add(object);
+
+  const sharedPhase = { value: 0 };
+  const sharedAmp = { value: 1 };
+  const sharedKind = { value: kindId };
+
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.DoubleSide,
+    uniforms: {
+      uTop: { value: new THREE.Color(topHex) },
+      uMid: { value: new THREE.Color(midHex) },
+      uDark: { value: new THREE.Color(darkHex) },
+      uPhase: sharedPhase,
+      uAmp: sharedAmp,
+      uKind: sharedKind,
+      uLit: { value: 0 },
+      uOpacity: { value: 1 },
+    },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `
+      uniform vec3 uTop, uMid, uDark;
+      uniform float uPhase, uAmp, uKind, uLit, uOpacity;
+      varying vec2 vUv;
+      ${BILLBOARD_SDF}
+      void main() {
+        float d = billboardField(vUv, uKind, uPhase, uAmp);
+        if (d > 1.0 || uOpacity < 0.02) discard;
+        vec3 c = d < 0.38 ? uTop : (d < 0.74 ? uMid : uDark);
+        c = mix(c, uTop, uLit * 0.3);
+        gl_FragColor = vec4(c, uOpacity);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+
+  const cutoutNormalMat = new THREE.ShaderMaterial({
+    side: THREE.DoubleSide,
+    uniforms: {
+      uTone: { value: TONE[tone] ?? TONE.hi },
+      uPhase: sharedPhase,
+      uAmp: sharedAmp,
+      uKind: sharedKind,
+    },
+    vertexShader: `
+      varying vec2 vUv; varying vec3 vN;
+      void main() {
+        vUv = uv;
+        vN = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTone, uPhase, uAmp, uKind;
+      varying vec2 vUv; varying vec3 vN;
+      ${BILLBOARD_SDF}
+      void main() {
+        float d = billboardField(vUv, uKind, uPhase, uAmp);
+        if (d > 1.0) discard;
+        vec3 n = normalize(vN) * (gl_FrontFacing ? 1.0 : -1.0);
+        gl_FragColor = vec4(n * 0.5 + 0.5, uTone);
+      }
+    `,
+  });
+
+  const geo = new THREE.PlaneGeometry(width, height);
+  if (kind === 'ring' && !rot) geo.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData = {
+    tone: TONE[tone] ?? TONE.hi,
+    baseTone: TONE[tone] ?? TONE.hi,
+    idOff: 0.04,
+    part: name,
+    home: V(),
+    ex: V(),
+    normalMat: cutoutNormalMat,
+  };
+
+  if (faceCamera) {
+    const camLocal = V();
+    mesh.onBeforeRender = (_r, _s, camera) => {
+      if (!camera || !object.parent) return;
+      camLocal.copy(camera.position);
+      object.worldToLocal(camLocal);
+      if (kind === 'flame') {
+        mesh.rotation.set(0, Math.atan2(camLocal.x, camLocal.z), 0);
+      } else {
+        mesh.lookAt(camera.position);
+      }
+    };
+  }
+  object.add(mesh);
+
+  function update(phaseVal = 0, { amp = 1, pos: nextPos, visible } = {}) {
+    sharedPhase.value = phaseVal;
+    sharedAmp.value = amp;
+    if (nextPos) point(map, nextPos, object.position);
+    if (visible !== undefined) object.visible = Boolean(visible);
+  }
+
+  return { object, mesh, labels: [], update };
 }

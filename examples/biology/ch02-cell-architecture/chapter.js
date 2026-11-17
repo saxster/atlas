@@ -76,7 +76,8 @@ export const PLATES = {
     text: 'Hyperbolic decay curve SA/V = 6/L: explains why big organisms are built from trillions of microscopic cells rather than one giant cell.',
   },
   rbc_specialist: {
-    text: 'A mature human red blood cell has lost its nucleus and mitochondria. Its flexible biconcave shape gives short exchange distances; haemoglobin binds oxygen.',
+    text: 'A mature human red blood cell has lost its nucleus and mitochondria. Its flexible biconcave shape gives short exchange distances; haemoglobin binds oxygen (Sender, Fuchs & Milo 2016: ~2.5 × 10¹³ of ~3.0 × 10¹³ human cells in a 70 kg adult are RBCs).',
+    facts: s => [['Shape SA/V gain', `${s.rbcFactor.toFixed(2)}× sphere`], ['Human RBC share', `${(s.census.rbcFraction * 100).toFixed(1)}% (~2.5×10¹³)`]],
   },
   roothair_specialist: {
     text: 'A root hair extends a thin projection between soil particles, increasing contact area for water and mineral-ion uptake. The model is schematic, not a measured universal size or area multiplier.',
@@ -125,7 +126,9 @@ export const CHAPTER = {
     const buggy = Boolean(p.buggyWorld);
     const geo = M.cubeGeometry(p.cellSideUm, 2000, buggy);
     const cr = M.cristaeFoldingGain(p.cristaeFolds, buggy);
-    return { t, buggy, geo, cr };
+    const census = M.humanCellCensus(70);
+    const rbcFactor = M.specialistShapeFactor('rbc');
+    return { t, buggy, geo, cr, census, rbcFactor };
   },
   readout(s, page, pageIdx) {
     const idx = pageIdx ?? PAGES.indexOf(page);
@@ -139,7 +142,7 @@ export const CHAPTER = {
     if (idx === 2) {
       return `${modeTag}<b>Cell width L = ${s.geo.sideUm} µm</b> · SA = ${s.geo.surfaceUm2.toLocaleString()} µm² · Vol = ${s.geo.volumeUm3.toLocaleString()} µm³ · <b>SA/V = ${s.geo.savPerUm.toFixed(2)} µm⁻¹</b> · Assumed diffusion timescale τ = ${(s.geo.diffusionTimeSec * 1000).toFixed(1)} ms.`;
     }
-    return `${modeTag}<b>Specialist Cell Shapes</b> · Biconcave RBC (thin, no nucleus) · Root hair (extended contact area) · Myelinated axon (saltatory conduction).`;
+    return `${modeTag}<b>Specialist Cell Shapes</b> · Biconcave RBC (thin, no nucleus; ${(s.census.rbcFraction * 100).toFixed(1)}% of ~3.0×10¹³ reference adult human cells) · Root hair (extended contact area) · Myelinated axon (saltatory conduction).`;
   },
   buildWorld(E) {
     const { scene, asm } = E;
@@ -170,8 +173,8 @@ export const CHAPTER = {
     const chloroAsm = asm('chloro_organelle', root, { title: 'Chloroplasts', sub: 'Solar sugar factories' });
     chloroAsm.position.set(-0.45, 2.0, 0.45);
     part(chloroAsm, capsule(0.2, 0.42, 8, 16), { pal: 'green', tone: 'lit', rot: [0, 0.2, 1.4], ex: [-0.55, 0.55, 0.45], name: 'Chloroplast' });
-    label('board', 'Nucleus', () => V(0.55, 2.25, 0.15), { leader: [30, -20] });
-    label('board', 'Sap vacuole', () => V(-0.55, 1.35, 0.75), { leader: [-34, 18] });
+    label('board', 'Nucleus', () => V(1.15, 2.35, 0.15), { leader: true, anchor: () => V(0.55, 1.55, 0.15) });
+    label('board', 'Sap vacuole', () => V(-1.15, 2.25, 0.45), { leader: true, anchor: () => V(-0.38, 1.25, 0.35) });
 
     // Station 1 (x = 14): Endosymbiosis (Mitochondrion Cristae & Chloroplast Grana)
     const crisAsm = asm('cristae_folds', root, { title: 'Mitochondrial cristae & inherited DNA', sub: 'Folded inner membrane & mtDNA ring' });
@@ -196,8 +199,8 @@ export const CHAPTER = {
         part(granAsm, cyl(0.18, 0.06, 18), { pal: 'green', tone: 'lit', pos: [sx, k * 0.09, 0], ex: [0, k * 0.14 + 0.3, 0], name: 'Thylakoid disc' });
       }
     }
-    label('board', 'Cristae & mtDNA', () => V(13.0, 2.2, 0), { leader: [-24, -18] });
-    label('board', 'Grana & cpDNA', () => V(15.2, 2.2, 0), { leader: [24, 18] });
+    label('board', 'Cristae & mtDNA', () => V(12.6, 2.35, 0), { leader: true, anchor: () => V(13.0, 1.55, 0) });
+    label('board', 'Grana & cpDNA', () => V(15.6, 2.35, 0), { leader: true, anchor: () => V(15.2, 1.55, 0) });
 
     // Station 2 (x = 28): SA/V Cubes + Starved Core + 3D Hyperbola Plot
     const cubesAsm = asm('sav_cubes', root, { title: 'Chosen surface layer and inner core', sub: 'Geometric layer, not oxygen data' });
@@ -211,8 +214,8 @@ export const CHAPTER = {
     const savPlot = prims.plot(chartAsm, L => 6 / L, { axes: ax, samples: 48, color: 'green', width: 0.064 });
     const cursorDot = part(chartAsm, sphere(0.085, 16), { pal: 'red', tone: 'lit', name: 'Current cell size' });
     const cursorDrop = rod(chartAsm, { r: 0.014, pal: 'red', tone: 'mid', name: 'SA/V coordinate drop line' });
-    label('board', 'Chosen inner core', () => V(27.0, 2.3, 0), { leader: [-24, 18] });
-    label('board', 'SA/V = 6/L', () => V(29.6, 2.15, -0.4), { leader: [24, -18] });
+    label('board', 'Chosen inner core', () => V(26.5, 2.45, 0), { leader: true, anchor: () => V(27.0, 1.35, 0) });
+    label('board', 'SA/V = 6/L', () => V(30.0, 2.35, -0.4), { leader: true, anchor: () => V(29.3, 1.45, -0.4) });
 
     // Station 3 (x = 42): Specialist Cells (RBC, Root Hair, Myelinated Neurone)
     const rbcAsm = asm('rbc_specialist', root, { title: 'Biconcave red blood cell', sub: 'No nucleus, high SA/V' });
@@ -237,9 +240,9 @@ export const CHAPTER = {
     for (const sx of [-0.12, 0.12]) {
       part(neuAsm, sphere(0.065, 12), { pal: 'ochre', tone: 'lit', pos: [sx, -0.92, 0], ex: [sx * 2, -0.35, 0], name: 'Synaptic terminal bouton' });
     }
-    label('board', 'Biconcave RBC', () => V(40.5, 2.25, 0), { leader: [-24, 18] });
-    label('board', 'Root hair', () => V(42.2, 2.25, 0), { leader: [24, 18] });
-    label('board', 'Myelin nodes', () => V(43.6, 2.4, 0), { leader: [-24, -18] });
+    label('board', 'Biconcave RBC', () => V(40.1, 2.35, 0), { leader: true, anchor: () => V(40.5, 1.45, 0) });
+    label('board', 'Root hair', () => V(42.1, 2.35, 0), { leader: true, anchor: () => V(42.2, 1.25, 0) });
+    label('board', 'Myelin nodes', () => V(44.1, 2.55, 0), { leader: true, anchor: () => V(43.6, 1.65, 0) });
 
     return {
       labels,

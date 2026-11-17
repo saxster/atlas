@@ -5,12 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checks, near, deriv, integ, bisect, rk4, mean, variance, meanWithin, chiSquare, chiSquareCritical, normalQuantile, binomial, checkLinkLengths, checkTrajectory } from './checks.js';
 import { rng } from './rng.js';
-import { scale, samples, chart, textAdvanceEm, waterfallWalk, waterfallChart, sankeyLayout, sankeyChart } from './chart.js';
+import { scale, samples, chart, textAdvanceEm, waterfallWalk, waterfallChart, sankeyLayout, sankeyChart, interpViewBox, focusViewBox, samplePolyline, beadSlots, pathBeads } from './chart.js';
 import * as THREE from 'three';
-import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule, linkage } from './prims.js';
+import { axes, plot, area, surface, field, streamline, lattice, blob, particles, molecule, linkage, canvasPlate, billboard } from './prims.js';
 import { part, box, gearGeo, gear, rack, spring, TONE, PALETTE, applyTheme } from './parts.js';
 import { parseColor, compositeOver, srgbLuminance, wcagContrast, auditTheme } from './theme.js';
-import { createAssemblyController } from './render.js';
+import { createAssemblyController, normalPassTone } from './render.js';
 import { circleIntersect, sliderCrank, fourBar, gearRatio, rackPinion, differential, createSolver, twoLinkIK, fabrik, jacobianIK } from './kinematics.js';
 import { draggable } from './stage.js';
 import {
@@ -287,9 +287,26 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   ctrl.setXray(0, ['housing']);
 
   ctrl.setIsolate('core');
+  const ghostSkip = normalPassTone(mHousing) === null && normalPassTone(mCore) !== null && normalPassTone(mCore) < 1.5;
   const isoOk = near(mHousing.material.uniforms.uOpacity.value, 0.14, 1e-6) && mHousing.userData.tone === TONE.faint
-    && near(mCore.material.uniforms?.uOpacity?.value ?? 1, 1, 1e-6) && mCore.userData.tone === TONE.hi;
+    && near(mCore.material.uniforms?.uOpacity?.value ?? 1, 1, 1e-6) && mCore.userData.tone === TONE.hi && ghostSkip;
   ctrl.setIsolate(null);
+
+  // Paper-wash isolation ({ mode: 'wash' } or { keys, mode: 'wash' }): keeps depth opaque, skips cloning untouched materials, and encodes +2.0 wash band in normalPassTone
+  const ctrlWash = createAssemblyController();
+  const wScene = new THREE.Group();
+  const gA = ctrlWash.asm('a', wScene, { title: 'A' }), gB = ctrlWash.asm('b', wScene, { title: 'B' });
+  const mA = part(gA, box(1, 1, 1), { pal: 'blue', tone: 'mid', name: 'ItemA' });
+  const mB = part(gB, box(1, 1, 1), { pal: 'red', tone: 'hi', name: 'ItemB' });
+  const baseMatA = mA.material;
+  ctrlWash.setIsolate({ keys: 'b', mode: 'wash' });
+  const tA = normalPassTone(mA), tB = normalPassTone(mB);
+  const washOk = mA.material === baseMatA && !mA.material.transparent && mA.material.depthWrite === true
+    && mA.userData._isolatedWash === 1 && mA.userData.tone === TONE.faint
+    && tA > 2.1 && tA < 2.3 && near(((tA - 2) * 5 - 0.5) % 1, ((TONE.faint + mA.userData.idOff) * 5 - 0.5) % 1, 1e-9)
+    && mB.userData._isolatedWash === 0 && tB > 0.7 && tB < 0.9;
+  ctrlWash.setIsolate(null);
+  const washClearOk = mA.userData._isolatedWash === 0 && mA.userData.tone === TONE.mid && normalPassTone(mA) < 1.5;
 
   ctrl.setExplode(1);
   for (let i = 0; i < 60; i++) ctrl.stepExplode(1 / 60);
@@ -297,8 +314,8 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   ctrl.setExplode(0, null, true);
   ctrl.stepExplode(1 / 60);
   const snapOk = mHousing.position.y === 0 && mCore.position.x === 0;
-  C.check('setCutaway, setXray, setIsolate & setExplode: synchronize clipping planes, DoubleSide, translucent ghosting, isolation dimming, and spring explode',
-    cutOk && cutClearOk && xrayOk && isoOk && exOk && snapOk);
+  C.check('setCutaway, setXray, setIsolate (ghost + paper-wash) & setExplode: synchronize clipping planes, DoubleSide, normal-pass ghost exclusion, opaque paper-wash band, and spring explode',
+    cutOk && cutClearOk && xrayOk && isoOk && washOk && washClearOk && exOk && snapOk);
 }
 { // Stateless procedural motion toolkit (engine/motion.js)
   const sp0 = motionSpring(0), sp1 = motionSpring(1), spPeak = Math.max(...Array.from({ length: 40 }, (_, i) => motionSpring(i / 40, 0.35, 3.2)));
@@ -1150,5 +1167,99 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && eases.drawer(0) === 0 && eases.drawer(1) === 1 && eases.drawer(0.2) > 0.4
     && rb0 === 0 && near(rbPos, -rbNeg, 1e-12) && rbPos > 0 && rbPos < 25 && rbHuge > 99 && rbHuge < 100
     && pm0 === 0 && near(pmNorm, 499, 1e-9) && near(pmSnap, 99, 1e-9) && pmSnap < pmNorm);
+}
+{ // Diegetic 2D-on-3D canvasPlate & ink-outlined procedural billboard (engine/prims.js)
+  const root = new THREE.Group();
+  const draws = [];
+  const cp = canvasPlate(root, (ctx, { w, h, state, t }) => {
+    draws.push({ w, h, v: state?.v ?? 0, t, hasFill: typeof ctx.fillRect === 'function' });
+    ctx.fillRect(0, 0, w, h);
+  }, { width: 1.4, height: 0.9, pxWidth: 128, pxHeight: 64, bezel: 0.05, pos: [1, 2, -0.5] });
+  const v0 = cp.texture.version;
+  cp.update({ v: 42 }, 1.25);
+  const cpAudit = auditDeliverable(cp.object, { maxTris: 2000, requireUV: true });
+
+  const flame = billboard(root, { kind: 'flame', width: 0.8, height: 1.2, color: 'red', pos: [0, 0.6, 0] });
+  const ring = billboard(root, { kind: 'ring', width: 1.5, height: 1.5, color: 'blue', faceCamera: false });
+  flame.update(2.75, { amp: 0.65 });
+  const phaseSync1 = flame.mesh.material.uniforms.uPhase.value === 2.75
+    && flame.mesh.userData.normalMat.uniforms.uPhase.value === 2.75
+    && flame.mesh.material.uniforms.uAmp.value === 0.65
+    && flame.mesh.userData.normalMat.uniforms.uAmp.value === 0.65;
+  flame.update(0.4, { amp: 1.0 }); // order-independent backward seek check
+  const phaseSync2 = flame.mesh.material.uniforms.uPhase.value === 0.4
+    && flame.mesh.userData.normalMat.uniforms.uPhase.value === 0.4
+    && normalPassTone(flame.mesh) !== null && normalPassTone(ring.mesh) !== null;
+
+  C.check('prims.js canvasPlate & billboard: UV-clean diegetic CanvasTexture screen redraws statelessly and procedural flame/ring billboards sync normal-pass ink cutouts',
+    cpAudit.pass && draws.length === 2 && draws[1].w === 128 && draws[1].h === 64 && draws[1].v === 42 && draws[1].t === 1.25 && draws[1].hasFill
+    && cp.texture.version > v0 && near(cp.object.position.x, 1, 1e-9)
+    && phaseSync1 && phaseSync2);
+}
+{ // Parameterized codeBlock, discrete paramChip, epistemic/diff badge & paper-wash term isolation (engine/prose.js)
+  const { paramChip, codeBlock, badge, term, scrub } = await import('./prose.js');
+  const chipHtml = paramChip('ohms', {
+    value: 220,
+    choices: [
+      { value: 220, label: '220 Ω' },
+      { value: 1000, label: '1 kΩ' },
+      { value: 10000, label: '10 kΩ' },
+    ],
+    part: 'resistor',
+    color: 'ochre',
+    label: 'Series resistor',
+  });
+  const blockHtml = codeBlock([
+    `const R = ${chipHtml};`,
+    { html: `delay(${scrub('ms', { value: 500, min: 100, max: 1000, step: 50, unit: ' ms', part: 'led' })});`, part: 'led' },
+  ], { title: 'loop()', lineVar: 'activeLine', startLine: 10 });
+  const bEg = badge('eg');
+  const bUnobs = badge('unobserved');
+  const bVant = badge('vantage', 'Seen at laptop NIC');
+  const bDiff = badge('added', 'Read replica');
+  const washTerm = term('stator', 'Stator housing', { isolate: 'wash', color: 'blue' });
+
+  C.check('prose.js paramChip, codeBlock, badge & isolate:"wash": emit accessible parameter pills, numbered execution-trace lines, epistemic/diff badges, and WCAG-safe inks',
+    chipHtml.includes('class="tk-param"') && chipHtml.includes('data-param="ohms"') && chipHtml.includes('data-part="resistor"') && chipHtml.includes('220 Ω')
+    && blockHtml.includes('class="tk-code"') && blockHtml.includes('data-line-var="activeLine"') && blockHtml.includes('data-line="10"') && blockHtml.includes('data-line="11"')
+    && bEg.includes('E.G.') && bUnobs.includes('··') && bVant.includes('Seen at laptop NIC') && bDiff.includes('+ Read replica')
+    && washTerm.includes('data-isolate="wash"')
+    && wcagContrast('#825b00', '#ece5d5') >= 4.5 && wcagContrast('#236b43', '#ece5d5') >= 4.5 && wcagContrast('#b8343a', '#ece5d5') >= 4.5);
+}
+{ // Stepped 2D SVG viewBox cinematography, constant-speed arc-length pathBeads & Lookalike foilCard (chart.js, prose.js)
+  const { foilCard } = await import('./prose.js');
+  const vb0 = interpViewBox([0, 0, 800, 400], [150, 75, 200, 100], 0);
+  const vbMid = interpViewBox([0, 0, 800, 400], [150, 75, 200, 100], 0.5);
+  const vb1 = interpViewBox([0, 0, 800, 400], [150, 75, 200, 100], 1);
+
+  // L-shaped path: length 30 along +X then length 10 along +Y (total 40). u = 0.5 -> d = 20 -> (20, 0, 0°); u = 0.875 -> d = 35 -> (30, 5, 90°)
+  const lPath = [[0, 0], [30, 0], [30, 10]];
+  const pHalf = samplePolyline(lPath, 0.5);
+  const pTurn = samplePolyline(lPath, 0.875);
+  const slotsSvg = beadSlots('pkt', 4, 3);
+
+  const svgAttrs = {};
+  const circles = Array.from({ length: 4 }, () => ({ attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } }));
+  const fakeSheet = {
+    querySelectorAll(sel) {
+      if (sel.includes('data-stage="net"')) return [{ setAttribute(k, v) { svgAttrs[k] = v; } }];
+      if (sel.includes('data-beads="pkt"')) return [{ querySelectorAll: () => circles }];
+      return [];
+    },
+  };
+  focusViewBox(fakeSheet, 'net', [0, 0, 800, 400], [150, 75, 200, 100], 0.5);
+  pathBeads(fakeSheet, 'pkt', lPath, 0.25);
+
+  const fPage = foilCard({ label: 'Meiosis I', page: 3, note: 'homologous pairs separate, not sister chromatids.' });
+  const fCross = foilCard({ label: 'Blueberry', to: 'biology/ch05-photosynthesis-leaf/2', note: 'clustered crown vs solitary nightshade berry.' }, { currentDir: 'biology/ch04-biomolecules-enzymes' });
+
+  C.check('chart.js & prose.js: geometric-zoom interpViewBox/focusViewBox, constant-speed arc-length samplePolyline/pathBeads, and 1-tap foilCard work cleanly',
+    vb0 === '0.0 0.0 800.0 400.0' && vbMid === '125.0 62.5 400.0 200.0' && vb1 === '150.0 75.0 200.0 100.0'
+    && svgAttrs.viewBox === '125.0 62.5 400.0 200.0'
+    && near(pHalf[0], 20, 1e-9) && near(pHalf[1], 0, 1e-9) && near(pHalf[2], 0, 1e-9)
+    && near(pTurn[0], 30, 1e-9) && near(pTurn[1], 5, 1e-9) && near(pTurn[2], 90, 1e-9)
+    && slotsSvg.includes('data-beads="pkt"') && circles[0].attrs.cx === '10.0' && circles[1].attrs.cx === '20.0'
+    && fPage.includes('Don’t confuse with') && fPage.includes('data-turn="3"')
+    && fCross.includes('../../biology/ch05-photosynthesis-leaf/#2'));
 }
 C.report();

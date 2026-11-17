@@ -28,11 +28,10 @@ const peakDay = type => {
 check('Sampled antibody curves peak on the days the model states (primary day 14, secondary day 7)', Math.abs(peakDay('primary') - M.immuneMemoryAccount(0, 'primary').peakDay) < 0.1 && Math.abs(peakDay('secondary') - M.immuneMemoryAccount(0, 'secondary').peakDay) < 0.1);
 check('A primary response lags: no antibody until after day 4', M.immuneMemoryAccount(4, 'primary').antibodyTitre === 0 && M.immuneMemoryAccount(4.5, 'primary').antibodyTitre > 0);
 check('Secondary memory B/T response at day 5 produces >15x higher antibody titre than primary response', im2.antibodyTitre > im1.antibodyTitre * 15);
+const ors = M.orsAndEvaporativeLedger(335, 2420);
+check('Sweat evaporation of 335 g/h at 2420 J/g removes ~225 W; Mahalanabis 1971 ORS cut mortality by 26.4 percentage points', Math.abs(ors.coolingWatts - (335 * 2420) / 3600) < 1e-9 && Math.abs(ors.bongaonMortalityDropPct - 26.4) < 1e-9);
+const realSec = M.immuneMemoryAccount(7, 'secondary', false);
+const buggySec = M.immuneMemoryAccount(7, 'secondary', true);
+check('Buggy-world counterfactual removes clonal immune memory amplification on secondary exposure', realSec.antibodyTitre > 150 && buggySec.antibodyTitre < 25);
 
 process.exit(bad ? 1 : 0);
-
-check('Buggy-world counterfactual removes clonal immune memory amplification on secondary exposure', () => {
-  const realSec = immuneMemoryAccount(7, 'secondary', false);
-  const buggySec = immuneMemoryAccount(7, 'secondary', true);
-  return realSec.antibodyTitre > 150 && buggySec.antibodyTitre < 25;
-});

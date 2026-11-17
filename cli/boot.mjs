@@ -141,10 +141,10 @@ export const TARGETS = [
   {
     slug: 'prims',
     kind: 'kit',
-    summary: 'Core 3D paper-and-ink mathematical and scientific building blocks (axes, plots, surfaces, vector fields, streamlines, equal-flux fieldLines, flowBeads, lattices, molecules, particles).',
-    triggers: ['building blocks', '3d plot', 'vector field', 'streamline', 'field lines', 'flow beads', '3d surface', 'molecule xyz', 'coordinate axes'],
+    summary: 'Core 3D paper-and-ink mathematical and scientific building blocks (axes, plots, surfaces, vector fields, streamlines, equal-flux fieldLines, flowBeads, lattices, molecules, particles, diegetic canvasPlate, ink-outlined billboard).',
+    triggers: ['building blocks', '3d plot', 'vector field', 'streamline', 'field lines', 'flow beads', '3d surface', 'molecule xyz', 'coordinate axes', 'canvas plate', 'diegetic screen', 'flame billboard'],
     modules: {
-      '@saxster/atlas/prims.js': ['axes', 'plot', 'area', 'surface', 'curve', 'vector', 'field', 'streamline', 'fieldLines', 'flowBeads', 'lattice', 'blob', 'particles', 'molecule', 'parseXYZ', 'linkage'],
+      '@saxster/atlas/prims.js': ['axes', 'plot', 'area', 'surface', 'curve', 'vector', 'field', 'streamline', 'fieldLines', 'flowBeads', 'lattice', 'blob', 'particles', 'molecule', 'parseXYZ', 'linkage', 'canvasPlate', 'billboard'],
       '@saxster/atlas/parts.js': ['part', 'box', 'cyl', 'rod', 'lines', 'arrow', 'setArrow', 'liveTube', 'shadeMat', 'PALETTE', 'TONE'],
     },
     invariants: [
@@ -222,11 +222,12 @@ export const TARGETS = [
   {
     slug: 'chart',
     kind: 'kit',
-    summary: '2D SVG line/scatter charts, live tangents/paths, waterfall bridges, and Sankey flow diagrams with paper-masked labels and WCAG-checked palettes.',
-    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart', 'live chart'],
+    summary: '2D SVG line/scatter charts, live tangents/paths, stepped geometric-zoom viewBox cinematography, arc-length pathBeads, waterfall bridges, and Sankey flow diagrams.',
+    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart', 'live chart', 'viewbox camera', 'svg path beads'],
     modules: {
       '@saxster/atlas/chart.js': [
         'textAdvanceEm', 'scale', 'chart', 'samples', 'moveCursor', 'moveTangent', 'setLivePath',
+        'interpViewBox', 'focusViewBox', 'samplePolyline', 'beadSlots', 'pathBeads',
         'waterfallWalk', 'waterfallChart', 'sankeyLayout', 'sankeyChart',
       ],
       '@saxster/atlas/theme.js': ['readTheme', 'KYM', 'BYRNE_THEME', 'parseColor', 'compositeOver', 'srgbLuminance', 'wcagContrast', 'auditTheme'],
@@ -239,10 +240,10 @@ export const TARGETS = [
   {
     slug: 'prose',
     kind: 'kit',
-    summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
-    triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber'],
+    summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), discrete paramChip(), execution-traced codeBlock(), epistemic/diff badge(), lookalike foilCard(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
+    triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber', 'code block trace', 'parameter chip', 'lookalike foil'],
     modules: {
-      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'bindProse'],
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'paramChip', 'codeBlock', 'badge', 'foilCard', 'bindProse'],
       '@saxster/atlas/theme.js': ['BYRNE_THEME', 'auditTheme'],
     },
     invariants: [

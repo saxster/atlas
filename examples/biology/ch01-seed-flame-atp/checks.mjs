@@ -34,6 +34,12 @@ check('ATP turnover: 50 g pool and 40,000 g/day = 800 cycles/day (1.8 min/cycle)
   Math.abs(turn.poolEquivalentsPerDay - 800) < 1e-9 && Math.abs(turn.minutesPerCycle - 1.8) < 1e-9
 );
 
+const kw = M.kinesinWalkState(125, 100, false);
+const kwBuggy = M.kinesinWalkState(125, 100, true);
+check('Harvard BioVisions kinesin & Noji 1997 F1 rotor: 125 ATP = 1,000 nm (1 µm) walk at 800 nm/s & 15,000 deg F1 rotation (0 in Buggy World)',
+  kw.distanceNm === 1000 && kw.velocityNmPerSec === 800 && Math.abs(kw.f1AngleDeg - 15000) < 1e-9 && kwBuggy.distanceNm === 0 && kwBuggy.f1Revolutions === 0
+);
+
 const cap = M.capsidTriangulation(2, 1);
 check('Caspar-Klug triangulation T = h^2 + hk + k^2 = 7 for (2,1) with 420 subunits', cap.T === 7 && cap.subunits === 420 && cap.capsomeres === 72);
 
