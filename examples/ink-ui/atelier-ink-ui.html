@@ -734,6 +734,10 @@ html.render *, html.render *::before, html.render *::after { transition: none !i
   }
   @media (max-width: 600px) {
     body.ink-page { padding: 0 10px 44px; }
+    .ink-nav { gap: 8px; padding: 14px 2px; }
+    .ink-brand { white-space: nowrap; font-size: 15.5px; }
+    .ink-nav-links a:not(.ink-btn) { display: none; }
+    .ink-nav-links .ink-btn { white-space: nowrap; padding: 7px 12px; font-size: 11px; }
     .ink-stage { padding: 12px; border-radius: 18px; }
     .bento-grid, .ink-about { grid-template-columns: 1fr; }
   }
