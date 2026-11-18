@@ -783,7 +783,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 }
 { // Programmatic boot package assembler & strict router (cli/boot.mjs)
   const { TARGETS, boot } = await import('../cli/boot.mjs');
-  const allTargetsOk = TARGETS.length === 23 && TARGETS.every(t => {
+  const allTargetsOk = TARGETS.length === 24 && TARGETS.every(t => {
     const res = boot(t.slug);
     const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
     const hasVoiceDoc = t.kind !== 'voice' || (Boolean(res.voiceDoc) && res.markdown.includes('## Creator Voice Guide'));
@@ -791,6 +791,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   });
   const trigExplorer = boot('interactive experiment with what if sliders');
   const trigBlueprint = boot('2d to 3d architectural blueprint with section cut');
+  const trigInk = boot('diegetic controls');
   const trigVoice = boot('thebuggeddev pencil wash');
   const trigWhacky = boot('wild and whacky mad atelier');
   const trigCombo = boot('what if sliders in ciechanow style');
@@ -798,16 +799,17 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const noMatchRes = boot('underwater basketweaving');
   const listRes = boot('', { list: true });
 
-  C.check('cli/boot.mjs: all 6 grammars, 8 kits & 9 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+  C.check('cli/boot.mjs: all 6 grammars, 9 kits & 9 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
     allTargetsOk
     && trigExplorer.matched && trigExplorer.slug === 'explorer'
     && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
+    && trigInk.matched && trigInk.slug === 'ink-ui'
     && trigVoice.matched && trigVoice.slug === 'bugged-sketchbook' && trigVoice.register === 'quirky'
     && trigWhacky.matched && trigWhacky.slug === 'whacky-lab' && trigWhacky.register === 'wild'
     && trigCombo.matched && trigCombo.slug === 'explorer' && trigCombo.supportingKits.includes('ciechanowski-mechanism')
     && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
     && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
-    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 23);
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 24);
 }
 { // Pure conservation solvers, equal-flux quantileSeeds & 3D axisymmetric ray tracing (engine/solvers.js)
   const { solveNetwork, quantileSeeds, traceAxisymmetricRays } = await import('./solvers.js');
