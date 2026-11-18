@@ -44,7 +44,7 @@ Seeded from nathanliow/atlas-of-physics (MIT; keep its LICENSE notice). Remotes:
   and kym-adapter tests)
 
 Browser tools need Chrome (`cli/chrome.mjs`: set `CHROME` if it is elsewhere; `GL=swiftshader` renders in software, as
-CI's Linux runners do). CI (`.github/workflows/check.yml`) runs SMOKE and `npm run test:browser` on every push. Screenshots:
+CI's Linux runners do). Hosted triggers in `.github/workflows/check.yml` are disabled; run these checks locally at the applicable task/release boundary. Screenshots:
 `CHAPTER=physics/newton PARTS=, node tools/shoot.mjs <out-dir> [w] [h]`. `golden/` (ignored) holds pre-refactor
 screenshots for visual comparison; the scene animates, so compare by eye, not pixel diff.
 
@@ -93,3 +93,10 @@ screenshots for visual comparison; the scene animates, so compare by eye, not pi
   settled beat sheet (`<name>.beats.jpg`), and a timeline (`starts`, `events`) for the score.
 - `node cli/score.mjs <timeline.json> [<silent.mp4> <out.mp4>]` (record runs it): a seeded lo-fi bed, a bell per
   page or step, a pluck per designed event; two-pass loudnorm to −14 LUFS / −1 dBTP, measured (PASS/FAIL), A/V impulse cross-correlation sync check (`±40 ms`), plus `<name>.wave.png` with beat markers.
+
+## Verification cadence — 18 November 2026
+
+Follow [LOCAL_VERIFICATION.md](LOCAL_VERIFICATION.md): focused local checks for
+ordinary changes and source pushes, with existing full gates retained for settled
+authorised release batches. It supersedes older broad-per-commit/push wording;
+product invariants, assertions and release requirements remain binding.
