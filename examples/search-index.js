@@ -7916,6 +7916,15 @@ export const SEARCH_INDEX = [
     ]
   },
   {
+    "id": "statistics/effort-transfer",
+    "kind": "explorer",
+    "subject": "Statistics",
+    "title": "Rewarding effort & pooling replications",
+    "sub": "why four n ≈ 240 studies flicker while N = 1,457 meta-analysis resolves d = 0.22",
+    "text": "A 5-study meta-analysis forest plot (N = 1,457) beside 50-trial voluntary challenge-seeking curves comparing effort-reinforced learners against controls",
+    "href": "statistics/effort-transfer/"
+  },
+  {
     "id": "concept:diffusion",
     "kind": "concept",
     "subject": "Biology",

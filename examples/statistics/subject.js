@@ -6,7 +6,7 @@ export const SUBJECT = {
   id: 'statistics',
   name: 'Atlas of Statistics',
   blurb: 'probability, sampling and inference',
-  figures: ['galton', 'error', 'bayes', 'hypothesis'],
+  figures: ['galton', 'error', 'bayes', 'hypothesis', 'effort-transfer'],
   hero: 'Statistics, taken apart.',
   tagline: 'Chance as experiments you can run, and try to break',
   // contents-page cards (tools/site.mjs); at: the tour time tools/cards.mjs draws the picture from (default: the end)
@@ -19,6 +19,8 @@ export const SUBJECT = {
       alt: 'A 3D unit square of 1,000 people split into True Positives (red) and False Positives (amber) alongside the isolated positive-test bar P(D|+)' },
     hypothesis: { section: 'Inference and error', title: 'Signal, noise and the 5 % line', sub: 'p-values, statistical power and 95 % confidence intervals', grammar: 'explorer',
       alt: 'Overlapping null H₀ and alternative H₁ sampling bell curves beside a forest plot of 20 replicated 95% confidence intervals' },
+    'effort-transfer': { section: 'Inference and error', title: 'Rewarding effort & pooling replications', sub: 'why four n ≈ 240 studies flicker while N = 1,457 meta-analysis resolves d = 0.22', grammar: 'explorer',
+      alt: 'A 5-study meta-analysis forest plot (N = 1,457) beside 50-trial voluntary challenge-seeking curves comparing effort-reinforced learners against controls' },
   },
   links: [],
   source: 'https://github.com/saxster/atlas',
