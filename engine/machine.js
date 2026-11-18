@@ -72,7 +72,7 @@ export function startMachine(figure) {
   $('figtitle').textContent = figure.title; $('figno').textContent = `Fig. ${figure.no}`;
   $('question').textContent = figure.question; $('bigidea').innerHTML = `<b>The big idea:</b> ${figure.bigIdea}`;
   $('steps').innerHTML = STEPS.map((s, i) => `<li><button type="button" class="step" data-k="${i + 1}"><span class="n">${i + 1}</span><span class="lab">${s.label}</span></button></li>`).join('');
-  $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
+  $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip${c.tone === 'ink' ? ' chip-ink' : ''}" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
   const stepB = [...document.querySelectorAll('#steps .step')], chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
   let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !reduced ? 'auto' : 'manual');

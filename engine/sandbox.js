@@ -4,6 +4,7 @@
 import { createStage, ease, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playClick, playBoop } from './sound.js';
+import { renderControl, updateControl, bindControls, mountControlModeBar } from './diegetic.js';
 
 function applySandboxChart(el, res, state, params, items) {
   if (!el || !res) return;
@@ -50,7 +51,7 @@ export function startSandbox(figure) {
   document.title = `${figure.title} · Atlas`;
   $('figtitle').textContent = figure.title; $('figno').textContent = `Fig. ${figure.no}`;
   $('question').textContent = figure.question; $('bigidea').innerHTML = `<b>The big idea:</b> ${figure.bigIdea}`;
-  $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip on" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
+  $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip on${c.tone === 'ink' ? ' chip-ink' : ''}" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
   const chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
   const shareUrl = () => {
@@ -149,16 +150,22 @@ export function startSandbox(figure) {
 
   // ---------- controls ----------
   const fmt = c => (c.fmt || (v => String(v)))(params[c.key]);
+  const hasDiegetic = (figure.controls || []).some(c => c.ui?.kind);
+  let ctlMode = Q.get('controls') === 'creative' ? 'creative' : (Q.get('controls') === 'standard' ? 'standard' : (figure.controlMode || 'standard'));
   function renderControls() {
     if (!$('controls')) return;
-    $('controls').innerHTML = (figure.controls || []).map(c => `<label class="slider"><span class="name">${c.label}</span>
-      <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${params[c.key]}"><output>${fmt(c)}</output></label>`).join('');
+    $('controls').innerHTML = (figure.controls || []).map(c =>
+      renderControl(c, params[c.key], { mode: ctlMode, idPrefix: `sb-${figure.no || 'fig'}` })
+    ).join('');
   }
   renderControls();
   function syncSliders() {
     for (const c of figure.controls || []) {
       const inp = $('controls')?.querySelector(`input[data-key="${c.key}"]`);
-      if (inp) { inp.value = params[c.key]; inp.nextElementSibling.textContent = fmt(c); }
+      const out = inp?.closest('[data-ctl]')?.querySelector('[data-out]') || inp?.nextElementSibling;
+      if (inp) inp.value = params[c.key];
+      if (out) out.textContent = fmt(c);
+      updateControl($('controls'), c, params[c.key]);
     }
   }
   function syncMatrixInputs() {
@@ -172,11 +179,36 @@ export function startSandbox(figure) {
 
   $('controls')?.addEventListener('input', e => {
     const key = e.target.dataset.key; if (!key) return;
-    const c = figure.controls.find(x => x.key === key); params[key] = +e.target.value; e.target.nextElementSibling.textContent = fmt(c);
+    const c = figure.controls.find(x => x.key === key); if (!c) return;
+    params[key] = +e.target.value;
+    const out = e.target.closest('[data-ctl]')?.querySelector('[data-out]') || e.target.nextElementSibling;
+    if (out) out.textContent = fmt(c);
+    updateControl($('controls'), c, params[key]);
     activePreset = ''; renderPresets(); syncMatrixInputs();
     if (c.rebuild) build();
     syncUrl();
   });
+  if ($('controls')) {
+    bindControls($('controls'), {
+      getParams: () => params,
+      setParam: (k, v) => {
+        const c = (figure.controls || []).find(x => x.key === k); if (!c) return;
+        params[k] = +v;
+        if (ctlMode === 'creative' && c.ui?.kind) renderControls();
+        else syncSliders();
+        activePreset = ''; renderPresets(); syncMatrixInputs();
+        if (c.rebuild) build();
+        syncUrl();
+      },
+    });
+    if (hasDiegetic) {
+      mountControlModeBar($('controls'), {
+        initialMode: ctlMode,
+        place: 'before',
+        onChange: m => { ctlMode = m; renderControls(); syncUrl(); },
+      });
+    }
+  }
 
   function reset() {
     Object.assign(params, baseParams);

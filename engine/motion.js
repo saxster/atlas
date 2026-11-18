@@ -551,4 +551,126 @@ export function camHandheld(pose, t, { ampAz = 0.45, ampEl = 0.3, ampY = 0.02, p
   };
 }
 
+// Settled Flow: runs `cycles` finite ambient pass(es) of length `period`, then permanently
+// settles at `clamp01(settleAt)` so ambient diagrams do not loop forever. Pure function of `t`.
+export function settledFlowPhase(t, period = 4, { cycles = 1, settleAt = 1 } = {}) {
+  const p = Math.max(1e-6, Number(period) || 4);
+  const c = Math.max(1, Math.floor(Number(cycles) || 1));
+  if (!(t > 0)) return 0;
+  if (t >= c * p) return clamp01(settleAt);
+  return fract(t / p);
+}
+
+const GOVERNOR_PRIORITY = Object.freeze({
+  ambient: 10,
+  hover: 20,
+  step: 30,
+  tour: 40,
+  scrub: 50,
+  still: 100,
+  hidden: 100,
+  reduced: 100,
+});
+
+// Single-Owner Motion Governor: tokenized priority-lease arbiter so ambient loops, hover previews,
+// step/tour playback, scrubbing, Still mode, and reduced-motion never race or leave stale callbacks.
+export function createMotionGovernor({ reduced = false, still = false, hidden = false } = {}) {
+  let isReduced = !!reduced;
+  let isStill = !!still;
+  let isHidden = !!hidden;
+  let nextToken = 1;
+  let activeOwner = null;
+  let activeKind = null;
+  let activeToken = 0;
+
+  const mode = () => (isReduced ? 'reduced' : isHidden ? 'hidden' : isStill ? 'still' : 'live');
+  const blocked = () => isReduced || isStill || isHidden;
+
+  function clearActive() {
+    activeOwner = null;
+    activeKind = null;
+    activeToken = ++nextToken;
+  }
+
+  return {
+    acquire(owner, kind = 'step') {
+      const name = String(owner || '').trim();
+      if (!name || blocked()) {
+        return { granted: false, token: 0, activeOwner, activeKind };
+      }
+      const prio = GOVERNOR_PRIORITY[kind] ?? GOVERNOR_PRIORITY.step;
+      const curPrio = activeKind ? (GOVERNOR_PRIORITY[activeKind] ?? 0) : 0;
+      if (activeOwner && activeOwner !== name && prio < curPrio) {
+        return { granted: false, token: 0, activeOwner, activeKind };
+      }
+      activeOwner = name;
+      activeKind = kind;
+      activeToken = ++nextToken;
+      return { granted: true, token: activeToken, activeOwner, activeKind };
+    },
+    release(token) {
+      if (!token || token !== activeToken || !activeOwner) return false;
+      clearActive();
+      return true;
+    },
+    setStill(flag) {
+      isStill = !!flag;
+      if (isStill) clearActive();
+      return this.state();
+    },
+    setHidden(flag) {
+      isHidden = !!flag;
+      if (isHidden) clearActive();
+      return this.state();
+    },
+    setReduced(flag) {
+      isReduced = !!flag;
+      if (isReduced) clearActive();
+      return this.state();
+    },
+    state() {
+      return {
+        mode: mode(),
+        activeOwner,
+        activeKind,
+        token: activeToken,
+      };
+    },
+  };
+}
+
+// Shared Anchor Handoff: computes deterministic `stay / enter / leave` continuity sets and the
+// primary surviving anchor element across consecutive step or page transitions.
+export function sharedAnchorDelta(prevIds = [], nextIds = []) {
+  const norm = (list, label) => {
+    if (!Array.isArray(list)) throw new Error(`sharedAnchorDelta: ${label} must be an array`);
+    const seen = new Set();
+    const out = [];
+    for (const raw of list) {
+      const id = typeof raw === 'string' ? raw.trim() : '';
+      if (!id) throw new Error(`sharedAnchorDelta: empty or non-string ID in ${label}`);
+      if (seen.has(id)) throw new Error(`sharedAnchorDelta: duplicate ID "${id}" in ${label}`);
+      seen.add(id);
+      out.push(id);
+    }
+    return { list: out, set: seen };
+  };
+  const prev = norm(prevIds, 'prevIds');
+  const next = norm(nextIds, 'nextIds');
+  const stay = prev.list.filter(id => next.set.has(id));
+  const enter = next.list.filter(id => !prev.set.has(id));
+  const leave = prev.list.filter(id => !next.set.has(id));
+  const anchor = stay[0] ?? null;
+  return {
+    stay,
+    enter,
+    leave,
+    anchor,
+    status: anchor ? 'anchored' : 'no-anchor',
+    counts: { stay: stay.length, enter: enter.length, leave: leave.length },
+    summary: `=${stay.length} +${enter.length} −${leave.length}`,
+  };
+}
+
+
 

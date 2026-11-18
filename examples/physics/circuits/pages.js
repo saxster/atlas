@@ -129,6 +129,7 @@ export const PAGES = [
       <p>More in series raises <i>R</i><sub>eq</sub>; more in parallel lowers it, below the smallest branch. In parallel the dots speed up along the rails, where the branch currents gather.</p>
       <p class="hintline">Click either circuit to raise it. Dot speed ∝ current (${f(K_DOT.parallel / K_DOT.series, 1)}× as fast per amp in parallel).</p>`,
     cam: { target: [STATIONS.sp + 0.07, 0.1, 0.1], az: -5, el: 50, dist: 20.5 }, lit: null, scene: 'sp', look: {},
+    foil: { to: 'physics/capacitors/5', label: '12.5 Capacitors in series and parallel', note: 'resistors add in series (R₁ + R₂) while capacitors add in parallel (C₁ + C₂).' },
     fig: '2 Ω and 4 Ω; 2, 4 and 6 Ω',
   },
   {

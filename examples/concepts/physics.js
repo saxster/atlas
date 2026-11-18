@@ -15,4 +15,6 @@ export const CONCEPTS = [
     shownIn: ['physics/newton/11'] },
   { id: 'thin-lens', name: 'Thin-lens equation and lateral magnification', formula: '1/<i>f</i> = 1/<i>d</i><sub>o</sub> + 1/<i>d</i><sub>i</sub>, &nbsp;<i>M</i> = −<i>d</i><sub>i</sub>/<i>d</i><sub>o</sub>',
     shownIn: ['physics/optics-bench'] },
+  { id: 'pulse-echo', name: 'Pulse-echo ranging and thermal sound speed', formula: '<i>d</i> = ½<i>v</i>(<i>T</i>)Δ<i>t</i>, &nbsp;<i>v</i>(<i>T</i>) = <i>v</i><sub>0</sub>√(1 + <i>T</i>/273.15)',
+    shownIn: ['physics/sensor-bench'] },
 ];

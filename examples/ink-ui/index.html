@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en" data-quirk="slightly-quirky">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corner Atelier · An interface drawn in ink · Atlas</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Mono:wght@400;500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/atlas.css">
+<link rel="stylesheet" href="../../engine/figure.css">
+<style>
+  :root {
+    --display: "Bricolage Grotesque", var(--sans);
+    --mono: "DM Mono", "JetBrains Mono", ui-monospace, monospace;
+    --page: #f2efe7;
+    --card: #fffdf6;
+    --board: #e7e2d6;
+    --strong: #231e16;
+    --text: #453f34;
+    --muted: #756d5e;
+  }
+  body.ink-page {
+    background: var(--page);
+    color: var(--text);
+    padding: 0 20px 64px;
+    margin: 0;
+  }
+  .ink-nav, .ink-hero, .ink-stage, .ink-about {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin-inline: auto;
+  }
+  .ink-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 4px;
+    border-bottom: 1.5px dotted rgba(35, 30, 22, 0.32);
+    font: 500 12px/1 var(--mono);
+  }
+  .ink-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font: 700 17px/1 var(--display);
+    color: var(--strong);
+    text-decoration: none;
+  }
+  .ink-badge {
+    font: 600 10px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--accent, #ef6a4c);
+    color: var(--accent-on, #ffffff);
+    border: 1.5px solid var(--ink-line, #231e16);
+  }
+  .ink-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .ink-nav-links a {
+    text-decoration: none;
+    color: var(--strong);
+  }
+  .ink-hero {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 32px;
+    align-items: end;
+    padding: 42px 4px 36px;
+  }
+  .ink-hero h1 {
+    font: 800 clamp(44px, 6vw, 78px)/0.98 var(--display);
+    letter-spacing: -0.03em;
+    color: var(--strong);
+    margin: 0;
+  }
+  .ink-hero h1 .ink-tint {
+    color: var(--accent-ink, var(--accent, #ef6a4c));
+  }
+  .ink-hero-copy p {
+    font: 400 16.5px/1.55 var(--sans);
+    color: var(--text);
+    margin: 0 0 18px;
+  }
+  .ink-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .ink-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink-line, #231e16);
+    background: var(--strong);
+    color: var(--card);
+    font: 600 12.5px/1 var(--mono);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .ink-btn.secondary {
+    background: var(--card);
+    color: var(--strong);
+  }
+  .ink-meta {
+    font: 500 11px/1.3 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ink-stage {
+    background: var(--board);
+    border: 1.5px solid var(--ink-line, #231e16);
+    border-radius: 26px;
+    padding: 18px;
+    box-shadow: 0 5px 0 rgba(35, 30, 22, 0.14);
+  }
+  .ink-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 6px 14px;
+    margin-bottom: 14px;
+    border-bottom: 1.5px dotted rgba(35, 30, 22, 0.28);
+  }
+  .ink-tb-left, .ink-tb-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: 500 11px/1 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--strong);
+  }
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent, #ef6a4c);
+  }
+  .tb-seg {
+    display: inline-flex;
+    gap: 3px;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink-line, #231e16);
+    background: var(--card);
+  }
+  .tb-seg button, .auto-btn {
+    border: 0;
+    background: transparent;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font: 500 11px/1 var(--mono);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tb-seg button[aria-pressed="true"], .auto-btn[aria-pressed="true"] {
+    background: var(--strong);
+    color: var(--card);
+  }
+  .auto-btn {
+    border: 1.5px solid var(--ink-line, #231e16);
+    background: var(--card);
+    color: var(--strong);
+    padding: 6px 13px;
+  }
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+  }
+  .bento-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .bento-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    margin-bottom: 3px;
+    color: var(--strong);
+  }
+  .bento-card.tint {
+    --ink-face: var(--accent-soft, #fce4df);
+  }
+  .bento-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .bento-title {
+    font: 500 10.5px/1.2 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .bento-card.dark .bento-title {
+    color: #a8a092;
+  }
+  .bento-body {
+    position: relative;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .bento-fig-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    border-radius: 8px;
+  }
+  .bento-fig-btn svg {
+    width: 100%;
+    height: auto;
+    max-height: 118px;
+    display: block;
+    overflow: visible;
+  }
+  .bento-foot {
+    padding-top: 4px;
+  }
+  .bento-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font: 500 10.5px/1.2 var(--mono);
+    color: var(--muted);
+  }
+  .std-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .std-col {
+    display: grid;
+    gap: 5px;
+  }
+  .std-pill, .std-step {
+    border: 1.2px solid var(--ink-line, #231e16);
+    background: var(--card);
+    color: var(--strong);
+    border-radius: 999px;
+    padding: 4px 9px;
+    font: 500 10.5px/1.1 var(--mono);
+    cursor: pointer;
+    text-align: left;
+  }
+  .std-pill[aria-checked="true"], .std-pill[aria-selected="true"], .std-pill[aria-pressed="true"], .std-step.is-done {
+    background: var(--accent, #ef6a4c);
+    color: var(--accent-on, #ffffff);
+  }
+  .std-search {
+    display: flex;
+    gap: 6px;
+  }
+  .std-input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--ink-line, #231e16);
+    background: var(--card);
+    font: 500 12px/1.2 var(--mono);
+    color: var(--strong);
+  }
+  .std-btn, .std-step-btn, .std-star {
+    border: 1.2px solid var(--ink-line, #231e16);
+    background: var(--card);
+    color: var(--strong);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font: 600 12px/1 var(--mono);
+    cursor: pointer;
+  }
+  .std-star.is-on {
+    background: var(--accent, #ef6a4c);
+    color: var(--accent-on, #ffffff);
+  }
+  .std-pay-btn {
+    width: 100%;
+    padding: 11px 14px;
+    font: 600 12px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .std-chat {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+  }
+  .chat-b {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.2px solid var(--ink-line, #231e16);
+    background: var(--card);
+    font: 500 11.5px/1.3 var(--mono);
+  }
+  .chat-b.reply {
+    background: var(--accent-soft, #fce4df);
+  }
+  .bento-toast-row {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+  .toast-fig {
+    width: 68px;
+    flex: 0 0 68px;
+  }
+  .toast-fig svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .toast-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .toast-copy strong {
+    font: 700 13px/1.2 var(--display);
+  }
+  .toast-copy span {
+    font: 500 10.5px/1.2 var(--mono);
+    color: var(--muted);
+  }
+  .wallet-balance {
+    font: 800 24px/1 var(--display);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+  .ink-about {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ink-about h2 {
+    font: 700 18px/1.2 var(--display);
+    margin: 0 0 6px;
+  }
+  .ink-about p {
+    font: 400 14px/1.5 var(--sans);
+    margin: 0;
+    color: var(--text);
+  }
+  @media (max-width: 1100px) {
+    .ink-hero { grid-template-columns: 1fr; gap: 18px; }
+    .bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 600px) {
+    body.ink-page { padding: 0 10px 44px; }
+    .ink-stage { padding: 12px; border-radius: 18px; }
+    .bento-grid, .ink-about { grid-template-columns: 1fr; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "@saxster/atlas": "../../engine/index.js",
+    "@saxster/atlas/": "../../engine/",
+    "@saxster/atlas/adapters/": "../../adapters/",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+  <nav class="ink-nav" aria-label="Page navigation">
+    <a class="ink-brand" href="../">☕ Corner Atelier <span class="ink-badge">DEMO</span></a>
+    <div class="ink-nav-links">
+      <a href="#sheet">The demo</a>
+      <a href="#inside">Architecture</a>
+      <a class="ink-btn secondary" href="./atelier-ink-ui.html" download="atelier-ink-ui.html">Get the HTML</a>
+    </div>
+  </nav>
+
+  <header class="ink-hero">
+    <h1>A coffee app,<br><span class="ink-tint">drawn in ink.</span></h1>
+    <div class="ink-hero-copy">
+      <p>Corner Atelier shows what hand-inked 2.5D illustrations can do inside a real interface. The pictures are the controls: stamp the card, pick a cup, watch the kettle count down — backed by a pure checked model, WCAG-clamped brand tokens, and full keyboard accessibility.</p>
+      <div class="ink-cta-row">
+        <a class="ink-btn" href="./atelier-ink-ui.html" download="atelier-ink-ui.html">Get the HTML</a>
+        <a class="ink-btn secondary" href="../">All Atlas subjects →</a>
+      </div>
+      <div class="ink-meta" id="hero-meta">24 WIDGETS · 24 LIVE FIGURES · ANY BRAND COLOUR</div>
+    </div>
+  </header>
+
+  <main class="ink-stage" id="sheet">
+    <div class="ink-toolbar">
+      <div class="ink-tb-left">
+        <span class="live-indicator"><i class="live-dot" aria-hidden="true"></i> LIVE DEMO · TAP OR TAB ANYTHING</span>
+        <div class="tb-seg" role="group" aria-label="Control edition">
+          <button type="button" data-mode-btn="standard" aria-pressed="false">Standard</button>
+          <button type="button" data-mode-btn="creative" aria-pressed="true">Creative</button>
+        </div>
+        <div class="tb-seg" role="group" aria-label="Ink quirk level">
+          <button type="button" data-quirk-btn="bland" aria-pressed="false">Crisp</button>
+          <button type="button" data-quirk-btn="slightly-quirky" aria-pressed="true">Inked</button>
+          <button type="button" data-quirk-btn="playful" aria-pressed="false">Playful</button>
+        </div>
+      </div>
+      <div class="ink-tb-right">
+        <span id="swatch-slot"></span>
+        <span id="sound-slot"></span>
+        <button type="button" class="auto-btn" id="autoplay-btn" aria-pressed="false">▶ Autoplay</button>
+      </div>
+    </div>
+
+    <div class="bento-grid" id="bento-grid"></div>
+  </main>
+
+  <section class="ink-about" id="inside" aria-label="About this demo">
+    <div class="ink-card bento-card">
+      <h2>0ms Brand Cascade &amp; Cached Ink Filters</h2>
+      <p>Every 2.5D isometric widget reads CSS custom properties (<code>--accent</code>, <code>--accent-mid</code>, <code>--accent-soft</code>, <code>--accent-ink</code>) derived with WCAG 2.x contrast clamping in <code>@saxster/atlas/theme.js</code>, switching brand colours in under 1 ms without rebuilding SVG DOM nodes.</p>
+    </div>
+    <div class="ink-card bento-card">
+      <h2>Take the Single-File HTML</h2>
+      <p>Built on <code>@saxster/atlas/iso_kit.js</code> and <code>@saxster/atlas/diegetic.js</code> under the MIT licence. Click <strong>Get the HTML</strong> to download a self-contained single-file bundle with zero external script dependencies.</p>
+    </div>
+  </section>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -26,7 +26,7 @@ export const FIGURE = {
   ],
   itemLabel: (it, i) => `${it.q > 0 ? '+q' : '−q'} #${i + 1} (${it.x.toFixed(1)}, ${it.y.toFixed(1)})`,
   controls: [
-    { key: 'px', label: 'Probe x', min: -2.5, max: 2.5, step: 0.1, fmt: v => v.toFixed(1) },
+    { key: 'px', label: 'Probe x', min: -2.5, max: 2.5, step: 0.1, fmt: v => v.toFixed(1), ui: { kind: 'coin-slider', coins: 7 } },
     { key: 'py', label: 'Probe y', min: -1.5, max: 1.5, step: 0.1, fmt: v => v.toFixed(1) },
   ],
   buildWorld: (E, p, items, hooks) => buildWorld(E, p, items, hooks),
@@ -39,7 +39,7 @@ export const FIGURE = {
   readout: s => `probe (${s.px.toFixed(1)}, ${s.py.toFixed(1)})\n|E| ${s.eMag.toFixed(2)}   V ${s.vProbe.toFixed(2)}`,
   chips: [
     { label: 'Charges on board', value: s => `${s.items.length} (net ${s.netQ >= 0 ? '+' : ''}${s.netQ}q)` },
-    { label: '|E| at probe', value: s => s.eMag.toFixed(2) },
+    { label: '|E| at probe', tone: 'ink', value: s => s.eMag.toFixed(2) },
     { label: 'Potential V at probe', value: s => s.vProbe.toFixed(2) },
     { label: 'Pair energy U', value: s => s.uPair.toFixed(2) },
   ],

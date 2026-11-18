@@ -57,7 +57,7 @@ ${GENERATED}  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
   <section class="shelf">
 ${cards.join('\n')}
   </section>
-  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a></p>
+  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a></p>
 </body>
 </html>
 `;

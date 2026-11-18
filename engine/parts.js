@@ -60,6 +60,7 @@ export const PALETTE = {
   dark: ['#9c9ca2', '#86868c', '#6c6c72'],
   ink: ['#4a4a50', '#2c2c30', '#18181a'],
   red: ['#f07a7e', '#e5484d', '#b8343a'],
+  accent: ['#f07a7e', '#e5484d', '#b8343a'],
   blue: ['#8fb0f0', '#5b86d6', '#3d63a8'],          // velocity / system totals, where a chapter needs a second hue
   green: ['#7ec49e', '#3f8a63', '#2e604a'],
   ochre: ['#e3b857', '#c8962e', '#936022'],
@@ -98,6 +99,7 @@ export function applyTheme(theme) {
     dark: [mix(sheet, ink, 0.45), mix(sheet, ink, 0.52), mix(sheet, ink, 0.60)],
     ink: [mix(sheet, ink, 0.75), mix(sheet, ink, 0.86), mix(sheet, ink, 0.95)],
     red: tri(theme.red || '#a94730'),
+    accent: tri(theme.red || '#a94730'),
     blue: tri(theme.blue || '#356d83'),
     green: tri(theme.green || '#2e604a'),
     ochre: tri(theme.ochre || '#936022'),
@@ -157,8 +159,32 @@ export function shadeMat(pal = 'paper', { opacity = 1, poche = false, headlight 
       uLit: { value: 0 },
     },
   });
+  m.userData = { palKey: pal };
   if (opacity === 1 && !poche && !headlight && !pocheMode) cache.set(key, m);
   return m;
+}
+
+// Live <1ms recolor of cached 'red', 'accent', and 'compound' 3D ShaderMaterials without rebuilding meshes or shaders.
+export function setLiveAccent(hex, { sheet = '#f2efe7', ink = '#18181a' } = {}) {
+  const base = new THREE.Color(hex || '#e5484d');
+  const sh = new THREE.Color(sheet);
+  const ik = new THREE.Color(ink);
+  const top = '#' + base.clone().lerp(sh, 0.28).getHexString();
+  const light = '#' + base.getHexString();
+  const dark = '#' + base.clone().lerp(ik, 0.22).getHexString();
+  const trio = [top, light, dark];
+  PALETTE.red = trio;
+  PALETTE.accent = trio;
+  PALETTE.compound = trio;
+  for (const [, mat] of cache.entries()) {
+    const pk = mat.userData?.palKey;
+    if ((pk === 'red' || pk === 'accent' || pk === 'compound') && mat.uniforms?.uTop) {
+      mat.uniforms.uTop.value.set(top);
+      mat.uniforms.uLight.value.set(light);
+      mat.uniforms.uDark.value.set(dark);
+    }
+  }
+  return trio;
 }
 
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

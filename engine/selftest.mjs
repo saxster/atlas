@@ -1262,4 +1262,263 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && fPage.includes('Don’t confuse with') && fPage.includes('data-turn="3"')
     && fCross.includes('../../biology/ch05-photosynthesis-leaf/#2'));
 }
+{ // Full Exemplar Toolkit: diffList & frameInspector (prose.js), sequenceLanes (chart.js), and 3D MCU/breadboard/rope kit (phys_kit.js)
+  const { diffList, frameInspector } = await import('./prose.js');
+  const { sequenceLanes } = await import('./chart.js');
+  const pk = await import('./phys_kit.js');
+
+  const dHtml = diffList([
+    { kind: 'added', label: 'Read cache tier', detail: 'absorbs 85% of hot key lookups', part: 'cache' },
+    { kind: 'changed', label: 'Primary DB load', detail: 'drops from 1,200 to 180 qps', part: 'db' },
+  ], { title: 'What changed in Step 3' });
+
+  const fHtml = frameInspector({
+    vantage: 'Seen at client Wi-Fi interface',
+    layers: [
+      {
+        label: 'IPv4',
+        bytes: 20,
+        color: 'blue',
+        part: 'ip',
+        fields: [
+          { name: 'TTL', range: [8, 9], value: '64', tag: 'documented', hex: '40' },
+          { name: 'Source IP', range: [12, 16], value: '192.168.1.42', tag: 'eg', hex: 'c0 a8 01 2a' },
+        ],
+      },
+      {
+        label: 'TLS Payload',
+        bytes: 44,
+        color: 'ochre',
+        part: 'tls',
+        fields: [
+          { name: 'Ciphertext', range: [20, 64], value: '44 encrypted bytes', tag: 'unobserved', hex: '··' },
+        ],
+      },
+    ],
+  });
+
+  const seq = sequenceLanes({
+    actors: [
+      { id: 'mcu', label: 'ESP32 Node' },
+      { id: 'sonar', label: 'HC-SR04' },
+      { id: 'oled', label: 'OLED Display' },
+    ],
+    messages: [
+      { from: 'mcu', to: 'sonar', y0: 46, y1: 68, label: 'TRIG 10 μs', key: 'trig', beads: 3 },
+      { from: 'sonar', to: 'mcu', y0: 78, y1: 112, label: 'ECHO pulse', key: 'echo', beads: 4 },
+      { from: 'mcu', to: 'oled', y0: 124, y1: 144, label: 'I2C frame', key: 'i2c', beads: 3 },
+    ],
+    stage: 'seq-bench',
+  });
+
+  const root = new THREE.Group();
+  const bb = pk.breadboard(root, { cols: 12, rows: 5, pos: [0, 0, 0] });
+  const h0 = bb.holePos(0, 0), h5 = bb.holePos(5, 2);
+  const mcu = pk.mcuBoard(root, { kind: 'uno', pos: [-1.5, 0, 0] });
+  mcu.setStatus({ tx: 1, rx: 0, led: 1 });
+  const wire = pk.jumperWire(root, { from: mcu.pinPos(2), to: h0, lift: 0.3, pal: 'red' });
+  const led = pk.ledComponent(root, { pos: [0.4, 0.1, 0], pal: 'green' });
+  led.setBrightness(0.85);
+  const res220 = pk.resistorComponent(root, { pos: [0.1, 0.1, 0], ohms: 220 });
+  const servo = pk.servoComponent(root, { pos: [1.1, 0.1, 0], angle: 0 });
+  servo.setAngle(Math.PI / 3);
+  const sonar = pk.ultrasonicComponent(root, { pos: [0, 0.25, -0.6] });
+  const rope = pk.braidedRope(root, { points: [[-1, 0, 0], [0, 0.4, 0], [1, 0, 0]], segments: 32 });
+  rope.morph([[-1, 0, 0], [0, 0.2, 0], [1, 0, 0]], [[-1, 0, 0], [0, 0.8, 0.4], [1, 0, 0]], 0.5);
+
+  C.check('prose.js diffList & frameInspector, chart.js sequenceLanes, and phys_kit.js 3D MCU/breadboard/rope kit work cleanly',
+    dHtml.includes('class="tk-diffs"') && dHtml.includes('+ Read cache tier') && dHtml.includes('data-part="cache"')
+    && fHtml.includes('class="tk-frame-ins"') && fHtml.includes('flex:20') && fHtml.includes('flex:44') && fHtml.includes('[12..16]') && fHtml.includes('E.G.') && fHtml.includes('··')
+    && seq.svg.includes('data-stage="seq-bench"') && seq.svg.includes('data-beads="echo"') && seq.paths.echo.length === 2
+    && h5.distanceTo(h0) > 0.2 && mcu.pinPos(2).isVector3 && wire.curvePoints(8).length === 8
+    && led.dome.userData.tone === TONE.lit && res220.bands.length === 4 && res220.bands[0] === 'red' && res220.bands[1] === 'red' && res220.bands[2] === 'brown'
+    && near(servo.horn.rotation.y, Math.PI / 3, 1e-6) && sonar.emitOrigin.isVector3 && rope.mesh.geometry.attributes.position.count > 50);
+}
+{ // Phase 1: Perceptual Single-Swatch Accent Cascade (theme.js) & Live 3D Recoloring (parts.js)
+  const { ACCENT_SWATCHES, deriveAccentTokens, applyAccentTokens, wcagContrast } = await import('./theme.js');
+  const { shadeMat, setLiveAccent } = await import('./parts.js');
+
+  const surfaces = [
+    { page: '#f2efe7', card: '#fffdf6', ink: '#231e16' },
+    { page: '#f4efe2', card: '#fdfbf7', ink: '#1b1917' },
+    { page: '#25221e', card: '#2f2b26', ink: '#f6f1e4' },
+  ];
+  const hexes = [...Object.values(ACCENT_SWATCHES), '#fde047'];
+  let allContrastOk = hexes.length >= 7;
+  for (const s of surfaces) {
+    for (const h of hexes) {
+      const t = deriveAccentTokens(h, s);
+      if (!t.accent || !t.accentMid || !t.accentDeep || !t.accentSoft || !t.accentInk || !t.accentOn) allContrastOk = false;
+      if (wcagContrast(t.accentInk, s.page) < 4.5) allContrastOk = false;
+      if (wcagContrast(t.accentInk, s.card) < 4.5) allContrastOk = false;
+      if (wcagContrast(t.accentInk, t.accentSoft) < 4.5) allContrastOk = false;
+      if (wcagContrast(t.accentOn, t.accent) < 4.5) allContrastOk = false;
+    }
+  }
+  const amber = deriveAccentTokens(ACCENT_SWATCHES.amber);
+  const fakeEl = { style: { props: {}, setProperty(k, v) { this.props[k] = v; } } };
+  applyAccentTokens(fakeEl, amber);
+
+  const mRed = shadeMat('red');
+  const mAcc = shadeMat('accent');
+  const oldHex = mRed.uniforms.uLight.value.getHexString();
+  setLiveAccent('#3aa57a');
+  const newHex = mRed.uniforms.uLight.value.getHexString();
+  const accHex = mAcc.uniforms.uLight.value.getHexString();
+  setLiveAccent('#e5484d'); // restore default red
+
+  C.check('theme.js deriveAccentTokens & parts.js setLiveAccent: WCAG >= 4.5:1 across all swatches/surfaces (including amber #f4b829) and 0ms live 3D uniform updates',
+    allContrastOk
+    && amber.accent === '#f4b829'
+    && amber.accentOn === '#231e16'
+    && fakeEl.style.props['--accent'] === '#f4b829'
+    && fakeEl.style.props['--accent-ink'] === amber.accentInk
+    && oldHex !== newHex && newHex === accHex);
+}
+{ // Phase 2: Pure 2.5D Isometric Hand-Inked Vector Kit (iso_kit.js) & Model-First Import Guard
+  const iso = await import('./iso_kit.js');
+
+  const [px, py] = iso.isoPt(10, 10, 0, [80, 56], 1);
+  const [px2, py2] = iso.isoPt(10, 0, 5, [80, 56], 1);
+  const tfTop = iso.isoTextTransform('flatTop', 0, 0, 0, { origin: [80, 56] });
+  const fBland = iso.inkFilterDefs('test0', { vbW: 160, quirk: 'bland' });
+  const fSmall = iso.inkFilterDefs('test1', { vbW: 80, quirk: 'slightly-quirky' });
+  const fLarge = iso.inkFilterDefs('test2', { vbW: 320, quirk: 'slightly-quirky' });
+
+  const primitives = [
+    iso.isoPlinth(),
+    iso.isoClipShadow('sh1', [[-20, -20, 0], [20, -20, 0], [20, 20, 0], [-20, 20, 0]], [{ x: 0, y: 0, rx: 10, ry: 6 }]).svg,
+    iso.isoBox({ x: -10, y: -10, z: 0, dx: 20, dy: 20, dz: 14, tone: 'accent' }),
+    iso.isoPrism({ z: 0, dz: 10, tone: 'wood' }),
+    iso.isoCyl({ x: 0, y: 0, z: 0, r: 10, h: 16, tone: 'glass', specular: true }),
+    iso.isoDiscSlot({ x: 0, y: 0, z: 0, active: false, dashed: true, label: '1' }),
+    iso.isoCup({ active: true, latteHeart: true }),
+    iso.isoCoinStack({ count: 5 }),
+    iso.isoJar({ lidLift: 0.8, active: true, label: 'Hot' }),
+    iso.isoCarton({ tilt: -12, active: true, label: 'OAT' }),
+    iso.isoPawnTable({ count: 3 }),
+    iso.isoPunchCard({ stamped: 7, total: 10, press: 0.5 }),
+    iso.isoTicket({ tornOffset: 1 }),
+    iso.isoKettle({ progress: 0.7, ready: true }),
+    iso.isoOven({ progress: 0.8 }),
+    iso.isoEspressoMachine({ stage: 1 }),
+    iso.isoToaster({ pop: 1 }),
+    iso.isoSignRow({ activeIndex: 1 }),
+    iso.isoNoticeBoard({ typing: true }),
+    iso.isoWallet({ coinDrop: 0.5 }),
+    iso.isoWaveformCup({ activeBar: 5 }),
+    iso.isoTray({ slots: [true, false, true] }),
+    iso.isoNotepad({ text: 'flat white', progress: 1 }),
+    iso.isoFlipCalendar({ activeIndex: 2 }),
+    iso.isoPourOver({ step: 1 }),
+  ];
+
+  const wrapped = iso.isoSvg({
+    id: 'demo-fig',
+    vb: [0, 0, 168, 112],
+    quirk: 'slightly-quirky',
+    staticBody: primitives.slice(0, 6).join(''),
+    dynamicBody: primitives[7],
+    label: 'Demo isometric composite',
+  });
+
+  C.check('iso_kit.js: 30-degree isometric projection, viewBox-calibrated inkFilterDefs, static/dynamic SVG split, and all 25 2.5D primitives render cleanly',
+    px === 80 && py === 66 && px2 > 88 && py2 === 56
+    && tfTop.startsWith('matrix(1.2247 0 0 0.9815')
+    && fBland === ''
+    && fSmall.includes('feTurbulence') && fSmall.includes('feDisplacementMap') && fLarge.includes('feBlend')
+    && wrapped.includes('filter="url(#demo-fig-hand)"')
+    && wrapped.includes('class="iso-dyn" data-anim="demo-fig"')
+    && primitives.every(s => typeof s === 'string' && s.startsWith('<g') && s.endsWith('</g>')));
+}
+{ // Settled Flow, Tokenized Motion Governor & Shared Anchor Handoff (engine/motion.js, stage.js, index.js)
+  const { settledFlowPhase, createMotionGovernor, sharedAnchorDelta } = await import('./index.js');
+  const sfNeg = settledFlowPhase?.(-1, 4);
+  const sfMid = settledFlowPhase?.(2, 4, { cycles: 1, settleAt: 1 });
+  const sfDone = settledFlowPhase?.(4.5, 4, { cycles: 1, settleAt: 1 });
+  const sfTwo = settledFlowPhase?.(6, 4, { cycles: 2, settleAt: 0.75 });
+  const sfTwoDone = settledFlowPhase?.(9, 4, { cycles: 2, settleAt: 0.75 });
+
+  const gov = createMotionGovernor?.();
+  const lAmb = gov?.acquire('bg-flow', 'ambient');
+  const lStep = gov?.acquire('chapter-beat', 'step');
+  const staleRel = gov?.release(lAmb?.token);
+  const lowPreempt = gov?.acquire('hover-wire', 'hover');
+  const highPreempt = gov?.acquire('slider-drag', 'scrub');
+  gov?.setStill(true);
+  const afterStill = gov?.state();
+  gov?.setStill(false);
+  const afterResume = gov?.state();
+
+  const delta1 = sharedAnchorDelta?.(['pump', 'valve', 'gauge'], ['valve', 'gauge', 'nozzle']);
+  const deltaNone = sharedAnchorDelta?.(['pump'], ['turbine']);
+  let dupThrew = false;
+  try { if (sharedAnchorDelta) sharedAnchorDelta(['pump', 'pump'], ['valve']); } catch { dupThrew = true; }
+
+  C.check('motion.js settledFlowPhase, createMotionGovernor & sharedAnchorDelta: finite settled phase, tokenized priority preemption, and stay/enter/leave continuity',
+    sfNeg === 0 && near(sfMid ?? -1, 0.5, 1e-9) && sfDone === 1 && near(sfTwo ?? -1, 0.5, 1e-9) && sfTwoDone === 0.75
+    && lAmb?.granted && lStep?.granted && lStep?.activeOwner === 'chapter-beat'
+    && staleRel === false && lowPreempt?.granted === false && highPreempt?.granted === true
+    && afterStill?.mode === 'still' && afterStill?.activeOwner === null
+    && afterResume?.mode === 'live' && afterResume?.activeOwner === null
+    && delta1?.status === 'anchored' && delta1?.anchor === 'valve'
+    && JSON.stringify(delta1?.stay) === '["valve","gauge"]'
+    && JSON.stringify(delta1?.enter) === '["nozzle"]'
+    && JSON.stringify(delta1?.leave) === '["pump"]'
+    && delta1?.summary === '=2 +1 −1'
+    && deltaNone?.status === 'no-anchor' && deltaNone?.anchor === null
+    && dupThrew);
+}
+{ // Phase 4: Diegetic Controls (8 kinds), Standard <-> Creative rendering, isoStackChart, and stateless Autoplay seek(t)
+  const { computeBarDelta, isoStackChart } = await import('./chart.js');
+  const { renderControl, createAutoplayDirector } = await import('./diegetic.js');
+
+  const bars = [
+    { label: 'Jul', value: 64.0, fmt: v => `$${v.toFixed(2)}` },
+    { label: 'Aug', value: 72.5, fmt: v => `$${v.toFixed(2)}` },
+    { label: 'Sep', value: 68.8, fmt: v => `$${v.toFixed(2)}` },
+    { label: 'Oct', value: 90.1, fmt: v => `$${v.toFixed(2)}` },
+    { label: 'Nov', value: 93.7, fmt: v => `$${v.toFixed(2)}` },
+    { label: 'Dec', value: 86.2, fmt: v => `$${v.toFixed(2)}` },
+  ];
+  const dDec = computeBarDelta(bars, 5);
+  const dOct = computeBarDelta(bars, 3);
+  const chartSvg = isoStackChart({ bars, activeIndex: 5, id: 'spent-dec' });
+
+  const specs = [
+    { key: 'shots', label: 'Espresso shots', min: 1, max: 4, step: 1, ui: { kind: 'unit-stepper', unit: 'cup', maxSlots: 4 } },
+    { key: 'size', label: 'Cup size', min: 1, max: 3, step: 1, ui: { kind: 'prop-picker', glyph: 'cup' } },
+    { key: 'tip', label: 'Tip %', min: 0, max: 30, step: 3, ui: { kind: 'coin-slider', coins: 10 } },
+    { key: 'rows', label: 'Rows of pegs', min: 4, max: 16, step: 1, ui: { kind: 'stack-slider', maxDiscs: 8 } },
+    { key: 'tray', label: 'Checklist', ui: { kind: 'slot-tray', slots: [{ id: 'a', label: 'Flat white', addType: 'pos' }, { id: 'b', label: 'Bun' }] } },
+    { key: 'togs', label: 'Switches', ui: { kind: 'object-toggles' } },
+    { key: 'club', label: 'Coffee club', min: 0, max: 10, step: 1, ui: { kind: 'stamp-card', total: 10 } },
+    { key: 'coupon', label: 'Coupon', ui: { kind: 'tear-stub', code: 'BUN20' } },
+  ];
+  const creativeHtml = specs.map(s => renderControl(s, 2, { mode: 'creative' }));
+  const standardHtml = specs.slice(0, 4).map(s => renderControl(s, 2, { mode: 'standard' }));
+
+  const dir = createAutoplayDirector({
+    items: ['w1', 'w2', 'w3', 'w4'],
+    intervalSec: 1.5,
+    onTrigger: (it, idx, u) => `${it}:${idx}:${u.toFixed(2)}`,
+  });
+  const s1 = dir.seek(3.75);
+  const s2 = dir.seek(11.1);
+  const s3 = dir.seek(3.75);
+
+  C.check('diegetic.js & chart.js: all 8 Creative control schemas preserve ARIA & input[data-key], computeBarDelta & isoStackChart verify deltas, and createAutoplayDirector.seek(t) is order-independent',
+    dDec.deltaText === '−8% vs Nov' && dDec.valueText === '$86.20'
+    && dOct.deltaText === '+31% vs Sep' && dOct.valueText === '$90.10'
+    && chartSvg.includes('data-bar-idx="5"') && chartSvg.includes('−8% vs Nov · $86.20')
+    && creativeHtml.every(h => h.includes('data-mode="creative"') && h.includes('<svg'))
+    && creativeHtml[0].includes('role="radiogroup"') && creativeHtml[0].includes('data-key="shots"')
+    && creativeHtml[2].includes('class="dg-range-overlay"') && creativeHtml[2].includes('data-key="tip"')
+    && creativeHtml[4].includes('data-add="pos"')
+    && creativeHtml[5].includes('role="switch"')
+    && creativeHtml[6].includes('data-stamp-key="club"')
+    && creativeHtml[7].includes('data-tear-key="coupon"')
+    && standardHtml.every(h => h.includes('data-mode="standard"') && h.includes('type="range"'))
+    && JSON.stringify(s1) === JSON.stringify(s3) && JSON.stringify(s1) !== JSON.stringify(s2));
+}
 C.report();

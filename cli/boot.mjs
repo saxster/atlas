@@ -222,12 +222,12 @@ export const TARGETS = [
   {
     slug: 'chart',
     kind: 'kit',
-    summary: '2D SVG line/scatter charts, live tangents/paths, stepped geometric-zoom viewBox cinematography, arc-length pathBeads, waterfall bridges, and Sankey flow diagrams.',
-    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart', 'live chart', 'viewbox camera', 'svg path beads'],
+    summary: '2D SVG line/scatter charts, live tangents/paths, stepped geometric-zoom viewBox cinematography, arc-length pathBeads, swimlane sequenceLanes, waterfall bridges, and Sankey flow diagrams.',
+    triggers: ['2d chart', 'waterfall chart', 'sankey diagram', 'sankey flow', 'waterfall bridge', 'svg chart', 'live chart', 'viewbox camera', 'svg path beads', 'sequence diagram', 'swimlane diagram'],
     modules: {
       '@saxster/atlas/chart.js': [
         'textAdvanceEm', 'scale', 'chart', 'samples', 'moveCursor', 'moveTangent', 'setLivePath',
-        'interpViewBox', 'focusViewBox', 'samplePolyline', 'beadSlots', 'pathBeads',
+        'interpViewBox', 'focusViewBox', 'samplePolyline', 'beadSlots', 'pathBeads', 'sequenceLanes',
         'waterfallWalk', 'waterfallChart', 'sankeyLayout', 'sankeyChart',
       ],
       '@saxster/atlas/theme.js': ['readTheme', 'KYM', 'BYRNE_THEME', 'parseColor', 'compositeOver', 'srgbLuminance', 'wcagContrast', 'auditTheme'],
@@ -240,10 +240,10 @@ export const TARGETS = [
   {
     slug: 'prose',
     kind: 'kit',
-    summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), discrete paramChip(), execution-traced codeBlock(), epistemic/diff badge(), lookalike foilCard(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
-    triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber', 'code block trace', 'parameter chip', 'lookalike foil'],
+    summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), discrete paramChip(), execution-traced codeBlock(), epistemic/diff badge(), lookalike foilCard(), step diffList(), byte-offset frameInspector(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
+    triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber', 'code block trace', 'parameter chip', 'lookalike foil', 'frame inspector', 'what changed diff'],
     modules: {
-      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'paramChip', 'codeBlock', 'badge', 'foilCard', 'bindProse'],
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'paramChip', 'codeBlock', 'badge', 'foilCard', 'diffList', 'frameInspector', 'bindProse'],
       '@saxster/atlas/theme.js': ['BYRNE_THEME', 'auditTheme'],
     },
     invariants: [
@@ -261,6 +261,23 @@ export const TARGETS = [
     },
     invariants: [
       'Audio is always opt-in via figure.sonify(ctx, state, ...) (muted by default until user clicks Sound, suspended on mute, and hidden in ?render).',
+    ],
+  },
+  {
+    slug: 'ink-ui',
+    kind: 'kit',
+    summary: '2.5D isometric hand-inked vector kit (iso_kit.js), diegetic direct-manipulation controls (diegetic.js: unit-stepper, prop-picker, coin-slider, stack-slider, slot-tray, object-toggles, stamp-card, tear-stub), isometric unit-stack bar charts (isoStackChart), and WCAG-clamped 6-swatch accent cascade (deriveAccentTokens).',
+    triggers: ['colorfigures', 'diegetic controls', 'isometric controls', 'ink ui', 'unit stepper', 'iso stack chart', 'pictures are the controls'],
+    modules: {
+      '@saxster/atlas/iso_kit.js': ['isoPt', 'isoPath', 'isoTextTransform', 'inkFilterDefs', 'isoSvg', 'isoBox', 'isoCyl', 'isoDiscSlot', 'isoCup', 'isoCoinStack', 'isoJar', 'isoCarton', 'isoPunchCard', 'isoTicket', 'isoKettle', 'isoOven', 'isoToaster', 'isoTray'],
+      '@saxster/atlas/diegetic.js': ['renderControl', 'updateControl', 'bindControls', 'mountControlModeBar', 'createAutoplayDirector', 'ensureInkChromeDefs'],
+      '@saxster/atlas/chart.js': ['computeBarDelta', 'isoStackChart', 'updateIsoStackChart'],
+      '@saxster/atlas/theme.js': ['ACCENT_SWATCHES', 'deriveAccentTokens', 'applyAccentTokens', 'mountSwatchBar'],
+    },
+    invariants: [
+      'All numeric diegetic controls preserve synchronized input[data-key] and ARIA radiogroup/switch roles.',
+      'Static keylined geometry sits inside <g filter="url(#...-hand)"> while 60fps updates mutate attributes without regenerating filter defs.',
+      'Swatch changes update --accent* CSS custom properties and 3D setLiveAccent uniforms in <1ms with WCAG >= 4.5:1 contrast.',
     ],
   },
   // ---------- Creator Voices (3 Design Registers: textbook, creative, quirky) ----------

@@ -3,6 +3,7 @@
 // source-honest speech balloons, inline leader-line callouts, and optional live @saxster/atlas 3D figure mounts.
 
 import { mountFigure } from './mount.js';
+import { isoJar, isoStamp, isoKettle, isoCup } from './iso_kit.js';
 
 const esc = s => String(s ?? '')
   .replace(/&/g, '&amp;')
@@ -110,6 +111,18 @@ export function renderComicPanelSVG(panel = {}, emblem = 'orbitalField') {
       <circle cx="92" cy="66" r="18" fill="${green}" stroke="${ink}" stroke-width="2"/>
       <path d="M 118 66 C 154 38, 186 38, 224 58" fill="none" stroke="${blue}" stroke-width="2.4" stroke-dasharray="5 3"/>
       <polygon points="246,58 222,46 226,68" fill="${yellow}" stroke="${ink}" stroke-width="1.8"/>
+    `;
+  } else if (preset === 'isoBench') {
+    body = `
+      <line x1="34" y1="90" x2="286" y2="90" stroke="${ink}" stroke-width="1.8"/>
+      ${isoJar({ x: 0, y: 0, z: 0, lidLift: 0.65, active: true, label: 'A', origin: [96, 76], scale: 1.05 })}
+      ${isoCup({ x: 0, y: 0, z: 0, active: true, latteHeart: true, origin: [164, 78], scale: 1.05 })}
+      ${isoStamp({ x: 0, y: 0, z: 0, press: 0.4, origin: [228, 76], scale: 1.1 })}
+    `;
+  } else if (preset === 'isoKettleBench') {
+    body = `
+      <line x1="34" y1="90" x2="286" y2="90" stroke="${ink}" stroke-width="1.8"/>
+      ${isoKettle({ progress: 0.75, ready: true, origin: [148, 78], scale: 1.05 })}
     `;
   } else {
     // anomalySetup tailored with subtle domain motif

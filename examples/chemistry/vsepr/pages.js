@@ -93,6 +93,7 @@ export const PAGES = [
       <p class="hintline">Nitrogen is blue. Click to pull the bonds and the lone pair apart.</p>`,
     cam: cam('nh3', -14, 16, 9.4, 0, 0.05), lit: 'nh3', scene: 'nh3', look: {},
     fig: 'Ammonia: a trigonal pyramid',
+    foil: { page: 0, label: '3 domains · Trigonal planar (120°)', note: 'three bonds with zero lone pairs lie flat at 120°; ammonia’s unseen fourth lone-pair domain pushes its three N–H bonds down into a 106.7° pyramid.' },
     molecule: M.XYZ.NH3,   // "See the real molecule": the measured structure in 3Dmol
     alt: 'A nitrogen atom with three hydrogen atoms below it and a translucent lone-pair lobe above, one H–N–H angle marked 106.7 degrees.',
   },

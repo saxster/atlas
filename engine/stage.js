@@ -4,7 +4,11 @@
 // widget (adapters/kym-live.js) mounts it alone. The caller owns time: it calls step() once per frame.
 import { createEngine, MEDIUMS, QUIRKS, DEFAULT_QUIRK, QUIRK_PRESETS, resolveQuirk } from './render.js';
 import { frameAssemblies, separateLabels } from './framing.js';
-import { themeScene } from './parts.js';
+import { themeScene, setLiveAccent } from './parts.js';
+import { ACCENT_SWATCHES, deriveAccentTokens, applyAccentTokens, mountSwatchBar } from './theme.js';
+import { wireModeBar, ensureInkChromeDefs } from './diegetic.js';
+
+export { wireModeBar, ensureInkChromeDefs, mountSwatchBar };
 import {
   TAU, clamp01, clamp, lerp, fract, mod, smooth, smoothstep, ease,
   phase, win, warpTime, spring, settleShake, squashStretch, eases,
@@ -12,6 +16,7 @@ import {
   planArea, planBounds, planPose, logFovLerp, glide,
   cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
+  settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
 } from './motion.js';
 
 export {
@@ -22,6 +27,7 @@ export {
   planArea, planBounds, planPose, logFovLerp, glide,
   cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
+  settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
 };
 
 // Pure skew-line closest-point solver for camera-angle-invariant 1D rail/axis dragging.
@@ -59,33 +65,6 @@ export function stepDraggableLoad(d, dt) {
     return d.targetValue.map((tv, i) => (d.value[i] ?? tv) + (tv - (d.value[i] ?? tv)) * a);
   }
   return d.targetValue;
-}
-
-export function wireModeBar(barEl) {
-  if (!barEl || typeof document === 'undefined') return null;
-  let pill = barEl.querySelector(':scope > .mode-pill');
-  if (!pill) {
-    pill = document.createElement('span');
-    pill.className = 'mode-pill';
-    pill.setAttribute('aria-hidden', 'true');
-    pill.style.cssText = 'position:absolute;left:0;top:0;z-index:-1;pointer-events:none';
-    barEl.prepend(pill);
-  }
-  const sync = () => {
-    const btn = barEl.querySelector('button[aria-pressed="true"]');
-    if (!btn) { pill.style.opacity = '0'; return; }
-    pill.style.opacity = '';
-    pill.style.width = `${btn.offsetWidth}px`;
-    pill.style.height = `${btn.offsetHeight}px`;
-    pill.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
-  };
-  sync();
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(sync).observe(barEl);
-  const isRender = typeof location !== 'undefined' && /[?&]render\b/.test(location.search);
-  if (!isRender && typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => requestAnimationFrame(() => { sync(); barEl.setAttribute('data-ready', ''); }));
-  }
-  return { el: pill, sync };
 }
 
 export function mountMediumBar(anchorEl, figure, getStage, { initialMedium = null, place = 'after', onChange = null, pill: usePill = true } = {}) {
@@ -322,6 +301,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   if (typeof document !== 'undefined') {
     document.documentElement.dataset.quirk = activeQuirk.id;
     document.documentElement.dataset.medium = activeMedium;
+    ensureInkChromeDefs();
   }
   const E = createEngine(canvas, { fov: 18, near: 0.2, far: 300, transparent: Boolean(transparent || chapter.transparent), theme: theme || chapter.theme || null, medium: activeMedium, quirk: activeQuirk.id, retainContext });
   E.draggable = draggable;
@@ -1025,11 +1005,25 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     return activeQuirk;
   }
 
+  let activeAccent = urlParams?.get('accent') || chapter.accent || null;
+  function setAccent(hex, surfaces = {}) {
+    activeAccent = hex;
+    const sheetHex = E.theme?.sheet || surfaces.page || '#f2efe7';
+    const inkHex = E.theme?.ink || surfaces.ink || '#231e16';
+    const tokens = deriveAccentTokens(hex, { page: sheetHex, card: surfaces.card || '#fffdf6', ink: inkHex });
+    if (typeof document !== 'undefined') applyAccentTokens(document.documentElement, tokens);
+    setLiveAccent(tokens.accent, { sheet: sheetHex, ink: inkHex });
+    E.render();
+    return tokens;
+  }
+  if (activeAccent) setAccent(activeAccent);
+
   return {
-    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, setQuirk, labelReport, sceneReport, destroy, fit, draggable,
+    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, setQuirk, setAccent, labelReport, sceneReport, destroy, fit, draggable,
     get medium() { return activeMedium; },
     get quirk() { return activeQuirk.id; },
     get quirkPreset() { return activeQuirk; },
+    get accent() { return activeAccent; },
     get pickIntercept() { return pickIntercept; }, set pickIntercept(fn) { pickIntercept = fn; },
     get cutOverride() { return cutOverride; }, set cutOverride(v) { cutOverride = v; },
     get litOverride() { return litOverride; }, set litOverride(v) { litOverride = v; relight(); },

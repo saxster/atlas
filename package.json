@@ -28,8 +28,8 @@
   ],
   "scripts": {
     "check": "node tools/check.mjs",
-    "test:browser": "node tools/allpages.mjs && node tools/controls.mjs && node tools/machinetest.mjs && node tools/explorertest.mjs && node tools/sandboxtest.mjs && node tools/adaptertest.mjs && node tools/clip.mjs --selftest",
-    "site": "node tools/site.mjs && node examples/concepts/build.mjs"
+    "test:browser": "node tools/allpages.mjs && node tools/controls.mjs && node tools/machinetest.mjs && node tools/explorertest.mjs && node tools/sandboxtest.mjs && node tools/adaptertest.mjs && node tools/inkuitest.mjs && node tools/clip.mjs --selftest",
+    "site": "node tools/site.mjs && node examples/concepts/build.mjs && node tools/bundle-ink-demo.mjs"
   },
   "dependencies": {
     "puppeteer-core": "^25.16.0"

@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 export const EXAMPLES = path.join(ROOT, 'examples');
+export const STANDALONE_SHOWCASES = ['examples/ink-ui'];
 export const key = c => c.replace(/\/$/, '').startsWith('examples/') ? c.replace(/\/$/, '') : `examples/${c.replace(/\/$/, '')}`;
 
 export async function subjects() {

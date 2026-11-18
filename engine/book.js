@@ -3,7 +3,7 @@
 // stage (stage.js); the book is everything around it: pages, the leaf turning, practice, the top bar, Play.
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
-import { createStage, smooth, ease, clamp01, mountShareButton } from './stage.js';
+import { createStage, smooth, ease, clamp01, mountShareButton, sharedAnchorDelta } from './stage.js';
 import { bindProse, foilCard } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
 import { renderComicStripHTML } from './comic.js';
@@ -66,7 +66,8 @@ export function startBook(chapter) {
   const practiceHtml = i => {
     const qs = PRACTICE[i] || [];
     if (!qs.length) return '';
-    return `<section class="practice"><div class="kicker">Practice</div>${qs.map((q, n) => `<div class="q" data-q="${n}">
+    const holes = qs.map((_, n) => `<i class="p-hole" data-hole="${n}" aria-hidden="true"></i>`).join('');
+    return `<section class="practice"><div class="practice-head"><div class="kicker">Practice</div><span class="practice-stamps" title="Punch card progress">${holes}</span></div>${qs.map((q, n) => `<div class="q" data-q="${n}">
       <p class="qtext"><span class="qn">${n + 1}</span>${q.q}</p>
       ${targetHtml(q)}${pickHtml(q)}${numHtml(q)}${q.choices ? `<ol class="choices">${q.choices.map((c, k) => `<li><button type="button" data-c="${k}"><span class="letter">${'ABCDE'[k]}</span><span>${c}</span></button></li>`).join('')}</ol>`
         : (!q.numeric && !q.target && !q.pickPart ? '<button type="button" class="reveal">Show the solution</button>' : '')}
@@ -81,7 +82,7 @@ export function startBook(chapter) {
       return `<p><a href="${d === DIR ? '' : `../../${d}/`}#${k}">${other}${label} →</a> ${note}</p>`; }).join('')}</aside>`;
   };
   // the parts of this page's figure, as buttons: the keyboard's way into a breakdown
-  const partsOf = i => (PAGES[i].parts || (PAGES[i].lit ? [PAGES[i].lit] : [])).filter(k => PLATES[k] && E.ASM[k]);
+  const partsOf = i => [...new Set((PAGES[i]?.parts || (PAGES[i]?.lit ? [PAGES[i].lit] : [])).filter(k => PLATES[k] && E.ASM[k]))];
   const partsHtml = i => {
     const ks = partsOf(i);
     if (!ks.length) return '';
@@ -165,6 +166,8 @@ export function startBook(chapter) {
   // answering: click a choice, check a numeric answer, or check a dragged 3D target position
   const markRight = (q, item) => {
     q.classList.add('done');
+    const hole = q.closest('.practice')?.querySelector(`.p-hole[data-hole="${q.dataset.q}"]`);
+    if (hole) hole.classList.add('stamped');
     q.querySelectorAll('[data-c]').forEach(c => { c.disabled = true; c.classList.toggle('right', +c.dataset.c === item.answer); });
     q.querySelector('.why').hidden = false;
   };
@@ -246,17 +249,34 @@ export function startBook(chapter) {
       if (q) checkNumeric(q, PRACTICE[shown][+q.dataset.q]);
     }
   });
-  let shown = -1, leafFor = -1;
+  let shown = -1, leafFor = -1, lastHandoff = null;
   // the leaf's back is the next left page: the same folio at its foot
   $('leaf')?.setAttribute('aria-hidden', 'true');
   const leafFolio = $('folio').parentNode.cloneNode(true); leafFolio.lastElementChild.removeAttribute('id');
   document.querySelector('.leaf-back').append(leafFolio);
   function showPage(i) {
     if (i === shown) return;
+    const prevShown = shown;
     shown = i;
     disarmPick();
     closeMolecule();
     $('sheet').innerHTML = sheetHtml(i);
+    const prevParts = prevShown >= 0 ? partsOf(prevShown) : [];
+    const currParts = partsOf(i);
+    lastHandoff = sharedAnchorDelta(prevParts, currParts);
+    if ($('sheet')) {
+      $('sheet').dataset.anchorStatus = lastHandoff.status;
+      $('sheet').dataset.sharedAnchor = lastHandoff.anchor || '';
+      if (lastHandoff.stay.length) {
+        const staySet = new Set(lastHandoff.stay);
+        $('sheet').querySelectorAll('.parts button[data-part]').forEach(btn => {
+          if (staySet.has(btn.dataset.part)) {
+            btn.classList.add('shared-anchor');
+            btn.dataset.handoff = 'stay';
+          }
+        });
+      }
+    }
     $('left').scrollTop = 0;
     $('pagenum').textContent = `${i + 1} / ${N}`;
     $('left')?.style.setProperty('--left-stack', (N > 1 ? i / (N - 1) : 0).toFixed(3));
@@ -393,8 +413,33 @@ export function startBook(chapter) {
       if (leafFor !== j) {
         leafFor = j;
         $('leafsheet').innerHTML = sheetHtml(j);
-        $('leafsheet').querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
-        $('leafsheet').querySelectorAll('[aria-labelledby]').forEach(e => e.removeAttribute('aria-labelledby'));
+        // Preserve & namespace SVG-internal IDs (<filter>, <pattern>, <clipPath>, <title>) so filtered/clipped SVGs
+        // remain visible during the 1.4s leaf turn without colliding with #sheet IDs.
+        $('leafsheet').querySelectorAll('svg').forEach(svg => {
+          const map = new Map();
+          svg.querySelectorAll('[id]').forEach(el => {
+            const oldId = el.getAttribute('id');
+            const newId = `leaf-${oldId}`;
+            map.set(oldId, newId);
+            el.setAttribute('id', newId);
+          });
+          if (map.size) {
+            for (const el of [svg, ...svg.querySelectorAll('*')]) {
+              for (const attr of ['filter', 'clip-path', 'fill', 'stroke', 'mask']) {
+                const v = el.getAttribute(attr);
+                if (v && v.includes('url(#')) {
+                  el.setAttribute(attr, v.replace(/url\(#([^)]+)\)/g, (m, k) => (map.has(k) ? `url(#${map.get(k)})` : m)));
+                }
+              }
+              const aria = el.getAttribute('aria-labelledby');
+              if (aria) {
+                el.setAttribute('aria-labelledby', aria.split(/\s+/).map(k => map.get(k) || k).join(' '));
+              }
+            }
+          }
+        });
+        $('leafsheet').querySelectorAll('[id]:not(svg [id])').forEach(e => e.removeAttribute('id'));
+        $('leafsheet').querySelectorAll('[aria-labelledby]:not(svg):not(svg *)').forEach(e => e.removeAttribute('aria-labelledby'));
         $('leafnext').textContent = PAGES[j].fig;
         leafFolio.lastElementChild.textContent = j + 1;
       }
@@ -437,7 +482,7 @@ export function startBook(chapter) {
   if (!EMBED) mountShareButton(playB || document.querySelector('.pager'), shareUrl, 'playbtn sharebtn');
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, get started() { return started; }, get clock() { return S.clock; } };
+  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, get started() { return started; }, get clock() { return S.clock; }, get lastHandoff() { return lastHandoff; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;

@@ -45,7 +45,7 @@ export const FIGURE = {
   chips: [
     { label: 'Paid in', from: 1, value: s => M.rupees(s.deposited) },
     { label: 'Interest', from: 1, value: s => M.rupees(s.interest) },
-    { label: 'The pot', from: 1, value: s => M.rupees(s.pot) },
+    { label: 'The pot', from: 1, tone: 'ink', value: s => M.rupees(s.pot) },
     { label: 'Interest share', from: 2, value: s => s.pot ? pct(s.interest / s.pot) : '–' },
     { label: 'Without interest on interest', from: 5, value: s => M.rupees(s.simple) },
     { label: 'Starting 10 years later', from: 6, value: s => M.rupees(s.late) },

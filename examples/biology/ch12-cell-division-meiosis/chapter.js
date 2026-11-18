@@ -24,6 +24,7 @@ export const PAGES = [
     cam: { target: [14, 1.35, 0], az: -22, el: 20, dist: 10.6 },
     lit: 'sister_chromatids',
     parts: ['spindle_poles', 'sister_chromatids'],
+    foil: { page: 3, label: 'Meiosis I homologous separation (2n → n)', note: 'mitosis splits sister chromatids to keep 2n = 46; Meiosis I separates maternal/paternal homologues to halve ploidy.' },
     look: { xray: 0, section: 0 },
   },
   {
@@ -44,6 +45,7 @@ export const PAGES = [
     cam: { target: [42, 1.35, 0], az: 20, el: 20, dist: 10.6 },
     lit: 'bivalent_chiasma',
     parts: ['bivalent_chiasma', 'haploid_gametes'],
+    foil: { page: 1, label: 'Mitosis sister-chromatid split (2n → 2n)', note: 'homologous pairing and chiasma crossing-over happen only in Meiosis I, never in somatic mitosis.' },
     look: { xray: 0, section: 0 },
   },
 ];

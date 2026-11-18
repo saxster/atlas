@@ -2,6 +2,7 @@
 // physics chapters keep their own local copies). chart() returns markup; a chart's live cursor is a <circle data-cursor="key">
 // that moveCursor() places each frame from the same model values the figure uses.
 // Includes paper-masked callout plates, collision-free SVG naming, and conservation-verified waterfall & Sankey builders.
+import { isoCoinStack, isoBox, inkFilterDefs } from './iso_kit.js';
 const P = { l: 44, r: 14, t: 16, b: 30 };
 const num = v => String(v).replace('-', '−');
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -348,3 +349,164 @@ export function pathBeads(sheets, key, pts, phaseOffset = 0) {
     });
   }
 }
+
+// Declarative 2D sequence swimlane diagram with slanted propagation-delay arrows and pathBeads-ready polylines.
+export function sequenceLanes({
+  actors = [], messages = [], w = 420, h = 200, padX = 48, topY = 28, stage = '', label = 'Sequence swimlane diagram', desc = '', id = '',
+} = {}) {
+  const n = Math.max(1, actors.length);
+  const spanX = Math.max(1, w - padX * 2);
+  const xByActor = new Map();
+  const actorSvg = actors.map((a, i) => {
+    const x = n === 1 ? w * 0.5 : padX + (i / (n - 1)) * spanX;
+    xByActor.set(a.id, x);
+    return `<g class="seq-actor" data-actor="${esc(a.id)}">` +
+      `<rect class="frame" x="${(x - 38).toFixed(1)}" y="6" width="76" height="18" rx="4"/>` +
+      `<text class="lab" x="${x.toFixed(1)}" y="18" text-anchor="middle">${esc(a.label || a.id)}</text>` +
+      `<line class="grid" x1="${x.toFixed(1)}" y1="${topY}" x2="${x.toFixed(1)}" y2="${h - 8}" stroke-dasharray="3 3"/>` +
+      `</g>`;
+  }).join('');
+  const paths = {};
+  const msgSvg = messages.map((m, idx) => {
+    const x0 = xByActor.get(m.from) ?? padX;
+    const x1 = xByActor.get(m.to) ?? (w - padX);
+    const y0 = m.y0 ?? (topY + 18 + idx * 36);
+    const y1 = m.y1 ?? (y0 + 18);
+    const key = m.key || `msg-${idx}`;
+    paths[key] = [[x0, y0], [x1, y1]];
+    const mx = (x0 + x1) * 0.5, my = (y0 + y1) * 0.5 - 5;
+    const beadsHtml = m.beads ? beadSlots(key, m.beads, 3) : '';
+    return `<g class="seq-msg" data-msg="${esc(key)}">` +
+      `<line class="curve${m.focal ? ' focal' : ''}" x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"/>` +
+      `<circle class="dot" cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="2.6"/>` +
+      (m.label ? `<text class="lab" x="${mx.toFixed(1)}" y="${my.toFixed(1)}" text-anchor="middle">${esc(m.label)}</text>` : '') +
+      beadsHtml +
+      `</g>`;
+  }).join('');
+  const stAttr = stage ? ` data-stage="${esc(stage)}"` : '';
+  const head = svgHeader({ w, h, label, desc, id }).replace('<svg ', `<svg${stAttr} `);
+  return { svg: `${head}${actorSvg}${msgSvg}</svg>`, paths, xByActor };
+}
+
+// ---------- Isometric Unit-Stack Bar Chart (coins, blocks, quanta) ----------
+// Validates finite non-negative bars: [{ key?, label, value, fmt? }], quantizes disc counts in [0..maxDiscs],
+// and computes exact delta vs predecessor (with Unicode minus '−' and zero-baseline guard).
+export function computeBarDelta(bars, activeIndex = (bars?.length || 1) - 1, { maxDiscs = 10 } = {}) {
+  if (!Array.isArray(bars) || !bars.length) throw new Error('computeBarDelta requires a non-empty bars array');
+  const vals = bars.map((b, i) => {
+    const v = Number(b?.value);
+    if (!Number.isFinite(v) || v < 0) throw new Error(`computeBarDelta: invalid bar value at index ${i}`);
+    return v;
+  });
+  const maxVal = Math.max(...vals, 1e-9);
+  const discs = vals.map(v => (v <= 0 ? 0 : Math.max(1, Math.min(maxDiscs, Math.round((v / maxVal) * maxDiscs)))));
+  const idx = clamp(Math.round(activeIndex), 0, bars.length - 1);
+  const cur = bars[idx], curVal = vals[idx];
+  const prevIdx = idx > 0 ? idx - 1 : idx;
+  const prev = bars[prevIdx], prevVal = vals[prevIdx];
+  const diff = curVal - prevVal;
+  let pct = 0, deltaText = 'baseline';
+  if (idx > 0 && prevVal > 1e-9) {
+    pct = Math.round((diff / prevVal) * 100);
+    const sign = pct > 0 ? '+' : pct < 0 ? '−' : '';
+    deltaText = `${sign}${Math.abs(pct)}% vs ${prev.label}`;
+  } else if (idx > 0 && curVal > 0) {
+    deltaText = `+new vs ${prev.label}`;
+  }
+  const valueText = cur.fmt ? cur.fmt(curVal) : num(curVal);
+  return {
+    activeIndex: idx,
+    activeBar: cur,
+    value: curVal,
+    valueText,
+    prevIndex: prevIdx,
+    diff,
+    pct,
+    deltaText,
+    summaryText: `${deltaText} · ${valueText}`,
+    discs,
+    maxVal,
+  };
+}
+
+export function isoStackChart({
+  bars = [],
+  activeIndex = (bars.length || 1) - 1,
+  maxDiscs = 10,
+  unitShape = 'coin',
+  w = 420,
+  h = 185,
+  kicker = '',
+  label = 'Isometric unit stack chart',
+  desc = '',
+  id = 'iso-chart',
+  quirk = 'slightly-quirky',
+} = {}) {
+  const info = computeBarDelta(bars, activeIndex, { maxDiscs });
+  const cleanId = esc(id).replace(/[^a-zA-Z0-9_-]/g, '') || 'iso-chart';
+  const fId = `${cleanId}-hand`;
+  const filterDef = inkFilterDefs(fId, { vbW: w, quirk });
+  const defs = filterDef ? `<defs>${filterDef}</defs>` : '';
+  const fAttr = filterDef ? ` filter="url(#${fId})"` : '';
+  const n = bars.length;
+  const plotL = 24, plotR = w - 24, plotW = plotR - plotL;
+  const slotW = plotW / n;
+  const baseLineY = h - 34;
+
+  const stacksSvg = bars.map((b, i) => {
+    const cx = +(plotL + (i + 0.5) * slotW).toFixed(1);
+    const active = i === info.activeIndex;
+    const count = info.discs[i];
+    const tone = active ? 'accent' : (unitShape === 'coin' ? 'stone' : 'paper');
+    const r = Math.min(13, slotW * 0.28);
+    let stackArt = '';
+    if (unitShape === 'block') {
+      stackArt = Array.from({ length: count }, (_, k) =>
+        isoBox({ x: -r * 0.8, y: -r * 0.8, z: k * 5.2, dx: r * 1.6, dy: r * 1.6, dz: 4.6, tone, origin: [cx, baseLineY - 4], scale: 1 })
+      ).join('');
+    } else {
+      stackArt = isoCoinStack({ x: 0, y: 0, z: 0, count, r, discH: 3.1, gap: 0.25, tone, origin: [cx, baseLineY - 4], scale: 1 });
+    }
+    const valStr = b.fmt ? b.fmt(b.value) : num(b.value);
+    const topY = Math.max(28, baseLineY - 14 - count * (unitShape === 'block' ? 5.2 : 3.35));
+    return `<g class="iso-bar-col${active ? ' is-active' : ''}" data-bar-idx="${i}" data-active="${active}" role="button" tabindex="0" aria-pressed="${active}" aria-label="${esc(b.label)}: ${esc(valStr)}">` +
+      stackArt +
+      `<text class="lab iso-bar-val" x="${cx}" y="${topY.toFixed(1)}" text-anchor="middle" opacity="${active ? '1' : '0.68'}">${esc(valStr)}</text>` +
+      `<rect class="iso-bar-pill" x="${(cx - slotW * 0.38).toFixed(1)}" y="${baseLineY + 6}" width="${(slotW * 0.76).toFixed(1)}" height="18" rx="9" fill="${active ? 'var(--accent, #ef6a4c)' : 'var(--card, #fffdf6)'}" stroke="var(--ink, #231e16)" stroke-width="0.9"/>` +
+      `<text class="ax iso-bar-lbl" x="${cx}" y="${baseLineY + 18}" text-anchor="middle" fill="${active ? 'var(--accent-on, #fff)' : 'var(--strong, #231e16)'}" font-weight="${active ? '700' : '500'}">${esc(b.label)}</text>` +
+      `</g>`;
+  }).join('');
+
+  const headTitle = kicker || `${ info.activeBar.label } · ${ info.valueText }`;
+  return `${svgHeader({ w, h, label, desc, id: cleanId })}${defs}` +
+    `<line class="zero" x1="${plotL}" x2="${plotR}" y1="${baseLineY}" y2="${baseLineY}" stroke="var(--ink, #231e16)" stroke-width="1" stroke-dasharray="2.5 2.5"/>` +
+    `<text class="lab iso-chart-head" data-iso-head x="${plotL}" y="18" font-weight="700">${esc(headTitle)}</text>` +
+    `<text class="ax iso-chart-delta" data-iso-delta x="${plotR}" y="18" text-anchor="end" fill="var(--accent-ink, #b5381f)" font-weight="700">${esc(info.summaryText)}</text>` +
+    `<g class="iso-bars-static"${fAttr}>${stacksSvg}</g>` +
+    `</svg>`;
+}
+
+export function updateIsoStackChart(rootEl, { bars = [], activeIndex = 0, maxDiscs = 10, kicker = '' } = {}) {
+  if (!rootEl || !bars.length) return null;
+  const info = computeBarDelta(bars, activeIndex, { maxDiscs });
+  const headEl = rootEl.querySelector?.('[data-iso-head]');
+  if (headEl) headEl.textContent = kicker || `${info.activeBar.label} · ${info.valueText}`;
+  const deltaEl = rootEl.querySelector?.('[data-iso-delta]');
+  if (deltaEl) deltaEl.textContent = info.summaryText;
+  rootEl.querySelectorAll?.('[data-bar-idx]').forEach(col => {
+    const idx = +col.getAttribute('data-bar-idx');
+    const active = idx === info.activeIndex;
+    col.setAttribute('data-active', String(active));
+    col.setAttribute('aria-pressed', String(active));
+    col.classList?.toggle?.('is-active', active);
+    const pill = col.querySelector?.('.iso-bar-pill');
+    if (pill) pill.setAttribute('fill', active ? 'var(--accent, #ef6a4c)' : 'var(--card, #fffdf6)');
+    const lbl = col.querySelector?.('.iso-bar-lbl');
+    if (lbl) {
+      lbl.setAttribute('fill', active ? 'var(--accent-on, #fff)' : 'var(--strong, #231e16)');
+      lbl.setAttribute('font-weight', active ? '700' : '500');
+    }
+  });
+  return info;
+}
+

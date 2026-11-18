@@ -168,7 +168,7 @@ div.chart > svg.chart { margin-top: 0; }
   .figpage { grid-template-columns: 1fr; padding: 0 12px 36px; gap: 14px; }
   .topbar { padding: 12px 14px; gap: 10px; } .crumb { display: none; }
   .question { font-size: 20px; }
-  .steps { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .steps { display: flex; overflow-x: auto; gap: 6px; padding: 4px 6px 8px 4px; }
   .steps li { flex: none; }
   .step { padding: 7px 12px 7px 7px; font-size: 13px; }
   .step .lab { white-space: nowrap; }
@@ -184,7 +184,9 @@ div.chart > svg.chart { margin-top: 0; }
   .figpage.explorer .question, .figpage.sandbox .question { order: 0; }
   .figpage.explorer .figure, .figpage.sandbox .figure { order: 1; }
   .figpage.explorer .predict, .figpage.sandbox .presets { order: 2; }
-  .figpage.explorer .mediumbar, .figpage.sandbox .mediumbar, .figpage.sandbox .cutbar { order: 3; }
+  .figpage.explorer .mediumbar, .figpage.sandbox .mediumbar, .figpage.sandbox .cutbar,
+  .figpage.explorer .controlmodebar, .figpage.sandbox .controlmodebar,
+  .figpage.explorer .swatchbar, .figpage.sandbox .swatchbar { order: 3; }
   .figpage.explorer .prose-note, .figpage.sandbox .prose-note { order: 4; }
   .figpage.sandbox .matrix-box { order: 3; }
   .figpage.sandbox .palette { order: 4; }

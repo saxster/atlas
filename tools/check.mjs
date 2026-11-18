@@ -4,7 +4,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, subjects, everything as chapters, key } from './chapters.mjs';
+import { ROOT, subjects, everything as chapters, STANDALONE_SHOWCASES, key } from './chapters.mjs';
 import { auditFigureDir } from '../cli/check.mjs';
 
 const only = process.argv.slice(2).map(key);
@@ -14,7 +14,7 @@ const run = file => {
 };
 if (!only.length && !run(path.join(ROOT, 'engine', 'selftest.mjs'))) { console.log('FAIL engine/selftest.mjs'); process.exit(1); }
 let n = 0;
-for (const c of only.length ? only : await chapters()) {
+for (const c of only.length ? only : [...(await chapters()), ...STANDALONE_SHOWCASES]) {
   const res = auditFigureDir(path.join(ROOT, c), { runChecks: true });
   if (!res.ok) {
     for (const err of res.errors) console.log('  ' + err);
@@ -31,6 +31,6 @@ if (!only.length) for (const s of await subjects()) {
 }
 // the generated pages: the concept index (every link, every xref), the contents pages, and doc/skill style budgets must pass
 if (!only.length) {
-  for (const f of ['examples/concepts/build.mjs', 'tools/site.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
+  for (const f of ['examples/concepts/build.mjs', 'tools/site.mjs', 'tools/bundle-ink-demo.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
   execFileSync(process.execPath, [path.join(ROOT, 'tools', 'style.mjs')], { cwd: ROOT, stdio: 'inherit' });
 }

@@ -582,7 +582,9 @@ export function flowBeads(parent, pathOrFn, {
       const f = uu * (src.length - 1);
       const i = Math.min(src.length - 2, Math.floor(f));
       const t = f - i;
-      const a = src[i], b = src[i + 1];
+      const rawA = src[i], rawB = src[i + 1];
+      const a = rawA?.isVector3 ? [rawA.x, rawA.y, rawA.z] : rawA;
+      const b = rawB?.isVector3 ? [rawB.x, rawB.y, rawB.z] : rawB;
       return [
         a[0] + (b[0] - a[0]) * t,
         a[1] + (b[1] - a[1]) * t,
@@ -726,9 +728,9 @@ const BILLBOARD_SDF = `
       // 'flame': tapered teardrop tongue with exact 1-period harmonic sway (loop-clean)
       float y = clamp(uv.y, 0.0, 1.0);
       float sway = (0.11 * sin(y * 7.0 - ph * tau) + 0.05 * sin(y * 13.0 - ph * tau * 2.0 + 1.3)) * y * amp;
-      float halfW = mix(0.36, 0.02, pow(y, 0.82)) * smoothstep(0.0, 0.14, y) * max(0.25, amp);
-      float dx = abs(uv.x - 0.5 - sway) / max(0.02, halfW);
-      float dy = max(0.0, (y - 0.94) * 8.0);
+      float halfW = mix(0.36, 0.015, pow(y, 0.82)) * smoothstep(0.0, 0.14, y) * max(0.25, amp);
+      float dx = abs(uv.x - 0.5 - sway) / max(0.015, halfW);
+      float dy = max(0.0, (y - 0.88) * 10.5);
       return max(dx, dy);
     }
     if (kind < 1.5) {

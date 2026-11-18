@@ -3,6 +3,8 @@
   --page: #f2f2ef; --card: #fbfbfa; --text: #57575a; --strong: #18181a; --muted: #68686d;
   --hi: #26262a; --mid: #8a8a8f; --lo: #b4b4b8; --faint: #d4d4d6; --lit: #000;
   --red: #e5484d; --red-ink: #b8343a; --green-ink: #236b43;
+  --accent: #ef6a4c; --accent-mid: #c95940; --accent-deep: #9e3f2a; --accent-soft: #fce4df; --accent-ink: #b5381f; --accent-on: #ffffff;
+  --ink-line: rgba(35, 30, 22, 0.82); --ink-side: #e0d9ca;
   --serif: 'EB Garamond', Georgia, serif; --sans: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --lift: inset 0 1px 0 0 #fff, 0 0 0 1px #0000000f, 0 1px 1px -.5px #0000000a, 0 3px 3px -1.5px #0000000a, 0 6px 6px -3px #0000000a, 0 12px 12px -6px #0000000a, 0 24px 24px -12px #0000000a;
@@ -26,9 +28,98 @@ html[data-medium="pencil-wash"] { --page: #faf4ec; --card: #fdf9f3; }
 html[data-medium="moebius"] { --page: #f4efe6; --card: #faf6ee; }
 html[data-medium="risograph"] { --page: #f4efe2; --card: #fdfbf7; }
 html[data-quirk="bland"] { --page: #f5f5f3; --card: #ffffff; }
-html[data-quirk="slightly-quirky"] { --page: #faf4ec; --card: #fdf9f3; }
-html[data-quirk="playful"] { --page: #f6efe0; --card: #fffcf5; }
-html[data-quirk="wild"] { --page: #f3ead8; --card: #fffaf0; }
+html[data-quirk="slightly-quirky"] { --page: #faf4ec; --card: #fdf9f3; --ink-side: #e2d9c8; }
+html[data-quirk="playful"] { --page: #f6efe0; --card: #fffcf5; --ink-side: #dfd4be; }
+html[data-quirk="wild"] { --page: #f3ead8; --card: #fffaf0; --ink-side: #d8ccb4; }
+
+/* Static repeatable cotton-paper grain on quirky/ink surfaces (zero live filter cost, disabled in textbook embeds) */
+html[data-quirk="slightly-quirky"] body::before,
+html[data-quirk="playful"] body::before,
+html[data-quirk="wild"] body::before,
+body.ink-page::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.34;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42  0 0 0 0 0.39  0 0 0 0 0.33  0.14 0 0 0 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  background-repeat: repeat;
+}
+html.embed body::before, html.render body::before { content: none !important; }
+html.render .chip::before, html.render .chip::after { filter: none !important; }
+
+/* Stacking-safe double-offset extruded ink cards, tactile keys, charcoal contrast anchor & swatch picker */
+.ink-card, .ink-key,
+html[data-quirk="slightly-quirky"] .chip,
+html[data-quirk="playful"] .chip,
+html[data-quirk="wild"] .chip {
+  position: relative; isolation: isolate;
+  --ink-r: 12px; --ink-d: 3px; --ink-face: var(--card, #fffdf6);
+  background: transparent !important; border-color: transparent !important; box-shadow: none !important;
+}
+.ink-card::before, .ink-card::after,
+.ink-key::before, .ink-key::after,
+html[data-quirk="slightly-quirky"] .chip::before, html[data-quirk="slightly-quirky"] .chip::after,
+html[data-quirk="playful"] .chip::before, html[data-quirk="playful"] .chip::after,
+html[data-quirk="wild"] .chip::before, html[data-quirk="wild"] .chip::after {
+  content: ""; position: absolute; inset: 0; border-radius: var(--ink-r, 12px);
+  border: 1.5px solid var(--ink-line, rgba(35, 30, 22, 0.82));
+  filter: url(#atlas-ui-ink-subtle); pointer-events: none;
+}
+html[data-quirk="playful"] .chip::before, html[data-quirk="playful"] .chip::after,
+html[data-quirk="wild"] .chip::before, html[data-quirk="wild"] .chip::after,
+html[data-quirk="playful"] .ink-card::before, html[data-quirk="playful"] .ink-card::after,
+html[data-quirk="wild"] .ink-card::before, html[data-quirk="wild"] .ink-card::after {
+  filter: url(#atlas-ui-ink-bold);
+}
+html[data-quirk="bland"] .ink-card::before, html[data-quirk="bland"] .ink-card::after,
+html[data-quirk="bland"] .ink-key::before, html[data-quirk="bland"] .ink-key::after {
+  filter: none;
+}
+.ink-card::before, .ink-key::before,
+html[data-quirk="slightly-quirky"] .chip::before,
+html[data-quirk="playful"] .chip::before,
+html[data-quirk="wild"] .chip::before {
+  z-index: -2; background: var(--ink-side, #e0d9ca); transform: translateY(var(--ink-d, 3px));
+}
+.ink-card::after, .ink-key::after,
+html[data-quirk="slightly-quirky"] .chip::after,
+html[data-quirk="playful"] .chip::after,
+html[data-quirk="wild"] .chip::after {
+  z-index: -1; background: var(--ink-face, var(--card, #fffdf6));
+}
+.ink-key {
+  --ink-r: 10px; --ink-d: 3px; --ink-face: var(--accent, #ef6a4c); --ink-side: var(--accent-mid, #c95940);
+  color: var(--accent-on, #ffffff); cursor: pointer; transition: transform 80ms ease-out;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ink-key:active:not(:disabled) { transform: translateY(2px); }
+  .ink-card.is-live { animation: atlasInkLive 550ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+}
+@keyframes atlasInkLive { 35% { transform: translateY(-5px); } }
+
+/* Charcoal contrast anchor card (.chip-ink, .plate-ink, .ink-card.dark) */
+.chip.chip-ink, .plate.plate-ink, .ink-card.dark {
+  --ink-face: #25221e; --ink-side: #141210;
+  background: #25221e; color: #f6f1e4;
+}
+.chip.chip-ink .v, .chip.chip-ink.on .v, .ink-card.dark .v { color: #f6f1e4 !important; }
+.chip.chip-ink .l, .ink-card.dark .l, .ink-card.dark .mut { color: #a8a092 !important; }
+.ink-led {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent, #ef6a4c); box-shadow: 0 0 6px var(--accent, #ef6a4c);
+  vertical-align: middle; margin-right: 5px;
+}
+.ink-led.ok { background: #43c25c; box-shadow: 0 0 6px #43c25c; }
+
+/* Swatch picker bar */
+.swatchbar { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.swatch-label { font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.swatch-btn {
+  width: 20px; height: 20px; border-radius: 50%; padding: 0; cursor: pointer;
+  background: var(--sw, var(--accent)); border: 1.5px solid var(--ink-line, #231e16);
+  transition: transform 120ms var(--ease-out), box-shadow 120ms;
+}
+.swatch-btn[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--page, #f2efe7), 0 0 0 3.5px var(--strong, #231e16);
+  transform: scale(1.06);
+}
 [dir="rtl"] .figure, [dir="rtl"] canvas { direction: ltr; }
 .corner.br, .chip .v, .slider output { direction: ltr; unicode-bidi: isolate; }
 /* The book and the contents page around it move with engine/cover.js, which animates these itself. The cover (the

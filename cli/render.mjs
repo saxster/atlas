@@ -61,23 +61,23 @@ function headlessBookIndexHtml(title = 'Atlas Chapter') {
 export function serve(root = process.cwd()) {
   const ROOT = path.resolve(root);
   const server = http.createServer((req, res) => {
-    let p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    const urlObj = new URL(req.url, 'http://x');
+    let p = path.join(ROOT, decodeURIComponent(urlObj.pathname));
     if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');
-    if (p.startsWith(ROOT) && !fs.existsSync(p)) {
-      const dir = path.dirname(p), base = path.basename(p);
-      if (fs.existsSync(path.join(dir, 'chapter.js'))) {
-        if (base === 'index.html') {
-          res.writeHead(200, { 'content-type': 'text/html' });
-          return res.end(headlessBookIndexHtml(path.basename(dir)));
-        }
-        if (base === 'main.js') {
-          res.writeHead(200, { 'content-type': 'text/javascript' });
-          return res.end(`import { startBook } from '@saxster/atlas/book.js';\nimport { CHAPTER } from './chapter.js';\nstartBook(CHAPTER);\n`);
-        }
-        if (base === 'practice.js') {
-          res.writeHead(200, { 'content-type': 'text/javascript' });
-          return res.end(`export const PRACTICE = {};\n`);
-        }
+    const dir = path.dirname(p), base = path.basename(p);
+    const isHeadlessChapter = p.startsWith(ROOT) && fs.existsSync(path.join(dir, 'chapter.js')) && !fs.existsSync(path.join(dir, 'main.js'));
+    if (isHeadlessChapter && base === 'index.html' && (!fs.existsSync(p) || urlObj.searchParams.has('render'))) {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end(headlessBookIndexHtml(path.basename(dir)));
+    }
+    if (p.startsWith(ROOT) && !fs.existsSync(p) && fs.existsSync(path.join(dir, 'chapter.js'))) {
+      if (base === 'main.js') {
+        res.writeHead(200, { 'content-type': 'text/javascript' });
+        return res.end(`import { startBook } from '@saxster/atlas/book.js';\nimport { CHAPTER } from './chapter.js';\nstartBook(CHAPTER);\n`);
+      }
+      if (base === 'practice.js') {
+        res.writeHead(200, { 'content-type': 'text/javascript' });
+        return res.end(`export const PRACTICE = {};\n`);
       }
     }
     if (!p.startsWith(ROOT) || !fs.existsSync(p)) { res.writeHead(404); return res.end(); }

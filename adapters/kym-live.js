@@ -14,7 +14,8 @@
 //   - Optional user-initiated HTML5 sensor bridge (camera photometer, mic spirometer, device tilt)
 //   - Automatic 2D Canvas paper-and-ink fallback when WebGL is disabled
 import { createStage, QUIRKS, DEFAULT_QUIRK, resolveQuirk, mountQuirkBar } from '../engine/stage.js';
-import { readTheme, srgbLuminance } from '../engine/theme.js';
+import { foilCard } from '../engine/prose.js';
+import { readTheme, srgbLuminance, deriveAccentTokens, applyAccentTokens } from '../engine/theme.js';
 
 const CSS = `
 .atlas-stage { position: relative; width: 100%; border-radius: 6px; overflow: hidden; background: var(--sheet); touch-action: pan-y; box-sizing: border-box; }
@@ -35,6 +36,10 @@ const CSS = `
 .atlas-stage .atlas-title { position: absolute; top: 10px; right: 14px; font: italic 15px/1.3 Georgia, serif; color: var(--ink); pointer-events: none; text-align: right; max-width: 72%; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 7px; border-radius: 4px; }
 .atlas-stage .atlas-badge { position: absolute; bottom: 8px; left: 12px; font: 500 11px/1.3 var(--sans, system-ui, sans-serif); color: var(--muted); pointer-events: none; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 6px; border-radius: 4px; }
 .atlas-parts, .atlas-cuts, .atlas-pages, .quirkbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
+.atlas-foil .xref.foil { margin: 8px 0 2px; padding: 6px 0 2px 12px; border-left: 2px solid var(--proton, #b8343a); font-size: 13px; }
+.atlas-foil .xref.foil .kicker { font: 600 10px/1.2 var(--sans, system-ui, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.atlas-foil .xref.foil p { margin: 4px 0; }
+.atlas-foil .foil-jump { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--proton, #b8343a); cursor: pointer; text-decoration: none; }
 `;
 let styled = false;
 let activeAtlasStage = null;
@@ -286,10 +291,19 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     }
     try {
       const q = resolveQuirk(opts.quirk || chapter.quirk || DEFAULT_QUIRK);
+      const hostTheme = readTheme(stage);
+      if (hostTheme) {
+        const acc = deriveAccentTokens(hostTheme.red || '#d63a24', {
+          page: hostTheme.sheet,
+          card: hostTheme.sheet,
+          ink: hostTheme.ink,
+        });
+        applyAccentTokens(stage, acc);
+      }
       S = createStage(canvas, labels, chapter, {
         reduced: reducedMotion(),
         touch: matchMedia('(pointer: coarse)').matches,
-        theme: readTheme(stage),
+        theme: hostTheme,
         quirk: q.id,
         medium: opts.medium || chapter.medium || q.medium,
         transparent: Boolean(opts.transparent || chapter.transparent),
@@ -450,6 +464,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     if (S && !keepLitOverride) S.litOverride = null;
     if (S && S.selected) S.select(null);
     rebuildPartButtons();
+    syncFoilStrip();
     kick();
     api._refresh?.();
   }
@@ -536,10 +551,41 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     }
   }
 
-  // ---------- 4. Keyboard-Accessible Part Breakdown Buttons ----------
+  // ---------- 4. Keyboard-Accessible Part Breakdown Buttons & Lookalike Foil Strip ----------
   const partsWrap = document.createElement('div');
   partsWrap.className = 'atlas-parts';
   controlsEl.appendChild(partsWrap);
+
+  const foilWrap = document.createElement('div');
+  foilWrap.className = 'atlas-foil';
+  controlsEl.appendChild(foilWrap);
+
+  function syncFoilStrip() {
+    if (!P?.foil) {
+      foilWrap.hidden = true;
+      foilWrap.innerHTML = '';
+      return;
+    }
+    const isKymScheme = typeof location !== 'undefined' && location.protocol === 'kymbook:';
+    const rawList = (Array.isArray(P.foil) ? P.foil : [P.foil]).filter(Boolean);
+    const sanitized = isKymScheme ? rawList.map(item => (item.to ? { ...item, to: undefined } : item)) : rawList;
+    foilWrap.innerHTML = foilCard(sanitized);
+    foilWrap.hidden = !foilWrap.innerHTML;
+  }
+  foilWrap.addEventListener('click', e => {
+    const btn = e.target.closest?.('button.foil-jump');
+    if (!btn) return;
+    if (btn.dataset.turn !== undefined) {
+      setPage(Number(btn.dataset.turn));
+    } else if (btn.dataset.part) {
+      explodeAll = false;
+      S?.select?.(btn.dataset.part);
+      syncPartButtons();
+      kick();
+      api._refresh?.();
+    }
+  });
+  syncFoilStrip();
 
   // ---------- 4b. 5-Stop Quirk Spectrum Bar & Buggy-World Counterfactual Toggle ----------
   const initialQuirkObj = resolveQuirk(opts.quirk || chapter.quirk || DEFAULT_QUIRK);

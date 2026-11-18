@@ -17,9 +17,9 @@ export const FIGURE = {
   narrowZoom: 0.65,   // a tall board: the stage's portrait allowance (made for wide scenes) stands it too far back
   params: { rows: 12, p: 0.5, n: 500, seed: 1 },
   controls: [
-    { key: 'rows', label: 'Rows of pegs', min: 4, max: 16, step: 1, rebuild: true },
-    { key: 'p', label: 'Chance of bouncing right', min: 0.1, max: 0.9, step: 0.05, fmt: v => v.toFixed(2), rebuild: true },
-    { key: 'n', label: 'Balls', min: 100, max: 1000, step: 100, rebuild: true },
+    { key: 'rows', label: 'Rows of pegs', min: 4, max: 16, step: 1, rebuild: true, ui: { kind: 'stack-slider', maxDiscs: 8 } },
+    { key: 'p', label: 'Chance of bouncing right', min: 0.1, max: 0.9, step: 0.05, fmt: v => v.toFixed(2), rebuild: true, ui: { kind: 'coin-slider', coins: 9 } },
+    { key: 'n', label: 'Balls', min: 100, max: 1000, step: 100, rebuild: true, ui: { kind: 'prop-picker', glyph: 'cup', options: [{ value: 100, label: '100', scale: 0.78 }, { value: 500, label: '500', scale: 0.96 }, { value: 1000, label: '1000', scale: 1.14 }] } },
     { key: 'seed', label: 'Which run (the same number, the same pile)', min: 1, max: 50, step: 1 },
   ],
   predict: {
@@ -39,7 +39,7 @@ export const FIGURE = {
   state: (clock, reduced, p) => { const e = experiment(p), t = reduced ? M.duration(p) : clock; return { e, t, pile: M.pileAt(e, t), showBell: t > 0 }; },
   readout: s => `landed ${s.pile.landed} of ${s.e.n}\nmean ${f(s.pile.mean)} rights   theory ${f(M.theoryMean(s.e.rows, s.e.p))}`,
   chips: [
-    { label: 'Balls landed', value: s => `${s.pile.landed}` },
+    { label: 'Balls landed', tone: 'ink', value: s => `${s.pile.landed}` },
     { label: 'Mean rights', value: s => s.pile.landed ? f(s.pile.mean) : '–' },
     { label: 'Theory: rows × p', value: s => f(M.theoryMean(s.e.rows, s.e.p)) },
     { label: 'Spread (variance)', value: s => s.pile.landed > 1 ? f(s.pile.variance) : '–' },

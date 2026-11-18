@@ -7820,6 +7820,21 @@ export const SEARCH_INDEX = [
     "href": "physics/dc-motor/"
   },
   {
+    "id": "physics/sensor-bench",
+    "kind": "explorer",
+    "subject": "Physics",
+    "title": "The hot-air echo illusion",
+    "sub": "why an ultrasonic rangefinder under-reads distance when the air warms up",
+    "text": "An ultrasonic transducer, ink-outlined acoustic pulse ring, draggable reflector paddle, air-column flame, and live 3D OLED timing display",
+    "href": "physics/sensor-bench/",
+    "links": [
+      {
+        "to": "concept:pulse-echo",
+        "why": "Concept · Pulse-echo ranging and thermal sound speed"
+      }
+    ]
+  },
+  {
     "id": "statistics/galton",
     "kind": "explorer",
     "subject": "Statistics",
@@ -9269,6 +9284,21 @@ export const SEARCH_INDEX = [
       {
         "to": "physics/optics-bench",
         "why": "Concept · Thin-lens equation and lateral magnification"
+      }
+    ]
+  },
+  {
+    "id": "concept:pulse-echo",
+    "kind": "concept",
+    "subject": "Physics",
+    "title": "Pulse-echo ranging and thermal sound speed",
+    "formula": "d = ½ v ( T )Δ t , &nbsp; v ( T ) = v 0 √(1 + T /273.15)",
+    "formulaHtml": "<i>d</i> = ½<i>v</i>(<i>T</i>)Δ<i>t</i>, &nbsp;<i>v</i>(<i>T</i>) = <i>v</i><sub>0</sub>√(1 + <i>T</i>/273.15)",
+    "href": "physics/sensor-bench/",
+    "links": [
+      {
+        "to": "physics/sensor-bench",
+        "why": "Concept · Pulse-echo ranging and thermal sound speed"
       }
     ]
   },

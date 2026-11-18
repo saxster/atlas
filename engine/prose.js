@@ -128,6 +128,7 @@ export function codeBlock(lines = [], { title = '', lineVar = 'activeLine', star
 const BADGE_META = {
   eg: { text: 'E.G.', cls: 'tk-badge-eg', title: 'Illustrative example value — varies across real captures or runs' },
   unobserved: { text: '··', cls: 'tk-badge-unobs', title: 'Unobserved, encrypted, or hidden from this vantage point' },
+  documented: { text: 'DOC', cls: 'tk-badge-vant', title: 'Documented protocol or archival field' },
   vantage: { text: 'Vantage', cls: 'tk-badge-vant', title: 'Observation vantage point' },
   added: { prefix: '+ ', cls: 'tk-badge-add', title: 'Added in this step' },
   removed: { prefix: '− ', cls: 'tk-badge-rem', title: 'Removed in this step' },
@@ -139,6 +140,43 @@ export function badge(kind = 'eg', text = '', { title = '' } = {}) {
   const shown = meta.prefix && raw && !/^[+−~-]/.test(raw) ? `${meta.prefix}${raw}` : raw;
   const tip = title || meta.title || '';
   return `<span class="tk-badge ${meta.cls}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(shown)}</span>`;
+}
+
+// Stepped architecture "What changed" diff list (+ added / − removed / ~ changed rows wired to data-part).
+export function diffList(items = [], { title = 'What changed' } = {}) {
+  const list = (Array.isArray(items) ? items : [items]).filter(Boolean);
+  if (!list.length) return '';
+  const head = title ? `<figcaption class="tk-diffs-head">${esc(title)}</figcaption>` : '';
+  const rows = list.map(item => {
+    const kind = item.kind || 'changed';
+    const pill = badge(kind, item.label || item.title || '');
+    const detail = item.detail || item.note ? ` <span class="tk-diff-note">${esc(item.detail || item.note)}</span>` : '';
+    const pAttr = item.part ? ` data-part="${esc(normTargets(item.part))}"` : '';
+    return `<div class="tk-diff-row"${pAttr}>${pill}${detail}</div>`;
+  }).join('');
+  return `<figure class="tk-diffs">${head}<div class="tk-diffs-body">${rows}</div></figure>`;
+}
+
+// Byte-offset proportional encapsulation bar & decoded protocol/register frame inspector (from protocol-explorer).
+export function frameInspector(spec = {}) {
+  const layers = Array.isArray(spec.layers) ? spec.layers.filter(Boolean) : [];
+  if (!layers.length) return '';
+  const totalBytes = spec.totalBytes || layers.reduce((acc, l) => acc + Math.max(1, Number(l.bytes || 1)), 0);
+  const vantHtml = spec.vantage ? `<div class="tk-frame-vant">${badge('vantage', spec.vantage)}<span class="tk-frame-total">${totalBytes} B frame</span></div>` : '';
+  const barSegs = layers.map(l => {
+    const b = Math.max(1, Number(l.bytes || 1));
+    const col = TEXT_INK[l.color || l.pal] || TEXT_INK.blue;
+    const pAttr = l.part ? ` data-part="${esc(normTargets(l.part))}"` : '';
+    return `<div class="tk-frame-seg"${pAttr} style="flex:${b};--seg-col:${col}" title="${esc(l.label)} (${b} B)"><span>${esc(l.label)}</span><b>${b}B</b></div>`;
+  }).join('');
+  const fieldRows = layers.flatMap(l => (l.fields || []).map(f => {
+    const rng = Array.isArray(f.range) && f.range.length === 2 ? `[${f.range[0]}..${f.range[1]}]` : '';
+    const tagHtml = f.tag ? ` ${badge(f.tag)}` : '';
+    const hexHtml = f.hex ? `<code class="tk-frame-hex">${esc(f.hex)}</code>` : '';
+    const pAttr = (f.part || l.part) ? ` data-part="${esc(normTargets(f.part || l.part))}"` : '';
+    return `<div class="tk-frame-row"${pAttr}><span class="tk-frame-rng">${esc(rng)}</span><span class="tk-frame-name">${esc(f.name || '')}</span><span class="tk-frame-val">${esc(f.value ?? '')}${tagHtml}</span>${hexHtml}</div>`;
+  })).join('');
+  return `<figure class="tk-frame-ins">${vantHtml}<div class="tk-frame-bar" role="group" aria-label="Encapsulation byte bar">${barSegs}</div><div class="tk-frame-tree">${fieldRows}</div></figure>`;
 }
 
 // 1-tap "Don't confuse with …" lookalike foil callout (wires into book.js data-turn, data-part, or subject/chapter/page href).
@@ -271,6 +309,36 @@ html.tk-scrubbing, html.tk-scrubbing * { cursor: ew-resize !important; user-sele
   border: 0; background: none; padding: 0; font: inherit; font-weight: 500;
   color: var(--red-ink, #b8343a); text-decoration: none; cursor: pointer; white-space: nowrap;
 }
+.tk-diffs {
+  margin: 12px 0 16px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--faint, #d4d4d6); background: var(--card, #fbfbfa);
+}
+.tk-diffs-head {
+  font: 600 10.5px/1.3 var(--mono, ui-monospace, monospace); letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text, #57575a); margin-bottom: 6px;
+}
+.tk-diffs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.tk-diff-item { font: 13.5px/1.45 var(--sans, sans-serif); color: var(--strong, #18181a); display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.tk-diff-detail { color: var(--text, #57575a); }
+.tk-frame-ins {
+  margin: 12px 0 16px; border-radius: 10px; border: 1px solid var(--faint, #d4d4d6);
+  background: var(--card, #fbfbfa); overflow: hidden; font: 12.5px/1.45 var(--mono, ui-monospace, monospace);
+}
+.tk-frame-vant { padding: 6px 10px; border-bottom: 1px solid var(--faint, #d4d4d6); background: color-mix(in srgb, #2c5697 5%, var(--card, #fbfbfa)); }
+.tk-frame-bar { display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--faint, #d4d4d6); }
+.tk-frame-seg {
+  min-width: 48px; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--tk-col, #2c5697) 42%, transparent);
+  background: color-mix(in srgb, var(--tk-col, #2c5697) 13%, var(--card, #fbfbfa));
+  color: var(--tk-col, #2c5697); display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+}
+.tk-frame-fields { padding: 6px 10px; display: grid; gap: 4px; }
+.tk-frame-row { display: grid; grid-template-columns: 7.5ch minmax(9ch, 1fr) minmax(8ch, 1.2fr) auto auto; gap: 8px; align-items: baseline; padding: 2px 0; border-bottom: 1px dashed color-mix(in srgb, var(--faint, #d4d4d6) 55%, transparent); }
+.tk-frame-row:last-child { border-bottom: 0; }
+.tk-frame-off { color: var(--mid, #6e6e73); font-size: 0.9em; }
+.tk-frame-name { font-weight: 600; color: var(--strong, #18181a); }
+.tk-frame-val { color: var(--text, #57575a); }
+.tk-frame-hex { color: var(--mid, #6e6e73); font-size: 0.9em; }
 `;
 
 function ensureProseStyles() {

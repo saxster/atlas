@@ -250,6 +250,16 @@
 .numstatus, .targetstatus { font: 12px var(--mono); color: var(--muted); }
 .numstatus.right, .targetstatus.right { color: var(--green-ink); font-weight: 500; }
 .numstatus.wrong, .targetstatus.wrong { color: var(--red-ink); }
+.practice-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.practice-stamps { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 999px; border: 1px dashed var(--mid); background: var(--page); }
+.practice-stamps .p-hole { width: 9px; height: 9px; border-radius: 50%; border: 1.2px dashed var(--mid); display: inline-block; transition: transform 220ms var(--ease-out), background 180ms; }
+.practice-stamps .p-hole.stamped { border-style: solid; border-color: var(--ink-line, #231e16); background: var(--accent, var(--green-ink)); transform: scale(1.12); }
+html[data-quirk="slightly-quirky"] .practice .reveal,
+html[data-quirk="playful"] .practice .reveal,
+html[data-quirk="wild"] .practice .reveal {
+  border: 1.5px solid var(--ink-line, #231e16); border-left: 3px dashed var(--accent, #ef6a4c);
+  background: var(--accent-soft, #fce4df); color: var(--strong, #231e16);
+}
 
 /* ---- small screens: on to the next page from the end of this one ---- */
 .turn { display: none; }
@@ -400,3 +410,5 @@ html.embed .playbtn-embed { position: absolute; top: 16px; left: 50%; transform:
 .molview { position: relative; flex: 1; min-height: 0; }
 .molsrc { padding: 8px 16px 12px; font: 11px var(--mono); color: var(--muted); }
 .molnote { padding: 20px; font: 14px var(--sans); color: var(--muted); }
+.parts button.shared-anchor { border-color: var(--ink); box-shadow: inset 2px 0 0 var(--ink); }
+
