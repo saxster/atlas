@@ -121,7 +121,16 @@ export const CHAPTER = {
     'ch05-phloem-xylem-3d': { page: 3, lit: 'xylem_phloem_bundle', params: { lightCap: 85 } },
   },
   sonify(ctx, s, page) {
-    playTone(ctx, { freq: 200 + Math.max(0, s.bm.net) * 4.5, dur: 0.06, type: 'sine', gain: 0.03 });
+    const netPos = s.bm.net > 0;
+    const f = Math.max(150, 220 + s.bm.net * 4.2);
+    playTone(ctx, {
+      freq: f,
+      slideTo: f * (netPos ? 1.1 : 0.92),
+      dur: 0.06,
+      type: netPos ? 'sine' : 'triangle',
+      gain: 0.03,
+      pan: netPos ? 0.45 : -0.45,
+    });
   },
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;

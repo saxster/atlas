@@ -115,7 +115,17 @@ export const CHAPTER = {
     'ch11-ribosome-3d-silent': { page: 3, lit: 'hba_normal_rbc', params: { mutationMode: 2 } },
   },
   sonify(ctx, s, page) {
-    playTone(ctx, { freq: 220 + s.codonStep * 65, dur: 0.055, type: 'triangle', gain: 0.03 });
+    const isMut = s.mutationMode !== 0;
+    const base = 220 + s.codonStep * 62;
+    const pan = Math.max(-0.8, Math.min(0.8, ((s.codonStep - 3) / 4) * 0.7));
+    playTone(ctx, {
+      freq: base,
+      slideTo: isMut ? base * 0.86 : base * 1.08,
+      dur: 0.055,
+      type: isMut ? 'sawtooth' : 'triangle',
+      gain: 0.028,
+      pan,
+    });
   },
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;

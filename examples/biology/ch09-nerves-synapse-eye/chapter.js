@@ -127,9 +127,14 @@ export const CHAPTER = {
     'ch09-tropism-auxin-3d': { page: 3, lit: 'coleoptile_shoot', params: { lightAngleDeg: 35 } },
   },
   sonify(ctx, s, page) {
-    // Action potential spike click/pitch
-    const f = s.ap.fired ? 220 + (s.ap.vMv + 70) * 6 : 110;
-    playTone(ctx, { freq: f, dur: 0.045, type: s.ap.fired ? 'sawtooth' : 'sine', gain: 0.03 });
+    if (page === 1) {
+      const fSyn = s.ap.fired ? 440 : (s.para.paraChannelOpenable ? 280 : 140);
+      playTone(ctx, { freq: fSyn, slideTo: fSyn * 1.15, dur: 0.05, type: 'triangle', gain: 0.028, pan: 0.35 });
+    } else {
+      // Voltage-tracked action potential sweep (-80 mV..+40 mV mapped cleanly with smooth pitch slide)
+      const f = s.ap.fired ? Math.max(150, 220 + (s.ap.vMv + 70) * 5.2) : 110;
+      playTone(ctx, { freq: f, slideTo: f * (s.ap.vMv > 0 ? 1.08 : 0.96), dur: 0.055, type: s.ap.fired ? 'triangle' : 'sine', gain: 0.03, pan: s.ap.fired ? 0.25 : 0 });
+    }
   },
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;

@@ -111,8 +111,18 @@ export const CHAPTER = {
     'ch03-active-root-3d': { page: 3, lit: 'atpase_carrier', params: { atpLevel: 3.5 } },
   },
   sonify(ctx, s, page) {
-    if (page === 3) playTone(ctx, { freq: 140 + s.pump.vPump * 3.2, dur: 0.06, type: 'square', gain: 0.025 });
-    else playTone(ctx, { freq: 280 + s.fick.fracLeft * 200, dur: 0.05, type: 'sine', gain: 0.03 });
+    if (page === 3) {
+      playTone(ctx, { freq: 140 + s.pump.vPump * 3.2, dur: 0.06, type: 'square', gain: 0.025, pan: 0.4 });
+    } else if (page === 0) {
+      // Spatial stereo Fick flux: rightward diffusion pans right (+0.7), leftward back-flux pans left (-0.7)
+      const rightWeight = s.fick.fracLeft;
+      const leftWeight = s.fick.fracRight;
+      playTone(ctx, { freq: 290 + rightWeight * 180, dur: 0.055, type: 'sine', gain: 0.015 + rightWeight * 0.025, pan: 0.7 });
+      playTone(ctx, { freq: 250 + leftWeight * 180, dur: 0.055, type: 'triangle', gain: 0.015 + leftWeight * 0.025, pan: -0.7 });
+    } else {
+      const dirPan = Math.max(-0.7, Math.min(0.7, s.wp.netPsiDrive || 0));
+      playTone(ctx, { freq: 280 + s.fick.fracLeft * 200, dur: 0.05, type: 'sine', gain: 0.03, pan: dirPan });
+    }
   },
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;

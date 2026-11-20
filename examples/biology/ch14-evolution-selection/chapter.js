@@ -112,7 +112,16 @@ export const CHAPTER = {
     'ch14-sahni-malaria-3d': { page: 3, lit: 'balancing_curve', params: { malariaPressure: 20 } },
   },
   sonify(ctx, s, page) {
-    playTone(ctx, { freq: 200 + s.resPct * 3.2, dur: 0.06, type: 'sine', gain: 0.03 });
+    const f = 190 + s.resPct * 3.4;
+    const pan = ((s.resPct - 50) / 50) * 0.65;
+    playTone(ctx, {
+      freq: f,
+      slideTo: f * 1.07,
+      dur: 0.06,
+      type: 'sine',
+      gain: 0.03,
+      pan,
+    });
   },
   state(clock, reduced) {
     const p = CHAPTER.params || CHAPTER.defaultParams;
