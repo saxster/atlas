@@ -1678,4 +1678,86 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && !exported.svg.includes('<style data-atlas-draft-styles')
     && blockedScript && blockedUrl && blockedStyle);
 }
+
+// 20. moments.js declarative show/do/ask contract, outcome stamping & manipulative-symbol bridge
+{
+  const {
+    defineLessonMoments,
+    stampEvidence,
+    computeOutcome,
+    validateManipulativeSymbolBridge,
+  } = await import('./moments.js');
+
+  let antiQuizRejected = false;
+  try {
+    defineLessonMoments({
+      describeScreen: () => 'Screen',
+      ask: [{ id: 'q1', question: 'Q?', grade: () => true }],
+    });
+  } catch {
+    antiQuizRejected = true;
+  }
+
+  const lesson = defineLessonMoments({
+    initialState: { angle: 30, sunAboveHorizon: false, raysVisible: false },
+    facts: s => ({ canSeeMoon: s.angle > 10, raysVisible: s.raysVisible }),
+    describeScreen: s => `Space view shows Sun, Moon, Earth at angle ${s.angle}°`,
+    describeObserver: s => (s.sunAboveHorizon ? 'Daytime sky for explorer' : 'Nighttime sky for explorer'),
+    show: [
+      { id: 'intro', speech: 'Look at the Moon and Sun.', continueAfterSpeech: true, apply: s => ({ ...s, raysVisible: true }) },
+      { id: 'closeup', aside: true, speech: 'Close-up on reflection.', apply: s => ({ ...s, raysVisible: true }) },
+    ],
+    do: [{ id: 'orbit_earth', counts: true }],
+    ask: [{
+      id: 'moon_vis',
+      question: 'Can the explorer see the Moon?',
+      choices: ['Yes', 'No'],
+      hide: ['raysVisible'],
+      reveal: ['raysVisible'],
+      grade: (v, f) => (v === 'Yes') === f.canSeeMoon,
+    }],
+  });
+
+  const s0 = lesson.snapshot();
+  const revBeforePassive = s0.revision;
+  const passiveRes = lesson.emitGesture('camera_orbit');
+  const chk1 = lesson.startCheck('moon_vis', { situation: 'fresh', supportsVisible: false });
+  const destructiveRefused = lesson.showMoment('intro');
+  const asideOk = lesson.showMoment('closeup');
+  const resumed = lesson.resumeActivity();
+  const staleRejected = lesson.answerCheck('moon_vis#999', { value: 'Yes', modality: 'voice', words: 'Yes' });
+  const gradedVoice = lesson.answerCheck(chk1.sceneId, { value: 'Yes', modality: 'voice', words: 'Yes because it reflects' });
+
+  const unbackedStamped = stampEvidence({ focus: 'f1', interpretation: 'understood', evidence: 'said yes' });
+  const verbalOverHelped = stampEvidence(
+    { focus: 'f1', interpretation: 'understood', evidence: 'own words' },
+    { origin: 'dialogue', latestWork: gradedVoice.attempt ? { name: 'response_committed', sceneId: chk1.sceneId, assisted: true } : null, activeSceneId: chk1.sceneId },
+  );
+  const outcome = computeOutcome({
+    lessonId: 'moon',
+    skills: [
+      { id: 's1', title: 'Moonlight', focuses: ['f1'] },
+      { id: 's2', title: 'Horizon', focuses: ['f2'] },
+    ],
+    focuses: [{ id: 'f1', goals: ['g1'] }, { id: 'f2', goals: ['g2'] }],
+    learning: [verbalOverHelped],
+    notes: { s1: 'You said it reflects', s2: 'Should not appear when none' },
+  });
+
+  const bridgeBad = validateManipulativeSymbolBridge({ params: { x: 1 }, PAGES: [{}, {}] });
+  const bridgeGood = validateManipulativeSymbolBridge({ params: { x: 1 }, PAGES: [{}, {}], readout: () => 'x=1' });
+
+  C.check('moments.js: anti-quiz rejection, screen/observer split, passive gestures, aside-only during check, stale check rejection, evidence stamping & manipulative-symbol bridge',
+    antiQuizRejected
+    && s0.screenDescription !== s0.observerDescription
+    && passiveRes.passive === true && passiveRes.snapshot.revision === revBeforePassive
+    && !destructiveRefused.accepted && destructiveRefused.error === 'active_check_unanswered'
+    && asideOk.accepted && resumed.accepted && resumed.snapshot.activeCheck.assisted === true
+    && !staleRejected.accepted && staleRejected.error === 'stale_scene_id'
+    && gradedVoice.accepted && gradedVoice.attempt.modality === 'voice' && gradedVoice.attempt.assisted === true
+    && unbackedStamped.assisted === true && verbalOverHelped.assisted === true
+    && outcome.skills[0].state === 'help' && outcome.skills[1].state === 'none'
+    && outcome.skills[1].proof === 'We have not tried this one yet.'
+    && !bridgeBad.ok && bridgeGood.ok);
+}
 C.report();

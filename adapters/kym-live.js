@@ -13,7 +13,7 @@
 //   - Optional user-initiated Web Audio sonification (api.audio())
 //   - Optional user-initiated HTML5 sensor bridge (camera photometer, mic spirometer, device tilt)
 //   - Automatic 2D Canvas paper-and-ink fallback when WebGL is disabled
-import { createStage, QUIRKS, DEFAULT_QUIRK, resolveQuirk, mountQuirkBar } from '../engine/stage.js';
+import { createStage, QUIRKS, DEFAULT_QUIRK, resolveQuirk, mountQuirkBar, mountMediumBar } from '../engine/stage.js';
 import { foilCard } from '../engine/prose.js';
 import { readTheme, srgbLuminance, deriveAccentTokens, applyAccentTokens } from '../engine/theme.js';
 
@@ -35,7 +35,7 @@ const CSS = `
 .atlas-stage .lbl.axis { font: italic 14px/1 Georgia, serif; color: var(--muted); transform: translate(-100%, -50%); }
 .atlas-stage .atlas-title { position: absolute; top: 10px; right: 14px; font: italic 15px/1.3 Georgia, serif; color: var(--ink); pointer-events: none; text-align: right; max-width: 72%; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 7px; border-radius: 4px; }
 .atlas-stage .atlas-badge { position: absolute; bottom: 8px; left: 12px; font: 500 11px/1.3 var(--sans, system-ui, sans-serif); color: var(--muted); pointer-events: none; background: color-mix(in srgb, var(--sheet) 82%, transparent); padding: 2px 6px; border-radius: 4px; }
-.atlas-parts, .atlas-cuts, .atlas-pages, .quirkbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
+.atlas-parts, .atlas-cuts, .atlas-pages, .quirkbar, .mediumbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
 .atlas-foil .xref.foil { margin: 8px 0 2px; padding: 6px 0 2px 12px; border-left: 2px solid var(--proton, #b8343a); font-size: 13px; }
 .atlas-foil .xref.foil .kicker { font: 600 10px/1.2 var(--sans, system-ui, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .atlas-foil .xref.foil p { margin: 4px 0; }
@@ -347,7 +347,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     } else {
       sPos = page;
     }
-    const state = S.step({ now: lastT * 1000, dt, s: sPos, litPage: page, running, blend: 'linear' });
+    const state = S.step({ now: lastT * 1000, dt: api.calm ? 0 : dt, s: sPos, litPage: page, running: running && !api.calm, blend: 'linear' });
     if (explodeAll && !S.selected) {
       S.E.setExplode(0.85, null, true);
       S.E.stepExplode(dt || 0.016);
@@ -406,7 +406,12 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
 
   function listen() {
     for (const ev of ['pointermove', 'wheel']) {
-      const target = canvas, wake = e => { if (e.buttons || ev === 'wheel') kick(); };
+      const target = canvas, wake = e => {
+        if (e.buttons || ev === 'wheel') {
+          kick();
+          wrap.dispatchEvent(new CustomEvent('atlas-interaction', { detail: { kind: 'camera_orbit', passive: true }, bubbles: true }));
+        }
+      };
       target.addEventListener(ev, wake, { passive: true });
       canvasWakes.push(() => target.removeEventListener(ev, wake));
     }
@@ -605,6 +610,29 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     });
   }
 
+  const mediumAnchor = quirkBar?.el || partsWrap;
+  const mediumBar = mountMediumBar(
+    mediumAnchor,
+    { ...chapter, mediums: chapter.mediums || ['pencil-wash', 'paper-ink', 'moebius', 'risograph'] },
+    () => S,
+    {
+      initialMedium: opts.medium || chapter.medium || initialQuirkObj.medium || 'pencil-wash',
+      place: 'after',
+      pill: false,
+      onChange: m => {
+        if (S?.setMedium) S.setMedium(m);
+        kick();
+        api._refresh?.();
+      },
+    }
+  );
+  if (mediumBar?.el) {
+    mediumBar.el.querySelectorAll('button').forEach(b => {
+      b.classList.add('live-ctl');
+      if (Array.isArray(api._buttons)) api._buttons.push(b);
+    });
+  }
+
   const buggyKey = chapter.coherentWorldParamKey || 'buggyWorld';
   chapter.params = chapter.params || {};
   if (chapter.params[buggyKey] === undefined) chapter.params[buggyKey] = 0;
@@ -702,22 +730,33 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
   }
 
   if (chapter.sonify) {
-    const soundBtn = api.button(
-      'Sonify model',
-      () => {
-        sonifyOn = !sonifyOn;
-        soundBtn.setAttribute('aria-pressed', String(sonifyOn));
-        if (sonifyOn) {
-          const ctx = getAudioCtx();
-          if (ctx) {
-            const state = chapter.state(clock, reducedMotion());
-            try { chapter.sonify(ctx, state, page, chapter.params); } catch (_) { /* ignore */ }
-          }
+    if (typeof api.sonifyToggle === 'function') {
+      api.sonifyToggle('Sonify model', (on, a) => {
+        sonifyOn = on;
+        if (on && a?.ctx) {
+          const state = chapter.state(clock, reducedMotion());
+          try { chapter.sonify(a.ctx, state, page, chapter.params); } catch (_) { /* ignore */ }
         }
         kick();
-      },
-      { pressed: false }
-    );
+      });
+    } else {
+      const soundBtn = api.button(
+        'Sonify model',
+        () => {
+          sonifyOn = !sonifyOn;
+          soundBtn.setAttribute('aria-pressed', String(sonifyOn));
+          if (sonifyOn) {
+            const ctx = getAudioCtx();
+            if (ctx) {
+              const state = chapter.state(clock, reducedMotion());
+              try { chapter.sonify(ctx, state, page, chapter.params); } catch (_) { /* ignore */ }
+            }
+          }
+          kick();
+        },
+        { pressed: false }
+      );
+    }
   }
 
   // ---------- 6. Optional HTML5 Hardware Sensor Bridge (Camera Light / Mic Breath / Device Tilt) ----------
@@ -832,6 +871,77 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     });
   }
 
+  const resetAtlas = () => {
+    clock = chapter.clock0 || 0;
+    explodeAll = false;
+    buggyOn = false;
+    if (chapter.defaultParams && chapter.params) {
+      Object.assign(chapter.params, chapter.defaultParams);
+      if (preset?.params) Object.assign(chapter.params, preset.params);
+    }
+    chapter.params[buggyKey] = 0;
+    syncBuggyBtn();
+    syncSlidersFromParams();
+    applyCutMode('solid');
+    for (const [k, b] of cutButtons) b.setAttribute('aria-pressed', String(k === 'solid'));
+    if (S?.E) S.E.setExplode(0, null, true);
+    setPage(initPage);
+    draw(0, false);
+  };
+
+  if (typeof api.reset === 'function') {
+    api.reset(resetAtlas);
+  }
+
+  if (typeof api.io === 'function') {
+    api.io({
+      getState: () => ({
+        page,
+        pageTitle: P?.title || P?.tab || `Stage ${page + 1}`,
+        cutMode,
+        selected: S?.selected || null,
+        explodeAll,
+        medium: mediumBar?.medium || chapter.medium || 'pencil-wash',
+        params: { ...(chapter.params || {}) },
+      }),
+      setState: (patch = {}) => {
+        if (!patch || typeof patch !== 'object') return;
+        if (patch.reset) { resetAtlas(); return; }
+        if (typeof patch.page === 'number') setPage(patch.page);
+        if (typeof patch.cutMode === 'string') {
+          applyCutMode(patch.cutMode);
+          for (const [k, b] of cutButtons) b.setAttribute('aria-pressed', String(k === patch.cutMode));
+        }
+        if (patch.params && chapter.params) {
+          Object.assign(chapter.params, patch.params);
+          buggyOn = Boolean(chapter.params[buggyKey]);
+          syncBuggyBtn();
+          syncSlidersFromParams();
+          if (chapter.onParamChange) chapter.onParamChange(chapter.params, S, 'io', null);
+        }
+        if ('selected' in patch && S?.select) {
+          S.select(patch.selected || null);
+          syncPartButtons();
+        }
+        if (typeof patch.explodeAll === 'boolean') {
+          explodeAll = patch.explodeAll;
+          if (!explodeAll && S?.E) S.E.setExplode(0, null, true);
+          syncPartButtons();
+        }
+        if (typeof patch.medium === 'string') {
+          if (mediumBar?.apply) mediumBar.apply(patch.medium);
+          else if (S?.setMedium) S.setMedium(patch.medium);
+        }
+        if (typeof patch.quirk === 'string' && S?.setQuirk) S.setQuirk(patch.quirk);
+        kick();
+        draw(0, false);
+      },
+      beforeSnapshot: () => {
+        if (!fallback2D) S?.E?.render?.();
+      },
+    });
+  }
+
   if (typeof api.account === 'function') {
     api.account(() => {
       const st = chapter.state ? chapter.state(clock, reducedMotion()) : {};
@@ -846,6 +956,48 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
       };
     });
   }
+
+  if (typeof api.onCalmChange === 'function') {
+    api.onCalmChange(() => { kick(); draw(0, false); });
+  }
+
+  const PASSIVE_ATLAS_EVENTS = new Set(['camera_orbit', 'model_rotate', 'draft_edit', 'pencil_hover']);
+  const lessonHandle = {
+    state: () => ({
+      page,
+      clock,
+      cutMode,
+      explodeAll,
+      params: { ...(chapter.params || {}) },
+      title: P?.tab || P?.fig || '',
+      readout: say?.element?.textContent || '',
+    }),
+    advance(seconds) {
+      const clamped = Math.max(0, Math.min(30, Number(seconds) || 0));
+      let remaining = clamped;
+      let latest = null;
+      while (remaining > 1e-6) {
+        const dt = Math.min(0.05, remaining);
+        clock += dt;
+        lastT += dt;
+        if (S && typeof S.step === 'function') {
+          latest = S.step({ now: lastT * 1000, dt, s: sPos, litPage: page, running: true, blend: 'linear' });
+        }
+        remaining -= dt;
+      }
+      if (latest && chapter.readout && !S?.selected) {
+        say(chapter.readout(latest, P, page).replace(/\n/g, '<br>'));
+      }
+      return lessonHandle.state();
+    },
+    describeScreen: () => `${P?.tab || P?.fig || 'Atlas figure'} (page ${page + 1}/${chapter.PAGES.length}, cut=${cutMode}): ${(say?.element?.textContent || P?.alt || '').trim()}`.trim(),
+    describeObserver: () => (typeof chapter.describeObserver === 'function' ? chapter.describeObserver(chapter.params || {}, page) : null),
+    isPassiveEvent: name => PASSIVE_ATLAS_EVENTS.has(String(name || '')),
+    applyMoment: typeof chapter.applyMoment === 'function'
+      ? (id, opts = {}) => chapter.applyMoment(id, opts, { page, params: chapter.params, setPage })
+      : null,
+  };
+  if (typeof window !== 'undefined') window.__lesson = lessonHandle;
 
   draw(0, false);
   return {
@@ -876,6 +1028,7 @@ export function mountAtlas(stage, params, api, rawChapter, defaults = {}) {
     destroy() {
       if (destroyed) return;destroyed = true;
       if (activeAtlasStage === stage) activeAtlasStage = null;
+      if (typeof window !== 'undefined' && window.__lesson === lessonHandle) delete window.__lesson;
       cancelAnimationFrame(raf);
       canvasWakes.forEach(remove => remove());
       if (sensorCleanup) {

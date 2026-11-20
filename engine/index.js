@@ -34,3 +34,4 @@ export * from './iso_kit.js';
 export * from './draft_kit.js';
 export { rng } from './rng.js';
 export { readTheme, KYM, BYRNE_THEME, parseColor, compositeOver, srgbLuminance, wcagContrast, auditTheme, ACCENT_SWATCHES, deriveAccentTokens, applyAccentTokens, buildThemeCssSnippet, mountThemeStudio } from './theme.js';
+export { OUTCOME_STATES, DEFAULT_PASSIVE_EVENTS, stampEvidence, computeOutcome, validateManipulativeSymbolBridge, defineLessonMoments } from './moments.js';

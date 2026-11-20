@@ -2,12 +2,15 @@
 // atlas: start a figure, check its model, and look at it, from any repo that has @saxster/atlas installed.
 // Figures are folders relative to the current one (biology/heart). The browser commands need Chrome (CHROME=… if it
 // isn't at the usual place); record also needs ffmpeg.
+import fs from 'node:fs';
+import path from 'node:path';
 const USAGE = `atlas new <subject>/<id> [--grammar book|machine|explorer|sandbox|teardown|blueprint]   start a figure from a working example
 atlas boot [<grammar|kit|voice|task>] [--list] [--json]    assemble a grammar, kit, or creator voice boot package
 atlas check [dir]                                          audit model.js purity and run every checks.mjs under dir (default: here)
 atlas gate [<file>] [--transcript <jsonl>]                 verify Model-First & Read-Before-Write gate (CLI or PreToolUse stdin hook)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
 atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
+atlas visual-learner <figure> [--out <dir>] [--steps <n>] [--policy scripted|ollama]   blind screenshot-only QA walk & HTML report
 atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack
 atlas svg-lint <file…> [--strict-draft] [--compact] [--json]   lint SVG files for XML/ref hygiene and Plotter drafting rules
 atlas export-svg <in.svg> [--out <out.svg>] [--theme light|dark|atelier] [--id-prefix <p>] [--bg <hex|theme>] [--embed-font <woff2>]   resolve tokens & sanitize static SVG
@@ -43,6 +46,19 @@ const COMMANDS = {
     const s = await (await import('../cli/scene.mjs')).scene(list, { intersections });
     const c = await (await import('../cli/clip.mjs')).clip(list);
     return j + l + s + c;
+  },
+  async 'visual-learner'() {
+    const outDir = opt('--out', 'artifacts/visual-learner');
+    const steps = Number(opt('--steps', '4'));
+    const policy = opt('--policy', 'scripted');
+    const model = opt('--model', 'qwen3-vl:4b-instruct');
+    const width = Number(opt('--width', '960'));
+    const height = Number(opt('--height', '640'));
+    const deterministic = flag('--deterministic');
+    if (!args[0]) throw usage();
+    const target = fs.existsSync(path.resolve(args[0])) ? args[0] : (args[0].startsWith('examples/') ? args[0] : `examples/${args[0]}`);
+    await (await import('../cli/visual-learner.mjs')).visualLearner(target, { outDir, steps, policy, model, width, height, deterministic });
+    return 0;
   },
   async record() {
     const o = {
