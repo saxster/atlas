@@ -25,6 +25,27 @@ check('calm: Play starts it', c1 > c0, `clock ${c1.toFixed(2)} s`);
 await p.click('#play'); await wait(300); const c2 = await clock(); await wait(700);
 check('Pause stops it', c2 === await clock());
 
+// Live prefers-reduced-motion media toggle responds without reload across lifecycle, stage & #play
+await open(`/${c}/`); await wait(250);
+await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+await wait(120);
+const redOn = await p.evaluate(() => ({
+  life: window.__atlas.lifecycle?.reduced,
+  stage: window.__atlas.S?.reduced,
+  playHidden: document.getElementById('play')?.hidden,
+}));
+await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+await wait(120);
+const redOff = await p.evaluate(() => ({
+  life: window.__atlas.lifecycle?.reduced,
+  stage: window.__atlas.S?.reduced,
+  playHidden: document.getElementById('play')?.hidden,
+}));
+check('live prefers-reduced-motion toggle updates lifecycle, stage.reduced & #play visibility',
+  redOn.life === true && redOn.stage === true && redOn.playHidden === true
+  && redOff.life === false && redOff.stage === false && redOff.playHidden === false,
+  JSON.stringify({ redOn, redOff }));
+
 // the first page with a part button: open it from the keyboard, close with Esc, focus comes back
 const n = await p.evaluate(() => __atlas.N);
 let page = -1;

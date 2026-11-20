@@ -3,7 +3,7 @@
 // stage (stage.js); the book is everything around it: pages, the leaf turning, practice, the top bar, Play.
 // From kym_physics' port (source/spread/): a Pause button, every page's parts as buttons so a breakdown opens from
 // the keyboard, focus back where it was after Esc, Still mode, and calm: nothing moves until the reader asks.
-import { createStage, smooth, ease, clamp01, mountShareButton, sharedAnchorDelta } from './stage.js';
+import { createStage, bindPlaybackLifecycle, smooth, ease, clamp01, mountShareButton, sharedAnchorDelta } from './stage.js';
 import { bindProse, foilCard } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
 import { renderComicStripHTML } from './comic.js';
@@ -37,11 +37,26 @@ export function startBook(chapter) {
     for (; i < N - 1 && t >= TOUR[i]; i++) t -= TOUR[i];
     return i + (t <= dwell(i) ? 0 : ease((t - dwell(i)) / TURN));
   }
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches || !!chapter.still?.();
   const Q = new URLSearchParams(location.search);
   // ?embed&page=i: only the figure, held on page i (an iframe or a book's widget). Calm unless &auto.
   // ?render: no clock of its own; window.seek(t) draws the page tour at time t, so any frame can be drawn in any order
   const EMBED = Q.has('embed'), RENDER = Q.has('render');
+  let S = null, playB = null, raf = 0, frameReady = false, last = 0, last0 = 0;
+  const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
+    targetEl: EMBED ? $('gl') : null,
+    getReducedExtra: () => !!chapter.still?.(),
+    onChange(st) {
+      S?.setReduced?.(st.reduced);
+      if (playB) playB.hidden = st.reduced;
+      if (!frameReady) return;
+      const shouldDraw = !st.hidden && st.visible;
+      if (!shouldDraw && raf) { cancelAnimationFrame(raf); raf = 0; }
+      if (shouldDraw && !raf) {
+        last = performance.now(); last0 = last;
+        raf = requestAnimationFrame(frame);
+      }
+    },
+  });
   const params = { ...(chapter.params || {}) };
   for (const k of Object.keys(params)) if (Q.has(k)) params[k] = Number.isNaN(+Q.get(k)) ? Q.get(k) : +Q.get(k);
   const calm = !RENDER && (chapter.calm ?? chapter.subject?.calm ?? (Q.has('calm') || (EMBED && !Q.has('auto'))));
@@ -289,19 +304,20 @@ export function startBook(chapter) {
     if (partsOf(i).length) $('gl').setAttribute('aria-label', `Figure ${chapter.no}${i ? '.' + i : ''}: ${PAGES[i].fig}. ${PAGES[i].alt || ''} The buttons under the text take it apart.`);
     [...$('dots').children].forEach((b, k) => b.setAttribute('aria-current', k === i));
   }
-  const goto = (i, now) => (now || begin(), scrollTo({ top: Math.max(0, Math.min(N - 1, i)) * pageH, behavior: reduced || now ? 'auto' : 'smooth' }));
+  const goto = (i, now) => (now || begin(), scrollTo({ top: Math.max(0, Math.min(N - 1, i)) * pageH, behavior: life.reduced || now ? 'auto' : 'smooth' }));
   const fromHash = () => { const m = /^#(\d+)$/.exec(location.hash); return m && +m[1] < N ? +m[1] : null; };
   history.scrollRestoration = 'manual';
   addEventListener('hashchange', () => { const k = fromHash(); if (k !== null) goto(k); });
   // a compact pager for small screens, where a row of dots would not fit
   const { links: barLinks = [], source } = chapter.subject || {};
   $('dots').insertAdjacentHTML('afterend', '<span class="pager"><button type="button" aria-label="Previous page">‹</button><span id="pagenum"></span><button type="button" aria-label="Next page">›</button></span>'
-    + (reduced ? '' : '<button type="button" class="playbtn" id="play" aria-pressed="false">Play</button>')
+    + '<button type="button" class="playbtn" id="play" aria-pressed="false">Play</button>'
     + barLinks.map(l => `<a class="${l.cls || ''}" href="${l.href}">${l.label}</a>`).join('')
     + (source ? `<a class="gh" href="${source}" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>` : ''));
   // Play / Pause. Calm chapters start still: the reader's scrolling, a key, a tap or Play starts them; a deep link doesn't
   let started = !calm, userPaused = false;
-  const playB = $('play');
+  playB = $('play');
+  if (playB) playB.hidden = life.reduced;
   if (EMBED && playB) { playB.classList.add('playbtn-embed'); $('gl').parentElement.appendChild(playB); }   // no top bar in an embed
   const syncPlay = () => {
     if (!playB) return;
@@ -324,7 +340,7 @@ export function startBook(chapter) {
 
   // ---------- scene ----------
   const stageChapter = { ...chapter, state: (c, r) => chapter.state(c, r, params) };
-  const S = createStage($('gl'), $('labels'), stageChapter, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  S = createStage($('gl'), $('labels'), stageChapter, { reduced: life.reduced, touch, dprCap: touch ? 1.5 : 2 });
   const E = S.E;
   let soundCtl = null;
   if (!EMBED && chapter.sonify) {
@@ -384,7 +400,8 @@ export function startBook(chapter) {
   // ---------- frame ----------
   // resolution follows the device: if frames run slow for two seconds running, draw fewer pixels
   // ponytail: only ever steps down (to 1 px per CSS px); stepping back up would need hysteresis
-  let last0 = performance.now(), slow = 0, win = [], dprCap = touch ? 1.5 : 2;
+  last0 = performance.now();
+  let slow = 0, win = [], dprCap = touch ? 1.5 : 2;
   function adapt(ms) {
     win.push(ms);
     if (win.length < 120) return;
@@ -394,10 +411,11 @@ export function startBook(chapter) {
     slow = avg > 1000 / 45 ? slow + 1 : 0;
     if (slow >= 2 && dprCap > 1) { dprCap = Math.max(1, dprCap - 0.25); E.setDprCap(dprCap); slow = 0; }
   }
-  let last = performance.now();
+  last = performance.now();
   const EMBED_PAGE = Math.min(Math.max(+Q.get('page') || 0, 0), N - 1);
   let tourT = 0, lastDwell = '', lastShade = '';
   function frame(now) {
+    raf = 0;
     const dt = RENDER ? 1 / 60 : Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;   // a frame stamp can predate setup
     const s = RENDER ? tourAt(tourT) : EMBED ? EMBED_PAGE : Math.min(Math.max(scrollY / pageH, 0), N - 1);
     const i = Math.min(Math.floor(s), N - 1), f = s - i, j = Math.min(i + 1, N - 1);
@@ -413,7 +431,7 @@ export function startBook(chapter) {
       if (leafFor !== j) {
         leafFor = j;
         $('leafsheet').innerHTML = sheetHtml(j);
-        // Preserve & namespace SVG-internal IDs (<filter>, <pattern>, <clipPath>, <title>) so filtered/clipped SVGs
+        // Preserve & namespace SVG-internal IDs (<filter>, <pattern>, <clipPath>, <title>, <desc>) so filtered/clipped SVGs
         // remain visible during the 1.4s leaf turn without colliding with #sheet IDs.
         $('leafsheet').querySelectorAll('svg').forEach(svg => {
           const map = new Map();
@@ -431,15 +449,23 @@ export function startBook(chapter) {
                   el.setAttribute(attr, v.replace(/url\(#([^)]+)\)/g, (m, k) => (map.has(k) ? `url(#${map.get(k)})` : m)));
                 }
               }
-              const aria = el.getAttribute('aria-labelledby');
-              if (aria) {
-                el.setAttribute('aria-labelledby', aria.split(/\s+/).map(k => map.get(k) || k).join(' '));
+              for (const hrefAttr of ['href', 'xlink:href']) {
+                const hv = el.getAttribute(hrefAttr);
+                if (hv && hv.startsWith('#') && map.has(hv.slice(1))) {
+                  el.setAttribute(hrefAttr, `#${map.get(hv.slice(1))}`);
+                }
+              }
+              for (const idrefAttr of ['aria-labelledby', 'aria-describedby']) {
+                const aria = el.getAttribute(idrefAttr);
+                if (aria) {
+                  el.setAttribute(idrefAttr, aria.split(/\s+/).map(k => map.get(k) || k).join(' '));
+                }
               }
             }
           }
         });
         $('leafsheet').querySelectorAll('[id]:not(svg [id])').forEach(e => e.removeAttribute('id'));
-        $('leafsheet').querySelectorAll('[aria-labelledby]:not(svg):not(svg *)').forEach(e => e.removeAttribute('aria-labelledby'));
+        $('leafsheet').querySelectorAll('[aria-labelledby]:not(svg):not(svg *), [aria-describedby]:not(svg):not(svg *)').forEach(e => { e.removeAttribute('aria-labelledby'); e.removeAttribute('aria-describedby'); });
         $('leafnext').textContent = PAGES[j].fig;
         leafFolio.lastElementChild.textContent = j + 1;
       }
@@ -457,7 +483,7 @@ export function startBook(chapter) {
     const state = S.step({ now, dt, s, litPage: shown, running: started && !userPaused, narrow: narrow(), narrowZoom: chapter.narrowZoom ?? 1,
       clockAt: RENDER ? (chapter.clock0 || 0) + tourT : undefined });
     lastState = state;
-    paused.classList.toggle('on', !reduced && started && !userPaused && !!(S.selected || S.hovered));
+    paused.classList.toggle('on', !life.reduced && started && !userPaused && !!(S.selected || S.hovered));
 
     const rawReadout = chapter.readout(state, PAGES[shown], shown) || '';
     const firstSeg = rawReadout.replace(/<[^>]+>/g, '').split('·')[0].trim();
@@ -468,7 +494,7 @@ export function startBook(chapter) {
     }
     if (chapter.onFrame) chapter.onFrame(state, [$('sheet'), $('leafsheet')]);
     if (S.selected && $('facts')) $('facts').innerHTML = PLATES[S.selected].facts(state).map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
-    if (!RENDER) requestAnimationFrame(frame);
+    if (!RENDER && !life.hidden && life.visible) raf = requestAnimationFrame(frame);
   }
   S.relight();
   if (Q.has('t') && !RENDER) S.clock = +Q.get('t');
@@ -481,8 +507,8 @@ export function startBook(chapter) {
   };
   if (!EMBED) mountShareButton(playB || document.querySelector('.pager'), shareUrl, 'playbtn sharebtn');
   // the first frame drawn: the book can open now (cover.js)
-  document.fonts.ready.then(() => requestAnimationFrame(t => { frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, get started() { return started; }, get clock() { return S.clock; }, get lastHandoff() { return lastHandoff; } };
+  document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
+  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, get started() { return started; }, get clock() { return S.clock; }, get lastHandoff() { return lastHandoff; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;

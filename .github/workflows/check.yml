@@ -1,5 +1,9 @@
 name: check
-on: {} # Disabled: local verification only (owner policy, 2026-11-18).
+on:
+  # Local CI only. Keep the lane definitions available to repository tooling.
+  push:
+    branches-ignore: ['**']
+    tags-ignore: ['**']
 jobs:
   check:
     runs-on: ubuntu-latest

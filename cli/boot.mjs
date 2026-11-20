@@ -280,6 +280,22 @@ export const TARGETS = [
       'Swatch changes update --accent* CSS custom properties and 3D setLiveAccent uniforms in <1ms with WCAG >= 4.5:1 contrast.',
     ],
   },
+  {
+    slug: 'draft_kit',
+    kind: 'kit',
+    summary: 'Pure 2D orthographic drafting kit (draft_kit.js + draft_standard.json): tip-first dashed transfer arrows, witness-broken dimensions, analytically clipped H1/H2 hatch & S1 ticks, even-odd inverse clips & luminance masks, coordinate-preserving compact views, and non-boosting mark isolation.',
+    triggers: ['draft kit', 'orthographic draft', 'technical drawing', '2d drafting', 'dimension hatch', 'plotter svg'],
+    modules: {
+      '@saxster/atlas/draft_kit.js': ['DRAFT_STANDARD', 'DRAFT_ROLE_CSS', 'HIGHLIGHT_OPACITY', 'draftArrow', 'draftDimension', 'draftHatch', 'draftSupportTicks', 'draftInverseClip', 'draftClearanceMask', 'draftSvg', 'draftCompactSvg', 'draftIsolationWrap', 'bindDraftIsolation'],
+      '@saxster/atlas/motion.js': ['sCurveIndex', 'snapLogStop', 'eventKeyframes'],
+      '@saxster/atlas/stage.js': ['bindPlaybackLifecycle'],
+      '@saxster/atlas/theme.js': ['buildThemeCssSnippet', 'mountThemeStudio'],
+    },
+    invariants: [
+      'Enforce uniform 1px pen weight separating hierarchy via DRAFT_STANDARD opacity roles, keeping label opacity in [0.55, 0.90].',
+      'Declare one of the 4 epistemic modes on draftSvg, omit opaque cover patches in favor of draftInverseClip/draftClearanceMask, and pass atlas svg-lint --strict-draft.',
+    ],
+  },
   // ---------- Creator Voices (3 Design Registers: textbook, creative, quirky) ----------
   {
     slug: 'textbook-pure',
@@ -429,6 +445,21 @@ export const TARGETS = [
     },
     invariants: [
       'Use quirk: "wild" (or mountQuirkBar defaulting to DEFAULT_QUIRK = "slightly-quirky" with full range from "bland" to "wild"), and preserve pure model.js + ?render determinism.',
+    ],
+  },
+  {
+    slug: 'plotter-draft',
+    kind: 'voice',
+    register: 'creative',
+    voiceDoc: 'docs/voices/plotter-draft.md',
+    summary: 'Register 2 (Creative Atelier) — Pure 2D orthographic construction plate (engine/draft_kit.js, docs/verification-rubric.md): uniform 1px ink roles, tip-first arrows, witness-broken dimensions, H1/H2 hatches, S1 ticks, compact LOD, and non-boosting mark isolation.',
+    triggers: ['plotter draft', 'orthographic plate', 'flat ink diagram', 'technical blueprint 2d'],
+    modules: {
+      '@saxster/atlas/draft_kit.js': ['draftArrow', 'draftDimension', 'draftHatch', 'draftSupportTicks', 'draftInverseClip', 'draftClearanceMask', 'draftSvg', 'draftCompactSvg', 'draftIsolationWrap', 'bindDraftIsolation'],
+      '@saxster/atlas/theme.js': ['buildThemeCssSnippet', 'mountThemeStudio'],
+    },
+    invariants: [
+      'Follow docs/voices/plotter-draft.md and docs/verification-rubric.md: zero gradients, filters, skews, stroked text, bold/italic caps, or invented dimensions (mark ambiguous specs NEEDS QUALIFICATION).',
     ],
   },
 ];

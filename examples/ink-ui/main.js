@@ -2,7 +2,8 @@
 // Unifies Standard and Creative modes, 0ms WCAG-clamped 6-swatch brand cascade, Quirk Spectrum,
 // Autoplay director, WebAudio tactile synthesis, and stateless ?render seek(t) determinism.
 
-import { ACCENT_SWATCHES, deriveAccentTokens, applyAccentTokens, auditTheme, mountSwatchBar } from '@saxster/atlas/theme.js';
+import { ACCENT_SWATCHES, deriveAccentTokens, applyAccentTokens, auditTheme, mountSwatchBar, buildThemeCssSnippet, mountThemeStudio } from '@saxster/atlas/theme.js';
+import { draftSvg, draftArrow, draftDimension, draftHatch, draftSupportTicks, draftIsolationWrap, bindDraftIsolation } from '@saxster/atlas/draft_kit.js';
 import { ensureInkChromeDefs, ensureDiegeticStyles, createAutoplayDirector } from '@saxster/atlas/diegetic.js';
 import { mountSoundToggle, playClick, playBoop, playKnock } from '@saxster/atlas/sound.js';
 import * as M from './model.js';
@@ -93,6 +94,7 @@ document.querySelectorAll('[data-quirk-btn]').forEach(btn => {
   });
 });
 
+let studioCtl = null;
 const swatchMount = $('swatch-slot');
 const swatchCtl = swatchMount ? mountSwatchBar(swatchMount, {
   swatches: ACCENT_SWATCHES,
@@ -100,9 +102,75 @@ const swatchCtl = swatchMount ? mountSwatchBar(swatchMount, {
   place: 'append',
   onChange: (hex, tokens, key) => {
     activeSwatch = key;
+    studioCtl?.setAccent(hex);
     soundCue('boop');
   },
 }) : null;
+
+// ---------- Orthographic Drafting Preview & Token Studio ----------
+const studioPreviewEl = $('token-studio-preview');
+const studioCtrlEl = $('token-studio-controls');
+if (studioPreviewEl && studioCtrlEl) {
+  const wallX = 92;
+  const block = { kind: 'rect', x: wallX, y: 84, width: 88, height: 112 };
+  const hatch = draftHatch({ region: block, pattern: 'H1', phase: 4 });
+  const ticks = draftSupportTicks({ from: [wallX, 64], to: [wallX, 224], extent: 14, pitch: 16, side: -1 });
+  const dim = draftDimension({
+    axis: 'x',
+    witnesses: [[wallX, 84], [430, 140]],
+    position: 50,
+    extensions: { gap: 8, overshoot: 8 },
+    label: { text: '338 mm', anchor: [261, 50], clearance: { x: 230, y: 40, width: 62, height: 20 } },
+  });
+  const vec = draftArrow({ from: [240, 198], to: [430, 140], legLength: 6, angle: 45 });
+
+  const body = [
+    `<g data-draft-role="grid"><path d="M56 140H504M261 28V248"/></g>`,
+    `<path data-draft-role="hatch" d="${hatch.d}"/>`,
+    `<path data-draft-role="guide" d="${ticks.d}"/>`,
+    `<line data-draft-role="section" x1="${wallX}" y1="64" x2="${wallX}" y2="224"/>`,
+    `<rect data-draft-fill="highlight" x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}"/>`,
+    `<rect data-draft-role="secondary" x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}"/>`,
+    `<path data-draft-role="primary" d="M${wallX + block.width} 140H430"/>`,
+    `<circle data-draft-role="primary" cx="430" cy="140" r="4"/>`,
+    `<g data-draft-focus="true">`,
+    `  <path data-draft-role="transfer" d="${vec.shaftD}" style="stroke:var(--accent-ink,var(--atlas-ink,currentColor))"/>`,
+    `  <path data-draft-role="primary" d="${vec.headD}" style="stroke:var(--accent-ink,var(--atlas-ink,currentColor))"/>`,
+    `  <text data-draft-text="label" x="342" y="188" font-size="11" font-family="var(--mono,monospace)">F = tip-first transfer</text>`,
+    `</g>`,
+    `<g data-draft-role="dimension"><path d="${dim.witnessD}"/><path d="${dim.lineD}"/><path d="${dim.slashD}"/></g>`,
+    `<text data-draft-text="label" x="${dim.label.anchor[0]}" y="${dim.label.anchor[1] + 4}" text-anchor="middle" font-size="11" font-family="var(--mono,monospace)">${dim.label.text}</text>`,
+    `<text data-draft-text="note" data-draft-isolation-only="true" x="261" y="238" text-anchor="middle" font-size="10.5" font-family="var(--mono,monospace)">Isolated: transfer vector + open tip</text>`,
+  ].join('');
+
+  const svg = draftSvg({
+    id: 'studio-cantilever',
+    vb: [0, 0, 560, 260],
+    title: 'Cantilever beam drafting specimen',
+    desc: 'Orthographic wall ticks, H1 hatch, witness-broken span dimension, and tip-first transfer vector.',
+    mode: 'geometric-construction',
+    body,
+  });
+
+  studioPreviewEl.innerHTML = draftIsolationWrap({
+    id: 'studio-iso-plate',
+    title: 'Cantilever transfer isolation plate',
+    caption: 'Hover, focus, or toggle to isolate the transfer vector without boosting weights.',
+    svg,
+    buttonLabel: 'Isolate vector',
+  });
+  bindDraftIsolation(studioPreviewEl);
+
+  studioCtl = mountThemeStudio(studioCtrlEl, {
+    targetEl: studioPreviewEl,
+    initial: {
+      ink: '#231e16',
+      accent: swatchCtl?.hex || ACCENT_SWATCHES[activeSwatch] || ACCENT_SWATCHES.coral,
+      page: '#f2efe7',
+      surface: '#fffdf6',
+    },
+  });
+}
 
 // Autoplay director
 const autoBtn = $('autoplay-btn');
@@ -231,6 +299,8 @@ window.__atlas = {
   get mode() { return mode; },
   get quirk() { return quirk; },
   get accent() { return swatchCtl?.hex || activeSwatch; },
+  studio: studioCtl,
+  buildThemeCssSnippet,
   setMode(m) { mode = m === 'standard' ? 'standard' : 'creative'; drawAll(); },
   setSwatch(k) { return swatchCtl?.apply(k); },
   auditCurrentTheme() {

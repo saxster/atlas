@@ -19,7 +19,7 @@
 //   events?: model times of designed discrete changes (a coin dropping in, a new column): tools/jumps.mjs reports
 //     frames there apart from real jumps. Step starts and ends count as events too.
 // }
-import { createStage, smooth, wireModeBar, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
+import { createStage, bindPlaybackLifecycle, smooth, wireModeBar, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playBoop } from './sound.js';
 
@@ -43,9 +43,18 @@ export function startMachine(figure) {
   const PAGES = [{ fig: figure.title, ...figure.intro, look: figure.intro.look || {} }, ...STEPS.map(s => ({ fig: s.fig || s.label, ...s, look: s.look || {} }))];
   const T0 = []; { let t = 0; for (const s of STEPS) { T0.push(t); t += s.run; } }
   const TEND = T0[N - 1] + STEPS[N - 1].run;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
   if (RENDER) document.documentElement.classList.add('render');
+  let S = null, raf = 0, frameReady = false, last = performance.now();
+  const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
+    onChange(st) {
+      S?.setReduced?.(st.reduced);
+      if (st.reduced && mode === 'auto') { mode = 'manual'; syncMode(); }
+      if (!frameReady) return;
+      if (st.hidden && raf) { cancelAnimationFrame(raf); raf = 0; }
+      else if (!st.hidden && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+    },
+  });
 
   // ---------- where the machine is: done steps, and the step playing (k, 1-based) u seconds in ----------
   // everything drawn is a function of this, so the reader's presses and a recorded tour draw the same frames
@@ -75,7 +84,7 @@ export function startMachine(figure) {
   $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip${c.tone === 'ink' ? ' chip-ink' : ''}" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
   const stepB = [...document.querySelectorAll('#steps .step')], chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
-  let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !reduced ? 'auto' : 'manual');
+  let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !life.reduced ? 'auto' : 'manual');
   let done = !RENDER && Q.has('step') ? Math.min(Math.max(+Q.get('step') || 0, 0), N) : 0, k = 0, u = 0, wait = 0;
   let cutBar = null;
   let idleWait = 0;
@@ -113,7 +122,7 @@ export function startMachine(figure) {
   });
 
   // ---------- the figure ----------
-  const S = createStage($('gl'), $('labels'), { ...figure, PAGES }, { reduced, touch, dprCap: touch ? 1.5 : 2 });
+  S = createStage($('gl'), $('labels'), { ...figure, PAGES }, { reduced: life.reduced, touch, dprCap: touch ? 1.5 : 2 });
   S.hooks.onPointerDown = () => { if (mode === 'auto' && !RENDER) { idleWait = 25; } };
 
   // Optional cutaway / x-ray / section bar & visual medium bar when provided
@@ -220,11 +229,10 @@ export function startMachine(figure) {
     }
   }
 
-  let last = performance.now();
   function frame(now) {
     const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;
     if (k) {
-      u += reduced ? STEPS[k - 1].play : dt;                 // reduced motion: a step lands at once
+      u += life.reduced ? STEPS[k - 1].play : dt;                 // reduced motion: a step lands at once
       if (u >= STEPS[k - 1].play) { done = k; k = 0; u = 0; wait = done === N ? END : GAP; }
     } else if (mode === 'auto') {
       if (idleWait > 0) {
@@ -235,12 +243,13 @@ export function startMachine(figure) {
       }
     }
     draw(now, dt, poseOf(done, k, u));
-    if (!RENDER) requestAnimationFrame(frame);
+    if (!RENDER && !life.hidden) raf = requestAnimationFrame(frame);
+    else raf = 0;
   }
   if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
-  document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
+  document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; last = t; if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
-  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, sceneReport: S.sceneReport, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
+  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
     get state() { return { done, k, u, mode, cut: cutBar?.mode || 'solid' }; }, get clock() { return S.clock; } };
   if (RENDER) {
     window.DURATION = DURATION;

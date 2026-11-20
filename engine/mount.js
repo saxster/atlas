@@ -3,7 +3,7 @@
 // chapter: anything with PAGES, buildWorld(E), state(clock, reduced) and lookKeys (a book's CHAPTER; see stage.js).
 // It stops drawing while scrolled out of view, and stands still for readers who ask for reduced motion.
 // Returns { stage, play(on), destroy() }.
-import { createStage } from './stage.js';
+import { createStage, bindPlaybackLifecycle } from './stage.js';
 
 // the label styles a page needs without the atlas's own stylesheets: system fonts, colours that read on light paper
 const CSS = `
@@ -32,21 +32,30 @@ export function mountFigure(el, chapter, { page = 0, height = 400, playing = tru
   wrap.setAttribute('role', 'img'); wrap.setAttribute('aria-label', chapter.PAGES[pg].alt || chapter.PAGES[pg].fig || 'A 3D figure');
   wrap.append(canvas, labels); el.appendChild(wrap);
 
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const S = createStage(canvas, labels, chapter, { reduced, touch: matchMedia('(pointer: coarse)').matches, theme, dprCap: 2 });
+  let raf = 0, last = 0, playingState = !!playing, on = playingState;
+  const life = bindPlaybackLifecycle({
+    targetEl: wrap,
+    onChange(st) {
+      S.setReduced(st.reduced);
+      on = playingState && !st.reduced;
+      const shouldDraw = !st.hidden && st.visible;
+      if (!shouldDraw && raf) { cancelAnimationFrame(raf); raf = 0; }
+      else if (shouldDraw && !raf) { last = 0; raf = requestAnimationFrame(frame); }
+    },
+  });
+  const S = createStage(canvas, labels, chapter, { reduced: life.reduced, touch: matchMedia('(pointer: coarse)').matches, theme, dprCap: 2 });
   if (chapter.clock0) S.clock = chapter.clock0;
-  let raf = 0, last = 0, seen = true, on = playing && !reduced;
+  on = playingState && !life.reduced;
   function frame(now) {
     const dt = last ? Math.min((now - last) / 1000, 1 / 20) : 1 / 60; last = now;
     S.step({ now, dt, s: pg, litPage: pg, running: on });
-    raf = seen ? requestAnimationFrame(frame) : 0;
+    raf = (!life.hidden && life.visible) ? requestAnimationFrame(frame) : 0;
   }
-  const io = new IntersectionObserver(([e]) => { seen = e.isIntersecting; if (seen && !raf) { last = 0; raf = requestAnimationFrame(frame); } });
-  io.observe(wrap);
-  raf = requestAnimationFrame(frame);
+  if (!life.hidden && life.visible) raf = requestAnimationFrame(frame);
   return {
     stage: S,
-    play(v = true) { on = v && !reduced; },
-    destroy() { cancelAnimationFrame(raf); io.disconnect(); S.destroy(); wrap.remove(); },
+    lifecycle: life,
+    play(v = true) { playingState = !!v; on = playingState && !life.reduced; },
+    destroy() { cancelAnimationFrame(raf); raf = 0; life.destroy(); S.destroy(); wrap.remove(); },
   };
 }

@@ -30,7 +30,7 @@ const voiceDir = path.join(ROOT, 'docs', 'voices');
 const voiceDocs = fs.existsSync(voiceDir)
   ? fs.readdirSync(voiceDir).filter(f => f.endsWith('.md')).map(f => `docs/voices/${f}`)
   : [];
-const DOC_FILES = ['CLAUDE.md', 'docs/API.md', 'docs/decisions.md', 'docs/figma-mcp-workflow.md', ...voiceDocs];
+const DOC_FILES = ['CLAUDE.md', 'docs/API.md', 'docs/decisions.md', 'docs/figma-mcp-workflow.md', 'docs/verification-rubric.md', ...voiceDocs];
 const PATH_RE = /`((?:engine|adapters|bin|cli|tools|docs|examples)\/[A-Za-z0-9_./-]+)`/g;
 for (const rel of DOC_FILES) {
   const abs = path.join(ROOT, rel);
@@ -178,6 +178,14 @@ if (!bBlueprint.matched || bBlueprint.exitCode !== 0 || !bBlueprint.templates?.[
 const bTrigger = boot('architectural blueprint with section cut');
 if (!bTrigger.matched || bTrigger.slug !== 'blueprint') {
   fail.push('boot("architectural blueprint with section cut") failed to route to blueprint grammar');
+}
+const bDraftKit = boot('draft_kit');
+if (!bDraftKit.matched || bDraftKit.slug !== 'draft_kit') {
+  fail.push('boot("draft_kit") self-check failed to assemble drafting kit package');
+}
+const bPlotter = boot('plotter-draft');
+if (!bPlotter.matched || bPlotter.slug !== 'plotter-draft') {
+  fail.push('boot("plotter-draft") self-check failed to load plotter-draft voice');
 }
 const bAbstain = boot('create a lesson tracker doc for the course');
 if (bAbstain.matched || bAbstain.exitCode !== 0 || !Array.isArray(bAbstain.candidates) || !bAbstain.candidates.length) {

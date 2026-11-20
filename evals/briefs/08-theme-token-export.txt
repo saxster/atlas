@@ -1,0 +1,2 @@
+Using `buildThemeCssSnippet` (`@saxster/atlas/theme.js`) and `npx atlas export-svg` / `svg-render`, generate an amber brand accent (`#f4b829`) theme CSS snippet paired with dark (`#18181a`) ink and render both `--theme light` and `--theme dark` PNG proofs of a `draftSvg` diagram.
+Verify WCAG AA contrast (`>= 4.5:1`) on `--accent-ink` and `--atlas-opacity-label` (`0.82`) across light and dark backgrounds.

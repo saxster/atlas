@@ -17,6 +17,7 @@ import {
   cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
   settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
+  sCurveIndex, snapLogStop, eventKeyframes,
 } from './motion.js';
 
 export {
@@ -28,7 +29,67 @@ export {
   cubicBezier, bez, rubberband, projectMomentum, stagger, dwell, pingPong, anticipate, followThrough, pulseBeat, posterizeTime,
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
   settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
+  sCurveIndex, snapLogStop, eventKeyframes,
 };
+
+// Live playback lifecycle tracker: responds dynamically to prefers-reduced-motion changes,
+// document.hidden tab visibility changes, and optional IntersectionObserver visibility on targetEl.
+export function bindPlaybackLifecycle({ targetEl = null, getReducedExtra = () => false, onChange = null } = {}) {
+  const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  let hidden = typeof document !== 'undefined' ? !!document.hidden : false;
+  let visible = true;
+  let reduced = Boolean(mq?.matches || getReducedExtra?.());
+  let lastKey = `${reduced}|${hidden}|${visible}`;
+
+  const snapshot = () => ({
+    reduced,
+    hidden,
+    visible,
+    active: !reduced && !hidden && visible,
+  });
+
+  const sync = () => {
+    reduced = Boolean(mq?.matches || getReducedExtra?.());
+    hidden = typeof document !== 'undefined' ? !!document.hidden : false;
+    const key = `${reduced}|${hidden}|${visible}`;
+    if (key !== lastKey) {
+      lastKey = key;
+      onChange?.(snapshot());
+    }
+    return snapshot();
+  };
+
+  const onMq = () => sync();
+  if (mq?.addEventListener) mq.addEventListener('change', onMq);
+  else if (mq?.addListener) mq.addListener(onMq);
+
+  const onVis = () => sync();
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVis);
+
+  let io = null;
+  if (targetEl && typeof IntersectionObserver !== 'undefined') {
+    io = new IntersectionObserver(([entry]) => {
+      if (!entry) return;
+      visible = entry.isIntersecting;
+      sync();
+    });
+    io.observe(targetEl);
+  }
+
+  return {
+    get reduced() { return Boolean(mq?.matches || getReducedExtra?.()); },
+    get hidden() { return typeof document !== 'undefined' ? !!document.hidden : false; },
+    get visible() { return visible; },
+    get active() { return !this.reduced && !this.hidden && visible; },
+    sync,
+    destroy() {
+      if (mq?.removeEventListener) mq.removeEventListener('change', onMq);
+      else if (mq?.removeListener) mq.removeListener(onMq);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVis);
+      io?.disconnect();
+    },
+  };
+}
 
 // Pure skew-line closest-point solver for camera-angle-invariant 1D rail/axis dragging.
 // Given camera ray (rayOrigin, rayDir) and axis (axisOrigin, axisVec), returns { s, sWorld, tRay }
@@ -296,6 +357,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   const urlMedium = urlParams ? urlParams.get('medium') : null;
   const urlQuirk = urlParams ? urlParams.get('quirk') : null;
   const RENDER_MODE = typeof location !== 'undefined' && /[?&]render\b/.test(location.search);
+  let isReduced = !!reduced;
   let activeQuirk = resolveQuirk(urlQuirk || quirk || chapter.quirk || DEFAULT_QUIRK);
   let activeMedium = (urlMedium && MEDIUMS.includes(urlMedium)) ? urlMedium : (medium || chapter.medium || activeQuirk.medium);
   if (typeof document !== 'undefined') {
@@ -630,7 +692,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
             const minS = drag.item.axis.min, maxS = drag.item.axis.max;
             if (minS !== undefined) sParam = Math.max(minS, sParam);
             if (maxS !== undefined) sParam = Math.min(maxS, sParam);
-            if (!RENDER_MODE && !reduced && drag.item.axis.rubberband !== false && rawS !== sParam) {
+            if (!RENDER_MODE && !isReduced && drag.item.axis.rubberband !== false && rawS !== sParam) {
               const span = (Number.isFinite(minS) && Number.isFinite(maxS) && maxS > minS) ? (maxS - minS) : 1;
               drag.item.rubberOffset = rubberband(rawS - sParam, span * 0.18, 0.55);
             } else {
@@ -651,7 +713,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
           }
         }
         if (pt !== null) {
-          if (drag.item.load && !RENDER_MODE && !reduced) {
+          if (drag.item.load && !RENDER_MODE && !isReduced) {
             drag.item.targetValue = pt;
             drag.item.lastWorldPt = worldPt;
             if (drag.item.value === null || drag.item.value === undefined) {
@@ -720,7 +782,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     const fa = k => PAGES[k].frameAspect ?? chapter.frameAspect ?? 1.25;
     cam.dist *= Math.max(1, lerp(fa(i), fa(j), u) / E.camera.aspect);
     if (narrow) cam.dist *= narrowZoom;
-    if (!reduced && !drag && running) cam.az += Math.sin(now / 5200) * 1.2;
+    if (!isReduced && !drag && running) cam.az += Math.sin(now / 5200) * 1.2;
     const page = Math.round(s);
     if (page !== orbitPage) { orbitPage = page; orbitHome = true; }
     if (drag && drag.moved) orbitHome = false;
@@ -743,10 +805,10 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     if (clockAt !== undefined) {
       if (clockAt !== lastClockAt) { lastClockAt = clockAt; if (!drag?.scrub) scrubbed = null; }
       clock = scrubbed ?? clockAt;
-    } else if (!reduced) clock += dt * timeRate;
+    } else if (!isReduced) clock += dt * timeRate;
 
     // Advance any spring/Lenz load-coupled draggables smoothly during live interaction
-    if (!RENDER_MODE && !reduced && dt > 0) {
+    if (!RENDER_MODE && !isReduced && dt > 0) {
       for (const d of liveDraggables()) {
         const nextPt = stepDraggableLoad(d, dt);
         if (nextPt !== null) {
@@ -756,7 +818,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
       }
     }
 
-    const state = chapter.state(clock, reduced);
+    const state = chapter.state(clock, isReduced);
     const LA = PAGES[i].look || {}, LB = PAGES[j].look || {}, look = {};
     for (const key of chapter.lookKeys || []) {
       if (key === 'isolate') continue;
@@ -787,7 +849,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     lastLook = look;
     E.resetExplode?.();
     W.update(state, look);
-    if (!RENDER_MODE && !reduced) {
+    if (!RENDER_MODE && !isReduced) {
       for (const d of liveDraggables()) {
         if (!d.axis || !d.autoMove || d.obj.userData?.arrow || typeof d.value !== 'number' || !d.obj.position) continue;
         if (!d.active && Math.abs(d.rubberOffset) > 1e-5 && dt > 0) {
@@ -806,7 +868,7 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
     E.stepExplode(dt);
 
     const boilRate = activeQuirk.boilRate ?? (activeMedium === 'pencil-wash' ? 6 : 0);
-    const boil = (!RENDER_MODE && !reduced && boilRate > 0) ? (Math.floor(((now || 0) / 1000) * boilRate) % 8) : 0;
+    const boil = (!RENDER_MODE && !isReduced && boilRate > 0) ? (Math.floor(((now || 0) / 1000) * boilRate) % 8) : 0;
     E.setMedium(activeMedium, { boil });
 
     if (frameParts) {
@@ -1019,7 +1081,8 @@ export function createStage(canvas, labelsEl, chapter, { reduced = false, touch 
   if (activeAccent) setAccent(activeAccent);
 
   return {
-    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, setQuirk, setAccent, labelReport, sceneReport, destroy, fit, draggable,
+    E, W, N, hooks, step, select, relight, hoverExtern, setMedium, setQuirk, setAccent, setReduced(flag) { isReduced = !!flag; }, labelReport, sceneReport, destroy, fit, draggable,
+    get reduced() { return isReduced; },
     get medium() { return activeMedium; },
     get quirk() { return activeQuirk.id; },
     get quirkPreset() { return activeQuirk; },

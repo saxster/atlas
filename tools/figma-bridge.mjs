@@ -926,6 +926,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const svg = buildComicBookendsSvgSheet();
     if (arg1) { fs.writeFileSync(arg1, svg); console.log(`Wrote Comic Bookends SVG sheet -> ${arg1}`); }
     else console.log(svg);
+  } else if (cmd === 'export-svg') {
+    const rest = process.argv.slice(3);
+    const opt = (k, d) => { const i = rest.indexOf(k); return i < 0 ? d : rest.splice(i, 2)[1]; };
+    const out = opt('--out', null);
+    const theme = opt('--theme', 'light');
+    const idPrefix = opt('--id-prefix', '');
+    const bg = opt('--bg', null);
+    const input = rest[0];
+    if (!input) { console.error('Usage: node tools/figma-bridge.mjs export-svg <in.svg> [--out <out.svg>] [--theme light|dark|atelier] [--id-prefix <p>] [--bg <hex|theme>]'); process.exit(2); }
+    const { exportSvgCli } = await import('../cli/export-svg.mjs');
+    process.exit(exportSvgCli(input, { out, theme, idPrefix, bg }));
   } else {
     console.log(`Usage:
   node tools/figma-bridge.mjs tokens                     emit 8-mode Figma Variables JSON
@@ -933,6 +944,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   node tools/figma-bridge.mjs bundle <figure> [out-dir]  stage self-contained Code Layer bundle for send_code_to_figma
   node tools/figma-bridge.mjs svg-sheet [out.svg]        emit editable SVG Vector & 8-Voice Swatch Sheet for upload_assets
   node tools/figma-bridge.mjs book-redesign-sheet [out]  emit editable SVG Curious Atelier Book Redesign Sheet for upload_assets
-  node tools/figma-bridge.mjs comic-bookends-sheet [out] emit editable SVG Ligne-Claire Comic Bookends Sheet for upload_assets`);
+  node tools/figma-bridge.mjs comic-bookends-sheet [out] emit editable SVG Ligne-Claire Comic Bookends Sheet for upload_assets
+  node tools/figma-bridge.mjs export-svg <in.svg> [opts] export sanitized static SVG with resolved tokens for Figma import`);
   }
 }

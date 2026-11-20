@@ -21,6 +21,7 @@
     "cli",
     "docs/API.md",
     "docs/decisions.md",
+    "docs/verification-rubric.md",
     "docs/voices",
     "examples/minimal",
     "LICENSE",

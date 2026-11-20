@@ -1,7 +1,7 @@
 // The sandbox: constructive play. Place, remove or drag pieces in 3D, type your own matrix or parameters, or pick a
 // preset, and watch the figure, chips and chart respond at once. Built on stage.js and draggable(), with shareable URLs
 // and a deterministic ?render tour across presets so tools/cards.mjs and tools/stills.mjs work out of the box.
-import { createStage, ease, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
+import { createStage, bindPlaybackLifecycle, ease, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playClick, playBoop } from './sound.js';
 import { renderControl, updateControl, bindControls, mountControlModeBar } from './diegetic.js';
@@ -23,9 +23,17 @@ const clone = x => JSON.parse(JSON.stringify(x));
 export function startSandbox(figure) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const narrowQ = matchMedia('(max-width: 900px)');
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
   if (RENDER) document.documentElement.classList.add('render');
+  let S = null, raf = 0, frameReady = false, last = performance.now();
+  const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
+    onChange(st) {
+      S?.setReduced?.(st.reduced);
+      if (!frameReady) return;
+      if (st.hidden && raf) { cancelAnimationFrame(raf); raf = 0; }
+      else if (!st.hidden && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+    },
+  });
 
   const baseParams = { ...figure.params };
   const baseItems = clone(figure.initialItems || []);
@@ -66,7 +74,6 @@ export function startSandbox(figure) {
   const syncUrl = () => { if (!RENDER) history.replaceState(null, '', shareUrl()); };
 
   // ---------- optional cutaway / x-ray / section bar ----------
-  let S = null;
   cutBar = mountCutBar($('presets') || $('controls'), figure, () => S, {
     initialMode: Q.get('cut') || null,
     place: 'before',
@@ -268,7 +275,7 @@ export function startSandbox(figure) {
       S.destroy();
       const fresh = document.createElement('canvas'); fresh.id = 'gl'; $('gl').replaceWith(fresh);
     }
-    S = createStage($('gl'), $('labels'), fig(), { reduced, touch, dprCap: touch ? 1.5 : 2 });
+    S = createStage($('gl'), $('labels'), fig(), { reduced: life.reduced, touch, dprCap: touch ? 1.5 : 2 });
     S.hooks.onHover = key => { prose.highlightPart(key); };
     S.hooks.onSelect = key => {
       const pl = $('plate');
@@ -284,7 +291,7 @@ export function startSandbox(figure) {
 
   let clock = !RENDER && Q.has('t') ? (+Q.get('t') || 0) : 0;
   function draw(now, dt, c) {
-    const state = S.step({ now, dt, s: 0, litPage: 0, running: !reduced, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
+    const state = S.step({ now, dt, s: 0, litPage: 0, running: !life.reduced, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
     $('readout').textContent = figure.readout(state, params, items);
     (figure.chips || []).forEach((ch, i) => {
       const txt = String(ch.value(state, params, items));
@@ -297,17 +304,17 @@ export function startSandbox(figure) {
     }
   }
 
-  let last = performance.now();
   function frame(now) {
     const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;
-    if (!reduced) clock += dt;
+    if (!life.reduced) clock += dt;
     draw(now, dt, clock);
-    if (!RENDER) requestAnimationFrame(frame);
+    if (!RENDER && !life.hidden) raf = requestAnimationFrame(frame);
+    else raf = 0;
   }
-  document.fonts.ready.then(() => requestAnimationFrame(t => { if (RENDER) draw(0, 0, 0); else frame(t); }));
+  document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; last = t; if (RENDER) draw(0, 0, 0); else frame(t); }));
 
   window.__atlas = {
-    E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, params, get items() { return items; },
+    E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, get items() { return items; },
     reset, shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
     get state() { return { clock, params: { ...params }, items: clone(items), activePreset, cut: cutBar?.mode || 'solid' }; },
     get clock() { return S.clock; },

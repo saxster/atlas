@@ -1,0 +1,5 @@
+Write a pure mechanism timing model (`model.js` + `checks.mjs`) for a cam-indexed transfer table using `sCurveIndex`, `snapLogStop`, and `eventKeyframes` from `@saxster/atlas/motion.js`.
+Verify in `checks.mjs`:
+1. `sCurveIndex` pins `t <= start` and `t >= start + travel` identically and exhibits smooth finite velocity across all 7 segments.
+2. `snapLogStop` snaps to exact nearest logarithmic detent (geometric mean boundary).
+3. `eventKeyframes` returns strictly increasing deduplicated timestamps including every analytical contact timestamp without 1-frame overshoot.

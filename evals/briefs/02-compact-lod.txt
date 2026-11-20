@@ -1,0 +1,2 @@
+Starting from an existing full-scale `draftSvg` technical plate (`560x440`), derive a compact thumbnail SVG centered on a `[120, 80, 220, 180]` crop region using `draftCompactSvg` without rescaling user coordinates.
+Ensure dashed roles use compact dashing (`2 2`), geometry carries `vector-effect="non-scaling-stroke"`, detail annotations are stripped cleanly, and the compact output passes `npx atlas svg-lint <file> --compact` (and container-query LOD below 400px in browser).

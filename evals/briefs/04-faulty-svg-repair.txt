@@ -1,0 +1,2 @@
+Inspect `faulty-diagram.svg` (copied from `evals/attachments/faulty-diagram.svg`) with `npx atlas svg-lint faulty-diagram.svg --strict-draft`.
+Fix every structural and strict drafting violation (duplicate IDs, dangling fragment references, stroked text, upside-down rotation, forbidden gradient/skew/bold/italic/caps/font-size/stroke-width drift) so the repaired file passes `npx atlas svg-lint --strict-draft` and exports cleanly via `npx atlas export-svg --theme light` and `--theme dark`.

@@ -783,7 +783,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 }
 { // Programmatic boot package assembler & strict router (cli/boot.mjs)
   const { TARGETS, boot } = await import('../cli/boot.mjs');
-  const allTargetsOk = TARGETS.length === 24 && TARGETS.every(t => {
+  const allTargetsOk = TARGETS.length === 26 && TARGETS.every(t => {
     const res = boot(t.slug);
     const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
     const hasVoiceDoc = t.kind !== 'voice' || (Boolean(res.voiceDoc) && res.markdown.includes('## Creator Voice Guide'));
@@ -799,7 +799,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const noMatchRes = boot('underwater basketweaving');
   const listRes = boot('', { list: true });
 
-  C.check('cli/boot.mjs: all 6 grammars, 9 kits & 9 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+  C.check('cli/boot.mjs: all 6 grammars, 10 kits & 10 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
     allTargetsOk
     && trigExplorer.matched && trigExplorer.slug === 'explorer'
     && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
@@ -809,7 +809,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && trigCombo.matched && trigCombo.slug === 'explorer' && trigCombo.supportingKits.includes('ciechanowski-mechanism')
     && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
     && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
-    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 24);
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 26);
 }
 { // Pure conservation solvers, equal-flux quantileSeeds & 3D axisymmetric ray tracing (engine/solvers.js)
   const { solveNetwork, quantileSeeds, traceAxisymmetricRays } = await import('./solvers.js');
@@ -1522,5 +1522,160 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && creativeHtml[7].includes('data-tear-key="coupon"')
     && standardHtml.every(h => h.includes('data-mode="standard"') && h.includes('type="range"'))
     && JSON.stringify(s1) === JSON.stringify(s3) && JSON.stringify(s1) !== JSON.stringify(s2));
+}
+
+// 17. DRAFT_STANDARD + draft_kit.js pure 2D drafting relationships & WCAG contrast on light/dark sheets
+{
+  const {
+    DRAFT_STANDARD, draftArrow, draftDimension, draftHatch, draftSupportTicks,
+    draftInverseClip, draftClearanceMask, draftSvg, draftCompactSvg, draftIsolationWrap,
+  } = await import('./draft_kit.js');
+  const { wcagContrast } = await import('./theme.js');
+
+  const roleCount = Object.keys(DRAFT_STANDARD.roles).length;
+  const labelAlpha = DRAFT_STANDARD.tokens['--atlas-opacity-label'];
+  const noteAlpha = DRAFT_STANDARD.tokens['--atlas-opacity-note'];
+  const lightOk = wcagContrast(`rgba(24,24,26,${labelAlpha})`, '#fbfbfa') >= 4.5
+    && wcagContrast(`rgba(24,24,26,${noteAlpha})`, '#f2f2ef') >= 4.5;
+  const darkOk = wcagContrast(`rgba(238,243,240,${labelAlpha})`, '#121917') >= 4.5
+    && wcagContrast(`rgba(238,243,240,${noteAlpha})`, '#18211e') >= 4.5;
+
+  const arr = draftArrow({ from: [10, 20], to: [110, 20], legLength: 6, angle: 45 });
+  const tipFirst = arr.shaftD.startsWith('M110 20L10 20');
+  const legMatches = arr.headD.includes('L110 20L');
+
+  const dim = draftDimension({
+    axis: 'x',
+    witnesses: [[80, 100], [380, 140]],
+    position: 60,
+    label: { text: '300 mm', anchor: [230, 60], clearance: { x: 200, y: 50, width: 60, height: 20 } },
+  });
+  let consumedThrew = false;
+  try {
+    draftDimension({
+      axis: 'x',
+      witnesses: [[100, 100], [150, 100]],
+      position: 60,
+      label: { text: '50', anchor: [125, 60], clearance: { x: 90, y: 50, width: 70, height: 20 } },
+    });
+  } catch { consumedThrew = true; }
+
+  const h1 = draftHatch({ region: { kind: 'rect', x: 50, y: 40, width: 100, height: 80 }, pattern: 'H1', phase: 0 });
+  const h2 = draftHatch({ region: { kind: 'rect', x: 50, y: 40, width: 100, height: 80 }, pattern: 'H2', phase: 3 });
+  const hatchInBounds = [...h1.segments, ...h2.segments].every(([a, b]) =>
+    a[0] >= 50 - 1e-6 && a[0] <= 150 + 1e-6 && a[1] >= 40 - 1e-6 && a[1] <= 120 + 1e-6 &&
+    b[0] >= 50 - 1e-6 && b[0] <= 150 + 1e-6 && b[1] >= 40 - 1e-6 && b[1] <= 120 + 1e-6);
+
+  const ticksPlus = draftSupportTicks({ from: [40, 20], to: [40, 100], extent: 16, pitch: 16, side: 1 });
+  const ticksMinus = draftSupportTicks({ from: [40, 20], to: [40, 100], extent: 16, pitch: 16, side: -1 });
+  const inv = draftInverseClip('fg', 'M10 10H90V90H10Z', { vb: [0, 0, 560, 440] });
+  const mask = draftClearanceMask('bg-clr', '<rect x="10" y="10" width="80" height="80" fill="black"/>', { vb: [0, 0, 560, 440] });
+
+  let badModeThrew = false;
+  try { draftSvg({ mode: 'made-up-mode', body: '' }); } catch { badModeThrew = true; }
+
+  const full = draftSvg({
+    id: 'test-plate',
+    vb: [0, 0, 560, 440],
+    title: 'Beam test',
+    desc: 'Orthographic beam fixture',
+    mode: 'geometric-construction',
+    defs: inv.defs + mask.defs,
+    body: `<g data-draft-role="grid" ${mask.maskAttr}><path d="M0 100H500"/></g>`
+      + `<path data-draft-role="hidden" d="M20 80H220"/>`
+      + `<path data-draft-role="hatch" d="${h1.d}"/>`
+      + `<path data-draft-role="transfer" d="${arr.shaftD}"/>`
+      + `<g data-draft-role="dimension"><path d="${dim.witnessD}"/><path d="${dim.lineD}"/></g>`
+      + `<text data-draft-text="label" x="230" y="64" font-size="11">${dim.label.text}</text>`,
+  });
+  const compact = draftCompactSvg(full, { cropBox: [40, 30, 220, 140] });
+  const isoHtml = draftIsolationWrap({ id: 'iso-box', title: 'Beam', caption: 'Cap', svg: full });
+
+  C.check('draft_standard & draft_kit.js: frozen 13 roles, WCAG AA contrast on light/dark, tip-first arrows, split dimensions, clipped hatch, inverse clip/mask & compact crop',
+    Object.isFrozen(DRAFT_STANDARD) && roleCount === 13 && lightOk && darkOk
+    && tipFirst && legMatches && dim.lineD.includes(' M') && consumedThrew
+    && h1.segments.length > 0 && h2.segments.length > 0 && hatchInBounds
+    && ticksPlus.count === 6 && ticksMinus.count === 6 && ticksPlus.d !== ticksMinus.d
+    && inv.defs.includes('clip-rule="evenodd"') && mask.defs.includes('mask-type:luminance')
+    && badModeThrew && full.includes('role="img"') && full.includes('aria-labelledby="test-plate-title test-plate-desc"')
+    && compact.includes('viewBox="24 14 252 172"') && compact.includes('--atlas-compact-dash:2 2')
+    && compact.includes('vector-effect="non-scaling-stroke"') && !compact.includes('<text')
+    && isoHtml.includes('data-draft-iso-btn') && isoHtml.includes('aria-pressed="false"'));
+}
+
+// 18. motion.js mechanical helpers (sCurveIndex, snapLogStop, eventKeyframes) & 31 eases invariant
+{
+  const { eases, sCurveIndex, snapLogStop, eventKeyframes } = await import('./motion.js');
+  const easeCount = Object.keys(eases).length;
+
+  const sc0 = sCurveIndex(1.0, { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 });
+  const scEnd = sCurveIndex(3.0, { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 });
+  const scUnder = sCurveIndex(0.2, { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 });
+  const scOver = sCurveIndex(5.0, { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 });
+  const samples = Array.from({ length: 41 }, (_, i) =>
+    sCurveIndex(1 + (i / 40) * 2, { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 }));
+  let monoOk = true;
+  for (let i = 1; i < samples.length; i++) if (samples[i] + 1e-12 < samples[i - 1]) monoOk = false;
+  // C1 velocity continuity across ramp-to-cruise (t = 1.4) and cruise-to-brake (t = 2.6)
+  const eps = 1e-4;
+  const scCfg = { start: 1, travel: 2, accel: 0.4, brake: 0.4, distance: 10, origin: 5 };
+  const vLeft = (sCurveIndex(1.4, scCfg) - sCurveIndex(1.4 - eps, scCfg)) / eps;
+  const vRight = (sCurveIndex(1.4 + eps, scCfg) - sCurveIndex(1.4, scCfg)) / eps;
+  const vZeroStart = (sCurveIndex(1 + eps, scCfg) - sc0) / eps;
+  const scScaled = sCurveIndex(0.5, { start: 0, travel: 1, accel: 0.8, brake: 0.8, distance: 4, origin: 0 });
+
+  const stops = [1.4, 2, 2.8, 4, 5.6, 8];
+  const gmBoundary = Math.sqrt(2 * 2.8);
+  const kfs = eventKeyframes(0, 1, { fps: 10, events: [0.333, 0.5, 0.333, -0.5, 2.0, 0.9999999999] });
+  let strictAsc = true;
+  for (let i = 1; i < kfs.length; i++) if (!(kfs[i] > kfs[i - 1])) strictAsc = false;
+
+  C.check('motion.js: eases keeps 31 keys; sCurveIndex C1-continuous & pinned; snapLogStop geometric-mean nearest; eventKeyframes sorted/deduped',
+    easeCount === 31 && sc0 === 5 && scUnder === 5 && scEnd === 15 && scOver === 15
+    && monoOk && Math.abs(vLeft - vRight) < 1e-2 && Math.abs(vZeroStart) < 1e-4 && scScaled === 2
+    && snapLogStop(2.8, stops) === 2.8 && snapLogStop(gmBoundary - 0.01, stops) === 2 && snapLogStop(gmBoundary + 0.01, stops) === 2.8
+    && strictAsc && kfs[0] === 0 && kfs[kfs.length - 1] === 1 && kfs.some(v => Math.abs(v - 0.333) < 1e-9));
+}
+
+// 19. theme.js buildThemeCssSnippet, site.mjs RETIRED_ROUTES/resolveRoute & cli/svg-{xml,lint,export} hygiene
+{
+  const { buildThemeCssSnippet } = await import('./theme.js');
+  const { draftSvg, draftHatch } = await import('./draft_kit.js');
+  const { RETIRED_ROUTES, resolveRoute } = await import('../tools/site.mjs');
+  const { lintSvg } = await import('../cli/svg-lint.mjs');
+  const { exportSvg } = await import('../cli/export-svg.mjs');
+
+  const css = buildThemeCssSnippet({ accent: '#f4b829', ink: '#18181a', surface: '#fbfbfa', page: '#f2f2ef' });
+  const rr = resolveRoute('/physics/kinematics/');
+
+  const { DRAFT_STANDARD } = await import('./draft_kit.js');
+  const rubricPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'verification-rubric.md');
+  const rubricTxt = fs.readFileSync(rubricPath, 'utf8');
+  const rubricSynced = DRAFT_STANDARD.epistemicModes.every(m => rubricTxt.includes(`\`${m}\``));
+
+  const h = draftHatch({ region: { kind: 'rect', x: 20, y: 20, width: 80, height: 60 }, pattern: 'H2' });
+  const goodSvg = draftSvg({
+    id: 'exp-check',
+    vb: [0, 0, 200, 120],
+    title: 'Export test',
+    mode: 'functional-schematic',
+    body: `<g id="grp"><path data-draft-role="hatch" d="${h.d}"/><path data-draft-role="primary" d="M20 80H180"/></g><text data-draft-text="label" x="100" y="100" font-size="11">Axis</text>`,
+  });
+  const goodLint = lintSvg(goodSvg, { strictDraft: true });
+  const exported = exportSvg(goodSvg, { theme: 'dark', idPrefix: 'p1-' });
+
+  let blockedScript = false;
+  try { exportSvg('<svg viewBox="0 0 10 10"><script>alert(1)</script></svg>'); } catch { blockedScript = true; }
+  let blockedUrl = false;
+  try { exportSvg('<svg viewBox="0 0 10 10"><rect width="5" height="5" fill="url(https://evil.test/x)"/></svg>'); } catch { blockedUrl = true; }
+  let blockedStyle = false;
+  try { exportSvg('<svg viewBox="0 0 10 10"><style>path{stroke:red}</style></svg>'); } catch { blockedStyle = true; }
+
+  C.check('theme.js buildThemeCssSnippet, site.mjs resolveRoute & cli/svg-{lint,export}: WCAG snippet, clean group export, rubric/JSON sync & strict security rejection',
+    rubricSynced && css.includes('--atlas-ink: #18181a;') && css.includes('--accent-ink:') && css.includes('--atlas-opacity-label: 0.82;')
+    && Object.isFrozen(RETIRED_ROUTES) && rr.retired === false && rr.target === 'physics/kinematics'
+    && goodLint.ok && exported.svg.includes('stroke="#eef3f0"') && exported.svg.includes('id="p1-grp"')
+    && !exported.svg.includes('<style data-atlas-draft-styles')
+    && blockedScript && blockedUrl && blockedStyle);
 }
 C.report();

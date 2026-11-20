@@ -105,6 +105,64 @@ const autoStoppedOnUserClick = await p.$eval('#autoplay-btn', b => b.getAttribut
 check('Autoplay actuates cards with .is-live bounce and hands off cleanly on user click',
   autoRunning && hasLiveBounce && autoStoppedOnUserClick);
 
+// #token-studio interactive drafting isolation & CSS token configurator (outside #sheet)
+await p.click('#token-studio-preview [data-draft-iso-btn]');
+await wait(80);
+const isoOn = await p.evaluate(() => {
+  const frame = document.querySelector('#token-studio-preview .draft-iso');
+  const btn = document.querySelector('#token-studio-preview [data-draft-iso-btn]');
+  const fadedEl = document.querySelector('#token-studio-preview [data-draft-role="primary"]');
+  const focusEl = document.querySelector('#token-studio-preview [data-draft-focus="true"] [data-draft-role="transfer"]');
+  const isoNote = document.querySelector('#token-studio-preview [data-draft-isolation-only="true"]');
+  return {
+    pressed: btn?.getAttribute('aria-pressed'),
+    attr: frame?.hasAttribute('data-isolated'),
+    fadedOpacity: fadedEl ? getComputedStyle(fadedEl).opacity : '',
+    focusOpacity: focusEl ? getComputedStyle(focusEl).opacity : '',
+    noteVis: isoNote ? getComputedStyle(isoNote).visibility : '',
+    noteOpacity: isoNote ? getComputedStyle(isoNote).opacity : '',
+  };
+});
+await p.click('#token-studio-preview [data-draft-iso-btn]');
+await wait(80);
+const isoOff = await p.evaluate(() => {
+  const frame = document.querySelector('#token-studio-preview .draft-iso');
+  const fadedEl = document.querySelector('#token-studio-preview [data-draft-role="primary"]');
+  return {
+    attr: frame?.hasAttribute('data-isolated'),
+    fadedOpacity: fadedEl ? getComputedStyle(fadedEl).opacity : '',
+  };
+});
+check('#token-studio mark isolation fades non-focused lines without boosting focused marks',
+  isoOn.pressed === 'true' && isoOn.attr === true && isoOn.fadedOpacity === '0'
+  && parseFloat(isoOn.focusOpacity) > 0 && isoOn.noteVis === 'visible' && parseFloat(isoOn.noteOpacity) > 0
+  && isoOff.attr === false && parseFloat(isoOff.fadedOpacity) > 0,
+  JSON.stringify({ isoOn, isoOff }));
+
+await p.evaluate(() => {
+  const inp = document.querySelector('#token-studio [data-studio-ink]');
+  inp.value = 'notacolor';
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+});
+const invalidInk = await p.$eval('#token-studio [data-studio-ink]', el => el.getAttribute('aria-invalid'));
+await p.evaluate(() => {
+  const inp = document.querySelector('#token-studio [data-studio-ink]');
+  inp.value = '#0f3d3e';
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+});
+const validUpdate = await p.evaluate(() => ({
+  invalid: document.querySelector('#token-studio [data-studio-ink]')?.getAttribute('aria-invalid'),
+  cssText: document.querySelector('#token-studio [data-studio-css]')?.value || '',
+  hostInk: document.getElementById('token-studio-preview')?.style.getPropertyValue('--atlas-ink').trim(),
+}));
+await p.click('#token-studio [data-studio-reset]');
+const resetInk = await p.$eval('#token-studio [data-studio-ink]', el => el.value);
+check('#token-studio validates CSS ink colour, updates snippet/preview live & resets cleanly',
+  invalidInk === 'true' && validUpdate.invalid === null
+  && validUpdate.cssText.includes('--atlas-ink: #0f3d3e;')
+  && validUpdate.hostInk === '#0f3d3e' && resetInk === '#231e16',
+  JSON.stringify({ invalidInk, hostInk: validUpdate.hostInk, resetInk }));
+
 // ?render seek(t) order-independence
 await p.goto(`${base}/examples/ink-ui/?render`, { waitUntil: 'networkidle0' });
 await p.waitForFunction('window.seek');
@@ -125,7 +183,8 @@ check('?render: window.seek(t) produces identical pixels out-of-order',
 await p.goto(`${base}/examples/ink-ui/atelier-ink-ui.html`, { waitUntil: 'networkidle0' });
 await p.waitForFunction('window.__atlas');
 const bundleCards = await p.$$eval('#bento-grid [data-widget]', xs => xs.length);
-check('standalone single-file atelier-ink-ui.html boots all 24 widgets cleanly', bundleCards === 24);
+const bundleStudio = await p.$eval('#token-studio [data-studio-css]', el => el.value.includes('--atlas-ink:'));
+check('standalone single-file atelier-ink-ui.html boots all 24 widgets + #token-studio cleanly', bundleCards === 24 && bundleStudio);
 
 check('no console or page errors', !errors.length, errors.join(' | '));
 

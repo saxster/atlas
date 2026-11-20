@@ -5,7 +5,7 @@
 // <subject>/img/<id>.jpg (node tools/cards.mjs draws them). cover: the id whose picture stands for the subject on the shelf.
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { EXAMPLES, subjects } from './chapters.mjs';
 import { XREFS } from '../examples/xrefs.js';
 import { THREADS } from '../examples/concepts/threads.js';
@@ -204,27 +204,39 @@ async function searchIndexJs(all) {
   return `// written by tools/site.mjs — do not edit by hand\nexport const SEARCH_INDEX = ${JSON.stringify(entries, null, 2)};\n`;
 }
 
-const all = await subjects();
-const pages = [
-  ['index.html', rootPage(all)],
-  ...all.filter(s => s.contents !== false).map(s => [`${s.id}/index.html`, subjectPage(s)]),
-  ['search-index.js', await searchIndexJs(all)],
-];
-let stale = 0;
-for (const [file, html] of pages) {
-  const p = path.join(EXAMPLES, file), now = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
-  if (now === html) { console.log('same   ', file); continue; }
-  if (CHECK) { stale++; console.log('STALE  ', file); continue; }
-  fs.writeFileSync(p, html); console.log('wrote  ', file);
+export const RETIRED_ROUTES = Object.freeze({});
+
+export function resolveRoute(id) {
+  const clean = String(id || '').replace(/^\/+|\/+$/g, '');
+  if (clean in RETIRED_ROUTES) {
+    return { id: clean, retired: true, target: RETIRED_ROUTES[clean] };
+  }
+  return { id: clean, retired: false, target: clean };
 }
-if (CHECK) {
-  for (const idxFile of ['index.html', ...all.map(s => `${s.id}/index.html`)]) {
-    const p = path.join(EXAMPLES, idxFile);
-    if (!fs.existsSync(p)) continue;
-    const dir = path.dirname(p), src = fs.readFileSync(p, 'utf8');
-    for (const [, imgRel] of src.matchAll(/<img\s+[^>]*src="([^"]+)"/g)) {
-      if (!fs.existsSync(path.join(dir, imgRel))) { stale++; console.log('MISSING', path.join(path.dirname(idxFile), imgRel)); }
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  const all = await subjects();
+  const pages = [
+    ['index.html', rootPage(all)],
+    ...all.filter(s => s.contents !== false).map(s => [`${s.id}/index.html`, subjectPage(s)]),
+    ['search-index.js', await searchIndexJs(all)],
+  ];
+  let stale = 0;
+  for (const [file, html] of pages) {
+    const p = path.join(EXAMPLES, file), now = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+    if (now === html) { console.log('same   ', file); continue; }
+    if (CHECK) { stale++; console.log('STALE  ', file); continue; }
+    fs.writeFileSync(p, html); console.log('wrote  ', file);
+  }
+  if (CHECK) {
+    for (const idxFile of ['index.html', ...all.map(s => `${s.id}/index.html`)]) {
+      const p = path.join(EXAMPLES, idxFile);
+      if (!fs.existsSync(p)) continue;
+      const dir = path.dirname(p), src = fs.readFileSync(p, 'utf8');
+      for (const [, imgRel] of src.matchAll(/<img\s+[^>]*src="([^"]+)"/g)) {
+        if (!fs.existsSync(path.join(dir, imgRel))) { stale++; console.log('MISSING', path.join(path.dirname(idxFile), imgRel)); }
+      }
     }
   }
+  if (stale) { console.log('run: node tools/site.mjs && node tools/cards.mjs'); process.exit(1); }
 }
-if (stale) { console.log('run: node tools/site.mjs && node tools/cards.mjs'); process.exit(1); }

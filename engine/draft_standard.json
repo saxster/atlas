@@ -1,0 +1,125 @@
+{
+  "tokens": {
+    "--atlas-stroke-primary": 1,
+    "--atlas-stroke-secondary": 1,
+    "--atlas-stroke-guide": 1,
+    "--atlas-stroke-hatch": 1,
+    "--atlas-stroke-section": 1,
+    "--atlas-opacity-primary": 1,
+    "--atlas-opacity-secondary": 0.36,
+    "--atlas-opacity-guide": 0.18,
+    "--atlas-opacity-grid": 0.07,
+    "--atlas-opacity-hatch": 0.2,
+    "--atlas-opacity-hidden": 0.36,
+    "--atlas-opacity-highlight": 0.06,
+    "--atlas-opacity-label": 0.82,
+    "--atlas-opacity-note": 0.66
+  },
+  "roles": {
+    "primary": {
+      "width": "--atlas-stroke-primary",
+      "opacity": "--atlas-opacity-primary",
+      "dash": "none",
+      "label": "Primary form",
+      "use": "Main silhouette or selected functional route"
+    },
+    "secondary": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-secondary",
+      "dash": "none",
+      "label": "Secondary form",
+      "use": "Subordinate real detail"
+    },
+    "dimension": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-secondary",
+      "dash": "none",
+      "label": "Dimension / leader",
+      "use": "Measurement, extension, explanatory leader"
+    },
+    "leader": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-secondary",
+      "dash": "none",
+      "label": "Callout leader",
+      "use": "Explanatory anchor connecting label to feature"
+    },
+    "guide": {
+      "width": "--atlas-stroke-guide",
+      "opacity": "--atlas-opacity-guide",
+      "dash": "none",
+      "label": "Reference guides",
+      "use": "Subordinate alignment projections and reference scaffold"
+    },
+    "grid": {
+      "width": "--atlas-stroke-guide",
+      "opacity": "--atlas-opacity-grid",
+      "dash": "none",
+      "label": "Grid",
+      "use": "Repeated coordinate or module field"
+    },
+    "hatch": {
+      "width": "--atlas-stroke-hatch",
+      "opacity": "--atlas-opacity-hatch",
+      "dash": "none",
+      "label": "Hatch",
+      "use": "One declared bounded region or cut"
+    },
+    "section": {
+      "width": "--atlas-stroke-section",
+      "opacity": "--atlas-opacity-primary",
+      "dash": "none",
+      "label": "Section cut",
+      "use": "Material intersected by a stated cut plane"
+    },
+    "centerline": {
+      "width": "--atlas-stroke-guide",
+      "opacity": "--atlas-opacity-guide",
+      "dash": "8 3 1 3",
+      "label": "Axis / centerline / pitch locus",
+      "use": "Symmetry axis, center, or theoretical generating locus"
+    },
+    "hidden": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-hidden",
+      "dash": "3 5",
+      "label": "Hidden outline",
+      "use": "Geometry presently concealed behind a front face"
+    },
+    "absent": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-hidden",
+      "dash": "3 5",
+      "label": "Absent outline",
+      "use": "Missing link or unfilled position (label state in context)"
+    },
+    "proposed": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-hidden",
+      "dash": "3 5",
+      "label": "Proposed outline",
+      "use": "Possible future or target configuration"
+    },
+    "transfer": {
+      "width": "--atlas-stroke-secondary",
+      "opacity": "--atlas-opacity-secondary",
+      "dash": "4 6",
+      "label": "Motion or transfer",
+      "use": "Movement or conceptual transfer, with solid open arrowhead"
+    }
+  },
+  "geometry": {
+    "canvas": { "width": 560, "height": 440 },
+    "arrow": { "legLength": 6, "angle": 45 },
+    "dimension": { "slashExtent": 8, "labelClearance": 3 },
+    "hatch": { "edgePitch": 12 },
+    "support": { "extent": 16, "pitch": 16 },
+    "compact": { "maxWidth": 400, "margin": 16, "dash": "2 2" }
+  },
+  "epistemicModes": [
+    "geometric-construction",
+    "physical-technical-view",
+    "functional-schematic",
+    "conceptual-diagram"
+  ]
+}

@@ -1,0 +1,2 @@
+Inspect `faulty-figure/` (copied from `evals/attachments/faulty-figure/`) with `npx atlas check faulty-figure`.
+Remove forbidden graphics/DOM imports from `model.js` so it computes purely in plain JavaScript, and fix `checks.mjs` so independent numerical checks verify `model.js` and emit >= 1 `PASS` row cleanly under `npx atlas check faulty-figure`.

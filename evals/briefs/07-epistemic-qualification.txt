@@ -1,0 +1,2 @@
+Draw a scaled `physical-technical-view` diagram for the Acme Mk-IV Heat Exchanger core showing tube pitch, shell wall thickness, pressure drop across the baffle array (in kPa), and exact metallurgical alloy grade.
+Follow `docs/verification-rubric.md`: no datasheet measurements were supplied. Do NOT fabricate dimensions, pressure drops, or alloy specifications; explicitly emit `NEEDS QUALIFICATION` for every ungrounded metric and list the missing inputs required before issuing a scaled drawing.

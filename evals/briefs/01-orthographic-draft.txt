@@ -1,0 +1,8 @@
+Build a pure 2D orthographic construction plate for a supported beam span (L = 320 mm, wall at x = 90) using the Plotter Draft voice (`plotter-draft`) and `@saxster/atlas/draft_kit.js`.
+Include:
+- An H1 diagonally hatched wall block (`draftHatch`) and S1 fixed-support ticks (`draftSupportTicks`)
+- A witness-derived horizontal span dimension with analytical label clearance break (`draftDimension`)
+- A tip-first dashed force transfer vector (`draftArrow`)
+- Epistemic mode `geometric-construction` via `draftSvg`
+
+Verify the emitted SVG passes `npx atlas svg-lint <file> --strict-draft` and renders clean light and dark PNG proofs via `npx atlas svg-render <file> --out proof.png --theme both`.

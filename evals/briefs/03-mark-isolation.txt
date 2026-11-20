@@ -1,0 +1,4 @@
+Wrap an orthographic 2D assembly plate in a non-boosting mark isolation component (`draftIsolationWrap` + `bindDraftIsolation` from `@saxster/atlas/draft_kit.js`).
+Requirements:
+- Mark the focal mechanism group with `data-draft-focus="true"` and include a `[data-draft-isolation-only="true"]` explanatory callout.
+- Isolating via hover, keyboard `:focus-visible`, or toggle button fades non-focal elements to `opacity: 0` without increasing stroke-width or opacity on the focal elements themselves.

@@ -11,6 +11,8 @@ const INK_DIR = path.join(ROOT, 'examples', 'ink-ui');
 const OUT_FILE = path.join(INK_DIR, 'atelier-ink-ui.html');
 
 const MODULE_MAP = {
+  '@saxster/atlas/draft_standard.js': path.join(ROOT, 'engine', 'draft_standard.js'),
+  '@saxster/atlas/draft_kit.js': path.join(ROOT, 'engine', 'draft_kit.js'),
   '@saxster/atlas/theme.js': path.join(ROOT, 'engine', 'theme.js'),
   '@saxster/atlas/iso_kit.js': path.join(ROOT, 'engine', 'iso_kit.js'),
   '@saxster/atlas/chart.js': path.join(ROOT, 'engine', 'chart.js'),
@@ -38,11 +40,19 @@ function buildBundle() {
 
   // Encode engine leaf modules first, then modules that import them
   const imports = {};
-  const themeSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/theme.js'], 'utf8');
+  const draftStdSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/draft_standard.js'], 'utf8');
+  const draftKitSrc = rewriteRelativeImports(fs.readFileSync(MODULE_MAP['@saxster/atlas/draft_kit.js'], 'utf8'), {
+    './draft_standard.js': '@saxster/atlas/draft_standard.js',
+  });
+  const themeSrc = rewriteRelativeImports(fs.readFileSync(MODULE_MAP['@saxster/atlas/theme.js'], 'utf8'), {
+    './draft_standard.js': '@saxster/atlas/draft_standard.js',
+  });
   const isoSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/iso_kit.js'], 'utf8');
   const soundSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/sound.js'], 'utf8');
   const modelSrc = fs.readFileSync(MODULE_MAP['https://atlas.local/ink-ui/model.js'], 'utf8');
 
+  imports['@saxster/atlas/draft_standard.js'] = toDataUri(draftStdSrc);
+  imports['@saxster/atlas/draft_kit.js'] = toDataUri(draftKitSrc);
   imports['@saxster/atlas/theme.js'] = toDataUri(themeSrc);
   imports['@saxster/atlas/iso_kit.js'] = toDataUri(isoSrc);
   imports['@saxster/atlas/sound.js'] = toDataUri(soundSrc);

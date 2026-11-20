@@ -5,9 +5,9 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const FIGURE_MARKERS = new Set(['checks.mjs', 'model.js', 'world.js', 'figure.js', 'chapter.js', 'pages.js']);
-const SKIP_DIRS = new Set(['node_modules', 'engine', 'adapters', 'bin', 'cli', 'tools', 'docs', 'concepts', 'equations', 'img', 'videos', 'golden', 'shots']);
+const SKIP_DIRS = new Set(['node_modules', 'engine', 'adapters', 'bin', 'cli', 'tools', 'docs', 'concepts', 'equations', 'evals', 'img', 'videos', 'golden', 'shots']);
 
-const FORBIDDEN_MODEL_IMPORTS = /(?:from|import)\s*\(?['"](?:three(?:\/[^'"]*)?|(?:@saxster\/atlas\/|\.{1,2}\/)(?:prims|parts|stage|render|book|machine|explorer|sandbox|cad_kit|mount|iso_kit|diegetic|comic|index)\.js)['"]/m;
+const FORBIDDEN_MODEL_IMPORTS = /(?:from|import)\s*\(?['"](?:three(?:\/[^'"]*)?|(?:@saxster\/atlas\/|\.{1,2}\/)(?:prims|parts|stage|render|book|machine|explorer|sandbox|cad_kit|mount|iso_kit|draft_kit|draft_standard|diegetic|comic|index)\.js)['"]/m;
 const FORBIDDEN_MODEL_DOM = /\b(?:document|window)\s*\./m;
 
 function stripComments(src) {

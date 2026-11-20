@@ -8,7 +8,10 @@ atlas check [dir]                                          audit model.js purity
 atlas gate [<file>] [--transcript <jsonl>]                 verify Model-First & Read-Before-Write gate (CLI or PreToolUse stdin hook)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
 atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
-atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack`;
+atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack
+atlas svg-lint <file…> [--strict-draft] [--compact] [--json]   lint SVG files for XML/ref hygiene and Plotter drafting rules
+atlas export-svg <in.svg> [--out <out.svg>] [--theme light|dark|atelier] [--id-prefix <p>] [--bg <hex|theme>] [--embed-font <woff2>]   resolve tokens & sanitize static SVG
+atlas svg-render <in.svg> --out <out.png> [--theme light|dark|both] [--width <px>] [--scale <n>] [--background theme|none|<hex>] [--renderer auto|browser|rsvg-convert|resvg|inkscape|magick|qlmanage]   render SVG to PNG`;
 
 const [cmd, ...args] = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args.splice(i, 2)[1]; };
@@ -53,6 +56,35 @@ const COMMANDS = {
     };
     if (!args[0]) throw usage();
     return (await (await import('../cli/record.mjs')).record(figures()[0], o)) ? 0 : 1;
+  },
+  async 'svg-lint'() {
+    const strictDraft = flag('--strict-draft');
+    const compact = flag('--compact');
+    const json = flag('--json');
+    if (!args.length) throw usage();
+    const exitCode = (await import('../cli/svg-lint.mjs')).svgLintCli(args, { strictDraft, compact, json });
+    return { exitCode };
+  },
+  async 'export-svg'() {
+    const out = opt('--out', null);
+    const theme = opt('--theme', 'light');
+    const idPrefix = opt('--id-prefix', '');
+    const bg = opt('--bg', null);
+    const embedFont = opt('--embed-font', null);
+    if (!args[0]) throw usage();
+    const exitCode = (await import('../cli/export-svg.mjs')).exportSvgCli(args[0], { out, theme, idPrefix, bg, embedFont });
+    return { exitCode };
+  },
+  async 'svg-render'() {
+    const out = opt('--out', null);
+    const theme = opt('--theme', 'light');
+    const width = opt('--width', null);
+    const scale = opt('--scale', '2');
+    const background = opt('--background', 'theme');
+    const renderer = opt('--renderer', 'auto');
+    if (!args[0] || !out) throw usage();
+    const exitCode = await (await import('../cli/svg-render.mjs')).svgRenderCli(args[0], { out, theme, width, scale, background, renderer });
+    return { exitCode };
   },
 };
 const usage = () => Object.assign(new Error(USAGE), { usage: true });

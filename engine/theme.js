@@ -1,5 +1,6 @@
 // A host page's colours as a theme for createStage (see parts.js applyTheme), plus pure WCAG 2.x contrast helpers.
 // Zero Node imports: tools/vendor.mjs bundles this file into offline Kym textbooks via esbuild.
+import { DRAFT_STANDARD } from './draft_standard.js';
 export const KYM = { sheet: '--sheet', ink: '--ink', red: '--proton', blue: '--electron', green: '--green', ochre: '--neutron' };
 
 // Oliver Byrne (1847 Chiswick Press / c82.net) primary-colour geometric proof theme.
@@ -219,6 +220,263 @@ export function mountSwatchBar(anchorEl, {
     if (b) apply(b.dataset.swatch);
   });
   return { el: bar, apply, get swatch() { return curKey; }, get hex() { return swatches[curKey] || curKey; } };
+}
+
+// Pure CSS token snippet builder combining WCAG-clamped accent cascades with @saxster/atlas draft tokens.
+export function buildThemeCssSnippet({
+  selector = ':root',
+  accent = null,
+  ink = '#18181a',
+  surface = '#fbfbfa',
+  page = '#f2f2ef',
+  tokens = {},
+} = {}) {
+  const merged = { ...DRAFT_STANDARD.tokens, ...(tokens || {}) };
+  const decls = [];
+  if (ink) decls.push(`  --atlas-ink: ${String(ink).trim()};`);
+  if (accent) {
+    let derived = null;
+    try {
+      derived = deriveAccentTokens(accent, { page, card: surface, ink });
+    } catch {
+      derived = null;
+    }
+    if (derived) {
+      decls.push(
+        `  --accent: ${derived.accent};`,
+        `  --accent-mid: ${derived.accentMid};`,
+        `  --accent-deep: ${derived.accentDeep};`,
+        `  --accent-soft: ${derived.accentSoft};`,
+        `  --accent-ink: ${derived.accentInk};`,
+        `  --accent-on: ${derived.accentOn};`,
+      );
+    } else {
+      decls.push(`  --accent: ${String(accent).trim()};`);
+    }
+  }
+  const tokenKeys = Object.keys(merged).filter(k => k.startsWith('--atlas-'));
+  for (const k of tokenKeys) {
+    const v = merged[k];
+    if (v === undefined || v === null) continue;
+    decls.push(`  ${k}: ${typeof v === 'number' ? Number(v.toFixed(4)) : String(v).trim()};`);
+  }
+  return `${selector} {\n${decls.join('\n')}\n}\n`;
+}
+
+const STUDIO_SLIDERS = [
+  { key: '--atlas-stroke-primary', label: 'Primary stroke (px)', min: 0.5, max: 2.5, step: 0.1 },
+  { key: '--atlas-opacity-secondary', label: 'Secondary opacity', min: 0.15, max: 0.80, step: 0.01 },
+  { key: '--atlas-opacity-guide', label: 'Guide opacity', min: 0.05, max: 0.50, step: 0.01 },
+  { key: '--atlas-opacity-hatch', label: 'Hatch opacity', min: 0.05, max: 0.50, step: 0.01 },
+  { key: '--atlas-opacity-label', label: 'Label opacity', min: 0.55, max: 1.00, step: 0.01 },
+];
+
+const isValidCssColor = val => {
+  const s = String(val || '').trim();
+  if (!s) return false;
+  if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function') return CSS.supports('color', s);
+  return /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(s);
+};
+
+/**
+ * Interactive vanilla-DOM theme & drafting-token configurator with CSS.supports validation,
+ * live host property updates, clipboard CSS snippet copy, and reset to defaults.
+ */
+export function mountThemeStudio(containerEl, {
+  targetEl = null,
+  initial = {},
+  onChange = null,
+} = {}) {
+  if (!containerEl || typeof document === 'undefined') return null;
+
+  const baseState = () => ({
+    ink: initial.ink ?? '#18181a',
+    accent: initial.accent ?? ACCENT_SWATCHES.coral,
+    page: initial.page ?? '#f2efe7',
+    surface: initial.surface ?? '#fffdf6',
+    tokens: { ...DRAFT_STANDARD.tokens, ...(initial.tokens || {}) },
+  });
+  let state = baseState();
+
+  const root = document.createElement('div');
+  root.className = 'atlas-studio';
+  root.innerHTML = [
+    '<div class="studio-grid">',
+    '  <div class="studio-field">',
+    '    <label class="studio-lbl" for="studio-ink-input">Ink colour (CSS color)</label>',
+    '    <input id="studio-ink-input" class="studio-text" type="text" data-studio-ink="" autocomplete="off" spellcheck="false">',
+    '    <div class="studio-msg" data-studio-ink-msg="" aria-live="polite"></div>',
+    '  </div>',
+    '  <div class="studio-field">',
+    '    <label class="studio-lbl" for="studio-accent-input">Accent hex</label>',
+    '    <input id="studio-accent-input" class="studio-text" type="text" data-studio-accent="" autocomplete="off" spellcheck="false">',
+    '    <div class="studio-msg" data-studio-accent-msg="" aria-live="polite"></div>',
+    '  </div>',
+    '</div>',
+    '<div class="studio-sliders">',
+    ...STUDIO_SLIDERS.map((s, idx) => (
+      `<label class="studio-slider-row">` +
+      `<span class="studio-lbl">${s.label}</span>` +
+      `<input type="range" id="studio-sl-${idx}" data-studio-token="${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" aria-label="${s.label}">` +
+      `<output class="studio-val" for="studio-sl-${idx}" data-studio-out="${s.key}"></output>` +
+      `</label>`
+    )),
+    '</div>',
+    '<div class="studio-actions">',
+    '  <button type="button" class="studio-btn primary" data-studio-copy="">Copy CSS</button>',
+    '  <button type="button" class="studio-btn" data-studio-reset="">Reset</button>',
+    '  <span class="studio-status" data-studio-status="" aria-live="polite"></span>',
+    '</div>',
+    '<textarea class="studio-css" data-studio-css="" readonly rows="10" aria-label="Generated theme CSS"></textarea>',
+  ].join('\n');
+
+  containerEl.appendChild(root);
+
+  const inkIn = root.querySelector('[data-studio-ink]');
+  const inkMsg = root.querySelector('[data-studio-ink-msg]');
+  const accIn = root.querySelector('[data-studio-accent]');
+  const accMsg = root.querySelector('[data-studio-accent-msg]');
+  const cssArea = root.querySelector('[data-studio-css]');
+  const copyBtn = root.querySelector('[data-studio-copy]');
+  const resetBtn = root.querySelector('[data-studio-reset]');
+  const statusEl = root.querySelector('[data-studio-status]');
+
+  const hostEl = () => targetEl || document.documentElement;
+
+  const syncHostAndCss = () => {
+    const h = hostEl();
+    if (h?.style?.setProperty) {
+      h.style.setProperty('--atlas-ink', state.ink);
+      for (const s of STUDIO_SLIDERS) {
+        h.style.setProperty(s.key, String(state.tokens[s.key]));
+      }
+      if (isValidCssColor(state.accent)) {
+        try {
+          applyAccentTokens(h, state.accent, { page: state.page, card: state.surface, ink: state.ink });
+        } catch {}
+      }
+    }
+    const snippet = buildThemeCssSnippet(state);
+    cssArea.value = snippet;
+    onChange?.({ ...state, tokens: { ...state.tokens }, css: snippet });
+  };
+
+  const syncControlsFromState = () => {
+    inkIn.value = state.ink;
+    inkIn.removeAttribute('aria-invalid');
+    inkMsg.textContent = '';
+    accIn.value = state.accent;
+    accIn.removeAttribute('aria-invalid');
+    accMsg.textContent = '';
+    for (const s of STUDIO_SLIDERS) {
+      const sl = root.querySelector(`input[data-studio-token="${s.key}"]`);
+      const out = root.querySelector(`output[data-studio-out="${s.key}"]`);
+      const v = state.tokens[s.key];
+      if (sl) sl.value = String(v);
+      if (out) out.textContent = Number(v).toFixed(2);
+    }
+  };
+
+  const onInkInput = () => {
+    const raw = inkIn.value.trim();
+    if (!isValidCssColor(raw)) {
+      inkIn.setAttribute('aria-invalid', 'true');
+      inkMsg.textContent = 'Enter a valid CSS colour (e.g. #18181a or oklch(24% 0.02 250)).';
+      return;
+    }
+    inkIn.removeAttribute('aria-invalid');
+    inkMsg.textContent = '';
+    state.ink = raw;
+    syncHostAndCss();
+  };
+
+  const onAccInput = () => {
+    const raw = accIn.value.trim();
+    const candidate = ACCENT_SWATCHES[raw.toLowerCase()] || raw;
+    let ok = true;
+    try { parseColor(candidate); } catch { ok = false; }
+    if (!ok) {
+      accIn.setAttribute('aria-invalid', 'true');
+      accMsg.textContent = 'Enter a swatch key or valid hex/rgb colour.';
+      return;
+    }
+    accIn.removeAttribute('aria-invalid');
+    accMsg.textContent = '';
+    state.accent = candidate;
+    syncHostAndCss();
+  };
+
+  const onSliderInput = e => {
+    const sl = e.target.closest?.('input[data-studio-token]');
+    if (!sl) return;
+    const key = sl.dataset.studioToken;
+    const val = Number(sl.value);
+    if (!Number.isFinite(val)) return;
+    state.tokens[key] = val;
+    const out = root.querySelector(`output[data-studio-out="${key}"]`);
+    if (out) out.textContent = val.toFixed(2);
+    syncHostAndCss();
+  };
+
+  const onCopy = async () => {
+    const text = cssArea.value;
+    let ok = false;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch {}
+    }
+    if (!ok) {
+      try {
+        cssArea.focus();
+        cssArea.select();
+        ok = !!document.execCommand?.('copy');
+      } catch {}
+    }
+    statusEl.textContent = ok ? 'Copied CSS tokens' : 'Select CSS snippet above to copy';
+  };
+
+  const onReset = () => {
+    state = baseState();
+    syncControlsFromState();
+    syncHostAndCss();
+    statusEl.textContent = 'Reset to defaults';
+  };
+
+  inkIn.addEventListener('input', onInkInput);
+  accIn.addEventListener('input', onAccInput);
+  root.addEventListener('input', onSliderInput);
+  copyBtn.addEventListener('click', onCopy);
+  resetBtn.addEventListener('click', onReset);
+
+  syncControlsFromState();
+  syncHostAndCss();
+
+  return {
+    el: root,
+    getConfig() {
+      return { ...state, tokens: { ...state.tokens }, css: cssArea.value };
+    },
+    setAccent(hexOrKey) {
+      const resolved = ACCENT_SWATCHES[String(hexOrKey || '').toLowerCase()] || String(hexOrKey || '');
+      if (!resolved) return;
+      state.accent = resolved;
+      accIn.value = resolved;
+      accIn.removeAttribute('aria-invalid');
+      accMsg.textContent = '';
+      syncHostAndCss();
+    },
+    reset: onReset,
+    destroy() {
+      inkIn.removeEventListener('input', onInkInput);
+      accIn.removeEventListener('input', onAccInput);
+      root.removeEventListener('input', onSliderInput);
+      copyBtn.removeEventListener('click', onCopy);
+      resetBtn.removeEventListener('click', onReset);
+      root.remove();
+    },
+  };
 }
 
 

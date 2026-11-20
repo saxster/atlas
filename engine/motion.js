@@ -672,5 +672,81 @@ export function sharedAnchorDelta(prevIds = [], nextIds = []) {
   };
 }
 
+// 7-segment jerk-limited S-curve indexing motion (symmetric cubic accel ramp-in/out, constant cruise,
+// symmetric cubic brake ramp-in/out). Exact C2 position/velocity/acceleration continuity and pinned endpoints.
+export function sCurveIndex(t, { start = 0, travel = 1, accel = 0.2, brake = accel, distance = 1, origin = 0 } = {}) {
+  if (!(travel > 0) || !Number.isFinite(travel)) throw new RangeError('sCurveIndex: travel must be positive');
+  if (accel < 0 || !Number.isFinite(accel)) throw new RangeError('sCurveIndex: accel must be non-negative');
+  if (brake < 0 || !Number.isFinite(brake)) throw new RangeError('sCurveIndex: brake must be non-negative');
+  const tau = t - start;
+  if (tau <= 0) return origin;
+  if (tau >= travel) return origin + distance;
+
+  let a = accel;
+  let b = brake;
+  if (a + b > travel) {
+    const scale = travel / (a + b);
+    a *= scale;
+    b *= scale;
+  }
+  const cruiseDenom = travel - 0.5 * (a + b);
+  const v = cruiseDenom > 1e-12 ? distance / cruiseDenom : 0;
+
+  const rampDisp = (u, T) => {
+    if (T <= 0 || u <= 0) return 0;
+    if (u >= T) return 0.5 * v * T;
+    const half = 0.5 * T;
+    const k = (2 * v) / (3 * T * T);
+    if (u <= half) return k * u * u * u;
+    const w = T - u;
+    return 0.5 * v * T - v * w + k * w * w * w;
+  };
+
+  if (tau < a) return origin + rampDisp(tau, a);
+  if (tau <= travel - b) return origin + 0.5 * v * a + v * (tau - a);
+  return origin + distance - rampDisp(travel - tau, b);
+}
+
+// Logarithmic nearest-stop snapping for optical f-stops, musical ratios, or calibrated engineering detents.
+export function snapLogStop(value, stops) {
+  if (!(value > 0) || !Number.isFinite(value)) throw new RangeError('snapLogStop: value must be positive');
+  if (!Array.isArray(stops) || !stops.length) throw new TypeError('snapLogStop: stops must be a non-empty array');
+  let best = null;
+  let bestErr = Infinity;
+  for (const cand of stops) {
+    if (!(cand > 0) || !Number.isFinite(cand)) throw new RangeError('snapLogStop: every stop must be positive');
+    const err = Math.abs(Math.log(cand / value));
+    if (err < bestErr) {
+      bestErr = err;
+      best = cand;
+    }
+  }
+  return best;
+}
+
+// Sorted, deduplicated timeline timestamps combining uniform 1/fps samples with exact analytical event timestamps
+// (e.g. contact, wall-crossing, apex) so discrete transitions never suffer 1-frame overshoot.
+export function eventKeyframes(t0, t1, { fps = 60, events = [] } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || t0 >= t1) {
+    throw new RangeError('eventKeyframes: require finite t0 < t1');
+  }
+  if (!(fps > 0) || !Number.isFinite(fps)) throw new RangeError('eventKeyframes: fps must be positive');
+  const raw = [t0, t1];
+  const steps = Math.max(1, Math.round((t1 - t0) * fps));
+  for (let i = 1; i < steps; i++) raw.push(t0 + (i / steps) * (t1 - t0));
+  for (const ev of events || []) {
+    if (typeof ev === 'number' && Number.isFinite(ev) && ev >= t0 - 1e-12 && ev <= t1 + 1e-12) {
+      raw.push(clamp(ev, t0, t1));
+    }
+  }
+  raw.sort((a, b) => a - b);
+  const out = [];
+  for (const v of raw) {
+    if (!out.length || Math.abs(v - out[out.length - 1]) > 1e-9) out.push(v);
+  }
+  if (out[out.length - 1] !== t1) out[out.length - 1] = t1;
+  return out;
+}
+
 
 
