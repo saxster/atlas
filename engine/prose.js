@@ -619,3 +619,131 @@ export function bindProse(rootEl, {
     },
   };
 }
+
+const clampPin = (v, lo = 2, hi = 98) => Math.min(Math.max(Number(v) || 0, lo), hi);
+
+// Numbered live anatomy pins overlaid onto a figure/screen, linked to a legend and optional "Built from" chips.
+export function anatomyOverlay({
+  id = '',
+  contentHtml = '',
+  pins = [],
+  legendTitle = 'Anatomy',
+  chips = [],
+  caption = '',
+} = {}) {
+  const list = Array.isArray(pins) ? pins.filter(Boolean) : [];
+  const pinEls = list.map((pin, idx) => {
+    const n = pin.n ?? (idx + 1);
+    const pid = String(pin.id ?? `pin-${n}`);
+    const x = clampPin(pin.x ?? 50);
+    const y = clampPin(pin.y ?? 50);
+    const pAttr = pin.part ? ` data-part="${esc(normTargets(pin.part))}"${isoAttr(pin.isolate)}` : '';
+    return `<button type="button" class="tk-pin" data-anatomy-pin="${esc(pid)}"${pAttr} style="left:${x}%;top:${y}%" aria-pressed="false" aria-label="${n}. ${esc(pin.label || pid)}">${n}</button>`;
+  }).join('');
+
+  const legendItems = list.map((pin, idx) => {
+    const n = pin.n ?? (idx + 1);
+    const pid = String(pin.id ?? `pin-${n}`);
+    const pAttr = pin.part ? ` data-part="${esc(normTargets(pin.part))}"${isoAttr(pin.isolate)}` : '';
+    const detail = pin.detail ? `<span class="tk-anatomy-detail">${esc(pin.detail)}</span>` : '';
+    return `<li><button type="button" class="tk-anatomy-item" data-anatomy-item="${esc(pid)}"${pAttr} aria-pressed="false">` +
+      `<span class="tk-pin-num">${n}</span>` +
+      `<span class="tk-anatomy-copy"><b>${esc(pin.label || pid)}</b>${detail}</span>` +
+      `</button></li>`;
+  }).join('');
+
+  const chipsHtml = Array.isArray(chips) && chips.length
+    ? `<div class="tk-anatomy-chips"><span class="tk-anatomy-built">Built from</span>${chips.map(c => (
+      c?.href
+        ? `<a class="tk-anatomy-chip" href="${esc(c.href)}">${esc(c.label)}</a>`
+        : `<span class="tk-anatomy-chip">${esc(c?.label ?? c)}</span>`
+    )).join('')}</div>`
+    : '';
+
+  const idAttr = id ? ` id="${esc(id)}"` : '';
+  return `<div class="tk-anatomy"${idAttr}>` +
+    `<div class="tk-anatomy-stage">` +
+    `<div class="tk-anatomy-content">${contentHtml}</div>` +
+    `<div class="tk-anatomy-pins" role="group" aria-label="${esc(legendTitle)} pins">${pinEls}</div>` +
+    `</div>` +
+    `<div class="tk-anatomy-legend">` +
+    `<div class="tk-anatomy-head">${esc(legendTitle)}</div>` +
+    `<ol class="tk-anatomy-list">${legendItems}</ol>` +
+    `${chipsHtml}` +
+    `${caption ? `<p class="tk-anatomy-cap">${esc(caption)}</p>` : ''}` +
+    `</div>` +
+    `</div>`;
+}
+
+export function bindAnatomyOverlay(rootEl, { onSelect = null } = {}) {
+  if (!rootEl || typeof document === 'undefined') {
+    return { select() {}, clear() {}, destroy() {} };
+  }
+  const wrap = rootEl.classList?.contains('tk-anatomy') ? rootEl : rootEl.querySelector?.('.tk-anatomy');
+  if (!wrap) return { select() {}, clear() {}, destroy() {} };
+
+  let lockedId = null;
+
+  function applyActive(pinId) {
+    const target = pinId != null ? String(pinId) : null;
+    wrap.querySelectorAll('[data-anatomy-pin], [data-anatomy-item]').forEach(el => {
+      const id = el.dataset.anatomyPin || el.dataset.anatomyItem;
+      const on = target !== null && id === target;
+      el.classList.toggle('is-active', on);
+      el.setAttribute('aria-pressed', String(lockedId !== null && id === lockedId));
+    });
+  }
+
+  function select(pinId) {
+    const id = pinId != null ? String(pinId) : null;
+    lockedId = id && lockedId === id ? null : id;
+    applyActive(lockedId);
+    onSelect?.(lockedId);
+  }
+
+  function clear() {
+    lockedId = null;
+    applyActive(null);
+    onSelect?.(null);
+  }
+
+  const onClick = e => {
+    const target = e.target.closest?.('[data-anatomy-pin], [data-anatomy-item]');
+    if (!target || !wrap.contains(target)) return;
+    const id = target.dataset.anatomyPin || target.dataset.anatomyItem;
+    select(id);
+  };
+  const onOver = e => {
+    const target = e.target.closest?.('[data-anatomy-pin], [data-anatomy-item]');
+    if (!target || !wrap.contains(target)) return;
+    applyActive(target.dataset.anatomyPin || target.dataset.anatomyItem);
+  };
+  const onOut = e => {
+    const target = e.target.closest?.('[data-anatomy-pin], [data-anatomy-item]');
+    if (!target || !wrap.contains(target)) return;
+    if (e.relatedTarget && target.contains(e.relatedTarget)) return;
+    applyActive(lockedId);
+  };
+  const onKey = e => {
+    if (e.key === 'Escape' && lockedId !== null) {
+      e.preventDefault();
+      clear();
+    }
+  };
+
+  wrap.addEventListener('click', onClick);
+  wrap.addEventListener('pointerover', onOver);
+  wrap.addEventListener('pointerout', onOut);
+  wrap.addEventListener('keydown', onKey);
+
+  return {
+    select,
+    clear,
+    destroy() {
+      wrap.removeEventListener('click', onClick);
+      wrap.removeEventListener('pointerover', onOver);
+      wrap.removeEventListener('pointerout', onOut);
+      wrap.removeEventListener('keydown', onKey);
+    },
+  };
+}

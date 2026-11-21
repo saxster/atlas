@@ -724,6 +724,141 @@ export const SEARCH_INDEX = [
     ]
   },
   {
+    "id": "critical-thinking/denominator-doubt",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Missing denominators & waiting risk",
+    "sub": "why an 80% headline count can invert the real rate",
+    "text": "3D exposed vs unexposed fleet denominators beside per-vessel grounding rates",
+    "href": "critical-thinking/denominator-doubt/",
+    "links": [
+      {
+        "to": "concept:base-rate-denominator",
+        "why": "Concept · Base-rate denominator check"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/survivorship-rig",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Survivorship & test scope",
+    "sub": "Wald’s bombers and lab-vs-road emissions cycles",
+    "text": "3D returning bomber showing engine vs wing hit density beside lab vs road NOx towers",
+    "href": "critical-thinking/survivorship-rig/",
+    "links": [
+      {
+        "to": "concept:survivorship-filter",
+        "why": "Concept · Survivorship & test-scope boundaries"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/echo-chamber",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Echo chambers, sampling & provenance",
+    "sub": "collapsing duplicate echoes and bot floods to primary N_eff",
+    "text": "3D bot-flooded consultation bars beside a citation provenance network",
+    "href": "critical-thinking/echo-chamber/",
+    "links": [
+      {
+        "to": "concept:source-chain-provenance",
+        "why": "Concept · Source-chain independence (deduplication)"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/snow-simpson",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Confounders, John Snow & Simpson’s paradox",
+    "sub": "1854 South London water rates and severity stratification",
+    "text": "3D Southwark & Vauxhall vs Lambeth mortality bars beside stratified hospital survival",
+    "href": "critical-thinking/snow-simpson/",
+    "links": [
+      {
+        "to": "concept:simpsons-stratification",
+        "why": "Concept · Confounding & Simpson’s paradox reversal"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/bayes-search",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Bayesian search & mean reversion",
+    "sub": "why AF447 remained in swept Atlantic sectors when Pd < 1",
+    "text": "3D four-sector Atlantic ocean probability heights updating across missed sweeps",
+    "href": "critical-thinking/bayes-search/",
+    "links": [
+      {
+        "to": "concept:bayesian-missed-sweep",
+        "why": "Concept · Bayesian search update under imperfect detection"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/goodhart-games",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Targets, Goodhart’s law & strategic games",
+    "sub": "when unverified quotas break trust and 2×2 payoffs diverge",
+    "text": "3D Goodhart metric distortion gauges beside a 2x2 strategic payoff grid",
+    "href": "critical-thinking/goodhart-games/",
+    "links": [
+      {
+        "to": "concept:goodhart-target-distortion",
+        "why": "Concept · Goodhart’s law & payoff equilibrium distinction"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/challenger-oring",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Challenger O-ring censorship & dissent",
+    "sub": "SRB field-joint blow-by and Tufte’s 23-launch baseline",
+    "text": "3D cutaway SRB O-ring field joint beside 23 prior launch temperature columns",
+    "href": "critical-thinking/challenger-oring/",
+    "links": [
+      {
+        "to": "concept:zero-incident-censorship",
+        "why": "Concept · Zero-incident flight censorship"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/ponzi-capacity",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Ponzi capacity & independent custody",
+    "sub": "global CBOE option volume ceilings vs paper statements",
+    "text": "3D global CBOE option open interest ceiling exceeded by claimed fund assets and DTC gap",
+    "href": "critical-thinking/ponzi-capacity/",
+    "links": [
+      {
+        "to": "concept:capacity-ceiling-custody",
+        "why": "Concept · Exchange capacity ceiling & independent custody"
+      }
+    ]
+  },
+  {
+    "id": "critical-thinking/columbia-voi",
+    "kind": "explorer",
+    "subject": "Critical Thinking",
+    "title": "Columbia Crater extrapolation & value of information",
+    "sub": "640× debris extrapolation and the threshold for looking",
+    "text": "3D RCC wing panel and 640x foam strike beside Value of Information bars",
+    "href": "critical-thinking/columbia-voi/",
+    "links": [
+      {
+        "to": "concept:value-of-information",
+        "why": "Concept · Value of Information & extrapolation bounds"
+      }
+    ]
+  },
+  {
     "id": "economics/compound",
     "kind": "machine",
     "subject": "Economics",
@@ -8343,6 +8478,141 @@ export const SEARCH_INDEX = [
       {
         "to": "chemistry/crystal-projection",
         "why": "Concept · Unit-cell density and Bragg X-ray diffraction"
+      }
+    ]
+  },
+  {
+    "id": "concept:base-rate-denominator",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Base-rate denominator check",
+    "formula": "Rate exposed = Events exposed / Total exposed",
+    "formulaHtml": "Rate<sub>exposed</sub> = Events<sub>exposed</sub> / Total<sub>exposed</sub>",
+    "href": "critical-thinking/denominator-doubt/",
+    "links": [
+      {
+        "to": "critical-thinking/denominator-doubt",
+        "why": "Concept · Base-rate denominator check"
+      }
+    ]
+  },
+  {
+    "id": "concept:survivorship-filter",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Survivorship & test-scope boundaries",
+    "formula": "P(Return | Hit engine ) &lt; P(Return | Hit wing )",
+    "formulaHtml": "P(Return | Hit<sub>engine</sub>) &lt; P(Return | Hit<sub>wing</sub>)",
+    "href": "critical-thinking/survivorship-rig/",
+    "links": [
+      {
+        "to": "critical-thinking/survivorship-rig",
+        "why": "Concept · Survivorship & test-scope boundaries"
+      }
+    ]
+  },
+  {
+    "id": "concept:source-chain-provenance",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Source-chain independence (deduplication)",
+    "formula": "N eff = unique primary observations &le; echoing articles",
+    "formulaHtml": "<i>N</i><sub>eff</sub> = unique primary observations &le; echoing articles",
+    "href": "critical-thinking/echo-chamber/",
+    "links": [
+      {
+        "to": "critical-thinking/echo-chamber",
+        "why": "Concept · Source-chain independence (deduplication)"
+      }
+    ]
+  },
+  {
+    "id": "concept:simpsons-stratification",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Confounding & Simpson’s paradox reversal",
+    "formula": "Stratum rates A &gt; B can invert when severity weights differ",
+    "formulaHtml": "Stratum rates A &gt; B can invert when severity weights differ",
+    "href": "critical-thinking/snow-simpson/",
+    "links": [
+      {
+        "to": "critical-thinking/snow-simpson",
+        "why": "Concept · Confounding & Simpson’s paradox reversal"
+      }
+    ]
+  },
+  {
+    "id": "concept:bayesian-missed-sweep",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Bayesian search update under imperfect detection",
+    "formula": "P(A | miss) &prop; P(A) &middot; (1 &minus; P d ) k &gt; 0",
+    "formulaHtml": "P(A | miss) &prop; P(A) &middot; (1 &minus; <i>P</i><sub>d</sub>)<sup><i>k</i></sup> &gt; 0",
+    "href": "critical-thinking/bayes-search/",
+    "links": [
+      {
+        "to": "critical-thinking/bayes-search",
+        "why": "Concept · Bayesian search update under imperfect detection"
+      }
+    ]
+  },
+  {
+    "id": "concept:goodhart-target-distortion",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Goodhart’s law & payoff equilibrium distinction",
+    "formula": "When unverified proxy becomes target, proxy &uarr; while true trust &darr;",
+    "formulaHtml": "When unverified proxy becomes target, proxy &uarr; while true trust &darr;",
+    "href": "critical-thinking/goodhart-games/",
+    "links": [
+      {
+        "to": "critical-thinking/goodhart-games",
+        "why": "Concept · Goodhart’s law & payoff equilibrium distinction"
+      }
+    ]
+  },
+  {
+    "id": "concept:zero-incident-censorship",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Zero-incident flight censorship",
+    "formula": "Plot all 23 prior launches (7 damaged + 16 clean) across temperature",
+    "formulaHtml": "Plot all 23 prior launches (7 damaged + 16 clean) across temperature",
+    "href": "critical-thinking/challenger-oring/",
+    "links": [
+      {
+        "to": "critical-thinking/challenger-oring",
+        "why": "Concept · Zero-incident flight censorship"
+      }
+    ]
+  },
+  {
+    "id": "concept:capacity-ceiling-custody",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Exchange capacity ceiling & independent custody",
+    "formula": "Claimed Contracts = AUM / Notional &le; Exchange Open Interest",
+    "formulaHtml": "Claimed Contracts = AUM / Notional &le; Exchange Open Interest",
+    "href": "critical-thinking/ponzi-capacity/",
+    "links": [
+      {
+        "to": "critical-thinking/ponzi-capacity",
+        "why": "Concept · Exchange capacity ceiling & independent custody"
+      }
+    ]
+  },
+  {
+    "id": "concept:value-of-information",
+    "kind": "concept",
+    "subject": "Critical Thinking",
+    "title": "Value of Information & extrapolation bounds",
+    "formula": "Look if p breach &middot; q mitigate &middot; Loss &gt; Cost look",
+    "formulaHtml": "Look if <i>p</i><sub>breach</sub> &middot; <i>q</i><sub>mitigate</sub> &middot; Loss &gt; Cost<sub>look</sub>",
+    "href": "critical-thinking/columbia-voi/",
+    "links": [
+      {
+        "to": "critical-thinking/columbia-voi",
+        "why": "Concept · Value of Information & extrapolation bounds"
       }
     ]
   },

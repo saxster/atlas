@@ -32,6 +32,14 @@ if (hasAdd) {
 
 await p.click('#again'); await wait(250);
 check('Reset restores the initial board and chips', JSON.stringify(await chips()) === JSON.stringify(initialChips));
+const undoVisible = !!await p.$('.atlas-receipt .receipt-undo');
+if (undoVisible) {
+  await p.click('.atlas-receipt .receipt-undo');
+  await wait(250);
+}
+const afterUndoItems = await p.evaluate(() => window.__atlas.items.length);
+check('Reset shows Undo-over-Confirm receipt and Undo restores pre-reset state',
+  undoVisible && (!hasAdd || afterUndoItems > 0), `undoVisible=${undoVisible} items=${afterUndoItems}`);
 
 await p.goto(`${base}/${fig}/?render`, { waitUntil: 'networkidle0' }); await p.waitForFunction('window.seek');
 await p.evaluate(async () => { for (let t = 0; t <= DURATION; t += DURATION / 8) seek(t); await document.fonts.ready; }); await wait(250);

@@ -4,7 +4,7 @@
 import { createStage, bindPlaybackLifecycle, ease, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playClick, playBoop } from './sound.js';
-import { renderControl, updateControl, bindControls, mountControlModeBar } from './diegetic.js';
+import { renderControl, updateControl, bindControls, mountControlModeBar, createUndoStack, showActionReceipt } from './diegetic.js';
 
 function applySandboxChart(el, res, state, params, items) {
   if (!el || !res) return;
@@ -73,6 +73,21 @@ export function startSandbox(figure) {
   };
   const syncUrl = () => { if (!RENDER) history.replaceState(null, '', shareUrl()); };
 
+  const undoStack = createUndoStack({ limit: 25, clone });
+  const snapshot = () => ({ params: { ...params }, items: clone(items), activePreset });
+  let restoreSnapshot = () => {};
+  const receiptUndo = (anchorEl, message, label) => {
+    if (RENDER || !anchorEl) return;
+    showActionReceipt(anchorEl, {
+      message,
+      onUndo: () => {
+        const entry = undoStack.undo(snapshot());
+        if (entry) restoreSnapshot(entry.snapshot);
+      },
+      durationMs: 6500,
+    });
+  };
+
   // ---------- optional cutaway / x-ray / section bar ----------
   cutBar = mountCutBar($('presets') || $('controls'), figure, () => S, {
     initialMode: Q.get('cut') || null,
@@ -93,11 +108,13 @@ export function startSandbox(figure) {
     presetsEl.addEventListener('click', e => {
       const b = e.target.closest('[data-preset]'); if (!b) return;
       const pr = figure.presets.find(p => p.key === b.dataset.preset); if (!pr) return;
+      undoStack.push(snapshot(), `Preset ${pr.label}`);
       activePreset = pr.key;
       if (pr.params) Object.assign(params, pr.params);
       if (pr.items) items = clone(pr.items);
       syncInputs(); renderPresets(); renderPalette();
       build(); syncUrl();
+      receiptUndo(presetsEl, `Switched to ${pr.label}`);
     });
   }
 
@@ -148,9 +165,15 @@ export function startSandbox(figure) {
         }
       } else if (remB) {
         const idx = +remB.dataset.rem;
+        const removed = items[idx];
+        const removedLabel = removed
+          ? (figure.itemLabel ? figure.itemLabel(removed, idx) : `${removed.label || removed.type || 'Piece'} #${idx + 1}`)
+          : `Piece #${idx + 1}`;
+        undoStack.push(snapshot(), `Remove ${removedLabel}`);
         items.splice(idx, 1);
         activePreset = ''; renderPresets(); renderPalette();
         build(); syncUrl();
+        receiptUndo(paletteEl, `Removed ${removedLabel}`);
       }
     });
   }
@@ -218,11 +241,13 @@ export function startSandbox(figure) {
   }
 
   function reset() {
+    undoStack.push(snapshot(), 'Reset to defaults');
     Object.assign(params, baseParams);
     items = clone(baseItems);
     activePreset = figure.presets?.[0]?.key || '';
     syncInputs(); renderPresets(); renderPalette();
     build(); syncUrl();
+    receiptUndo($('again') || document.body, 'Reset to defaults');
   }
   if ($('again')) $('again').onclick = () => reset();
   if ($('again')) mountShareButton($('again'), shareUrl, 'again sharebtn', syncUrl);
@@ -313,9 +338,41 @@ export function startSandbox(figure) {
   }
   document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; last = t; if (RENDER) draw(0, 0, 0); else frame(t); }));
 
+  restoreSnapshot = snap => {
+    if (!snap) return;
+    for (const k of Object.keys(params)) delete params[k];
+    Object.assign(params, snap.params || {});
+    items = clone(snap.items || []);
+    activePreset = snap.activePreset ?? '';
+    syncInputs(); renderPresets(); renderPalette();
+    build(); syncUrl();
+  };
+  const undo = () => {
+    const entry = undoStack.undo(snapshot());
+    if (!entry) return false;
+    restoreSnapshot(entry.snapshot);
+    return true;
+  };
+  const redo = () => {
+    const entry = undoStack.redo(snapshot());
+    if (!entry) return false;
+    restoreSnapshot(entry.snapshot);
+    return true;
+  };
+  if (!RENDER) {
+    addEventListener('keydown', e => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+      if (e.target?.closest?.('input, textarea, select, [contenteditable]')) return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    });
+  }
+
   window.__atlas = {
     E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, get items() { return items; },
-    reset, shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
+    reset, undo, redo, get canUndo() { return undoStack.canUndo; }, get canRedo() { return undoStack.canRedo; },
+    shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
     get state() { return { clock, params: { ...params }, items: clone(items), activePreset, cut: cutBar?.mode || 'solid' }; },
     get clock() { return S.clock; },
   };

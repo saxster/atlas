@@ -15,6 +15,7 @@ import {
   isoSvg, isoCup, isoCoin, isoCoinStack, isoDiscSlot, isoJar, isoCarton,
   isoPunchCard, isoTicket, isoSignRow, isoTray, isoBox, isoCyl,
 } from './iso_kit.js';
+import { rubberband, projectMomentum } from './motion.js';
 
 export function wireModeBar(barEl) {
   if (!barEl || typeof document === 'undefined') return null;
@@ -525,5 +526,773 @@ export function createAutoplayDirector({
     destroy: stop,
     get running() { return running; },
     get duration() { return n * dtStep; },
+  };
+}
+
+// ---------- 1. Semantic Work-State SVG Orbs ----------
+export const STATUS_ORB_VARIANTS = Object.freeze(['pulse', 'orbit', 'sweep', 'globe', 'spark']);
+
+export function statusOrb(variant = 'pulse', {
+  size = 18,
+  label = '',
+  elapsed = null,
+  color = 'var(--accent, #ef6a4c)',
+  id = '',
+  pill = false,
+} = {}) {
+  const kind = STATUS_ORB_VARIANTS.includes(variant) ? variant : 'pulse';
+  const sz = Math.max(12, Number(size) || 18);
+  let shapes = '';
+  if (kind === 'pulse') {
+    shapes = `<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" class="orb-ring"/>` +
+      `<circle cx="12" cy="12" r="3.6" fill="currentColor" class="orb-core"/>`;
+  } else if (kind === 'orbit') {
+    shapes = `<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-opacity="0.28" stroke-width="1.5"/>` +
+      `<circle cx="12" cy="12" r="2.6" fill="currentColor"/>` +
+      `<g class="orb-spin"><circle cx="12" cy="4" r="2.2" fill="currentColor"/></g>`;
+  } else if (kind === 'sweep') {
+    shapes = `<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.8"/>` +
+      `<path d="M12 3.5 A8.5 8.5 0 0 1 20.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="orb-spin"/>` +
+      `<circle cx="12" cy="12" r="2.2" fill="currentColor"/>`;
+  } else if (kind === 'globe') {
+    shapes = `<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/>` +
+      `<ellipse cx="12" cy="12" rx="4.2" ry="8.5" fill="none" stroke="currentColor" stroke-width="1.3" class="orb-meridian"/>` +
+      `<line x1="3.5" y1="12" x2="20.5" y2="12" stroke="currentColor" stroke-width="1.3"/>`;
+  } else {
+    shapes = `<path d="M12 3 L14.1 9.9 L21 12 L14.1 14.1 L12 21 L9.9 14.1 L3 12 L9.9 9.9 Z" fill="currentColor" class="orb-sparkle"/>`;
+  }
+  const svg = `<svg class="atlas-orb orb-${kind}"${id ? ` id="${esc(id)}"` : ''} viewBox="0 0 24 24" width="${sz}" height="${sz}" style="color:${esc(color)}" aria-hidden="true">${shapes}</svg>`;
+  if (!label && !pill && elapsed == null) return svg;
+  const lblHtml = label ? `<span class="orb-lbl">${esc(label)}</span>` : '';
+  const timeHtml = elapsed != null && Number.isFinite(Number(elapsed))
+    ? `<span class="orb-time">${Number(elapsed).toFixed(1)}s</span>`
+    : '';
+  return `<span class="atlas-orb-pill" role="status" aria-live="polite">${svg}${lblHtml}${timeHtml}</span>`;
+}
+
+// ---------- 2. Live Split-Curtain Compare Slider ----------
+export function compareCurtain({
+  id = '',
+  beforeHtml = '',
+  afterHtml = '',
+  beforeLabel = 'Before',
+  afterLabel = 'After',
+  split = 0.5,
+  label = 'Compare before and after',
+} = {}) {
+  const frac = clamp(Number(split) ?? 0.5, 0, 1);
+  const pct = Math.round(frac * 100);
+  const idAttr = id ? ` id="${esc(id)}"` : '';
+  return `<div class="cc-stage"${idAttr} style="--cc-split:${frac.toFixed(4)}">` +
+    `<div class="cc-layer cc-after" aria-label="${esc(afterLabel)}">${afterHtml}<span class="cc-tag after">${esc(afterLabel)}</span></div>` +
+    `<div class="cc-layer cc-before" aria-label="${esc(beforeLabel)}">${beforeHtml}<span class="cc-tag before">${esc(beforeLabel)}</span></div>` +
+    `<div class="cc-divider" aria-hidden="true"></div>` +
+    `<button type="button" class="cc-handle" role="slider" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct}%">` +
+    `<span class="cc-grip" aria-hidden="true">‹ ›</span></button>` +
+    `</div>`;
+}
+
+export function bindCompareCurtain(rootEl, { onChange = null } = {}) {
+  if (!rootEl || typeof document === 'undefined') {
+    return { setSplit() {}, getSplit: () => 0.5, destroy() {} };
+  }
+  const stage = rootEl.classList?.contains('cc-stage') ? rootEl : rootEl.querySelector?.('.cc-stage');
+  const handle = stage?.querySelector?.('.cc-handle');
+  if (!stage || !handle) return { setSplit() {}, getSplit: () => 0.5, destroy() {} };
+
+  let split = clamp(parseFloat(stage.style.getPropertyValue('--cc-split')) || 0.5, 0, 1);
+  let dragging = false;
+
+  const setSplit = next => {
+    split = clamp(Number(next), 0, 1);
+    const pct = Math.round(split * 100);
+    stage.style.setProperty('--cc-split', split.toFixed(4));
+    handle.setAttribute('aria-valuenow', String(pct));
+    handle.setAttribute('aria-valuetext', `${pct}%`);
+    onChange?.(split);
+  };
+
+  const fracFromX = clientX => {
+    const r = stage.getBoundingClientRect();
+    return r.width > 0 ? clamp((clientX - r.left) / r.width, 0, 1) : split;
+  };
+
+  const onDown = e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragging = true;
+    stage.classList.add('is-dragging');
+    try { stage.setPointerCapture?.(e.pointerId); } catch {}
+    setSplit(fracFromX(e.clientX));
+    handle.focus();
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    setSplit(fracFromX(e.clientX));
+  };
+  const onUp = e => {
+    if (!dragging) return;
+    dragging = false;
+    stage.classList.remove('is-dragging');
+    try { stage.releasePointerCapture?.(e.pointerId); } catch {}
+  };
+  const onKey = e => {
+    const step = e.shiftKey ? 0.01 : 0.05;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); setSplit(split - step); }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); setSplit(split + step); }
+    else if (e.key === 'Home') { e.preventDefault(); setSplit(0); }
+    else if (e.key === 'End') { e.preventDefault(); setSplit(1); }
+  };
+
+  stage.addEventListener('pointerdown', onDown);
+  stage.addEventListener('pointermove', onMove);
+  stage.addEventListener('pointerup', onUp);
+  stage.addEventListener('pointercancel', onUp);
+  handle.addEventListener('keydown', onKey);
+
+  return {
+    setSplit,
+    getSplit: () => split,
+    destroy() {
+      stage.removeEventListener('pointerdown', onDown);
+      stage.removeEventListener('pointermove', onMove);
+      stage.removeEventListener('pointerup', onUp);
+      stage.removeEventListener('pointercancel', onUp);
+      handle.removeEventListener('keydown', onKey);
+    },
+  };
+}
+
+// ---------- 3. Preview / Code + 390px Phone + Paper/Sepia/Dark Stage Chrome ----------
+export function previewStage({
+  id = '',
+  title = '',
+  previewHtml = '',
+  code = '',
+  themes = ['paper', 'sepia', 'dark'],
+  initialTheme = 'paper',
+  initialView = 'preview',
+  initialDevice = 'desktop',
+  dotGrid = true,
+  allowDevice = true,
+  allowTheme = true,
+  allowCode = true,
+} = {}) {
+  const themeList = Array.isArray(themes) && themes.length ? themes : ['paper'];
+  const curTheme = themeList.includes(initialTheme) ? initialTheme : themeList[0];
+  const curView = allowCode && initialView === 'code' ? 'code' : 'preview';
+  const curDevice = allowDevice && initialDevice === 'phone' ? 'phone' : 'desktop';
+  const idAttr = id ? ` id="${esc(id)}"` : '';
+  const viewSeg = allowCode
+    ? `<div class="ps-seg" role="group" aria-label="View mode">` +
+      `<button type="button" data-ps-view="preview" aria-pressed="${curView === 'preview'}">Preview</button>` +
+      `<button type="button" data-ps-view="code" aria-pressed="${curView === 'code'}">Code</button>` +
+      `</div>`
+    : '';
+  const devBtn = allowDevice
+    ? `<button type="button" class="ps-btn" data-ps-device="${curDevice}" aria-pressed="${curDevice === 'phone'}" title="Toggle 390px phone frame">${curDevice === 'phone' ? '390px' : 'Desktop'}</button>`
+    : '';
+  const themeBtn = allowTheme && themeList.length > 1
+    ? `<button type="button" class="ps-btn" data-ps-theme="${esc(curTheme)}" data-ps-themes="${esc(themeList.join(','))}" title="Cycle surface theme">${esc(curTheme[0].toUpperCase() + curTheme.slice(1))}</button>`
+    : '';
+  const copyBtn = code
+    ? `<button type="button" class="ps-btn" data-ps-copy="">Copy</button>`
+    : '';
+  const titleHtml = title ? `<span class="ps-title">${esc(title)}</span>` : '';
+
+  return `<div class="ps-frame"${idAttr} data-ps-state-view="${curView}">` +
+    `<div class="ps-bar">` +
+    `<div class="ps-bar-l">${viewSeg}${titleHtml}</div>` +
+    `<div class="ps-bar-r">${devBtn}${themeBtn}${copyBtn}<span class="ps-msg" data-ps-msg="" aria-live="polite"></span></div>` +
+    `</div>` +
+    `<div class="ps-body${dotGrid ? ' has-grid' : ''}" data-ps-theme="${esc(curTheme)}" data-ps-device="${curDevice}">` +
+    `<div class="ps-canvas"${curView === 'code' ? ' hidden' : ''}><div class="ps-viewport">${previewHtml}</div></div>` +
+    (allowCode ? `<div class="ps-code"${curView === 'preview' ? ' hidden' : ''}><pre><code>${esc(code)}</code></pre></div>` : '') +
+    `</div>` +
+    `</div>`;
+}
+
+export function bindPreviewStage(rootEl, { onChange = null } = {}) {
+  if (!rootEl || typeof document === 'undefined') {
+    return { setView() {}, setDevice() {}, setTheme() {}, destroy() {} };
+  }
+  const frame = rootEl.classList?.contains('ps-frame') ? rootEl : rootEl.querySelector?.('.ps-frame');
+  if (!frame) return { setView() {}, setDevice() {}, setTheme() {}, destroy() {} };
+  const body = frame.querySelector('.ps-body');
+  const canvasEl = frame.querySelector('.ps-canvas');
+  const codeEl = frame.querySelector('.ps-code');
+  const devBtn = frame.querySelector('[data-ps-device]');
+  const themeBtn = frame.querySelector('[data-ps-theme]');
+  const msgEl = frame.querySelector('[data-ps-msg]');
+  const themes = (themeBtn?.dataset?.psThemes || 'paper,sepia,dark').split(',').filter(Boolean);
+
+  const state = () => ({
+    view: frame.dataset.psStateView || 'preview',
+    device: body?.dataset.psDevice || 'desktop',
+    theme: body?.dataset.psTheme || 'paper',
+  });
+
+  function setView(view) {
+    const next = view === 'code' && codeEl ? 'code' : 'preview';
+    frame.dataset.psStateView = next;
+    if (canvasEl) canvasEl.hidden = next === 'code';
+    if (codeEl) codeEl.hidden = next !== 'code';
+    frame.querySelectorAll('[data-ps-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.psView === next)));
+    onChange?.(state());
+  }
+
+  function setDevice(device) {
+    const next = device === 'phone' ? 'phone' : 'desktop';
+    if (body) body.dataset.psDevice = next;
+    if (devBtn) {
+      devBtn.dataset.psDevice = next;
+      devBtn.setAttribute('aria-pressed', String(next === 'phone'));
+      devBtn.textContent = next === 'phone' ? '390px' : 'Desktop';
+    }
+    onChange?.(state());
+  }
+
+  function setTheme(theme) {
+    const next = themes.includes(theme) ? theme : themes[0] || 'paper';
+    if (body) body.dataset.psTheme = next;
+    if (themeBtn) {
+      themeBtn.dataset.psTheme = next;
+      themeBtn.textContent = next[0].toUpperCase() + next.slice(1);
+    }
+    onChange?.(state());
+  }
+
+  const onClick = async e => {
+    const vBtn = e.target.closest?.('[data-ps-view]');
+    if (vBtn && frame.contains(vBtn)) { setView(vBtn.dataset.psView); return; }
+    const dBtn = e.target.closest?.('button[data-ps-device]');
+    if (dBtn && frame.contains(dBtn)) { setDevice(body?.dataset.psDevice === 'phone' ? 'desktop' : 'phone'); return; }
+    const tBtn = e.target.closest?.('button[data-ps-theme]');
+    if (tBtn && frame.contains(tBtn)) {
+      const cur = body?.dataset.psTheme || themes[0];
+      const idx = themes.indexOf(cur);
+      setTheme(themes[(idx + 1) % themes.length]);
+      return;
+    }
+    const cBtn = e.target.closest?.('[data-ps-copy]');
+    if (cBtn && frame.contains(cBtn)) {
+      const txt = codeEl?.querySelector('code')?.textContent || '';
+      let ok = false;
+      if (txt && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(txt); ok = true; } catch {}
+      }
+      if (msgEl) {
+        msgEl.textContent = ok ? 'Copied' : 'Code ready';
+        setTimeout(() => { if (msgEl.textContent) msgEl.textContent = ''; }, 1800);
+      }
+    }
+  };
+
+  frame.addEventListener('click', onClick);
+  return {
+    setView,
+    setDevice,
+    setTheme,
+    destroy() { frame.removeEventListener('click', onClick); },
+  };
+}
+
+// ---------- 4. Inverted-Polarity Inline-Expanding Floating Control Dock ----------
+export function mountFloatingDock(containerEl, {
+  items = [],
+  cta = null,
+  label = 'Page controls',
+} = {}) {
+  if (!containerEl || typeof document === 'undefined') {
+    return { el: null, sync() {}, collapse() {}, destroy() {} };
+  }
+  const nav = document.createElement('div');
+  nav.className = 'atlas-dock';
+  nav.setAttribute('role', 'toolbar');
+  nav.setAttribute('aria-label', label);
+
+  const ctaHtml = cta
+    ? (cta.href
+      ? `<a class="dock-cta" href="${esc(cta.href)}">${esc(cta.label)}</a>`
+      : `<button type="button" class="dock-cta" data-dock-cta="">${esc(cta.label)}</button>`)
+    : '';
+
+  const itemHtml = (items || []).map(it => {
+    const id = esc(it.id);
+    if (it.kind === 'toggle') {
+      return `<button type="button" class="dock-btn" data-dock-toggle="${id}" aria-pressed="${Boolean(it.pressed)}">${esc(it.label)}</button>`;
+    }
+    const opts = it.options || [];
+    const active = opts.find(o => o.value === it.value) || opts[0];
+    const swatchDot = active?.swatch ? `<i class="dock-swatch" data-dock-swatch="${id}" style="background:${esc(active.swatch)}" aria-hidden="true"></i>` : '';
+    const optHtml = opts.map(o => {
+      const sw = o.swatch ? `<i class="dock-swatch" style="background:${esc(o.swatch)}" aria-hidden="true"></i>` : '';
+      return `<button type="button" class="dock-opt" data-dock-opt="${id}" data-dock-val-opt="${esc(o.value)}" aria-pressed="${o.value === it.value}" title="${esc(o.label)}">${sw}<span>${esc(o.label)}</span></button>`;
+    }).join('');
+    return `<div class="dock-group" data-dock-group="${id}" data-open="false">` +
+      `<button type="button" class="dock-btn dock-group-btn" data-dock-trigger="${id}" aria-expanded="false" aria-label="${esc(it.label)}">` +
+      `${swatchDot}<span class="dock-glbl">${esc(it.label)}</span>` +
+      `${active?.swatch ? '' : `<span class="dock-gval" data-dock-val="${id}">${esc(active?.label || '')}</span>`}` +
+      `</button>` +
+      `<div class="dock-inline" data-dock-inline="${id}" hidden role="group" aria-label="${esc(it.label)}">${optHtml}</div>` +
+      `</div>`;
+  }).join('');
+
+  nav.innerHTML = `${ctaHtml}${ctaHtml && itemHtml ? '<span class="dock-sep" aria-hidden="true"></span>' : ''}${itemHtml}`;
+  containerEl.appendChild(nav);
+
+  const byId = new Map((items || []).map(it => [String(it.id), { ...it }]));
+
+  function collapse() {
+    nav.querySelectorAll('.dock-group[data-dock-group]').forEach(grp => {
+      grp.dataset.open = 'false';
+      grp.querySelector('[data-dock-trigger]')?.setAttribute('aria-expanded', 'false');
+      const inline = grp.querySelector('[data-dock-inline]');
+      if (inline) inline.hidden = true;
+    });
+  }
+
+  function sync(patch = {}) {
+    for (const [id, val] of Object.entries(patch || {})) {
+      const it = byId.get(id);
+      if (!it) continue;
+      if (it.kind === 'toggle') {
+        it.pressed = Boolean(val);
+        nav.querySelector(`[data-dock-toggle="${CSS.escape(id)}"]`)?.setAttribute('aria-pressed', String(it.pressed));
+      } else {
+        it.value = val;
+        const opt = (it.options || []).find(o => o.value === val);
+        const valEl = nav.querySelector(`[data-dock-val="${CSS.escape(id)}"]`);
+        if (valEl && opt) valEl.textContent = opt.label;
+        const swEl = nav.querySelector(`[data-dock-swatch="${CSS.escape(id)}"]`);
+        if (swEl && opt?.swatch) swEl.style.background = opt.swatch;
+        nav.querySelectorAll(`[data-dock-opt="${CSS.escape(id)}"]`).forEach(b => {
+          b.setAttribute('aria-pressed', String(b.dataset.dockValOpt === String(val)));
+        });
+      }
+    }
+  }
+
+  const onClick = e => {
+    const ctaBtn = e.target.closest?.('[data-dock-cta]');
+    if (ctaBtn && nav.contains(ctaBtn)) { cta?.onClick?.(ctaBtn); return; }
+
+    const togBtn = e.target.closest?.('[data-dock-toggle]');
+    if (togBtn && nav.contains(togBtn)) {
+      const it = byId.get(togBtn.dataset.dockToggle);
+      if (!it) return;
+      it.pressed = !it.pressed;
+      togBtn.setAttribute('aria-pressed', String(it.pressed));
+      it.onToggle?.(it.pressed);
+      return;
+    }
+
+    const trig = e.target.closest?.('[data-dock-trigger]');
+    if (trig && nav.contains(trig)) {
+      const id = trig.dataset.dockTrigger;
+      const grp = trig.closest('.dock-group');
+      const wasOpen = grp?.dataset.open === 'true';
+      collapse();
+      if (!wasOpen && grp) {
+        grp.dataset.open = 'true';
+        trig.setAttribute('aria-expanded', 'true');
+        const inline = grp.querySelector('[data-dock-inline]');
+        if (inline) inline.hidden = false;
+      }
+      return;
+    }
+
+    const optBtn = e.target.closest?.('[data-dock-opt]');
+    if (optBtn && nav.contains(optBtn)) {
+      const id = optBtn.dataset.dockOpt;
+      const val = optBtn.dataset.dockValOpt;
+      const it = byId.get(id);
+      if (!it) return;
+      sync({ [id]: val });
+      it.onChange?.(val);
+    }
+  };
+
+  const onDocClick = e => {
+    if (!nav.contains(e.target)) collapse();
+  };
+  const onKey = e => {
+    if (e.key === 'Escape') collapse();
+  };
+
+  nav.addEventListener('click', onClick);
+  document.addEventListener('click', onDocClick);
+  nav.addEventListener('keydown', onKey);
+
+  return {
+    el: nav,
+    sync,
+    collapse,
+    destroy() {
+      nav.removeEventListener('click', onClick);
+      document.removeEventListener('click', onDocClick);
+      nav.removeEventListener('keydown', onKey);
+      nav.remove();
+    },
+  };
+}
+
+// ---------- 5. Bounded Undo/Redo Stack & Undo-Over-Confirm Action Receipt ----------
+export function createUndoStack({
+  limit = 25,
+  clone = v => JSON.parse(JSON.stringify(v)),
+} = {}) {
+  const cap = Math.max(1, Math.floor(Number(limit) || 25));
+  const past = [];
+  const future = [];
+
+  return {
+    push(snapshot, label = '') {
+      past.push({ snapshot: clone(snapshot), label: String(label || '') });
+      if (past.length > cap) past.shift();
+      future.length = 0;
+      return past.length;
+    },
+    undo(currentSnapshot) {
+      if (!past.length) return null;
+      const entry = past.pop();
+      if (currentSnapshot !== undefined) {
+        future.push({ snapshot: clone(currentSnapshot), label: entry.label });
+        if (future.length > cap) future.shift();
+      }
+      return { snapshot: clone(entry.snapshot), label: entry.label };
+    },
+    redo(currentSnapshot) {
+      if (!future.length) return null;
+      const entry = future.pop();
+      if (currentSnapshot !== undefined) {
+        past.push({ snapshot: clone(currentSnapshot), label: entry.label });
+        if (past.length > cap) past.shift();
+      }
+      return { snapshot: clone(entry.snapshot), label: entry.label };
+    },
+    clear() {
+      past.length = 0;
+      future.length = 0;
+    },
+    get canUndo() { return past.length > 0; },
+    get canRedo() { return future.length > 0; },
+    get size() { return past.length; },
+  };
+}
+
+export function showActionReceipt(anchorEl, {
+  message = 'Done',
+  undoLabel = 'Undo',
+  onUndo = null,
+  durationMs = 6500,
+} = {}) {
+  if (!anchorEl || typeof document === 'undefined') return { dismiss() {}, el: null };
+  const host = anchorEl === document.body ? document.body : (anchorEl.parentElement || document.body);
+  const existing = host.querySelector('.atlas-receipt[data-receipt-managed="1"]')
+    || document.querySelector('.atlas-receipt[data-receipt-managed="1"]');
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.className = 'atlas-receipt';
+  el.dataset.receiptManaged = '1';
+  if (anchorEl === document.body) el.classList.add('is-floating');
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.innerHTML = `<span class="receipt-msg">${esc(message)}</span>` +
+    (onUndo ? `<button type="button" class="receipt-undo">${esc(undoLabel)}</button>` : '') +
+    `<button type="button" class="receipt-close" aria-label="Dismiss">×</button>`;
+
+  if (anchorEl === document.body) document.body.appendChild(el);
+  else anchorEl.after(el);
+
+  let timer = null;
+  const clearTimer = () => { if (timer !== null) { clearTimeout(timer); timer = null; } };
+  const dismiss = () => { clearTimer(); el.remove(); };
+  const armTimer = () => {
+    clearTimer();
+    if (durationMs > 0) timer = setTimeout(dismiss, durationMs);
+  };
+  armTimer();
+
+  el.addEventListener('pointerenter', clearTimer);
+  el.addEventListener('pointerleave', armTimer);
+  el.addEventListener('focusin', clearTimer);
+  el.addEventListener('focusout', armTimer);
+
+  const undoBtn = el.querySelector('.receipt-undo');
+  if (undoBtn && onUndo) {
+    undoBtn.addEventListener('click', () => {
+      dismiss();
+      onUndo();
+    });
+  }
+  el.querySelector('.receipt-close')?.addEventListener('click', dismiss);
+
+  return { el, dismiss };
+}
+
+// ---------- 6. 2D Axis-Locked Space Deck Navigator (No Wrap + Edge Rubberband) ----------
+export function stepSpaceDeck(state = { row: 0, col: 0 }, { dRow = 0, dCol = 0, rowLengths = [] } = {}) {
+  if (!Array.isArray(rowLengths) || !rowLengths.length) {
+    return { row: 0, col: 0, moved: false, hitEdge: true };
+  }
+  const maxRow = rowLengths.length - 1;
+  const prevRow = clamp(Math.round(Number(state?.row) || 0), 0, maxRow);
+  const prevMaxCol = Math.max(0, (Number(rowLengths[prevRow]) || 1) - 1);
+  const prevCol = clamp(Math.round(Number(state?.col) || 0), 0, prevMaxCol);
+
+  const rawRow = prevRow + Math.round(Number(dRow) || 0);
+  const nextRow = clamp(rawRow, 0, maxRow);
+  const nextMaxCol = Math.max(0, (Number(rowLengths[nextRow]) || 1) - 1);
+  const rawCol = (dRow ? prevCol : prevCol + Math.round(Number(dCol) || 0));
+  const nextCol = clamp(rawCol, 0, nextMaxCol);
+
+  const hitEdge = (rawRow !== nextRow) || (!dRow && rawCol !== nextCol);
+  const moved = nextRow !== prevRow || nextCol !== prevCol;
+  return { row: nextRow, col: nextCol, moved, hitEdge };
+}
+
+export function mountSpaceDeck(containerEl, {
+  rows = [],
+  initialRow = 0,
+  initialCol = 0,
+  onChange = null,
+  onOpen = null,
+} = {}) {
+  if (!containerEl || typeof document === 'undefined' || !rows.length) {
+    return { el: null, goto() {}, getState: () => ({ row: 0, col: 0 }), destroy() {} };
+  }
+  const CARD_W = 204;
+  const CARD_H = 124;
+  const GAP = 14;
+  const STEP_X = CARD_W + GAP;
+  const STEP_Y = CARD_H + GAP;
+
+  const rowLengths = rows.map(r => Math.max(1, (r.items || []).length));
+  let pos = stepSpaceDeck({ row: initialRow, col: initialCol }, { rowLengths });
+
+  const vp = document.createElement('div');
+  vp.className = 'sd-viewport';
+  vp.tabIndex = 0;
+  vp.setAttribute('role', 'region');
+  vp.setAttribute('aria-roledescription', '2D space deck navigator');
+  vp.setAttribute('aria-label', 'Spaces and items deck');
+
+  const rowsMarkup = rows.map((r, ri) => {
+    const colStyle = r.color ? `--sd-row-col:${esc(r.color)}` : '';
+    const cardsHtml = (r.items || []).map((it, ci) => {
+      const thumb = it.img ? `<img class="sd-thumb" src="${esc(it.img)}" alt="" loading="lazy">` : '';
+      return `<div class="sd-card" data-sd-row="${ri}" data-sd-col="${ci}" style="${colStyle}">` +
+        thumb +
+        `<div class="sd-card-meta"><span class="sd-card-k">${esc(it.kicker || r.label)}</span>` +
+        `<strong class="sd-card-t">${esc(it.title)}</strong>` +
+        (it.sub ? `<span class="sd-card-s">${esc(it.sub)}</span>` : '') +
+        `</div></div>`;
+    }).join('');
+    return `<div class="sd-row" data-sd-row-track="${ri}">${cardsHtml}</div>`;
+  }).join('');
+
+  vp.innerHTML = `<div class="sd-hud">` +
+    `<div class="sd-crumb"><span class="sd-dot" data-sd-dot></span><strong data-sd-row-lbl></strong><span data-sd-counter></span></div>` +
+    `<div class="sd-nav" aria-label="Directional controls">` +
+    `<button type="button" data-sd-dir="left" aria-label="Previous item">←</button>` +
+    `<button type="button" data-sd-dir="up" aria-label="Previous space">↑</button>` +
+    `<button type="button" data-sd-dir="down" aria-label="Next space">↓</button>` +
+    `<button type="button" data-sd-dir="right" aria-label="Next item">→</button>` +
+    `</div></div>` +
+    `<div class="sd-stage">` +
+    `<div class="sd-focus-ring" data-sd-ring aria-hidden="true"></div>` +
+    `<div class="sd-track" data-sd-track>${rowsMarkup}</div>` +
+    `</div>` +
+    `<div class="sd-foot" data-sd-foot aria-live="polite"></div>`;
+
+  containerEl.innerHTML = '';
+  containerEl.appendChild(vp);
+
+  const track = vp.querySelector('[data-sd-track]');
+  const ring = vp.querySelector('[data-sd-ring]');
+  const dot = vp.querySelector('[data-sd-dot]');
+  const rowLbl = vp.querySelector('[data-sd-row-lbl]');
+  const counterEl = vp.querySelector('[data-sd-counter]');
+  const footEl = vp.querySelector('[data-sd-foot]');
+
+  function activeItem() {
+    return rows[pos.row]?.items?.[pos.col] || null;
+  }
+
+  function renderPos(dragX = 0, dragY = 0) {
+    const r = rows[pos.row];
+    const it = activeItem();
+    const color = r?.color || 'var(--accent, #ef6a4c)';
+    vp.style.setProperty('--sd-col', color);
+    if (ring) ring.style.borderColor = color;
+    if (dot) dot.style.background = color;
+    if (rowLbl) rowLbl.textContent = r?.label || '';
+    if (counterEl) counterEl.textContent = `${pos.col + 1} / ${rowLengths[pos.row]}`;
+    if (footEl) footEl.textContent = it ? `${it.title}${it.sub ? ` — ${it.sub}` : ''}` : '';
+
+    const tx = -(pos.col * STEP_X + CARD_W * 0.5) + dragX;
+    const ty = -(pos.row * STEP_Y + CARD_H * 0.5) + dragY;
+    if (track) track.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0)`;
+
+    vp.querySelectorAll('.sd-card').forEach(el => {
+      const on = +el.dataset.sdRow === pos.row && +el.dataset.sdCol === pos.col;
+      el.classList.toggle('is-active', on);
+      el.setAttribute('aria-current', on ? 'true' : 'false');
+    });
+  }
+
+  function goto(row, col, emit = true) {
+    const next = stepSpaceDeck({ row, col }, { rowLengths });
+    const changed = next.row !== pos.row || next.col !== pos.col;
+    pos = next;
+    renderPos(0, 0);
+    if (changed && emit) onChange?.({ ...pos, rowObj: rows[pos.row], item: activeItem() });
+  }
+
+  function step(dRow, dCol) {
+    const next = stepSpaceDeck(pos, { dRow, dCol, rowLengths });
+    const changed = next.row !== pos.row || next.col !== pos.col;
+    pos = next;
+    renderPos(0, 0);
+    if (changed) onChange?.({ ...pos, rowObj: rows[pos.row], item: activeItem() });
+    return next;
+  }
+
+  let drag = null;
+  const stage = vp.querySelector('.sd-stage');
+
+  const onDown = e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    drag = {
+      id: e.pointerId,
+      x0: e.clientX,
+      y0: e.clientY,
+      t0: performance.now(),
+      lastX: e.clientX,
+      lastY: e.clientY,
+      lastT: performance.now(),
+      vx: 0,
+      vy: 0,
+      axis: null,
+      dx: 0,
+      dy: 0,
+    };
+    try { stage.setPointerCapture?.(e.pointerId); } catch {}
+  };
+
+  const onMove = e => {
+    if (!drag) return;
+    const rawX = e.clientX - drag.x0;
+    const rawY = e.clientY - drag.y0;
+    const now = performance.now();
+    const dt = Math.max(1, now - drag.lastT);
+    drag.vx = (e.clientX - drag.lastX) / dt;
+    drag.vy = (e.clientY - drag.lastY) / dt;
+    drag.lastX = e.clientX;
+    drag.lastY = e.clientY;
+    drag.lastT = now;
+
+    if (!drag.axis && Math.hypot(rawX, rawY) > 8) {
+      drag.axis = Math.abs(rawX) >= Math.abs(rawY) ? 'x' : 'y';
+      vp.classList.add('is-dragging');
+    }
+    if (!drag.axis) return;
+
+    if (drag.axis === 'x') {
+      const atStart = pos.col === 0 && rawX > 0;
+      const atEnd = pos.col === rowLengths[pos.row] - 1 && rawX < 0;
+      drag.dx = (atStart || atEnd) ? Math.sign(rawX) * rubberband(Math.abs(rawX), STEP_X, 0.33) : rawX;
+      drag.dy = 0;
+    } else {
+      const atStart = pos.row === 0 && rawY > 0;
+      const atEnd = pos.row === rowLengths.length - 1 && rawY < 0;
+      drag.dy = (atStart || atEnd) ? Math.sign(rawY) * rubberband(Math.abs(rawY), STEP_Y, 0.33) : rawY;
+      drag.dx = 0;
+    }
+    renderPos(drag.dx, drag.dy);
+  };
+
+  const onUp = e => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    vp.classList.remove('is-dragging');
+    try { stage.releasePointerCapture?.(e.pointerId); } catch {}
+
+    if (!d.axis) {
+      const card = e.target.closest?.('.sd-card');
+      if (card) {
+        const cr = +card.dataset.sdRow;
+        const cc = +card.dataset.sdCol;
+        if (cr === pos.row && cc === pos.col) {
+          const it = activeItem();
+          if (onOpen) onOpen(it, pos);
+          else if (it?.href) location.href = it.href;
+        } else {
+          goto(cr, cc, true);
+        }
+      }
+      return;
+    }
+
+    if (d.axis === 'x') {
+      const proj = d.dx + projectMomentum(d.vx * 16, 0.99) * 0.25;
+      if (Math.abs(proj) > 44) step(0, proj < 0 ? 1 : -1);
+      else renderPos(0, 0);
+    } else {
+      const proj = d.dy + projectMomentum(d.vy * 16, 0.99) * 0.25;
+      if (Math.abs(proj) > 36) step(proj < 0 ? 1 : -1, 0);
+      else renderPos(0, 0);
+    }
+  };
+
+  const onClick = e => {
+    const dirBtn = e.target.closest?.('[data-sd-dir]');
+    if (!dirBtn || !vp.contains(dirBtn)) return;
+    const d = dirBtn.dataset.sdDir;
+    if (d === 'left') step(0, -1);
+    else if (d === 'right') step(0, 1);
+    else if (d === 'up') step(-1, 0);
+    else if (d === 'down') step(1, 0);
+  };
+
+  const onKey = e => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(0, -1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); step(0, 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); step(-1, 0); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); step(1, 0); }
+    else if (e.key === 'Enter' || e.key === ' ') {
+      const it = activeItem();
+      if (!it) return;
+      e.preventDefault();
+      if (onOpen) onOpen(it, pos);
+      else if (it.href) location.href = it.href;
+    }
+  };
+
+  stage.addEventListener('pointerdown', onDown);
+  stage.addEventListener('pointermove', onMove);
+  stage.addEventListener('pointerup', onUp);
+  stage.addEventListener('pointercancel', onUp);
+  vp.addEventListener('click', onClick);
+  vp.addEventListener('keydown', onKey);
+
+  renderPos(0, 0);
+
+  return {
+    el: vp,
+    goto: (r, c) => goto(r, c, true),
+    step,
+    getState: () => ({ ...pos, item: activeItem() }),
+    destroy() {
+      stage.removeEventListener('pointerdown', onDown);
+      stage.removeEventListener('pointermove', onMove);
+      stage.removeEventListener('pointerup', onUp);
+      stage.removeEventListener('pointercancel', onUp);
+      vp.removeEventListener('click', onClick);
+      vp.removeEventListener('keydown', onKey);
+      vp.remove();
+    },
   };
 }

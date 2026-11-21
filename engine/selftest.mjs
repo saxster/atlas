@@ -1760,4 +1760,120 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && outcome.skills[1].proof === 'We have not tried this one yet.'
     && !bridgeBad.ok && bridgeGood.ok);
 }
+
+// Halaska UI craft adoption tests (theme scales/neutrals/radii, decoupled motion feel, spanTimeline, anatomyOverlay, statusOrb, compareCurtain, previewStage, undoStack, stepSpaceDeck)
+{
+  const themeMod = await import('./theme.js');
+  const motionMod = await import('./motion.js');
+  const chartMod = await import('./chart.js');
+  const proseMod = await import('./prose.js');
+  const diegMod = await import('./diegetic.js');
+
+  let tonalOk = true;
+  let tintedAuditOk = true;
+  for (const hex of Object.values(themeMod.ACCENT_SWATCHES)) {
+    const sc = themeMod.tonalScale(hex);
+    for (let i = 1; i < themeMod.TONAL_STOPS.length; i++) {
+      const yPrev = themeMod.srgbLuminance(sc[themeMod.TONAL_STOPS[i - 1]]);
+      const yCur = themeMod.srgbLuminance(sc[themeMod.TONAL_STOPS[i]]);
+      if (!(yCur >= yPrev - 1e-4)) tonalOk = false;
+    }
+    if (themeMod.wcagContrast(sc[40], '#ffffff') < 4.5) tonalOk = false;
+
+    const derived = themeMod.deriveAccentTokens(hex, { tintNeutrals: true, type: 'technical', radius: 'sharp' });
+    const aud = themeMod.auditTheme([
+      { role: 'accentInk/page', fg: derived.accentInk, bg: derived.neutrals.page, kind: 'text' },
+      { role: 'accentInk/card', fg: derived.accentInk, bg: derived.neutrals.card, kind: 'text' },
+      { role: 'accentInk/soft', fg: derived.accentInk, bg: derived.accentSoft, kind: 'text' },
+      { role: 'accentOn/accent', fg: derived.accentOn, bg: derived.accent, kind: 'text' },
+      { role: 'strong/card', fg: derived.neutrals.strong, bg: derived.neutrals.card, kind: 'text' },
+      { role: 'text/card', fg: derived.neutrals.text, bg: derived.neutrals.card, kind: 'text' },
+    ]);
+    if (!aud.ok || derived.type !== 'technical' || derived.radius.preset !== 'sharp') tintedAuditOk = false;
+  }
+  const rSharp = themeMod.controlRadius(36, 'sharp');
+  const rSoft = themeMod.controlRadius(36, 'soft');
+  const rRound = themeMod.controlRadius(36, 'round');
+  C.check('theme.js: tonalScale monotonic luminance & tone40 >= 4.5:1 across all 6 swatches, tinted-neutral audit & proportional controlRadius',
+    tonalOk && tintedAuditOk && rSharp.control === 2 && rSoft.control === 12 && rRound.control === 18);
+
+  const gov = motionMod.createMotionGovernor({ feel: 'smooth' });
+  const smHalf = gov.transition(0.5);
+  gov.setFeel('instant');
+  const instHalf = gov.transition(0.5);
+  gov.setFeel('spring');
+  const spHalf = gov.transition(0.5);
+  gov.setReduced(true);
+  const redState = gov.state();
+  C.check('motion.js: decoupled motion feel (spring/smooth/instant) & reduced-motion override in createMotionGovernor',
+    motionMod.normalizeMotionFeel('UNKNOWN') === 'spring'
+    && smHalf > 0.5 && smHalf < 1
+    && instHalf === 1
+    && spHalf > 1
+    && redState.effectiveFeel === 'instant' && redState.durationScale === 0);
+
+  let cycleCaught = false;
+  try {
+    chartMod.spanTimelineLayout({
+      spans: [
+        { id: 'a', start: 0, duration: 100, parentId: 'b' },
+        { id: 'b', start: 10, duration: 50, parentId: 'a' },
+      ],
+    });
+  } catch { cycleCaught = true; }
+
+  const layout = chartMod.spanTimelineLayout({
+    spans: [
+      { id: 'root', label: 'Root', start: 0, duration: 400, kind: 'model' },
+      { id: 'child', label: 'Child', start: 100, duration: 250, kind: 'tool', parentId: 'root' },
+      { id: 'err', label: 'Err', start: 300, duration: 100, kind: 'failed', parentId: 'child' },
+    ],
+  });
+  const stHtml = chartMod.spanTimeline({
+    title: 'Trace',
+    spans: layout.rows,
+    activeTime: 200,
+  });
+  C.check('chart.js: spanTimelineLayout nesting, cycle guard, bounds <= 100%, aria-live detail & playhead',
+    cycleCaught
+    && layout.rows[0].depth === 0 && layout.rows[1].depth === 1 && layout.rows[2].depth === 2
+    && layout.errorCount === 1
+    && layout.rows.every(r => r.leftPct + r.widthPct <= 100.01)
+    && stHtml.includes('role="status"') && stHtml.includes('data-st-playhead') && stHtml.includes('left:50.000%'));
+
+  const anaHtml = proseMod.anatomyOverlay({
+    contentHtml: '<svg viewBox="0 0 100 100"></svg>',
+    pins: [
+      { id: 'p1', label: 'Model', detail: 'Pure math', x: -10, y: 150, part: 'rotor', isolate: true },
+    ],
+    chips: [{ label: 'stage.js' }],
+  });
+  C.check('prose.js: anatomyOverlay clamps pin coords, wires data-part/isolate & renders Built from chips',
+    anaHtml.includes('left:2%;top:98%') && anaHtml.includes('data-part="rotor"') && anaHtml.includes('data-isolate="1"') && anaHtml.includes('Built from'));
+
+  const orbsOk = diegMod.STATUS_ORB_VARIANTS.every(v => {
+    const h = diegMod.statusOrb(v, { label: v, elapsed: 1.25 });
+    return h.includes(`<svg`) && h.includes(`orb-${v}`) && h.includes(`1.3s`);
+  });
+  const ccHtml = diegMod.compareCurtain({ beforeHtml: '<b>A</b>', afterHtml: '<b>B</b>', split: 1.4 });
+  const psHtml = diegMod.previewStage({ title: 'Demo', previewHtml: '<p>Hi</p>', code: '<script>x</script>', initialTheme: 'dark', initialDevice: 'phone' });
+  C.check('diegetic.js: all 5 statusOrb variants, clamped compareCurtain slider & HTML-escaped previewStage',
+    orbsOk
+    && ccHtml.includes('role="slider"') && ccHtml.includes('aria-valuenow="100"') && ccHtml.includes('--cc-split:1.0000')
+    && psHtml.includes('data-ps-theme="dark"') && psHtml.includes('data-ps-device="phone"') && psHtml.includes('&lt;script&gt;x&lt;/script&gt;'));
+
+  const stack = diegMod.createUndoStack({ limit: 2 });
+  stack.push({ v: 1 }, 'one');
+  stack.push({ v: 2 }, 'two');
+  stack.push({ v: 3 }, 'three'); // evicts {v:1}
+  const u1 = stack.undo({ v: 99 });
+  const r1 = stack.redo({ v: 3 });
+  stack.push({ v: 4 }, 'four'); // clears future
+  const deckA = diegMod.stepSpaceDeck({ row: 0, col: 0 }, { dRow: -1, dCol: 0, rowLengths: [2, 3] });
+  const deckB = diegMod.stepSpaceDeck({ row: 0, col: 2 }, { dRow: 1, dCol: 0, rowLengths: [3, 1] });
+  C.check('diegetic.js: bounded createUndoStack (evict, redo, future clear) & non-wrapping stepSpaceDeck',
+    u1?.snapshot?.v === 3 && r1?.snapshot?.v === 99 && !stack.canRedo
+    && deckA.row === 0 && deckA.col === 0 && deckA.hitEdge === true
+    && deckB.row === 1 && deckB.col === 0 && deckB.moved === true);
+}
 C.report();

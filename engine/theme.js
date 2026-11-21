@@ -100,6 +100,16 @@ export const ACCENT_SWATCHES = {
   crimson: '#d63a24',
 };
 
+export const TONAL_STOPS = Object.freeze([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100]);
+
+export const TYPOGRAPHY_PRESETS = Object.freeze({
+  editorial: { label: 'Editorial', display: "'EB Garamond', Georgia, serif" },
+  clean: { label: 'Clean', display: "'Inter', system-ui, sans-serif" },
+  technical: { label: 'Technical', display: "'JetBrains Mono', ui-monospace, monospace" },
+});
+
+export const RADIUS_PRESETS = Object.freeze(['sharp', 'soft', 'round']);
+
 const toHex = ({ r, g, b }) => '#' + [r, g, b]
   .map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'))
   .join('');
@@ -111,19 +121,118 @@ const mixRgb = (a, b, t) => ({
   a: 1,
 });
 
-// Derive a 6-token perceptual & WCAG-clamped accent cascade from a single hex swatch.
+const resolveHex = hex => ACCENT_SWATCHES[String(hex || '').toLowerCase()] || hex || ACCENT_SWATCHES.coral;
+
+// Perceptual L* -> relative luminance Y scale (0..100) so tone 40 achieves uniform >= 4.5:1 contrast vs white in any hue.
+export function tonalScale(hex) {
+  const base = parseColor(resolveHex(hex));
+  const baseY = srgbLuminance(base);
+  const black = { r: 0, g: 0, b: 0, a: 1 };
+  const white = { r: 255, g: 255, b: 255, a: 1 };
+  const out = {};
+  for (const tone of TONAL_STOPS) {
+    if (tone === 0) { out[0] = '#000000'; continue; }
+    if (tone === 100) { out[100] = '#ffffff'; continue; }
+    const L = tone / 100;
+    const targetY = Math.max(0, Math.min(1, L <= 0.08 ? L / 9.033 : ((L + 0.16) / 1.16) ** 3));
+    const pole = targetY < baseY ? black : white;
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) * 0.5;
+      const y = srgbLuminance(mixRgb(base, pole, mid));
+      if (targetY < baseY ? y > targetY : y < targetY) lo = mid;
+      else hi = mid;
+    }
+    out[tone] = toHex(mixRgb(base, pole, (lo + hi) * 0.5));
+  }
+  return Object.freeze(out);
+}
+
+// Proportional corner radii derived from control height (~h/3 even-rounded in Soft mode).
+export function controlRadius(heightPx = 36, preset = 'soft') {
+  const h = Math.max(8, Number(heightPx) || 36);
+  const p = RADIUS_PRESETS.includes(preset) ? preset : 'soft';
+  if (p === 'sharp') return { preset: p, control: 2, chip: 2, card: 4, pill: 4 };
+  if (p === 'round') return { preset: p, control: Math.round(h / 2), chip: 999, card: Math.round(h * 0.55), pill: 999 };
+  const control = Math.max(4, Math.round(h / 6) * 2);
+  return {
+    preset: p,
+    control,
+    chip: Math.max(4, Math.round(control * 0.75)),
+    card: Math.round(control * 1.35),
+    pill: 999,
+  };
+}
+
+// Optional brand-hue-tinted neutral surfaces/inks with WCAG floor clamping against card surface.
+export function deriveNeutralTokens(hex, {
+  page = '#f2efe7',
+  card = '#fffdf6',
+  board = '#e7e2d6',
+  faint = '#d4d4d6',
+  muted = '#68686d',
+  text = '#453f34',
+  strong = '#231e16',
+  tint = false,
+} = {}) {
+  const base = { page, card, board, faint, muted, text, strong };
+  if (!tint) return base;
+  const brand = parseColor(resolveHex(hex));
+  const tintHex = (src, amount) => toHex(mixRgb(parseColor(src), brand, amount));
+  const clampContrast = (fgHex, bgHex, minRatio) => {
+    if (wcagContrast(fgHex, bgHex) >= minRatio) return fgHex;
+    const fg = parseColor(fgHex);
+    const pole = wcagContrast('#111111', bgHex) >= wcagContrast('#ffffff', bgHex)
+      ? parseColor('#111111')
+      : parseColor('#ffffff');
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 18; i++) {
+      const mid = (lo + hi) * 0.5;
+      if (wcagContrast(mixRgb(fg, pole, mid), bgHex) >= minRatio) hi = mid;
+      else lo = mid;
+    }
+    return toHex(mixRgb(fg, pole, hi));
+  };
+  const tintedCard = tintHex(card, 0.012);
+  const tintedPage = tintHex(page, 0.02);
+  const mutedTarget = Math.min(4.55, wcagContrast(muted, card));
+  return {
+    page: tintedPage,
+    card: tintedCard,
+    board: tintHex(board, 0.032),
+    faint: tintHex(faint, 0.07),
+    muted: clampContrast(tintHex(muted, 0.07), tintedCard, mutedTarget),
+    text: clampContrast(tintHex(text, 0.06), tintedCard, 4.55),
+    strong: clampContrast(tintHex(strong, 0.08), tintedCard, 10.0),
+  };
+}
+
+// Derive a 6-token perceptual & WCAG-clamped accent cascade from a single hex swatch, plus tonal scale & neutral/type/radius registers.
 // Ensures unbordered text/icon ink (--accent-ink) achieves >= 4.5:1 against page, card, and accentSoft,
 // and solid badge foreground (--accent-on) achieves >= 4.5:1 against accent.
 export function deriveAccentTokens(hex, {
   page = '#f2efe7',
   card = '#fffdf6',
+  board = '#e7e2d6',
+  faint = '#d4d4d6',
+  muted = '#68686d',
+  text = '#453f34',
   ink = '#231e16',
+  tintNeutrals = false,
+  type = null,
+  radius = null,
 } = {}) {
-  const raw = ACCENT_SWATCHES[String(hex || '').toLowerCase()] || hex || ACCENT_SWATCHES.coral;
+  const raw = resolveHex(hex);
   const base = parseColor(raw);
-  const pg = parseColor(page);
-  const cd = parseColor(card);
-  const ik = parseColor(ink);
+  const tones = tonalScale(raw);
+  const neutrals = deriveNeutralTokens(raw, {
+    page, card, board, faint, muted, text, strong: ink, tint: !!tintNeutrals,
+  });
+  const pg = parseColor(neutrals.page);
+  const cd = parseColor(neutrals.card);
+  const ik = parseColor(neutrals.strong);
 
   const accent = toHex(base);
   const accentMid = toHex(mixRgb(base, ik, 0.18));
@@ -161,12 +270,41 @@ export function deriveAccentTokens(hex, {
     accentOn = wcagContrast('#000000', base) >= wcagContrast('#ffffff', base) ? '#000000' : '#ffffff';
   }
 
-  return { accent, accentMid, accentDeep, accentSoft, accentInk, accentOn };
+  const res = {
+    accent,
+    accentMid,
+    accentDeep,
+    accentSoft,
+    accentInk,
+    accentOn,
+    tones,
+    neutrals,
+    tintNeutrals: !!tintNeutrals,
+  };
+  if (type) {
+    const tKey = TYPOGRAPHY_PRESETS[type] ? type : 'editorial';
+    res.type = tKey;
+    res.displayFont = TYPOGRAPHY_PRESETS[tKey].display;
+  }
+  if (radius) {
+    res.radius = controlRadius(36, radius);
+  }
+  return res;
 }
 
-export function applyAccentTokens(el, tokensOrHex, surfaces = {}) {
+const NEUTRAL_VAR_PROPS = [
+  ['page', '--page'],
+  ['card', '--card'],
+  ['board', '--board'],
+  ['faint', '--faint'],
+  ['muted', '--muted'],
+  ['text', '--text'],
+  ['strong', '--strong'],
+];
+
+export function applyAccentTokens(el, tokensOrHex, opts = {}) {
   if (!el?.style?.setProperty) return null;
-  const t = typeof tokensOrHex === 'string' ? deriveAccentTokens(tokensOrHex, surfaces) : tokensOrHex;
+  const t = typeof tokensOrHex === 'string' ? deriveAccentTokens(tokensOrHex, opts) : tokensOrHex;
   if (!t) return null;
   el.style.setProperty('--accent', t.accent);
   el.style.setProperty('--accent-mid', t.accentMid);
@@ -174,6 +312,37 @@ export function applyAccentTokens(el, tokensOrHex, surfaces = {}) {
   el.style.setProperty('--accent-soft', t.accentSoft);
   el.style.setProperty('--accent-ink', t.accentInk);
   el.style.setProperty('--accent-on', t.accentOn);
+  if (t.tones) {
+    el.style.setProperty('--accent-tone-40', t.tones[40]);
+    el.style.setProperty('--accent-tone-90', t.tones[90]);
+  }
+  const shouldTint = opts.tintNeutrals !== undefined ? !!opts.tintNeutrals : !!t.tintNeutrals;
+  if (shouldTint && t.neutrals) {
+    for (const [key, cssVar] of NEUTRAL_VAR_PROPS) {
+      if (t.neutrals[key]) el.style.setProperty(cssVar, t.neutrals[key]);
+    }
+    if (el.dataset) el.dataset.neutralTint = 'tinted';
+  } else if (opts.tintNeutrals === false || (typeof tokensOrHex === 'object' && t.tintNeutrals === false)) {
+    for (const [, cssVar] of NEUTRAL_VAR_PROPS) el.style.removeProperty?.(cssVar);
+    if (el.dataset) el.dataset.neutralTint = 'neutral';
+  }
+  const typeKey = opts.type || t.type;
+  if (typeKey) {
+    const resolved = TYPOGRAPHY_PRESETS[typeKey] ? typeKey : 'editorial';
+    if (el.dataset) el.dataset.type = resolved;
+    el.style.setProperty('--display-font', TYPOGRAPHY_PRESETS[resolved].display);
+  }
+  const radiusSpec = opts.radius
+    ? (typeof opts.radius === 'string' ? controlRadius(36, opts.radius) : opts.radius)
+    : t.radius;
+  if (radiusSpec) {
+    if (el.dataset) el.dataset.radius = radiusSpec.preset;
+    el.style.setProperty('--atlas-r-ctl', `${radiusSpec.control}px`);
+    el.style.setProperty('--atlas-r-chip', `${radiusSpec.chip}px`);
+    el.style.setProperty('--atlas-r-card', `${radiusSpec.card}px`);
+    el.style.setProperty('--atlas-r-pill', `${radiusSpec.pill}px`);
+    el.style.setProperty('--ink-r', `${radiusSpec.card}px`);
+  }
   return t;
 }
 
@@ -222,13 +391,17 @@ export function mountSwatchBar(anchorEl, {
   return { el: bar, apply, get swatch() { return curKey; }, get hex() { return swatches[curKey] || curKey; } };
 }
 
-// Pure CSS token snippet builder combining WCAG-clamped accent cascades with @saxster/atlas draft tokens.
+// Pure CSS token snippet builder combining WCAG-clamped accent cascades with @saxster/atlas draft & register tokens.
 export function buildThemeCssSnippet({
   selector = ':root',
   accent = null,
   ink = '#18181a',
   surface = '#fbfbfa',
   page = '#f2f2ef',
+  tintNeutrals = false,
+  type = null,
+  radius = null,
+  motion = null,
   tokens = {},
 } = {}) {
   const merged = { ...DRAFT_STANDARD.tokens, ...(tokens || {}) };
@@ -237,7 +410,7 @@ export function buildThemeCssSnippet({
   if (accent) {
     let derived = null;
     try {
-      derived = deriveAccentTokens(accent, { page, card: surface, ink });
+      derived = deriveAccentTokens(accent, { page, card: surface, ink, tintNeutrals: !!tintNeutrals, type, radius });
     } catch {
       derived = null;
     }
@@ -250,9 +423,38 @@ export function buildThemeCssSnippet({
         `  --accent-ink: ${derived.accentInk};`,
         `  --accent-on: ${derived.accentOn};`,
       );
+      if (derived.tones) {
+        decls.push(
+          `  --accent-tone-40: ${derived.tones[40]};`,
+          `  --accent-tone-90: ${derived.tones[90]};`,
+        );
+      }
+      if (tintNeutrals && derived.neutrals) {
+        decls.push(
+          `  --page: ${derived.neutrals.page};`,
+          `  --card: ${derived.neutrals.card};`,
+          `  --strong: ${derived.neutrals.strong};`,
+          `  --text: ${derived.neutrals.text};`,
+          `  --faint: ${derived.neutrals.faint};`,
+        );
+      }
     } else {
       decls.push(`  --accent: ${String(accent).trim()};`);
     }
+  }
+  if (type && TYPOGRAPHY_PRESETS[type]) {
+    decls.push(`  --display-font: ${TYPOGRAPHY_PRESETS[type].display};`);
+  }
+  if (radius) {
+    const r = controlRadius(36, radius);
+    decls.push(
+      `  --atlas-r-ctl: ${r.control}px;`,
+      `  --atlas-r-chip: ${r.chip}px;`,
+      `  --atlas-r-card: ${r.card}px;`,
+    );
+  }
+  if (motion) {
+    decls.push(`  --atlas-motion: ${String(motion).trim()};`);
   }
   const tokenKeys = Object.keys(merged).filter(k => k.startsWith('--atlas-'));
   for (const k of tokenKeys) {
@@ -294,9 +496,21 @@ export function mountThemeStudio(containerEl, {
     accent: initial.accent ?? ACCENT_SWATCHES.coral,
     page: initial.page ?? '#f2efe7',
     surface: initial.surface ?? '#fffdf6',
+    tintNeutrals: Boolean(initial.tintNeutrals),
+    type: TYPOGRAPHY_PRESETS[initial.type] ? initial.type : 'editorial',
+    radius: RADIUS_PRESETS.includes(initial.radius) ? initial.radius : 'soft',
+    motion: ['spring', 'smooth', 'instant'].includes(initial.motion) ? initial.motion : 'spring',
     tokens: { ...DRAFT_STANDARD.tokens, ...(initial.tokens || {}) },
   });
   let state = baseState();
+
+  const segGroup = (lbl, attr, opts) => (
+    `<div class="studio-reg">` +
+    `<span class="studio-lbl">${lbl}</span>` +
+    `<div class="studio-seg" role="group" aria-label="${lbl}">` +
+    opts.map(([val, text]) => `<button type="button" ${attr}="${val}" aria-pressed="false">${text}</button>`).join('') +
+    `</div></div>`
+  );
 
   const root = document.createElement('div');
   root.className = 'atlas-studio';
@@ -312,6 +526,12 @@ export function mountThemeStudio(containerEl, {
     '    <input id="studio-accent-input" class="studio-text" type="text" data-studio-accent="" autocomplete="off" spellcheck="false">',
     '    <div class="studio-msg" data-studio-accent-msg="" aria-live="polite"></div>',
     '  </div>',
+    '</div>',
+    '<div class="studio-registers">',
+    segGroup('Neutrals', 'data-studio-tint', [['false', 'Pure'], ['true', 'Tinted']]),
+    segGroup('Headlines', 'data-studio-type', [['editorial', 'Editorial'], ['clean', 'Clean'], ['technical', 'Technical']]),
+    segGroup('Corners', 'data-studio-radius', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]),
+    segGroup('Motion', 'data-studio-motion', [['spring', 'Spring'], ['smooth', 'Smooth'], ['instant', 'Instant']]),
     '</div>',
     '<div class="studio-sliders">',
     ...STUDIO_SLIDERS.map((s, idx) => (
@@ -352,9 +572,17 @@ export function mountThemeStudio(containerEl, {
       }
       if (isValidCssColor(state.accent)) {
         try {
-          applyAccentTokens(h, state.accent, { page: state.page, card: state.surface, ink: state.ink });
+          applyAccentTokens(h, state.accent, {
+            page: state.page,
+            card: state.surface,
+            ink: state.ink,
+            tintNeutrals: state.tintNeutrals,
+            type: state.type,
+            radius: state.radius,
+          });
         } catch {}
       }
+      if (h.dataset) h.dataset.motion = state.motion;
     }
     const snippet = buildThemeCssSnippet(state);
     cssArea.value = snippet;
@@ -375,6 +603,10 @@ export function mountThemeStudio(containerEl, {
       if (sl) sl.value = String(v);
       if (out) out.textContent = Number(v).toFixed(2);
     }
+    root.querySelectorAll('[data-studio-tint]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.studioTint === String(state.tintNeutrals))));
+    root.querySelectorAll('[data-studio-type]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.studioType === state.type)));
+    root.querySelectorAll('[data-studio-radius]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.studioRadius === state.radius)));
+    root.querySelectorAll('[data-studio-motion]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.studioMotion === state.motion)));
   };
 
   const onInkInput = () => {
@@ -418,6 +650,17 @@ export function mountThemeStudio(containerEl, {
     syncHostAndCss();
   };
 
+  const onRegClick = e => {
+    const tBtn = e.target.closest?.('[data-studio-tint]');
+    if (tBtn) { state.tintNeutrals = tBtn.dataset.studioTint === 'true'; syncControlsFromState(); syncHostAndCss(); return; }
+    const tyBtn = e.target.closest?.('[data-studio-type]');
+    if (tyBtn && TYPOGRAPHY_PRESETS[tyBtn.dataset.studioType]) { state.type = tyBtn.dataset.studioType; syncControlsFromState(); syncHostAndCss(); return; }
+    const rBtn = e.target.closest?.('[data-studio-radius]');
+    if (rBtn && RADIUS_PRESETS.includes(rBtn.dataset.studioRadius)) { state.radius = rBtn.dataset.studioRadius; syncControlsFromState(); syncHostAndCss(); return; }
+    const mBtn = e.target.closest?.('[data-studio-motion]');
+    if (mBtn && ['spring', 'smooth', 'instant'].includes(mBtn.dataset.studioMotion)) { state.motion = mBtn.dataset.studioMotion; syncControlsFromState(); syncHostAndCss(); }
+  };
+
   const onCopy = async () => {
     const text = cssArea.value;
     let ok = false;
@@ -447,6 +690,7 @@ export function mountThemeStudio(containerEl, {
   inkIn.addEventListener('input', onInkInput);
   accIn.addEventListener('input', onAccInput);
   root.addEventListener('input', onSliderInput);
+  root.addEventListener('click', onRegClick);
   copyBtn.addEventListener('click', onCopy);
   resetBtn.addEventListener('click', onReset);
 
@@ -467,11 +711,35 @@ export function mountThemeStudio(containerEl, {
       accMsg.textContent = '';
       syncHostAndCss();
     },
+    setTintNeutrals(flag) {
+      state.tintNeutrals = Boolean(flag);
+      syncControlsFromState();
+      syncHostAndCss();
+    },
+    setType(type) {
+      if (!TYPOGRAPHY_PRESETS[type]) return;
+      state.type = type;
+      syncControlsFromState();
+      syncHostAndCss();
+    },
+    setRadius(radius) {
+      if (!RADIUS_PRESETS.includes(radius)) return;
+      state.radius = radius;
+      syncControlsFromState();
+      syncHostAndCss();
+    },
+    setMotion(motion) {
+      if (!['spring', 'smooth', 'instant'].includes(motion)) return;
+      state.motion = motion;
+      syncControlsFromState();
+      syncHostAndCss();
+    },
     reset: onReset,
     destroy() {
       inkIn.removeEventListener('input', onInkInput);
       accIn.removeEventListener('input', onAccInput);
       root.removeEventListener('input', onSliderInput);
+      root.removeEventListener('click', onRegClick);
       copyBtn.removeEventListener('click', onCopy);
       resetBtn.removeEventListener('click', onReset);
       root.remove();

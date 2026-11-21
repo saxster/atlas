@@ -561,6 +561,45 @@ export function settledFlowPhase(t, period = 4, { cycles = 1, settleAt = 1 } = {
   return fract(t / p);
 }
 
+export const MOTION_FEELS = Object.freeze(['spring', 'smooth', 'instant']);
+
+export const MOTION_PRESETS = Object.freeze({
+  spring: Object.freeze({
+    label: 'Spring',
+    durationScale: 1,
+    cssEase: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    durationMs: 360,
+  }),
+  smooth: Object.freeze({
+    label: 'Smooth',
+    durationScale: 0.85,
+    cssEase: 'cubic-bezier(0.2, 0, 0, 1)',
+    durationMs: 240,
+  }),
+  instant: Object.freeze({
+    label: 'Instant',
+    durationScale: 0,
+    cssEase: 'linear',
+    durationMs: 0,
+  }),
+});
+
+export function normalizeMotionFeel(feel = 'spring') {
+  const k = String(feel || '').trim().toLowerCase();
+  return MOTION_FEELS.includes(k) ? k : 'spring';
+}
+
+export function applyMotionFeel(el, feel = 'spring') {
+  const resolved = normalizeMotionFeel(feel);
+  const preset = MOTION_PRESETS[resolved];
+  if (el?.dataset) el.dataset.motion = resolved;
+  if (el?.style?.setProperty) {
+    el.style.setProperty('--atlas-ease', preset.cssEase);
+    el.style.setProperty('--atlas-dur', `${preset.durationMs}ms`);
+  }
+  return { feel: resolved, ...preset };
+}
+
 const GOVERNOR_PRIORITY = Object.freeze({
   ambient: 10,
   hover: 20,
@@ -573,11 +612,12 @@ const GOVERNOR_PRIORITY = Object.freeze({
 });
 
 // Single-Owner Motion Governor: tokenized priority-lease arbiter so ambient loops, hover previews,
-// step/tour playback, scrubbing, Still mode, and reduced-motion never race or leave stale callbacks.
-export function createMotionGovernor({ reduced = false, still = false, hidden = false } = {}) {
+// step/tour playback, scrubbing, Still mode, reduced-motion, and motion feel never race or leave stale callbacks.
+export function createMotionGovernor({ reduced = false, still = false, hidden = false, feel = 'spring' } = {}) {
   let isReduced = !!reduced;
   let isStill = !!still;
   let isHidden = !!hidden;
+  let motionFeel = normalizeMotionFeel(feel);
   let nextToken = 1;
   let activeOwner = null;
   let activeKind = null;
@@ -628,12 +668,26 @@ export function createMotionGovernor({ reduced = false, still = false, hidden = 
       if (isReduced) clearActive();
       return this.state();
     },
+    setFeel(nextFeel) {
+      motionFeel = normalizeMotionFeel(nextFeel);
+      return this.state();
+    },
+    transition(u, { zeta = 0.35, freq = 3.2 } = {}) {
+      const t = clamp01(u);
+      if (isReduced || motionFeel === 'instant') return t <= 0 ? 0 : 1;
+      if (motionFeel === 'smooth') return eases.outCubic(t);
+      return spring(t, zeta, freq);
+    },
     state() {
+      const effectiveFeel = isReduced ? 'instant' : motionFeel;
       return {
         mode: mode(),
         activeOwner,
         activeKind,
         token: activeToken,
+        feel: motionFeel,
+        effectiveFeel,
+        durationScale: MOTION_PRESETS[effectiveFeel].durationScale,
       };
     },
   };

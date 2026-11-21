@@ -18,6 +18,7 @@ import {
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
   settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
   sCurveIndex, snapLogStop, eventKeyframes,
+  MOTION_FEELS, MOTION_PRESETS, normalizeMotionFeel, applyMotionFeel,
 } from './motion.js';
 
 export {
@@ -30,6 +31,7 @@ export {
   camDolly, camZoom, camOrbit, camCrane, camDollyZoom, camHandheld,
   settledFlowPhase, createMotionGovernor, sharedAnchorDelta,
   sCurveIndex, snapLogStop, eventKeyframes,
+  MOTION_FEELS, MOTION_PRESETS, normalizeMotionFeel, applyMotionFeel,
 };
 
 // Live playback lifecycle tracker: responds dynamically to prefers-reduced-motion changes,

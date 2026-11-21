@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../../engine/figure.css">
 <style>
   :root {
-    --display: "Bricolage Grotesque", var(--sans);
+    --display: var(--display-font, "Bricolage Grotesque", var(--sans));
     --mono: "DM Mono", "JetBrains Mono", ui-monospace, monospace;
     --page: #f2efe7;
     --card: #fffdf6;
@@ -21,13 +21,16 @@
     --text: #453f34;
     --muted: #756d5e;
   }
+  html[data-type="clean"] { --display: "Bricolage Grotesque", var(--sans); }
+  html[data-type="editorial"] { --display: var(--serif); }
+  html[data-type="technical"] { --display: var(--mono); }
   body.ink-page {
     background: var(--page);
     color: var(--text);
-    padding: 0 20px 64px;
+    padding: 0 20px 96px;
     margin: 0;
   }
-  .ink-nav, .ink-hero, .ink-stage, .ink-studio, .ink-about {
+  .ink-nav, .ink-hero, .ink-stage, .ink-studio, .ink-patterns, .ink-about {
     position: relative;
     z-index: 1;
     max-width: 1320px;
@@ -458,14 +461,21 @@
     resize: vertical;
   }
   #token-studio-preview .draft-frame { background: var(--card); border-color: var(--faint, #d4d4d6); }
-  html.render .ink-studio { display: none; }
+  html[data-radius] .ink-btn, html[data-radius] .studio-btn, html[data-radius] .auto-btn, html[data-radius] .tb-seg, html[data-radius] .tb-seg button { border-radius: var(--atlas-r-ctl, 999px); }
+  html[data-radius] .ink-stage { border-radius: calc(var(--atlas-r-card, 14px) + 6px); }
+  .ink-patterns { margin-top: 28px; display: grid; gap: 20px; }
+  .ink-patterns-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .ink-patterns h2 { font: 700 18px/1.2 var(--display); margin: 0 0 6px; }
+  .ink-orb-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+  .ink-receipt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  html.render .ink-studio, html.render .ink-patterns { display: none; }
   @media (max-width: 1100px) {
     .ink-hero { grid-template-columns: 1fr; gap: 18px; }
-    .ink-studio { grid-template-columns: 1fr; }
+    .ink-studio, .ink-patterns-grid { grid-template-columns: 1fr; }
     .bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 600px) {
-    body.ink-page { padding: 0 10px 44px; }
+    body.ink-page { padding: 0 10px 88px; }
     .ink-nav { gap: 8px; padding: 14px 2px; }
     .ink-brand { white-space: nowrap; font-size: 15.5px; }
     .ink-nav-links a:not(.ink-btn) { display: none; }
@@ -493,6 +503,7 @@
     <div class="ink-nav-links">
       <a href="#sheet">The demo</a>
       <a href="#token-studio">Tokens</a>
+      <a href="#patterns">Patterns</a>
       <a href="#inside">Architecture</a>
       <a class="ink-btn secondary" href="./atelier-ink-ui.html" download="atelier-ink-ui.html">Get the HTML</a>
     </div>
@@ -542,8 +553,33 @@
     </div>
     <div class="ink-card bento-card">
       <h2>Orthographic Construction &amp; Mark Isolation</h2>
-      <p class="ink-studio-sub">Flat-stroke <code>draft_kit.js</code> plate using clipped H1 hatching, witness-broken dimensions, S1 wall ticks, and non-boosting mark isolation.</p>
-      <div id="token-studio-preview"></div>
+      <p class="ink-studio-sub">Flat-stroke <code>draft_kit.js</code> plate using clipped H1 hatching, witness-broken dimensions, S1 wall ticks, and non-boosting mark isolation inside a responsive <code>Preview | Code</code> stage.</p>
+      <div id="token-studio-stage"></div>
+    </div>
+  </section>
+
+  <section class="ink-patterns" id="patterns" aria-label="Interactive patterns showcase">
+    <div class="ink-patterns-grid">
+      <div class="ink-card bento-card">
+        <h2>Split-Curtain Compare &amp; Device Stage</h2>
+        <p class="ink-studio-sub">Live <code>compareCurtain</code> slider comparing Standard inputs vs. Creative 2.5D ink widgets inside a <code>390px</code> / dark-theme preview frame.</p>
+        <div id="pattern-compare-host"></div>
+      </div>
+      <div class="ink-card bento-card">
+        <h2>Nested Execution Waterfall</h2>
+        <p class="ink-studio-sub">Zero-dependency <code>spanTimeline</code> with KPI strip, parent/child span nesting, arrow-key navigation, and live <code>aria-live</code> inspection.</p>
+        <div id="pattern-timeline-host"></div>
+      </div>
+      <div class="ink-card bento-card">
+        <h2>Semantic Orbs &amp; Undo-Over-Confirm</h2>
+        <p class="ink-studio-sub">Reduced-motion-aware SVG state glyphs paired with immediate action receipts that restore prior snapshots via <code>createUndoStack</code>.</p>
+        <div id="pattern-orbs-host"></div>
+      </div>
+      <div class="ink-card bento-card">
+        <h2>2D Axis-Locked Space Deck</h2>
+        <p class="ink-studio-sub">Fixed center focus ring over Creator Voice registers × grammars with axis-locked drag, edge rubberband, and arrow-key navigation.</p>
+        <div id="pattern-deck-host"></div>
+      </div>
     </div>
   </section>
 

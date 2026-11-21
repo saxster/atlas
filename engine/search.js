@@ -264,6 +264,9 @@ const STYLE = `
 .search-results .sr-why { display: block; font: 400 12px/1.35 var(--sans); color: var(--muted); margin-top: 3px; }
 .search-results .sr-badge { flex: none; font: 500 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--faint); border-radius: 999px; padding: 3px 8px; }
 .search-empty { padding: 24px 18px; text-align: center; font: italic 17px var(--serif); color: var(--muted); }
+.search-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 9px 16px; border-top: 1px solid var(--faint); background: var(--page, #f6f6f3); font: 500 11px/1 var(--mono); color: var(--muted); }
+.search-foot span { display: inline-flex; align-items: center; gap: 4px; }
+.search-foot kbd { font: 500 10px/1 var(--mono); color: var(--strong); border: 1px solid var(--faint); border-radius: 4px; padding: 2px 5px; background: var(--card, #fbfbfa); }
 .concept-filter-wrap { max-width: 520px; margin: 20px auto 0; }
 .concept-filter {
   width: 100%; padding: 10px 16px; border: 1px solid var(--faint); border-radius: 999px; background: var(--card);
@@ -290,6 +293,7 @@ function initSearch() {
       <button type="button" class="esc">Esc</button>
     </div>
     <ul class="search-results" id="atlas-search-results"></ul>
+    <div class="search-foot" aria-hidden="true"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
   </div>`;
   document.body.appendChild(backdrop);
 

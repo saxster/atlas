@@ -510,3 +510,280 @@ export function updateIsoStackChart(rootEl, { bars = [], activeIndex = 0, maxDis
   return info;
 }
 
+// ---------- Nested execution / span timeline waterfall (plain DOM + ARIA live footer) ----------
+const DEFAULT_SPAN_KINDS = Object.freeze({
+  model: { label: 'Model', tone: 'accent' },
+  compute: { label: 'Compute', tone: 'accent' },
+  tool: { label: 'Tool', tone: 'ink' },
+  stage: { label: 'Stage', tone: 'ink' },
+  wait: { label: 'Wait', tone: 'amber' },
+  io: { label: 'I/O', tone: 'amber' },
+  handoff: { label: 'Verify', tone: 'green' },
+  ok: { label: 'Check', tone: 'green' },
+  failed: { label: 'Failed', tone: 'red' },
+  error: { label: 'Error', tone: 'red' },
+});
+
+function fmtTimelineVal(val, unit = 'ms') {
+  const v = Number(val) || 0;
+  if (unit === 'ms') {
+    if (v >= 1000) return `${(v / 1000).toFixed(2)}s`;
+    if (v > 0 && v < 10 && !Number.isInteger(v)) return `${v.toFixed(1)}ms`;
+    return `${Math.round(v)}ms`;
+  }
+  if (unit === 's') return `${v.toFixed(2)}s`;
+  return `${num(+v.toFixed(2))}${unit ? ` ${unit}` : ''}`;
+}
+
+export function spanTimelineLayout({ spans = [], totalDuration = null, categories = null } = {}) {
+  if (!Array.isArray(spans) || !spans.length) {
+    throw new Error('spanTimelineLayout requires a non-empty spans array');
+  }
+  const byId = new Map();
+  const baseRows = spans.map((s, idx) => {
+    const id = String(s?.id ?? `span-${idx}`);
+    const start = Number(s?.start ?? 0);
+    const duration = Number(s?.duration ?? 0);
+    if (!Number.isFinite(start) || start < 0) throw new RangeError(`spanTimelineLayout: invalid start at "${id}"`);
+    if (!Number.isFinite(duration) || duration < 0) throw new RangeError(`spanTimelineLayout: invalid duration at "${id}"`);
+    if (byId.has(id)) throw new Error(`spanTimelineLayout: duplicate span id "${id}"`);
+    const row = {
+      id,
+      label: String(s?.label || id),
+      start,
+      duration,
+      kind: String(s?.kind || 'step').toLowerCase(),
+      parentId: s?.parentId != null ? String(s.parentId) : null,
+      detail: String(s?.detail || ''),
+      status: String(s?.status || 'ok').toLowerCase(),
+      metrics: s?.metrics || null,
+    };
+    byId.set(id, row);
+    return row;
+  });
+
+  const depthOf = row => {
+    let depth = 0;
+    let cur = row;
+    const seen = new Set([row.id]);
+    while (cur.parentId && byId.has(cur.parentId)) {
+      if (seen.has(cur.parentId)) throw new Error(`spanTimelineLayout: parentId cycle detected at "${row.id}"`);
+      seen.add(cur.parentId);
+      depth++;
+      cur = byId.get(cur.parentId);
+    }
+    return depth;
+  };
+
+  const maxEnd = Math.max(1e-6, ...baseRows.map(r => r.start + r.duration));
+  const total = totalDuration != null && Number(totalDuration) > 0 ? Math.max(Number(totalDuration), maxEnd) : maxEnd;
+  const byKind = {};
+  let errorCount = 0;
+
+  const rows = baseRows.map(r => {
+    const depth = depthOf(r);
+    const leftPct = clamp((r.start / total) * 100, 0, 100);
+    const rawW = Math.max((r.duration / total) * 100, 1.4);
+    const widthPct = clamp(rawW, 0, Math.max(0, 100 - leftPct));
+    const isErr = r.kind === 'error' || r.kind === 'failed' || r.status === 'error';
+    if (isErr) errorCount++;
+    byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+    return {
+      ...r,
+      depth,
+      isError: isErr,
+      end: r.start + r.duration,
+      leftPct: +leftPct.toFixed(3),
+      widthPct: +widthPct.toFixed(3),
+    };
+  });
+
+  const catMap = {};
+  if (categories && typeof categories === 'object') {
+    for (const [k, v] of Object.entries(categories)) {
+      catMap[k.toLowerCase()] = typeof v === 'string' ? { label: v, tone: DEFAULT_SPAN_KINDS[k.toLowerCase()]?.tone || 'ink' } : v;
+    }
+  } else {
+    for (const k of Object.keys(byKind)) {
+      catMap[k] = DEFAULT_SPAN_KINDS[k] || { label: k[0].toUpperCase() + k.slice(1), tone: 'ink' };
+    }
+  }
+
+  return { rows, total, byKind, errorCount, categories: catMap };
+}
+
+function formatSpanDetailText(row, catMap, unit) {
+  if (!row) return 'Select or focus any span to inspect timing.';
+  const kindLabel = catMap?.[row.kind]?.label || row.kind;
+  const t0 = fmtTimelineVal(row.start, unit);
+  const t1 = fmtTimelineVal(row.end, unit);
+  const dur = fmtTimelineVal(row.duration, unit);
+  return `${row.label} · ${kindLabel} · ${t0} to ${t1} · ${dur}${row.detail ? ` — ${row.detail}` : ''}`;
+}
+
+export function spanTimeline({
+  title = '',
+  subtitle = '',
+  spans = [],
+  totalDuration = null,
+  categories = null,
+  summary = null,
+  activeId = null,
+  activeTime = null,
+  unit = 'ms',
+  id = '',
+  label = 'Execution timeline',
+} = {}) {
+  const layout = spanTimelineLayout({ spans, totalDuration, categories });
+  const { rows, total, errorCount, categories: catMap } = layout;
+  const selId = activeId != null && rows.some(r => r.id === String(activeId)) ? String(activeId) : rows[0].id;
+  const selRow = rows.find(r => r.id === selId) || rows[0];
+
+  const kpis = Array.isArray(summary) && summary.length
+    ? summary
+    : [
+        { label: 'Duration', value: fmtTimelineVal(total, unit) },
+        { label: 'Spans', value: String(rows.length) },
+        ...(errorCount > 0 ? [{ label: 'Errors', value: String(errorCount), tone: 'error' }] : []),
+      ];
+
+  const kpisHtml = kpis.map(k => (
+    `<div class="st-kpi${k.tone === 'error' ? ' is-err' : ''}">` +
+    `<span class="st-kpi-l">${esc(k.label)}</span>` +
+    `<span class="st-kpi-v">${esc(k.value)}</span>` +
+    `</div>`
+  )).join('');
+
+  const legendHtml = Object.entries(catMap).map(([kind, meta]) => (
+    `<span class="st-leg-item" data-st-tone="${esc(meta.tone || 'ink')}"><i aria-hidden="true"></i>${esc(meta.label)}</span>`
+  )).join('');
+
+  const rowsHtml = rows.map(r => {
+    const selected = r.id === selId;
+    const tone = catMap[r.kind]?.tone || (r.isError ? 'red' : 'ink');
+    const kindLabel = catMap[r.kind]?.label || r.kind;
+    const durStr = fmtTimelineVal(r.duration, unit);
+    const fullTitle = formatSpanDetailText(r, catMap, unit);
+    return `<button type="button" class="st-row${selected ? ' is-selected' : ''}${r.isError ? ' is-err' : ''}" ` +
+      `data-span-id="${esc(r.id)}" data-span-kind="${esc(r.kind)}" data-span-kind-label="${esc(kindLabel)}" ` +
+      `data-span-start="${r.start}" data-span-end="${r.end}" data-span-dur="${r.duration}" data-span-detail="${esc(r.detail)}" ` +
+      `data-st-tone="${esc(tone)}" aria-pressed="${selected}" aria-label="${esc(`${r.label} — ${kindLabel}, ${durStr}`)}" ` +
+      `style="--st-depth:${r.depth}" title="${esc(fullTitle)}">` +
+      `<span class="st-lbl">${esc(r.label)}</span>` +
+      `<span class="st-track"><span class="st-bar" style="left:${r.leftPct}%;width:${r.widthPct}%"></span></span>` +
+      `<span class="st-dur">${esc(durStr)}</span>` +
+      `</button>`;
+  }).join('');
+
+  const hasCursor = activeTime != null && Number.isFinite(Number(activeTime));
+  const curPct = hasCursor ? clamp((Number(activeTime) / total) * 100, 0, 100) : 0;
+  const playheadHtml = `<div class="st-playhead" data-st-playhead style="left:${curPct.toFixed(3)}%"${hasCursor ? '' : ' hidden'} aria-hidden="true"></div>`;
+
+  const idAttr = id ? ` id="${esc(id)}"` : '';
+  return `<section class="st-wrap"${idAttr} data-st-total="${total}" data-st-unit="${esc(unit)}" aria-label="${esc(label)}">` +
+    (title || subtitle ? `<div class="st-head">${title ? `<h3 class="st-title">${esc(title)}</h3>` : ''}${subtitle ? `<span class="st-sub">${esc(subtitle)}</span>` : ''}</div>` : '') +
+    `<div class="st-kpis">${kpisHtml}</div>` +
+    `<div class="st-legend" aria-hidden="true">${legendHtml}</div>` +
+    `<div class="st-axis" aria-hidden="true"><span>0</span><span>${esc(fmtTimelineVal(total * 0.5, unit))}</span><span>${esc(fmtTimelineVal(total, unit))}</span></div>` +
+    `<div class="st-rows" role="group" aria-label="Timeline spans">${playheadHtml}${rowsHtml}</div>` +
+    `<div class="st-detail" data-st-detail role="status" aria-live="polite">${esc(formatSpanDetailText(selRow, catMap, unit))}</div>` +
+    `</section>`;
+}
+
+export function setSpanTimelineCursor(rootEl, time, totalDuration = null) {
+  if (!rootEl) return;
+  const wrap = rootEl.classList?.contains('st-wrap') ? rootEl : rootEl.querySelector?.('.st-wrap');
+  const head = wrap?.querySelector?.('[data-st-playhead]');
+  if (!wrap || !head) return;
+  if (time == null || !Number.isFinite(Number(time))) {
+    head.hidden = true;
+    return;
+  }
+  const total = Number(totalDuration) || Number(wrap.dataset.stTotal) || 1;
+  const pct = clamp((Number(time) / Math.max(1e-6, total)) * 100, 0, 100);
+  head.hidden = false;
+  head.style.left = `${pct.toFixed(3)}%`;
+}
+
+export function bindSpanTimeline(rootEl, { onSelect = null } = {}) {
+  if (!rootEl || typeof document === 'undefined') {
+    return { select() {}, setCursor() {}, destroy() {} };
+  }
+  const wrap = rootEl.classList?.contains('st-wrap') ? rootEl : rootEl.querySelector?.('.st-wrap');
+  if (!wrap) return { select() {}, setCursor() {}, destroy() {} };
+  const unit = wrap.dataset.stUnit || 'ms';
+  const detailEl = wrap.querySelector('[data-st-detail]');
+  const rows = () => [...wrap.querySelectorAll('.st-row[data-span-id]')];
+
+  function selectBtn(btn, emit = true) {
+    if (!btn) return;
+    const id = btn.dataset.spanId;
+    for (const r of rows()) {
+      const on = r === btn;
+      r.classList.toggle('is-selected', on);
+      r.setAttribute('aria-pressed', String(on));
+    }
+    if (detailEl) {
+      const rowData = {
+        label: btn.querySelector('.st-lbl')?.textContent || id,
+        kind: btn.dataset.spanKindLabel || btn.dataset.spanKind || '',
+        start: Number(btn.dataset.spanStart || 0),
+        end: Number(btn.dataset.spanEnd || 0),
+        duration: Number(btn.dataset.spanDur || 0),
+        detail: btn.dataset.spanDetail || '',
+      };
+      detailEl.textContent = formatSpanDetailText(
+        { ...rowData, kind: rowData.kind },
+        { [rowData.kind]: { label: rowData.kind } },
+        unit,
+      );
+    }
+    if (emit) onSelect?.(id, btn);
+  }
+
+  const onClick = e => {
+    const btn = e.target.closest?.('.st-row[data-span-id]');
+    if (btn && wrap.contains(btn)) selectBtn(btn, true);
+  };
+  const onFocus = e => {
+    const btn = e.target.closest?.('.st-row[data-span-id]');
+    if (btn && wrap.contains(btn)) selectBtn(btn, true);
+  };
+  const onKey = e => {
+    const btn = e.target.closest?.('.st-row[data-span-id]');
+    if (!btn || !wrap.contains(btn)) return;
+    const list = rows();
+    const idx = list.indexOf(btn);
+    if (idx < 0) return;
+    let nextIdx = -1;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') nextIdx = Math.min(list.length - 1, idx + 1);
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') nextIdx = Math.max(0, idx - 1);
+    else if (e.key === 'Home') nextIdx = 0;
+    else if (e.key === 'End') nextIdx = list.length - 1;
+    if (nextIdx >= 0) {
+      e.preventDefault();
+      list[nextIdx].focus();
+      selectBtn(list[nextIdx], true);
+    }
+  };
+
+  wrap.addEventListener('click', onClick);
+  wrap.addEventListener('focusin', onFocus);
+  wrap.addEventListener('keydown', onKey);
+
+  return {
+    select(id) {
+      const btn = rows().find(r => r.dataset.spanId === String(id));
+      if (btn) selectBtn(btn, true);
+    },
+    setCursor(time, totalDuration = null) {
+      setSpanTimelineCursor(wrap, time, totalDuration);
+    },
+    destroy() {
+      wrap.removeEventListener('click', onClick);
+      wrap.removeEventListener('focusin', onFocus);
+      wrap.removeEventListener('keydown', onKey);
+    },
+  };
+}
+

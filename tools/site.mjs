@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { EXAMPLES, subjects } from './chapters.mjs';
+import { ROOT, EXAMPLES, subjects } from './chapters.mjs';
 import { XREFS } from '../examples/xrefs.js';
 import { THREADS } from '../examples/concepts/threads.js';
 
@@ -16,6 +16,7 @@ const SHELF = [
   ['physics', 'Physics', 'mechanics, electricity and magnetism'],
   ['maths', 'Mathematics', 'trigonometry, calculus, linear algebra'],
   ['statistics', 'Statistics', 'probability, sampling, inference'],
+  ['critical-thinking', 'Critical Thinking', 'arguments, denominators, causal inference and evidence'],
   ['chemistry', 'Chemistry', 'molecules, reactions, energy'],
   ['economics', 'Economics', 'money, markets, growth'],
   ['biology', 'Biology', 'cells, molecules, living machines'],
@@ -39,25 +40,80 @@ ${extra}</head>
 `;
 const GENERATED = '<!-- written by tools/site.mjs from the subject.js manifests: edit those, then run it -->\n';
 
+const SHELF_COLORS = {
+  physics: '#5a79c2',
+  maths: '#3aa57a',
+  statistics: '#8c6bb5',
+  'critical-thinking': '#d63a24',
+  chemistry: '#ef6a4c',
+  economics: '#c98a18',
+  biology: '#226b48',
+};
+
 function rootPage(all) {
   const byId = Object.fromEntries(all.map(s => [s.id, s]));
+  const deckRows = [];
   const cards = SHELF.map(([id, name, blurb]) => {
     const s = byId[id], items = s ? [...(s.chapters || []), ...(s.figures || [])] : [];
     if (!items.length) return `    <div class="card soon"><div class="no"><span>in preparation</span></div><h2>${name}</h2><i>${blurb}</i><span class="wait">coming</span></div>`;
     const first = s.cover || items[0], img = fs.existsSync(path.join(EXAMPLES, id, 'img', `${first}.jpg`)) ? `\n      <img src="${id}/img/${first}.jpg" alt="${esc(s.cards?.[first]?.alt || '')}">` : '';
     const count = `${items.length} ${items.length === 1 ? (s.chapters?.length ? 'chapter' : 'figure') : (s.figures?.length && !s.chapters?.length ? 'figures' : 'chapters')}`;
+    deckRows.push({
+      id,
+      label: name,
+      color: SHELF_COLORS[id] || '#ef6a4c',
+      items: items.map(itemId => {
+        const c = s.cards?.[itemId] || {};
+        const thumbPath = path.join(EXAMPLES, id, 'img', `${itemId}.jpg`);
+        return {
+          id: itemId,
+          kicker: name,
+          title: c.title || itemId,
+          sub: c.sub || '',
+          href: `${id}/${itemId}/`,
+          ...(fs.existsSync(thumbPath) ? { img: `${id}/img/${itemId}.jpg` } : {}),
+        };
+      }),
+    });
     return `    <a class="card" href="${id}/"><div class="no"><span>${count}</span></div><h2>${name}</h2><i>${esc(s.blurb || blurb)}</i>${img}</a>`;
   });
+  const deckJson = JSON.stringify(deckRows).replace(/</g, '\\u003c');
   return head('Atlas', '../') + `<body>
 ${GENERATED}  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
   <section class="hero">
     <h1>Every subject, taken apart.</h1>
     <p>Each idea as one working figure: a model you can check, a thing you can move</p>
   </section>
-  <section class="shelf">
+  <div class="shelf-view-bar">
+    <div class="shelf-view-seg" role="group" aria-label="Shelf view">
+      <button type="button" data-shelf-view="grid" aria-pressed="true">Grid</button>
+      <button type="button" data-shelf-view="deck" aria-pressed="false">2D Deck</button>
+    </div>
+  </div>
+  <section class="shelf" id="shelf-grid">
 ${cards.join('\n')}
   </section>
-  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a></p>
+  <section class="shelf-deck" id="shelf-deck" hidden aria-label="2D subject and figure deck"></section>
+  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a> · <a href="../llms.txt">llms.txt</a></p>
+  <script type="application/json" id="atlas-deck-data">${deckJson}</script>
+  <script type="module">
+    const grid = document.getElementById('shelf-grid');
+    const deck = document.getElementById('shelf-deck');
+    const btns = [...document.querySelectorAll('[data-shelf-view]')];
+    let mounted = null;
+    async function setView(v) {
+      const showDeck = v === 'deck';
+      grid.hidden = showDeck;
+      deck.hidden = !showDeck;
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shelfView === v)));
+      if (showDeck && !mounted) {
+        const rows = JSON.parse(document.getElementById('atlas-deck-data')?.textContent || '[]');
+        const { mountSpaceDeck } = await import('../engine/diegetic.js');
+        mounted = mountSpaceDeck(deck, { rows });
+      }
+    }
+    btns.forEach(b => b.addEventListener('click', () => setView(b.dataset.shelfView)));
+  </script>
 </body>
 </html>
 `;
@@ -135,7 +191,7 @@ async function searchIndexJs(all) {
     const files = fs.readdirSync(cDir).filter(f => f.endsWith('.js') && f !== 'threads.js').sort();
     for (const file of files) {
       const subjId = file.slice(0, -3);
-      const subjName = subjId === 'maths' ? 'Mathematics' : subjId[0].toUpperCase() + subjId.slice(1);
+      const subjName = subjId === 'maths' ? 'Mathematics' : (subjId === 'critical-thinking' ? 'Critical Thinking' : subjId[0].toUpperCase() + subjId.slice(1));
       const { CONCEPTS } = await import(pathToFileURL(path.join(cDir, file)).href);
       for (const c of CONCEPTS) {
         conceptShownIn.set(c.id, c.shownIn || []);
@@ -214,19 +270,84 @@ export function resolveRoute(id) {
   return { id: clean, retired: false, target: clean };
 }
 
+export function buildLlmsTxt(all) {
+  const realSubjects = all.filter(s => s.id !== 'minimal');
+  const totalCount = realSubjects.reduce((acc, s) => acc + (s.chapters?.length || 0) + (s.figures?.length || 0), 0);
+  const subjLines = realSubjects.map(s => {
+    const n = (s.chapters?.length || 0) + (s.figures?.length || 0);
+    return `- **${s.name}** (\`examples/${s.id}/\`): ${n} figures/chapters — ${s.blurb || s.tagline || ''}`.trim();
+  });
+  return `# @saxster/atlas
+
+> Paper-and-ink 3D and 2D interactive teaching figures for any subject: a pure checked \`model.js\`, independent verification in \`checks.mjs\`, 6 pedagogical grammars, 10 creator voices, stateless \`?render\` video/still tours, and textbook embeds. Zero runtime dependencies beyond \`three\`.
+
+## Quickstart
+
+\`\`\`bash
+npm install github:saxster/atlas three
+npx atlas new <subject>/<id> --grammar machine
+npx atlas boot <grammar|kit|voice>
+npx atlas check examples/<subject>/<id>
+\`\`\`
+
+## 6 Grammars
+
+- \`book\` (\`engine/book.js\`): scroll-turned chapters with 3D camera choreography, breakdowns, practice questions, and embeds.
+- \`machine\` (\`engine/machine.js\`): numbered step sequences, Manual/Auto playback, optional \`cuts: ['solid', 'xray', 'section']\`.
+- \`explorer\` (\`engine/explorer.js\`): predict first, adjust sliders/controls, run seeded simulation + 2D live SVG charts.
+- \`sandbox\` (\`engine/sandbox.js\`): constructive play with presets, matrix inputs, piece palette, 3D dragging, and undo-over-confirm receipts.
+- \`teardown\` (\`examples/minimal/teardown\`): multi-part hardware/system disassembly & assembly plates.
+- \`blueprint\` (\`examples/minimal/blueprint\`): watertight CSG & orthographic architectural/floorplan construction with section cuts.
+
+## Engine Modules & Kits
+
+- \`@saxster/atlas/stage.js\`, \`render.js\`, \`parts.js\`, \`prims.js\`, \`cad_kit.js\`: Three.js paper-and-ink renderer, 5 art mediums, flush-part \`idOff\` seams, \`RectSolid\` CSG, STEM 2D-to-3D compilers, and 3D \`fieldLines\` / \`flowBeads\`.
+- \`@saxster/atlas/draft_kit.js\` & \`iso_kit.js\`: pure 2D orthographic construction plates (\`DRAFT_STANDARD\`) and 25 keylined 2.5D isometric primitives.
+- \`@saxster/atlas/diegetic.js\`: 8 illustrated control schemas, \`statusOrb\`, \`compareCurtain\`, \`previewStage\`, \`mountFloatingDock\`, \`createUndoStack\`, \`showActionReceipt\`, and \`mountSpaceDeck\`.
+- \`@saxster/atlas/chart.js\`: 2D SVG charts (\`moveCursor\`, \`moveTangent\`, \`setLivePath\`), \`waterfallChart\`, \`sankeyChart\`, \`sequenceLanes\`, \`isoStackChart\`, and nested \`spanTimeline\`.
+- \`@saxster/atlas/prose.js\`: Bret Victor \`scrub\`, \`val\`, \`term\`, \`byrne\`, \`aside\`, \`paramChip\`, \`codeBlock\`, \`foilCard\`, \`diffList\`, \`frameInspector\`, and \`anatomyOverlay\`.
+- \`@saxster/atlas/theme.js\` & \`motion.js\`: perceptual \`tonalScale\`, WCAG-clamped \`deriveAccentTokens\`, optional \`tintNeutrals\`, \`TYPOGRAPHY_PRESETS\`, \`controlRadius\`, \`mountThemeStudio\`, 31 \`eases\`, \`rubberband\`, \`projectMomentum\`, \`createMotionGovernor\`, and decoupled \`MOTION_FEELS\`.
+- \`@saxster/atlas/solvers.js\`, \`kinematics.js\`, \`sound.js\`, \`moments.js\`: pure domain-agnostic solvers, kinematics, opt-in WebAudio, and lesson moments.
+
+## Published Examples (${totalCount} Figures & Chapters + Showcases)
+
+${subjLines.join('\n')}
+- **Corner Atelier** (\`examples/ink-ui/\`): 24 live 2.5D ink widgets, Theme Studio, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
+- **Concepts & Threads** (\`examples/concepts/\`): cross-subject concept ledger & spatial thread board.
+
+## Docs
+
+- \`llms-full.txt\`: full combined API reference, 10 Creator Voices catalog, and verification rubric.
+- \`docs/API.md\`, \`docs/voices/catalog.md\`, \`docs/decisions.md\`, \`docs/verification-rubric.md\`.
+`;
+}
+
+export function buildLlmsFullTxt(all) {
+  const parts = [buildLlmsTxt(all).trimEnd()];
+  for (const rel of ['docs/API.md', 'docs/voices/catalog.md', 'docs/verification-rubric.md']) {
+    const abs = path.join(ROOT, rel);
+    if (fs.existsSync(abs)) {
+      parts.push(`\n---\n<!-- ${rel} -->\n\n${fs.readFileSync(abs, 'utf8').trimEnd()}`);
+    }
+  }
+  return parts.join('\n') + '\n';
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   const all = await subjects();
   const pages = [
-    ['index.html', rootPage(all)],
-    ...all.filter(s => s.contents !== false).map(s => [`${s.id}/index.html`, subjectPage(s)]),
-    ['search-index.js', await searchIndexJs(all)],
+    [path.join(EXAMPLES, 'index.html'), 'index.html', rootPage(all)],
+    ...all.filter(s => s.contents !== false).map(s => [path.join(EXAMPLES, `${s.id}/index.html`), `${s.id}/index.html`, subjectPage(s)]),
+    [path.join(EXAMPLES, 'search-index.js'), 'search-index.js', await searchIndexJs(all)],
+    [path.join(ROOT, 'llms.txt'), 'llms.txt', buildLlmsTxt(all)],
+    [path.join(ROOT, 'llms-full.txt'), 'llms-full.txt', buildLlmsFullTxt(all)],
   ];
   let stale = 0;
-  for (const [file, html] of pages) {
-    const p = path.join(EXAMPLES, file), now = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
-    if (now === html) { console.log('same   ', file); continue; }
-    if (CHECK) { stale++; console.log('STALE  ', file); continue; }
-    fs.writeFileSync(p, html); console.log('wrote  ', file);
+  for (const [p, label, html] of pages) {
+    const now = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+    if (now === html) { console.log('same   ', label); continue; }
+    if (CHECK) { stale++; console.log('STALE  ', label); continue; }
+    fs.writeFileSync(p, html); console.log('wrote  ', label);
   }
   if (CHECK) {
     for (const idxFile of ['index.html', ...all.map(s => `${s.id}/index.html`)]) {

@@ -1,9 +1,9 @@
 /* The contents pages: the root shelf of subjects and each subject's shelf of chapters and figures (tools/site.mjs
    writes them). Cards are paper on the desk; a subject still in preparation is a dashed outline. */
 body { min-height: 100vh; min-height: 100svh; padding: 0 16px calc(80px + env(safe-area-inset-bottom, 0px)); }
-header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; justify-content: space-between; align-items: center; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+header { max-width: 1180px; margin: 0 auto; padding: 22px 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 header b, header .home { font: 500 19px var(--serif); letter-spacing: 0; text-transform: none; color: var(--strong); text-decoration: none; }
-header span { display: flex; align-items: center; gap: 18px; }
+header span { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px 16px; }
 header a { color: inherit; text-decoration: none; }
 .hero { text-align: center; margin: 72px auto 64px; max-width: 760px; }
 .hero h1 { font: 400 clamp(46px, 7vw, 84px)/1 var(--serif); color: var(--strong); letter-spacing: -.015em; text-wrap: balance; }
@@ -64,3 +64,12 @@ a.card:focus-visible { transform: perspective(1400px) translateY(-4px) rotateY(-
 .search-results .sr-eq { display: block; font: 400 14px/1.3 var(--serif); color: var(--hi); margin-top: 2px; }
 .search-results .sr-badge { flex: none; font: 500 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--faint); border-radius: 999px; padding: 3px 8px; }
 .search-empty { padding: 24px 18px; text-align: center; font: italic 17px var(--serif); color: var(--muted); }
+.search-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 9px 16px; border-top: 1px solid var(--faint); background: var(--page, #f6f6f3); font: 500 11px/1 var(--mono); color: var(--muted); }
+.search-foot span { display: inline-flex; align-items: center; gap: 4px; }
+.search-foot kbd { font: 500 10px/1 var(--mono); color: var(--strong); border: 1px solid var(--faint); border-radius: 4px; padding: 2px 5px; background: var(--card, #fbfbfa); }
+.shelf-view-bar { max-width: 1180px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.shelf-view-seg { display: inline-flex; padding: 2px; border-radius: 999px; border: 1px solid var(--faint); background: var(--card); }
+.shelf-view-seg button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .05em; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.shelf-view-seg button[aria-pressed="true"] { background: var(--strong); color: var(--card); }
+.shelf-deck { max-width: 1180px; margin: 0 auto; }
+.shelf-deck[hidden], .shelf[hidden] { display: none; }

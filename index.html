@@ -7,38 +7,184 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="engine/atlas.css">
 <link rel="stylesheet" href="engine/shelf.css">
 <script type="module" src="engine/search.js"></script>
 <style>
-  .lib { max-width: 760px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
-  .lib h2 { font: 400 28px/1.2 var(--serif); color: var(--strong); margin: 40px 0 10px; }
+  .lib { max-width: 880px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
+  .lib h2 { font: 400 28px/1.2 var(--serif); color: var(--strong); margin: 44px 0 12px; }
   .lib pre { background: var(--card); box-shadow: var(--lift); border-radius: 10px; padding: 14px 18px; overflow-x: auto; font: 13px/1.6 var(--mono); color: var(--strong); }
   .lib a { color: var(--strong); text-underline-offset: 3px; }
   .lib ul { padding-left: 20px; }
+  .lib li { margin-bottom: 6px; }
+  .lib-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 22px auto 0; justify-content: center; }
+  .lib-btn {
+    appearance: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px;
+    border-radius: 999px; border: 1px solid var(--strong); background: var(--strong); color: var(--card);
+    font: 600 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; text-decoration: none;
+  }
+  .lib-btn.secondary { background: var(--card); color: var(--strong); border-color: var(--faint); }
+  .lib-status { font: 500 12px/1 var(--mono); color: var(--accent-ink, var(--strong)); }
+  .lib-sub { font: 400 14.5px/1.5 var(--sans); color: var(--muted); margin: 0 0 14px; }
+  .lib-demo-box { margin-top: 10px; }
+  .cmp-card {
+    padding: 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--faint);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cmp-card.quirky { border: 1.5px solid var(--ink-line); background: #fffdf6; box-shadow: 0 3px 0 #e0d9ca; }
+  .cmp-k { font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .cmp-t { font: 500 18px/1.2 var(--serif); color: var(--strong); }
+  .cmp-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 500 12px/1.2 var(--mono); }
+  .cmp-badge { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--faint); background: var(--page); color: var(--strong); }
+  .cmp-card.quirky .cmp-badge { background: var(--accent); color: var(--accent-on); border-color: var(--ink-line); }
 </style>
 </head>
 <body>
-  <header><b>Atlas</b><span><a href="examples/">Examples</a><a href="https://github.com/saxster/atlas">Source</a></span></header>
+  <header><b>Atlas</b><span><a href="examples/">Examples</a><a href="examples/ink-ui/">Ink UI</a><a href="llms.txt">llms.txt</a><a href="https://github.com/saxster/atlas">Source</a></span></header>
   <section class="hero">
     <h1>Teaching figures for any subject.</h1>
-    <p>A small library: write the model, say what to draw, and get a 3D paper-and-ink figure a reader can work</p>
+    <p>A zero-dep teaching figure engine: write a pure checked model, say what to draw, and get a 3D or 2D paper-and-ink figure a reader can work</p>
+    <div class="lib-cta">
+      <a class="lib-btn" href="examples/">Browse 65 figures →</a>
+      <button type="button" class="lib-btn secondary" id="copy-starter-prompt">Copy starter prompt</button>
+      <a class="lib-btn secondary" href="llms-full.txt">llms-full.txt</a>
+      <span class="lib-status" id="copy-starter-status" role="status" aria-live="polite"></span>
+    </div>
   </section>
   <main class="lib">
-    <h2>Four ways to work a figure</h2>
+    <h2>Six ways to work a figure</h2>
     <ul>
       <li><b>Book.</b> Scroll turns the page and the camera moves; click a part to break it down. <a href="examples/minimal/book/">Example</a></li>
-      <li><b>Machine.</b> Numbered steps, one live at a time, Manual or Auto. <a href="examples/minimal/machine/">Example</a></li>
-      <li><b>Explorer.</b> Predict first, then drag the sliders and run it. <a href="examples/minimal/explorer/">Example</a></li>
-      <li><b>Sandbox.</b> Place, drag or wire pieces in 3D, or enter your own matrix and parameters. <a href="examples/minimal/sandbox/">Example</a></li>
+      <li><b>Machine.</b> Numbered steps, one live at a time, Manual or Auto, with optional section cuts. <a href="examples/minimal/machine/">Example</a></li>
+      <li><b>Explorer.</b> Predict first, then drag the sliders and run it against live 2D charts. <a href="examples/minimal/explorer/">Example</a></li>
+      <li><b>Sandbox.</b> Place, drag or wire pieces in 3D, enter matrices, and undo resets cleanly. <a href="examples/minimal/sandbox/">Example</a></li>
+      <li><b>Teardown.</b> Explode multi-part mechanisms and hardware assemblies without cutting solids. <a href="examples/minimal/teardown/">Example</a></li>
+      <li><b>Blueprint.</b> Watertight CSG floorplans, orthographic hatching, dimensions, and section cuts. <a href="examples/minimal/blueprint/">Example</a></li>
     </ul>
+
+    <h2>Anatomy of an Atlas figure</h2>
+    <p class="lib-sub">Inspect the five layers behind every figure — pure math first, independent checks, deterministic <code>?render</code> tours, diegetic controls, and reactive prose.</p>
+    <div class="lib-demo-box" id="root-anatomy-host"></div>
+
+    <h2>Quirk Spectrum: Textbook Plate vs. Inked Sketchbook</h2>
+    <p class="lib-sub">Drag the curtain or use arrow keys to compare Register 1 (<code>textbook-pure</code>) against Register 3 (<code>bugged-sketchbook</code>).</p>
+    <div class="lib-demo-box" id="root-compare-host"></div>
+
     <h2>Start</h2>
 <pre>npm install github:saxster/atlas three
-npx atlas new biology/heart --grammar machine</pre>
-    <p>That writes a model, its checks, the figure and a page. Every number on screen comes from the model, and the checks prove the model a second way.</p>
+npx atlas new biology/heart --grammar machine
+npx atlas boot bugged-sketchbook</pre>
+    <p>That writes a pure <code>model.js</code>, its independent <code>checks.mjs</code>, the figure and a page. Coding agents can read <a href="llms.txt"><code>llms.txt</code></a> or <a href="llms-full.txt"><code>llms-full.txt</code></a> directly.</p>
     <h2>Built with it</h2>
-    <p><a href="examples/">Forty-one figures</a> across physics, maths, biology, chemistry, statistics and economics, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
+    <p><a href="examples/">Sixty-five figures</a> across physics, maths, statistics, critical thinking, chemistry, economics and biology, <a href="examples/ink-ui/">Corner Atelier (24 live 2.5D ink widgets)</a>, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
   </main>
+
+  <script type="module">
+    import { anatomyOverlay, bindAnatomyOverlay } from './engine/prose.js';
+    import { previewStage, bindPreviewStage, compareCurtain, bindCompareCurtain, statusOrb } from './engine/diegetic.js';
+
+    const STARTER_PROMPT = [
+      'Build a new interactive teaching figure using @saxster/atlas.',
+      'First fetch https://saxster.github.io/atlas/llms.txt (or run `npx atlas boot <grammar>`).',
+      'Scaffold with `npx atlas new <subject>/<id> --grammar machine|book|explorer|sandbox|teardown|blueprint`.',
+      'Invariants: keep math pure inside model.js (zero DOM/Three.js), verify independently in checks.mjs (`npx atlas check`), and ensure ?render window.seek(t) is stateless and order-independent.',
+    ].join('\n');
+
+    const copyBtn = document.getElementById('copy-starter-prompt');
+    const copyStatus = document.getElementById('copy-starter-status');
+    copyBtn?.addEventListener('click', async () => {
+      let ok = false;
+      try { await navigator.clipboard?.writeText(STARTER_PROMPT); ok = true; } catch {}
+      if (copyStatus) copyStatus.textContent = ok ? 'Starter prompt copied' : 'Prompt ready (check llms.txt)';
+      setTimeout(() => { if (copyStatus) copyStatus.textContent = ''; }, 2400);
+    });
+
+    const archSvg = `<svg viewBox="0 0 560 270" role="img" aria-label="Atlas figure pipeline diagram" style="width:100%;height:auto;display:block;background:var(--card)">
+      <g stroke="var(--faint)" stroke-width="1" fill="none">
+        <path d="M130 92 H210 M325 92 H410 M268 128 V166 M210 202 H145 M325 202 H410"/>
+      </g>
+      <g font-family="var(--mono)" font-size="11" fill="var(--strong)">
+        <rect x="28" y="60" width="110" height="64" rx="10" fill="var(--page)" stroke="var(--strong)" stroke-width="1.4"/>
+        <text x="83" y="88" text-anchor="middle" font-weight="600">model.js</text>
+        <text x="83" y="106" text-anchor="middle" font-size="9.5" fill="var(--muted)">pure equations</text>
+
+        <rect x="210" y="60" width="116" height="64" rx="10" fill="var(--page)" stroke="var(--strong)" stroke-width="1.4"/>
+        <text x="268" y="88" text-anchor="middle" font-weight="600">checks.mjs</text>
+        <text x="268" y="106" text-anchor="middle" font-size="9.5" fill="var(--muted)">2nd proof path</text>
+
+        <rect x="410" y="60" width="122" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="471" y="88" text-anchor="middle" font-weight="600">stage.js</text>
+        <text x="471" y="106" text-anchor="middle" font-size="9.5" fill="var(--muted)">3D &amp; 2D ink pass</text>
+
+        <rect x="28" y="170" width="120" height="64" rx="10" fill="var(--card)" stroke="var(--faint)" stroke-width="1.4"/>
+        <text x="88" y="198" text-anchor="middle" font-weight="600">diegetic.js</text>
+        <text x="88" y="216" text-anchor="middle" font-size="9.5" fill="var(--muted)">2.5D controls</text>
+
+        <rect x="210" y="168" width="116" height="66" rx="10" fill="var(--card)" stroke="var(--faint)" stroke-width="1.4"/>
+        <text x="268" y="197" text-anchor="middle" font-weight="600">prose.js</text>
+        <text x="268" y="215" text-anchor="middle" font-size="9.5" fill="var(--muted)">scrub &amp; val()</text>
+
+        <rect x="410" y="170" width="122" height="64" rx="10" fill="var(--card)" stroke="var(--faint)" stroke-width="1.4"/>
+        <text x="471" y="198" text-anchor="middle" font-weight="600">?render</text>
+        <text x="471" y="216" text-anchor="middle" font-size="9.5" fill="var(--muted)">seek(t) + QA</text>
+      </g>
+    </svg>`;
+
+    const anatomyHtml = anatomyOverlay({
+      id: 'root-anatomy',
+      legendTitle: 'Pipeline layers',
+      contentHtml: archSvg,
+      pins: [
+        { id: 'model', n: 1, label: 'Pure model.js', detail: 'Zero DOM, zero Three.js; every number on screen starts here.', x: 15, y: 22 },
+        { id: 'checks', n: 2, label: 'Independent checks.mjs', detail: 'Proves the model a second way (RK4, Simpson, conservation) before drawing.', x: 48, y: 22 },
+        { id: 'stage', n: 3, label: 'Paper-and-ink stage', detail: 'HalfFloat edge seams, hatching, axis dragging, and 5 art mediums.', x: 84, y: 22 },
+        { id: 'controls', n: 4, label: 'Diegetic & reactive controls', detail: '8 illustrated schemas, inline scrub(), and WCAG-clamped swatches.', x: 16, y: 63 },
+        { id: 'render', n: 5, label: 'Deterministic ?render & critics', detail: 'Order-independent seek(t), label/clip/jump critics, and -14 LUFS video.', x: 84, y: 63 },
+      ],
+      chips: [
+        { label: 'stage.js', href: 'examples/minimal/machine/' },
+        { label: 'diegetic.js', href: 'examples/ink-ui/' },
+        { label: 'draft_kit.js', href: 'examples/minimal/blueprint/' },
+      ],
+    });
+
+    const anatomyHost = document.getElementById('root-anatomy-host');
+    if (anatomyHost) {
+      anatomyHost.innerHTML = previewStage({
+        id: 'root-anatomy-stage',
+        title: 'anatomyOverlay',
+        previewHtml: anatomyHtml,
+        code: `npx atlas new physics/pendulum --grammar explorer\nnpx atlas check examples/physics/pendulum\nnpx atlas critic examples/physics/pendulum`,
+        themes: ['paper', 'sepia', 'dark'],
+        initialTheme: 'paper',
+      });
+      bindPreviewStage(anatomyHost);
+      bindAnatomyOverlay(anatomyHost);
+    }
+
+    const compareHost = document.getElementById('root-compare-host');
+    if (compareHost) {
+      const blandCard = `<div class="cmp-card">` +
+        `<div class="cmp-k">Register 1 · textbook-pure (bland)</div>` +
+        `<div class="cmp-t">Calm Reference Plate</div>` +
+        `<div class="cmp-row"><span class="cmp-badge">paper-ink</span><span>0% wobble</span><span>steady damping</span></div>` +
+        `</div>`;
+      const quirkyCard = `<div class="cmp-card quirky">` +
+        `<div class="cmp-k">Register 3 · bugged-sketchbook (default)</div>` +
+        `<div class="cmp-t">Tactile Ink Sketchbook</div>` +
+        `<div class="cmp-row"><span class="cmp-badge">pencil-wash</span>${statusOrb('pulse', { label: 'Live probe', elapsed: 0.7 })}</div>` +
+        `</div>`;
+      compareHost.innerHTML = compareCurtain({
+        id: 'root-compare-curtain',
+        beforeLabel: 'Textbook Pure',
+        afterLabel: 'Bugged Sketchbook',
+        beforeHtml: blandCard,
+        afterHtml: quirkyCard,
+        label: 'Compare Textbook Pure and Bugged Sketchbook registers',
+      });
+      bindCompareCurtain(compareHost);
+    }
+  </script>
 </body>
 </html>

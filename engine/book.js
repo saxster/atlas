@@ -7,6 +7,7 @@ import { createStage, bindPlaybackLifecycle, smooth, ease, clamp01, mountShareBu
 import { bindProse, foilCard } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
 import { renderComicStripHTML } from './comic.js';
+import { statusOrb } from './diegetic.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -118,7 +119,7 @@ export function startBook(chapter) {
     closeMolecule();
     const panel = document.createElement('div');
     panel.className = `molpanel ${cls}`.trim();
-    panel.innerHTML = `<div class="molhead"><span class="kicker">${kicker}</span><button type="button" class="close">Close</button></div><div class="molview"><p class="molnote">${loadingText}</p></div>`;
+    panel.innerHTML = `<div class="molhead"><span class="kicker">${kicker}</span><button type="button" class="close">Close</button></div><div class="molview"><div class="molnote">${statusOrb('orbit', { label: loadingText, pill: true })}</div></div>`;
     $('gl').parentElement.appendChild(panel);
     panel.querySelector('.close').onclick = () => closeMolecule(true);
     panel.querySelector('.close').focus();

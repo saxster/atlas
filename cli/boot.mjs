@@ -193,6 +193,7 @@ export const TARGETS = [
         'planArea', 'planBounds', 'planPose', 'logFovLerp', 'glide',
         'cubicBezier', 'bez', 'rubberband', 'projectMomentum', 'stagger', 'dwell', 'pingPong', 'anticipate', 'followThrough', 'pulseBeat', 'posterizeTime',
         'camDolly', 'camZoom', 'camOrbit', 'camCrane', 'camDollyZoom', 'camHandheld',
+        'MOTION_FEELS', 'MOTION_PRESETS', 'normalizeMotionFeel', 'applyMotionFeel', 'createMotionGovernor',
       ],
     },
     invariants: [
@@ -229,6 +230,7 @@ export const TARGETS = [
         'textAdvanceEm', 'scale', 'chart', 'samples', 'moveCursor', 'moveTangent', 'setLivePath',
         'interpViewBox', 'focusViewBox', 'samplePolyline', 'beadSlots', 'pathBeads', 'sequenceLanes',
         'waterfallWalk', 'waterfallChart', 'sankeyLayout', 'sankeyChart',
+        'spanTimelineLayout', 'spanTimeline', 'bindSpanTimeline', 'setSpanTimelineCursor',
       ],
       '@saxster/atlas/theme.js': ['readTheme', 'KYM', 'BYRNE_THEME', 'parseColor', 'compositeOver', 'srgbLuminance', 'wcagContrast', 'auditTheme'],
     },
@@ -243,7 +245,7 @@ export const TARGETS = [
     summary: 'Reactive prose & visual-proof kit: Bret Victor 5px/step inline scrub(), discrete paramChip(), execution-traced codeBlock(), epistemic/diff badge(), lookalike foilCard(), step diffList(), byte-offset frameInspector(), live val(), Amit Patel [data-part] term(), Oliver Byrne SVG proof chips, and Nicky Case expandable aside().',
     triggers: ['scrubbable numbers', 'reactive prose', 'byrne chips', 'nutshell aside', 'inline scrubber', 'code block trace', 'parameter chip', 'lookalike foil', 'frame inspector', 'what changed diff'],
     modules: {
-      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'paramChip', 'codeBlock', 'badge', 'foilCard', 'diffList', 'frameInspector', 'bindProse'],
+      '@saxster/atlas/prose.js': ['scrub', 'val', 'term', 'byrne', 'aside', 'paramChip', 'codeBlock', 'badge', 'foilCard', 'diffList', 'frameInspector', 'bindProse', 'anatomyOverlay', 'bindAnatomyOverlay'],
       '@saxster/atlas/theme.js': ['BYRNE_THEME', 'auditTheme'],
     },
     invariants: [
@@ -270,9 +272,16 @@ export const TARGETS = [
     triggers: ['colorfigures', 'diegetic controls', 'isometric controls', 'ink ui', 'unit stepper', 'iso stack chart', 'pictures are the controls'],
     modules: {
       '@saxster/atlas/iso_kit.js': ['isoPt', 'isoPath', 'isoTextTransform', 'inkFilterDefs', 'isoSvg', 'isoBox', 'isoCyl', 'isoDiscSlot', 'isoCup', 'isoCoinStack', 'isoJar', 'isoCarton', 'isoPunchCard', 'isoTicket', 'isoKettle', 'isoOven', 'isoToaster', 'isoTray'],
-      '@saxster/atlas/diegetic.js': ['renderControl', 'updateControl', 'bindControls', 'mountControlModeBar', 'createAutoplayDirector', 'ensureInkChromeDefs'],
+      '@saxster/atlas/diegetic.js': [
+        'renderControl', 'updateControl', 'bindControls', 'mountControlModeBar', 'createAutoplayDirector', 'ensureInkChromeDefs',
+        'STATUS_ORB_VARIANTS', 'statusOrb', 'compareCurtain', 'bindCompareCurtain', 'previewStage', 'bindPreviewStage',
+        'mountFloatingDock', 'createUndoStack', 'showActionReceipt', 'stepSpaceDeck', 'mountSpaceDeck',
+      ],
       '@saxster/atlas/chart.js': ['computeBarDelta', 'isoStackChart', 'updateIsoStackChart'],
-      '@saxster/atlas/theme.js': ['ACCENT_SWATCHES', 'deriveAccentTokens', 'applyAccentTokens', 'mountSwatchBar'],
+      '@saxster/atlas/theme.js': [
+        'ACCENT_SWATCHES', 'TONAL_STOPS', 'tonalScale', 'TYPOGRAPHY_PRESETS', 'RADIUS_PRESETS', 'controlRadius',
+        'deriveNeutralTokens', 'deriveAccentTokens', 'applyAccentTokens', 'mountSwatchBar',
+      ],
     },
     invariants: [
       'All numeric diegetic controls preserve synchronized input[data-key] and ARIA radiogroup/switch roles.',

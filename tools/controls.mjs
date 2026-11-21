@@ -101,10 +101,12 @@ await wait(250);
 const searchState = await p.evaluate(() => {
   const titles = [...document.querySelectorAll('#atlas-search-results .sr-title')].map(e => e.textContent);
   const whys = [...document.querySelectorAll('#atlas-search-results .sr-why')].map(e => e.textContent);
-  return { titles, whys };
+  const foot = document.querySelector('.search-modal .search-foot')?.textContent || '';
+  return { titles, whys, foot };
 });
-check('search: modal opens on /examples/ and surfaces both direct LC oscillations hit and 1-hop SHM analogy (.sr-why)',
-  searchState.titles.includes('LC oscillations') && searchState.titles.includes('The SHM equation') && searchState.whys.some(w => w.startsWith('Compare ·')));
+check('search: modal opens on /examples/, renders keyboard legend & surfaces direct LC oscillations hit and 1-hop SHM analogy (.sr-why)',
+  searchState.titles.includes('LC oscillations') && searchState.titles.includes('The SHM equation')
+  && searchState.whys.some(w => w.startsWith('Compare ·')) && searchState.foot.includes('Esc'));
 await p.keyboard.press('Escape');
 await wait(100);
 

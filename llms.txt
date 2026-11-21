@@ -1,0 +1,48 @@
+# @saxster/atlas
+
+> Paper-and-ink 3D and 2D interactive teaching figures for any subject: a pure checked `model.js`, independent verification in `checks.mjs`, 6 pedagogical grammars, 10 creator voices, stateless `?render` video/still tours, and textbook embeds. Zero runtime dependencies beyond `three`.
+
+## Quickstart
+
+```bash
+npm install github:saxster/atlas three
+npx atlas new <subject>/<id> --grammar machine
+npx atlas boot <grammar|kit|voice>
+npx atlas check examples/<subject>/<id>
+```
+
+## 6 Grammars
+
+- `book` (`engine/book.js`): scroll-turned chapters with 3D camera choreography, breakdowns, practice questions, and embeds.
+- `machine` (`engine/machine.js`): numbered step sequences, Manual/Auto playback, optional `cuts: ['solid', 'xray', 'section']`.
+- `explorer` (`engine/explorer.js`): predict first, adjust sliders/controls, run seeded simulation + 2D live SVG charts.
+- `sandbox` (`engine/sandbox.js`): constructive play with presets, matrix inputs, piece palette, 3D dragging, and undo-over-confirm receipts.
+- `teardown` (`examples/minimal/teardown`): multi-part hardware/system disassembly & assembly plates.
+- `blueprint` (`examples/minimal/blueprint`): watertight CSG & orthographic architectural/floorplan construction with section cuts.
+
+## Engine Modules & Kits
+
+- `@saxster/atlas/stage.js`, `render.js`, `parts.js`, `prims.js`, `cad_kit.js`: Three.js paper-and-ink renderer, 5 art mediums, flush-part `idOff` seams, `RectSolid` CSG, STEM 2D-to-3D compilers, and 3D `fieldLines` / `flowBeads`.
+- `@saxster/atlas/draft_kit.js` & `iso_kit.js`: pure 2D orthographic construction plates (`DRAFT_STANDARD`) and 25 keylined 2.5D isometric primitives.
+- `@saxster/atlas/diegetic.js`: 8 illustrated control schemas, `statusOrb`, `compareCurtain`, `previewStage`, `mountFloatingDock`, `createUndoStack`, `showActionReceipt`, and `mountSpaceDeck`.
+- `@saxster/atlas/chart.js`: 2D SVG charts (`moveCursor`, `moveTangent`, `setLivePath`), `waterfallChart`, `sankeyChart`, `sequenceLanes`, `isoStackChart`, and nested `spanTimeline`.
+- `@saxster/atlas/prose.js`: Bret Victor `scrub`, `val`, `term`, `byrne`, `aside`, `paramChip`, `codeBlock`, `foilCard`, `diffList`, `frameInspector`, and `anatomyOverlay`.
+- `@saxster/atlas/theme.js` & `motion.js`: perceptual `tonalScale`, WCAG-clamped `deriveAccentTokens`, optional `tintNeutrals`, `TYPOGRAPHY_PRESETS`, `controlRadius`, `mountThemeStudio`, 31 `eases`, `rubberband`, `projectMomentum`, `createMotionGovernor`, and decoupled `MOTION_FEELS`.
+- `@saxster/atlas/solvers.js`, `kinematics.js`, `sound.js`, `moments.js`: pure domain-agnostic solvers, kinematics, opt-in WebAudio, and lesson moments.
+
+## Published Examples (58 Figures & Chapters + Showcases)
+
+- **Atlas of Biology** (`examples/biology/`): 7 figures/chapters — cells, molecules and living machines
+- **Atlas of Chemistry** (`examples/chemistry/`): 6 figures/chapters — orbitals, molecules, reactions and energy
+- **Atlas of Critical Thinking** (`examples/critical-thinking/`): 9 figures/chapters — arguments, denominators, causal inference and evidence
+- **Atlas of Economics** (`examples/economics/`): 5 figures/chapters — money, markets and growth
+- **Atlas of Mathematics** (`examples/maths/`): 8 figures/chapters — trigonometry, calculus, linear algebra, differential equations and Fourier series
+- **Atlas of Physics** (`examples/physics/`): 18 figures/chapters —
+- **Atlas of Statistics** (`examples/statistics/`): 5 figures/chapters — probability, sampling and inference
+- **Corner Atelier** (`examples/ink-ui/`): 24 live 2.5D ink widgets, Theme Studio, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
+- **Concepts & Threads** (`examples/concepts/`): cross-subject concept ledger & spatial thread board.
+
+## Docs
+
+- `llms-full.txt`: full combined API reference, 10 Creator Voices catalog, and verification rubric.
+- `docs/API.md`, `docs/voices/catalog.md`, `docs/decisions.md`, `docs/verification-rubric.md`.

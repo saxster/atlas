@@ -15,6 +15,8 @@ const MODULE_MAP = {
   '@saxster/atlas/draft_kit.js': path.join(ROOT, 'engine', 'draft_kit.js'),
   '@saxster/atlas/theme.js': path.join(ROOT, 'engine', 'theme.js'),
   '@saxster/atlas/iso_kit.js': path.join(ROOT, 'engine', 'iso_kit.js'),
+  '@saxster/atlas/motion.js': path.join(ROOT, 'engine', 'motion.js'),
+  '@saxster/atlas/prose.js': path.join(ROOT, 'engine', 'prose.js'),
   '@saxster/atlas/chart.js': path.join(ROOT, 'engine', 'chart.js'),
   '@saxster/atlas/diegetic.js': path.join(ROOT, 'engine', 'diegetic.js'),
   '@saxster/atlas/sound.js': path.join(ROOT, 'engine', 'sound.js'),
@@ -48,6 +50,8 @@ function buildBundle() {
     './draft_standard.js': '@saxster/atlas/draft_standard.js',
   });
   const isoSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/iso_kit.js'], 'utf8');
+  const motionSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/motion.js'], 'utf8');
+  const proseSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/prose.js'], 'utf8');
   const soundSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/sound.js'], 'utf8');
   const modelSrc = fs.readFileSync(MODULE_MAP['https://atlas.local/ink-ui/model.js'], 'utf8');
 
@@ -55,6 +59,8 @@ function buildBundle() {
   imports['@saxster/atlas/draft_kit.js'] = toDataUri(draftKitSrc);
   imports['@saxster/atlas/theme.js'] = toDataUri(themeSrc);
   imports['@saxster/atlas/iso_kit.js'] = toDataUri(isoSrc);
+  imports['@saxster/atlas/motion.js'] = toDataUri(motionSrc);
+  imports['@saxster/atlas/prose.js'] = toDataUri(proseSrc);
   imports['@saxster/atlas/sound.js'] = toDataUri(soundSrc);
   imports['https://atlas.local/ink-ui/model.js'] = toDataUri(modelSrc);
 
@@ -65,6 +71,7 @@ function buildBundle() {
 
   const diegeticSrc = rewriteRelativeImports(fs.readFileSync(MODULE_MAP['@saxster/atlas/diegetic.js'], 'utf8'), {
     './iso_kit.js': '@saxster/atlas/iso_kit.js',
+    './motion.js': '@saxster/atlas/motion.js',
   });
   imports['@saxster/atlas/diegetic.js'] = toDataUri(diegeticSrc);
 

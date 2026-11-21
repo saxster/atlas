@@ -163,6 +163,66 @@ check('#token-studio validates CSS ink colour, updates snippet/preview live & re
   && validUpdate.hostInk === '#0f3d3e' && resetInk === '#231e16',
   JSON.stringify({ invalidInk, hostInk: validUpdate.hostInk, resetInk }));
 
+// Floating dock inline expansion (Colour without SVG rebuild, Neutrals, Aa, Corners, Motion) + Patterns showcase
+const dockBeforeSvg = await p.evaluate(() => document.querySelector('#bento-grid svg') === document.querySelector('#bento-grid svg'));
+await p.click('.atlas-dock [data-dock-trigger="colour"]');
+const colourOpen = await p.$eval('.atlas-dock [data-dock-group="colour"]', el => el.dataset.open === 'true');
+const dockSvgPreserved = await p.evaluate(async () => {
+  const before = document.querySelector('#bento-grid svg');
+  document.querySelector('.atlas-dock [data-dock-opt="colour"][data-dock-val-opt="cobalt"]')?.click();
+  return document.querySelector('#bento-grid svg') === before && window.__atlas.accent === '#5a79c2';
+});
+await p.click('.atlas-dock [data-dock-trigger="neutrals"]');
+await p.click('.atlas-dock [data-dock-opt="neutrals"][data-dock-val-opt="true"]');
+await p.click('.atlas-dock [data-dock-trigger="type"]');
+await p.click('.atlas-dock [data-dock-opt="type"][data-dock-val-opt="technical"]');
+await p.click('.atlas-dock [data-dock-trigger="radius"]');
+await p.click('.atlas-dock [data-dock-opt="radius"][data-dock-val-opt="sharp"]');
+await p.click('.atlas-dock [data-dock-trigger="motion"]');
+await p.click('.atlas-dock [data-dock-opt="motion"][data-dock-val-opt="instant"]');
+const regState = await p.evaluate(() => ({
+  tint: document.documentElement.dataset.neutralTint,
+  type: document.documentElement.dataset.type,
+  radius: document.documentElement.dataset.radius,
+  motion: document.documentElement.dataset.motion,
+  auditOk: window.__atlas.auditCurrentTheme().ok,
+}));
+check('Floating dock expands inline, switches Colour/Neutrals/Aa/Corners/Motion without SVG rebuild & passes WCAG audit',
+  dockBeforeSvg && colourOpen && dockSvgPreserved && regState.tint === 'tinted' && regState.type === 'technical'
+  && regState.radius === 'sharp' && regState.motion === 'instant' && regState.auditOk,
+  JSON.stringify(regState));
+
+// Interactive CompareSlider, SpanTimeline, PreviewStage & SpaceDeck in #patterns
+await p.focus('#ink-compare .cc-handle');
+await p.keyboard.press('ArrowRight');
+const cmpVal = await p.$eval('#ink-compare .cc-handle', el => el.getAttribute('aria-valuenow'));
+
+await p.focus('#ink-span-timeline .st-row');
+await p.keyboard.press('End');
+const tlDetail = await p.$eval('#ink-span-timeline [data-st-detail]', el => el.textContent);
+
+await p.click('#pattern-compare-stage [data-ps-device]');
+await p.click('#pattern-compare-stage [data-ps-theme]');
+await p.click('#pattern-compare-stage [data-ps-view="code"]');
+const psState = await p.evaluate(() => {
+  const b = document.querySelector('#pattern-compare-stage .ps-body');
+  return {
+    device: b?.dataset.psDevice,
+    theme: b?.dataset.psTheme,
+    codeVis: !document.querySelector('#pattern-compare-stage .ps-code')?.hidden,
+  };
+});
+
+await p.focus('#pattern-deck-host .sd-viewport');
+const deckBefore = await p.evaluate(() => window.__atlas.patterns.deck.getState());
+await p.keyboard.press('ArrowRight');
+const deckAfter = await p.evaluate(() => window.__atlas.patterns.deck.getState());
+
+check('Patterns showcase: CompareSlider, SpanTimeline End nav, PreviewStage toggles & SpaceDeck keyboard navigation',
+  cmpVal === '55' && tlDetail.includes('Critics') && psState.device === 'phone' && psState.theme === 'sepia' && psState.codeVis
+  && deckAfter.col !== deckBefore.col,
+  JSON.stringify({ cmpVal, tlDetail, psState, deckBefore: deckBefore.col, deckAfter: deckAfter.col }));
+
 // ?render seek(t) order-independence
 await p.goto(`${base}/examples/ink-ui/?render`, { waitUntil: 'networkidle0' });
 await p.waitForFunction('window.seek');
