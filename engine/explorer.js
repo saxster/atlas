@@ -18,6 +18,8 @@ import { speedLabel } from './machine.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playClick, playBoop } from './sound.js';
 import { renderControl, updateControl, bindControls, mountControlModeBar } from './diegetic.js';
+import { mountStageOverlay, decodeReviewPins } from './review.js';
+import { mountPresentMode } from './present.js';
 
 function applyChartSlot(el, res, state, params) {
   if (!el || !res) return;
@@ -36,8 +38,9 @@ const END = 1.5;
 export function startExplorer(figure) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const narrowQ = matchMedia('(max-width: 900px)');
-  const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
+  const Q = new URLSearchParams(location.search), RENDER = Q.has('render'), EMBED = Q.has('embed');
   if (RENDER) document.documentElement.classList.add('render');
+  if (EMBED) document.documentElement.classList.add('embed');
   let S = null, raf = 0, frameReady = false, last = performance.now();
   const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
     onChange(st) {
@@ -175,6 +178,8 @@ export function startExplorer(figure) {
   });
   // PAGES may depend on the settings (a taller board needs the camera further back): a function of params, or a list
   const fig = () => ({ ...figure, PAGES: (typeof figure.PAGES === 'function' ? figure.PAGES(params) : figure.PAGES).map(p => ({ look: {}, ...p })), buildWorld: E => figure.buildWorld(E, params), state: (c, r) => figure.state(c, r, params) });
+  let overlay = null;
+  let lastState = null;
   function build() {
     if (S) {
       S.destroy();
@@ -189,12 +194,14 @@ export function startExplorer(figure) {
       pl.innerHTML = `<button type="button" class="close">Close</button><div class="kicker">Closer</div><h2>${ud.title}</h2><p class="sub">${ud.sub || ''}</p><p>${figure.PLATES[key].text}</p>`;
       pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
     };
+    overlay?.syncStage();
     if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport, sceneReport: S.sceneReport });
   }
   build();
 
   function draw(now, dt, c) {
     const state = S.step({ now, dt, s: 0, litPage: 0, running, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
+    lastState = state;
     $('readout').textContent = figure.readout(state, params);
     (figure.chips || []).forEach((ch, i) => {
       const txt = c > 0 || ran ? String(ch.value(state, params)) : '–';
@@ -219,8 +226,31 @@ export function startExplorer(figure) {
     if (!RENDER && !life.hidden) raf = requestAnimationFrame(frame);
     else raf = 0;
   }
+  let presentCtl = null;
+  if (!RENDER && !EMBED && (Q.has('inspect') || Q.has('review') || Q.has('reviewData'))) {
+    overlay = mountStageOverlay(() => S, $('gl').parentElement, {
+      figureId: location.pathname.split('/').filter(Boolean).slice(-2).join('/'),
+      getPage: () => 0,
+      getTotalPages: () => 1,
+      getClock: () => S?.clock || 0,
+      getModelState: () => lastState,
+      initialMode: Q.has('inspect') ? 'inspect' : 'pins',
+      initialPins: decodeReviewPins(Q.get('reviewData')),
+      reviewUrl: Q.get('review'),
+    });
+  }
+  if (!EMBED) presentCtl = mountPresentMode({
+    kind: 'explorer',
+    title: figure.title,
+    count: 1,
+    getIndex: () => 0,
+    getSlideMeta: () => ({ kicker: `Fig. ${figure.no} · Explorer`, title: figure.title, sub: figure.question, notesHtml: `<p><b>The big idea:</b> ${figure.bigIdea}</p>` }),
+    getStage: () => S,
+    initialActive: Q.has('present'),
+    renderOnly: RENDER,
+  });
   document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; last = t; if (RENDER) draw(0, 0, 0); else frame(t); }));
-  window.__atlas = { E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, reset, shareUrl,
+  window.__atlas = { E: S.E, S, N: 1, overlay, present: presentCtl, setPresent: f => presentCtl?.setActive(f), togglePresent: () => presentCtl?.toggle(), labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, reset, shareUrl,
     get state() { return { clock, running, predicted, ran }; }, get clock() { return S.clock; } };
   if (RENDER) {
     const D = duration() + END;

@@ -2,6 +2,7 @@
 // horizontal page overflow, collapsed SVGs, and clipped SVG paint using a staged overflow-release pixel-diff oracle
 // (adapted from cathrynlavery/diagram-design lint-render.py). Returns the number of findings.
 import { serve, launch, open } from './render.mjs';
+import { createReviewPin } from '../engine/review.js';
 
 const DIFF_JS = async ({ beforeB64, afterB64, box, edgeGuard, channelThreshold }) => {
   const load = async b64 => {
@@ -195,14 +196,23 @@ export async function clipOnPage(page, { edgeGuard = 2, channelThreshold = 16, m
 
 export async function clip(list, opts = {}) {
   const { server, base } = serve(), browser = await launch();
+  const pins = opts.pins || null;
   let total = 0;
   try {
     for (const c of list) for (const [w, h, tag] of [[1440, 900, 'desk'], [390, 844, 'phone']]) {
       const R = await open(browser, base, c, w, h), found = [];
       for (let i = 0; i < R.pages; i++) {
-        await R.seek(R.mid(i));
+        const t = R.mid(i);
+        await R.seek(t);
         const stepFindings = await clipOnPage(R.page, opts);
-        for (const f of stepFindings) found.push(`p${i} ${f}`);
+        for (const f of stepFindings) {
+          const text = `p${i} ${f}`;
+          found.push(text);
+          pins?.push(createReviewPin({
+            figure: c, page: i, t, source: 'clip', severity: 'error', viewport: tag,
+            xPct: 50, yPct: 50, text,
+          }));
+        }
       }
       total += found.length;
       console.log(c.padEnd(24), tag.padEnd(6), found.length ? `${found.length} CLIP FINDINGS\n  ` + found.join('\n  ') : 'clean');

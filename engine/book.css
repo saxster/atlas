@@ -412,3 +412,18 @@ html.embed .playbtn-embed { position: absolute; top: 16px; left: 50%; transform:
 .molnote { padding: 20px; font: 14px var(--sans); color: var(--muted); }
 .parts button.shared-anchor { border-color: var(--ink); box-shadow: inset 2px 0 0 var(--ink); }
 
+/* ?present: full-bleed interactive 16:9 lecture canvas while preserving .scroll-space & #plate breakdowns */
+html.present .topbar, html.present .leaf, html.present .spine, html.present .scroll-cue { display: none; }
+html.present .scroll-space { position: absolute; opacity: 0; pointer-events: none; }
+html.present body { overflow: hidden; background: var(--card); }
+html.present .book { position: fixed; inset: 0; transform: none; width: 100vw; height: 100vh; height: 100dvh; display: block; perspective: none; }
+html.present .page.left { display: none; }
+html.present .book:has(.plate:not([hidden])) .page.left {
+  display: block; position: fixed; left: 20px; top: 20px; bottom: 88px; width: min(440px, calc(100vw - 40px));
+  z-index: 25; border-radius: 14px; overflow: auto;
+}
+html.present .page.left .sheet, html.present .page.left .folio { display: none; }
+html.present .page.right { position: absolute; inset: 0; border-radius: 0; box-shadow: none; }
+html.present .corner.br { bottom: 84px; }
+html.present .corner.bl { display: none; }
+

@@ -29,3 +29,20 @@ Load any **Creator Voice** with `npx atlas boot <voice>` alongside `npx atlas bo
 
 ## Register 4 — Wild, Whacky & Over-the-Top (Mad Atelier Maximalism · `quirk: 'wild'`)
 - **`whacky-lab`** (`docs/voices/whacky-lab.md`) — *Far Side* × *Scott Adams* × *Incredible Machine* counterfactual lab: `quirk: 'wild'` (`uQuirk = 1.0`, simultaneous Moebius comic cross-hatching + CMYK Risograph pop dots + 12 Hz stop-motion line boil + double-inked keylines), rubber-hose `squashStretch` & `anticipate`, `camDollyZoom`, and full procedural WebAudio soundscape.
+
+## Single-Source Voice Matrix (`engine/voices.json` → `engine/voices.js`)
+
+<!-- BEGIN GENERATED: voice-matrix -->
+| Voice | Reg | Quirk | Medium | Feel | Type | Corners | Accent | Paper / Card |
+| --- | :---: | --- | --- | --- | --- | --- | --- | --- |
+| `textbook-pure` | R1 | `bland` | `paper-ink` | `smooth` | `editorial` | `sharp` | `#4664ad` | `#f5f5f3` / `#ffffff` |
+| `ciechanowski-mechanism` | R2 | `atelier` | `ciechanow` | `smooth` | `clean` | `soft` | `#2d6f96` | `#f0f0ee` / `#f8f8f8` |
+| `byrne-visual-proof` | R2 | `atelier` | `paper-ink` | `smooth` | `editorial` | `sharp` | `#d63a24` | `#ece5d5` / `#f4efe2` |
+| `plotter-draft` | R2 | `atelier` | `paper-ink` | `instant` | `technical` | `sharp` | `#2c5697` | `#f2f2ef` / `#fbfbfa` |
+| `moebius-printmaking` | R2 | `atelier` | `moebius` | `smooth` | `editorial` | `soft` | `#2f5f9e` | `#eeece5` / `#f6f4ee` |
+| `redblob-reactive-prose` | R2 | `atelier` | `paper-ink` | `smooth` | `clean` | `soft` | `#288560` | `#f2f2ef` / `#fbfbfa` |
+| `bugged-sketchbook` | R3 | `slightly-quirky` | `pencil-wash` | `spring` | `editorial` | `soft` | `#d95638` | `#f3eee2` / `#faf7ef` |
+| `ncase-playable-toy` | R3 | `playful` | `risograph` | `spring` | `clean` | `round` | `#c83b32` | `#efe8d8` / `#f7f2e7` |
+| `toybox-scale-joy` | R3 | `playful` | `risograph` | `spring` | `clean` | `round` | `#a86d0c` | `#f6efe0` / `#fffcf5` |
+| `whacky-lab` | R4 | `wild` | `moebius` | `spring` | `technical` | `round` | `#7654a3` | `#f3ead8` / `#fffaf0` |
+<!-- END GENERATED: voice-matrix -->

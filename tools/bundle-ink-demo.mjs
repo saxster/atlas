@@ -13,6 +13,7 @@ const OUT_FILE = path.join(INK_DIR, 'atelier-ink-ui.html');
 const MODULE_MAP = {
   '@saxster/atlas/draft_standard.js': path.join(ROOT, 'engine', 'draft_standard.js'),
   '@saxster/atlas/draft_kit.js': path.join(ROOT, 'engine', 'draft_kit.js'),
+  '@saxster/atlas/voices.js': path.join(ROOT, 'engine', 'voices.js'),
   '@saxster/atlas/theme.js': path.join(ROOT, 'engine', 'theme.js'),
   '@saxster/atlas/iso_kit.js': path.join(ROOT, 'engine', 'iso_kit.js'),
   '@saxster/atlas/motion.js': path.join(ROOT, 'engine', 'motion.js'),
@@ -43,19 +44,23 @@ function buildBundle() {
   // Encode engine leaf modules first, then modules that import them
   const imports = {};
   const draftStdSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/draft_standard.js'], 'utf8');
+  const voicesSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/voices.js'], 'utf8');
+  const motionSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/motion.js'], 'utf8');
   const draftKitSrc = rewriteRelativeImports(fs.readFileSync(MODULE_MAP['@saxster/atlas/draft_kit.js'], 'utf8'), {
     './draft_standard.js': '@saxster/atlas/draft_standard.js',
   });
   const themeSrc = rewriteRelativeImports(fs.readFileSync(MODULE_MAP['@saxster/atlas/theme.js'], 'utf8'), {
     './draft_standard.js': '@saxster/atlas/draft_standard.js',
+    './voices.js': '@saxster/atlas/voices.js',
+    './motion.js': '@saxster/atlas/motion.js',
   });
   const isoSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/iso_kit.js'], 'utf8');
-  const motionSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/motion.js'], 'utf8');
   const proseSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/prose.js'], 'utf8');
   const soundSrc = fs.readFileSync(MODULE_MAP['@saxster/atlas/sound.js'], 'utf8');
   const modelSrc = fs.readFileSync(MODULE_MAP['https://atlas.local/ink-ui/model.js'], 'utf8');
 
   imports['@saxster/atlas/draft_standard.js'] = toDataUri(draftStdSrc);
+  imports['@saxster/atlas/voices.js'] = toDataUri(voicesSrc);
   imports['@saxster/atlas/draft_kit.js'] = toDataUri(draftKitSrc);
   imports['@saxster/atlas/theme.js'] = toDataUri(themeSrc);
   imports['@saxster/atlas/iso_kit.js'] = toDataUri(isoSrc);

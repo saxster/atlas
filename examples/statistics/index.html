@@ -22,34 +22,55 @@
   </section>
   <h2 class="section">Probability</h2>
   <section class="shelf">
-    <a class="card" href="galton/">
+    <div class="card-slot"><a class="card" href="galton/">
       <div class="no"><span>No. 01</span><span>explorer</span></div>
       <h2>Where 500 balls land</h2><i>coin tosses add up to a bell</i>
       <img src="img/galton.jpg" alt="A board of pegs with balls piled in slots beneath it, the pile following a bell curve">
-    </a>
-    <a class="card" href="bayes/">
+    </a><div class="card-tools"><button type="button" data-card-remix="statistics/galton" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="statistics/galton">Embed</button><a href="galton/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="bayes/">
       <div class="no"><span>No. 02</span><span>explorer</span></div>
       <h2>Why a 95 % accurate test can still be mostly wrong</h2><i>base rates, false positives and Bayes’ rule</i>
       <img src="img/bayes.jpg" alt="A 3D unit square of 1,000 people split into True Positives (red) and False Positives (amber) alongside the isolated positive-test bar P(D|+)">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="statistics/bayes" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="statistics/bayes">Embed</button><a href="bayes/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Inference and error</h2>
   <section class="shelf">
-    <a class="card" href="error/">
+    <div class="card-slot"><a class="card" href="error/">
       <div class="no"><span>No. 03</span><span>explorer</span></div>
       <h2>Repeated readings and the bell of error</h2><i>random spread, systematic bias and σ / √n</i>
       <img src="img/error.jpg" alt="Repeated measurements piling into histogram columns beneath a normal bell curve around μ = 100.0 mm with a ±σ/√k standard-error bar">
-    </a>
-    <a class="card" href="hypothesis/">
+    </a><div class="card-tools"><button type="button" data-card-remix="statistics/error" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="statistics/error">Embed</button><a href="error/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="hypothesis/">
       <div class="no"><span>No. 04</span><span>explorer</span></div>
       <h2>Signal, noise and the 5 % line</h2><i>p-values, statistical power and 95 % confidence intervals</i>
       <img src="img/hypothesis.jpg" alt="Overlapping null H₀ and alternative H₁ sampling bell curves beside a forest plot of 20 replicated 95% confidence intervals">
-    </a>
-    <a class="card" href="effort-transfer/">
+    </a><div class="card-tools"><button type="button" data-card-remix="statistics/hypothesis" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="statistics/hypothesis">Embed</button><a href="hypothesis/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="effort-transfer/">
       <div class="no"><span>No. 05</span><span>explorer</span></div>
       <h2>Rewarding effort &amp; pooling replications</h2><i>why four n ≈ 240 studies flicker while N = 1,457 meta-analysis resolves d = 0.22</i>
       <img src="img/effort-transfer.jpg" alt="A 5-study meta-analysis forest plot (N = 1,457) beside 50-trial voluntary challenge-seeking curves comparing effort-reinforced learners against controls">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="statistics/effort-transfer" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="statistics/effort-transfer">Embed</button><a href="effort-transfer/?present">Slides</a></div></div>
   </section>
+  <div class="shelf-toast" id="shelf-toast" role="status" aria-live="polite"></div>
+  <script>
+    document.addEventListener('click', async e => {
+      const toast = document.getElementById('shelf-toast');
+      const rBtn = e.target.closest('[data-card-remix]');
+      if (rBtn) {
+        const fig = rBtn.dataset.cardRemix, g = rBtn.dataset.cardGrammar || 'machine';
+        const txt = 'Remix @saxster/atlas figure examples/' + fig + '/ (' + g + '). First run `npx atlas boot ' + g + '` and preserve pure model.js + checks.mjs.';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied remix prompt for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+        return;
+      }
+      const eBtn = e.target.closest('[data-card-embed]');
+      if (eBtn) {
+        const fig = eBtn.dataset.cardEmbed;
+        const txt = ':::live atlas ' + fig + ' #0\n<!-- or HTML iframe -->\n<iframe src="https://saxster.github.io/atlas/examples/' + fig + '/?embed&page=0" loading="lazy" style="width:100%;height:480px;border:0"></iframe>';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied embed snippet for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+      }
+    });
+  </script>
 </body>
 </html>

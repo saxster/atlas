@@ -1032,6 +1032,10 @@ export function showActionReceipt(anchorEl, {
 }
 
 // ---------- 6. 2D Axis-Locked Space Deck Navigator (No Wrap + Edge Rubberband) ----------
+export function clampSpaceDeckZoom(z) {
+  return Math.round(clamp(Number(z) || 1, 0.6, 1.4) * 100) / 100;
+}
+
 export function stepSpaceDeck(state = { row: 0, col: 0 }, { dRow = 0, dCol = 0, rowLengths = [] } = {}) {
   if (!Array.isArray(rowLengths) || !rowLengths.length) {
     return { row: 0, col: 0, moved: false, hitEdge: true };
@@ -1070,6 +1074,7 @@ export function mountSpaceDeck(containerEl, {
 
   const rowLengths = rows.map(r => Math.max(1, (r.items || []).length));
   let pos = stepSpaceDeck({ row: initialRow, col: initialCol }, { rowLengths });
+  let zoom = 1.0;
 
   const vp = document.createElement('div');
   vp.className = 'sd-viewport';
@@ -1094,7 +1099,10 @@ export function mountSpaceDeck(containerEl, {
 
   vp.innerHTML = `<div class="sd-hud">` +
     `<div class="sd-crumb"><span class="sd-dot" data-sd-dot></span><strong data-sd-row-lbl></strong><span data-sd-counter></span></div>` +
-    `<div class="sd-nav" aria-label="Directional controls">` +
+    `<div class="sd-nav" aria-label="Directional and zoom controls">` +
+    `<span class="sd-zoom" data-sd-zoom>100%</span>` +
+    `<button type="button" data-sd-zoom-act="out" aria-label="Zoom out">−</button>` +
+    `<button type="button" data-sd-zoom-act="in" aria-label="Zoom in">+</button>` +
     `<button type="button" data-sd-dir="left" aria-label="Previous item">←</button>` +
     `<button type="button" data-sd-dir="up" aria-label="Previous space">↑</button>` +
     `<button type="button" data-sd-dir="down" aria-label="Next space">↓</button>` +
@@ -1115,6 +1123,7 @@ export function mountSpaceDeck(containerEl, {
   const rowLbl = vp.querySelector('[data-sd-row-lbl]');
   const counterEl = vp.querySelector('[data-sd-counter]');
   const footEl = vp.querySelector('[data-sd-foot]');
+  const zoomEl = vp.querySelector('[data-sd-zoom]');
 
   function activeItem() {
     return rows[pos.row]?.items?.[pos.col] || null;
@@ -1125,15 +1134,19 @@ export function mountSpaceDeck(containerEl, {
     const it = activeItem();
     const color = r?.color || 'var(--accent, #ef6a4c)';
     vp.style.setProperty('--sd-col', color);
-    if (ring) ring.style.borderColor = color;
+    if (ring) {
+      ring.style.borderColor = color;
+      ring.style.transform = `translate(-50%, -50%) scale(${zoom})`;
+    }
     if (dot) dot.style.background = color;
     if (rowLbl) rowLbl.textContent = r?.label || '';
     if (counterEl) counterEl.textContent = `${pos.col + 1} / ${rowLengths[pos.row]}`;
+    if (zoomEl) zoomEl.textContent = `${Math.round(zoom * 100)}%`;
     if (footEl) footEl.textContent = it ? `${it.title}${it.sub ? ` — ${it.sub}` : ''}` : '';
 
     const tx = -(pos.col * STEP_X + CARD_W * 0.5) + dragX;
     const ty = -(pos.row * STEP_Y + CARD_H * 0.5) + dragY;
-    if (track) track.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0)`;
+    if (track) track.style.transform = `scale(${zoom}) translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0)`;
 
     vp.querySelectorAll('.sd-card').forEach(el => {
       const on = +el.dataset.sdRow === pos.row && +el.dataset.sdCol === pos.col;
@@ -1247,7 +1260,21 @@ export function mountSpaceDeck(containerEl, {
     }
   };
 
+  function setZoom(z) {
+    const next = clampSpaceDeckZoom(z);
+    if (next === zoom) return zoom;
+    zoom = next;
+    renderPos(0, 0);
+    onChange?.({ ...pos, zoom, rowObj: rows[pos.row], item: activeItem() });
+    return zoom;
+  }
+
   const onClick = e => {
+    const zBtn = e.target.closest?.('[data-sd-zoom-act]');
+    if (zBtn && vp.contains(zBtn)) {
+      setZoom(zoom + (zBtn.dataset.sdZoomAct === 'in' ? 0.12 : -0.12));
+      return;
+    }
     const dirBtn = e.target.closest?.('[data-sd-dir]');
     if (!dirBtn || !vp.contains(dirBtn)) return;
     const d = dirBtn.dataset.sdDir;
@@ -1258,6 +1285,12 @@ export function mountSpaceDeck(containerEl, {
   };
 
   const onKey = e => {
+    if (e.target?.closest?.('input, textarea, select, [contenteditable]')) return;
+    if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setZoom(zoom + 0.12); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === '-') { e.preventDefault(); setZoom(zoom - 0.12); return; }
+    if (e.shiftKey && (e.code === 'Digit0' || e.key === ')')) { e.preventDefault(); setZoom(1.0); return; }
+    if (e.shiftKey && (e.code === 'Digit1' || e.key === '!')) { e.preventDefault(); setZoom(0.72); return; }
+    if (e.shiftKey && (e.code === 'Digit2' || e.key === '@')) { e.preventDefault(); setZoom(1.12); return; }
     if (e.key === 'ArrowLeft') { e.preventDefault(); step(0, -1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); step(0, 1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); step(-1, 0); }
@@ -1284,7 +1317,8 @@ export function mountSpaceDeck(containerEl, {
     el: vp,
     goto: (r, c) => goto(r, c, true),
     step,
-    getState: () => ({ ...pos, item: activeItem() }),
+    setZoom,
+    getState: () => ({ ...pos, zoom, item: activeItem() }),
     destroy() {
       stage.removeEventListener('pointerdown', onDown);
       stage.removeEventListener('pointermove', onMove);

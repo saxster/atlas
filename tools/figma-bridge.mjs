@@ -7,7 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PALETTE, ATLAS_INKS } from '../engine/parts.js';
-import { BYRNE_THEME, auditTheme } from '../engine/theme.js';
+import { BYRNE_THEME, auditTheme, deriveAccentTokens } from '../engine/theme.js';
+import { listVoices } from '../engine/voices.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -899,6 +900,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const [cmd, arg1, arg2] = process.argv.slice(2);
   if (cmd === 'tokens') {
     console.log(JSON.stringify(exportTokens(), null, 2));
+  } else if (cmd === 'voices') {
+    const out = listVoices().map(v => {
+      const tokens = deriveAccentTokens(v.accent, {
+        page: v.paper,
+        card: v.card,
+        ink: v.ink,
+        tintNeutrals: v.tintNeutrals,
+        type: v.typography,
+        radius: v.radius,
+      });
+      return { ...v, tokens };
+    });
+    console.log(JSON.stringify({ voices: out }, null, 2));
   } else if (cmd === 'audit') {
     if (!arg1) { console.error('Usage: node tools/figma-bridge.mjs audit <vars.json>'); process.exit(2); }
     const raw = JSON.parse(fs.readFileSync(arg1, 'utf8'));
@@ -940,6 +954,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   } else {
     console.log(`Usage:
   node tools/figma-bridge.mjs tokens                     emit 8-mode Figma Variables JSON
+  node tools/figma-bridge.mjs voices                     emit 10 single-source Creator Voices & WCAG tokens JSON
   node tools/figma-bridge.mjs audit <vars.json>          verify WCAG AA contrast on Figma variable modes or get_variable_defs JSON
   node tools/figma-bridge.mjs bundle <figure> [out-dir]  stage self-contained Code Layer bundle for send_code_to_figma
   node tools/figma-bridge.mjs svg-sheet [out.svg]        emit editable SVG Vector & 8-Voice Swatch Sheet for upload_assets

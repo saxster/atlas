@@ -56,7 +56,7 @@ if (problems.length) { for (const p of problems) console.log('FAIL', p); process
 const chips = c => c.shownIn.length
   ? c.shownIn.map(r => `<a href="${targets[r].href}"><span class="subj">${esc(NAMES[r.split('/')[0]])}</span>${esc(targets[r].label)}</a>`).join('')
   : '<span class="none">not shown yet</span>';
-const row = c => `      <li class="${c.shownIn.length ? '' : 'unshown'}" id="${c.id}"><div class="e">${c.formula}</div><div class="m"><div class="n">${esc(c.name)}<span class="home">${esc(NAMES[c.subject])}</span></div><div class="chips">${chips(c)}</div></div></li>`;
+const row = c => `      <li class="${c.shownIn.length ? '' : 'unshown'}" id="${c.id}"><div class="e">${c.formula}</div><div class="m"><div class="n">${esc(c.name)}<span class="home">${esc(NAMES[c.subject])}</span></div><div class="chips">${chips(c)}<button type="button" class="concept-remix" data-concept-remix="${esc(c.id)}" data-concept-name="${esc(c.name)}">Remix</button></div></div></li>`;
 
 const threads = THREADS.map(t => `  <section class="group thread" id="thread-${t.id}">
     <h3>${esc(t.name)}</h3>
@@ -94,7 +94,15 @@ const html = `<!doctype html>
   <section class="hero">
     <h1>One idea, many subjects.</h1>
     <p>Every idea in the atlases, and the figures that show it</p>
-    <div class="concept-filter-wrap"><input type="search" id="concept-filter" class="concept-filter" enterkeyhint="search" placeholder="Filter concepts, formulas, or subjects… (or press ⌘K)" aria-label="Filter concepts"></div>
+    <div class="concept-filter-wrap">
+      <input type="search" id="concept-filter" class="concept-filter" enterkeyhint="search" placeholder="Filter concepts, formulas, or subjects… (or press ⌘K)" aria-label="Filter concepts">
+      <div class="concept-status-bar" role="group" aria-label="Filter by figure coverage">
+        <button type="button" data-concept-status="all" aria-pressed="true">All (${total})</button>
+        <button type="button" data-concept-status="shown" aria-pressed="false">Shown (${shown})</button>
+        <button type="button" data-concept-status="gaps" aria-pressed="false">Gaps (${total - shown})</button>
+        <span id="concept-copy-status" role="status" aria-live="polite" style="font:500 11px/1 var(--mono);color:var(--accent-ink,var(--muted))"></span>
+      </div>
+    </div>
   </section>
   <nav><div class="in"><a href="#threads">Threads</a>${bySubject.map(b => `<a href="#${b.subject}">${esc(NAMES[b.subject])}</a>`).join('')}<a href="../physics/equations/">AP equation sheets</a></div></nav>
   <main>
@@ -103,6 +111,17 @@ ${threads}
   <h2 class="part">By subject</h2>
 ${subjectsHtml}
   </main>
+  <script>
+    document.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-concept-remix]');
+      if (!btn) return;
+      const name = btn.dataset.conceptName || btn.dataset.conceptRemix;
+      const txt = 'Build a new @saxster/atlas interactive figure teaching "' + name + '". First run \`npx atlas boot explorer\` and prove the pure model in model.js + checks.mjs.';
+      try { await navigator.clipboard?.writeText(txt); } catch {}
+      const st = document.getElementById('concept-copy-status');
+      if (st) { st.textContent = 'Copied prompt for ' + name; setTimeout(() => { st.textContent = ''; }, 2000); }
+    });
+  </script>
 </body>
 </html>
 `;

@@ -8,6 +8,8 @@ import { bindProse, foilCard } from './prose.js';
 import { mountSoundToggle, playBoop, playClick } from './sound.js';
 import { renderComicStripHTML } from './comic.js';
 import { statusOrb } from './diegetic.js';
+import { mountStageOverlay, decodeReviewPins } from './review.js';
+import { mountPresentMode } from './present.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -304,6 +306,8 @@ export function startBook(chapter) {
     $('figtitle').textContent = PAGES[i].fig;
     if (partsOf(i).length) $('gl').setAttribute('aria-label', `Figure ${chapter.no}${i ? '.' + i : ''}: ${PAGES[i].fig}. ${PAGES[i].alt || ''} The buttons under the text take it apart.`);
     [...$('dots').children].forEach((b, k) => b.setAttribute('aria-current', k === i));
+    overlay?.refreshPins();
+    presentCtl?.sync();
   }
   const goto = (i, now) => (now || begin(), scrollTo({ top: Math.max(0, Math.min(N - 1, i)) * pageH, behavior: life.reduced || now ? 'auto' : 'smooth' }));
   const fromHash = () => { const m = /^#(\d+)$/.exec(location.hash); return m && +m[1] < N ? +m[1] : null; };
@@ -507,9 +511,42 @@ export function startBook(chapter) {
     return u.toString();
   };
   if (!EMBED) mountShareButton(playB || document.querySelector('.pager'), shareUrl, 'playbtn sharebtn');
+  let overlay = null;
+  let presentCtl = null;
+  if (!RENDER && !EMBED && (Q.has('inspect') || Q.has('review') || Q.has('reviewData'))) {
+    overlay = mountStageOverlay(() => S, $('gl').parentElement, {
+      figureId: DIR,
+      getPage: () => Math.max(0, shown),
+      getTotalPages: () => N,
+      getClock: () => S?.clock || 0,
+      getModelState: () => lastState,
+      initialMode: Q.has('inspect') ? 'inspect' : 'pins',
+      initialPins: decodeReviewPins(Q.get('reviewData')),
+      reviewUrl: Q.get('review'),
+    });
+  }
+  if (!EMBED) {
+    presentCtl = mountPresentMode({
+      kind: 'book',
+      title: chapter.subject?.name || DIR,
+      count: N,
+      getIndex: () => Math.max(0, shown),
+      goTo: i => goto(i),
+      getSlideMeta: i => ({
+        kicker: PAGES[i]?.kicker || `Fig. ${chapter.no}${i ? '.' + i : ''}`,
+        title: PAGES[i]?.title || PAGES[i]?.fig || '',
+        sub: PAGES[i]?.sub || PAGES[i]?.alt || '',
+        notesHtml: PAGES[i]?.body || PAGES[i]?.sub || '',
+      }),
+      getStage: () => S,
+      initialActive: Q.has('present'),
+      renderOnly: RENDER,
+    });
+  }
+
   // the first frame drawn: the book can open now (cover.js)
   document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; frame(RENDER ? 0 : t); dispatchEvent(new Event('bookready')); }));
-  window.__atlas = { E, S, select, goto, N, shareUrl, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, get started() { return started; }, get clock() { return S.clock; }, get lastHandoff() { return lastHandoff; } };
+  window.__atlas = { E, S, select, goto, N, shareUrl, overlay, present: presentCtl, setPresent: f => presentCtl?.setActive(f), togglePresent: () => presentCtl?.toggle(), labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, get started() { return started; }, get clock() { return S.clock; }, get lastHandoff() { return lastHandoff; } };
   if (RENDER) {
     // every frame is a pure function of t: the page from the tour, the clock from t, the sway from t
     window.DURATION = DURATION;

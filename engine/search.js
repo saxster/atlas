@@ -381,20 +381,31 @@ function initSearch() {
 
   // Inline live filtering on examples/concepts/index.html if #concept-filter is present
   const filterInp = document.getElementById('concept-filter');
-  if (filterInp) {
-    filterInp.addEventListener('input', () => {
-      const tokens = filterInp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const statusBtns = [...document.querySelectorAll('[data-concept-status]')];
+  if (filterInp || statusBtns.length) {
+    let statusFilter = 'all';
+    const applyConceptFilters = () => {
+      const tokens = (filterInp?.value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
       for (const grp of document.querySelectorAll('main .group')) {
         let vis = 0;
         for (const li of grp.querySelectorAll('li')) {
           const text = li.textContent.toLowerCase();
-          const ok = tokens.every(tk => text.includes(tk));
+          const textOk = tokens.every(tk => text.includes(tk));
+          const isUnshown = li.classList.contains('unshown');
+          const statusOk = statusFilter === 'all' || (statusFilter === 'shown' ? !isUnshown : isUnshown);
+          const ok = textOk && statusOk;
           li.hidden = !ok;
           if (ok) vis++;
         }
         grp.hidden = vis === 0;
       }
-    });
+    };
+    filterInp?.addEventListener('input', applyConceptFilters);
+    statusBtns.forEach(b => b.addEventListener('click', () => {
+      statusFilter = b.dataset.conceptStatus || 'all';
+      statusBtns.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      applyConceptFilters();
+    }));
   }
 }
 

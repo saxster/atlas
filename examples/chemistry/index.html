@@ -22,42 +22,63 @@
   </section>
   <h2 class="section">Structure &amp; bonding</h2>
   <section class="shelf">
-    <a class="card" href="vsepr/">
+    <div class="card-slot"><a class="card" href="vsepr/">
       <div class="no"><span>No. 01</span><span>8 pages</span></div>
       <h2>The shapes of molecules</h2><i>electron pairs keep their distance</i>
       <img src="img/vsepr.jpg" alt="Methane, ammonia and water side by side at their measured bond angles">
-    </a>
-    <a class="card" href="orbitals/">
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/vsepr" data-card-grammar="book">Remix</button><button type="button" data-card-embed="chemistry/vsepr">Embed</button><a href="vsepr/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="orbitals/">
       <div class="no"><span>No. 02</span><span>6 pages</span></div>
       <h2>Atomic orbitals</h2><i>probability clouds, radial shells and n − 1 nodes</i>
       <img src="img/orbitals.jpg" alt="Hydrogen 1s, 2s, 2p and 3d probability clouds colored by phase sign alongside radial distribution curves and nodal surfaces">
-    </a>
-    <a class="card" href="crystal-projection/">
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/orbitals" data-card-grammar="book">Remix</button><button type="button" data-card-embed="chemistry/orbitals">Embed</button><a href="orbitals/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="crystal-projection/">
       <div class="no"><span>No. 03</span><span>machine</span></div>
       <h2>From 2D unit-cell plan to 3D NaCl crystal</h2><i>how a flat (001) projection builds rock-salt NaCl and Bragg planes</i>
       <img src="img/crystal-projection.jpg" alt="A 2D crystallographic (001) plan of rock-salt NaCl sliced at z = 0 that extrudes into a 3D face-centred cubic lattice and (200) Bragg planes">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/crystal-projection" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="chemistry/crystal-projection">Embed</button><a href="crystal-projection/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Kinetics and equilibrium</h2>
   <section class="shelf">
-    <a class="card" href="kinetics/">
+    <div class="card-slot"><a class="card" href="kinetics/">
       <div class="no"><span>No. 04</span><span>explorer</span></div>
       <h2>Forward, back and half-life</h2><i>reversible reactions and exponential decay</i>
       <img src="img/kinetics.jpg" alt="A reaction vessel where blue reactant A and red product B interconvert alongside exponential relaxation curves">
-    </a>
-    <a class="card" href="arrhenius/">
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/kinetics" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="chemistry/kinetics">Embed</button><a href="kinetics/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="arrhenius/">
       <div class="no"><span>No. 05</span><span>explorer</span></div>
       <h2>Over the barrier: temperature and catalysts</h2><i>activation energy, the Maxwell–Boltzmann tail and Arrhenius rate</i>
       <img src="img/arrhenius.jpg" alt="A 3D potential energy barrier U(x) with colliding molecules and a catalyzed pathway paired with the Maxwell–Boltzmann high-energy tail">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/arrhenius" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="chemistry/arrhenius">Embed</button><a href="arrhenius/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Acids, bases &amp; buffers</h2>
   <section class="shelf">
-    <a class="card" href="titration/">
+    <div class="card-slot"><a class="card" href="titration/">
       <div class="no"><span>No. 06</span><span>machine</span></div>
       <h2>The buffer flat and the equivalence cliff</h2><i>weak-acid titration, Henderson–Hasselbalch and indicator jump</i>
       <img src="img/titration.jpg" alt="A burette dripping NaOH into a flask of weak acid HA and conjugate base A⁻ alongside the pH titration curve and equivalence cliff">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="chemistry/titration" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="chemistry/titration">Embed</button><a href="titration/?present">Slides</a></div></div>
   </section>
+  <div class="shelf-toast" id="shelf-toast" role="status" aria-live="polite"></div>
+  <script>
+    document.addEventListener('click', async e => {
+      const toast = document.getElementById('shelf-toast');
+      const rBtn = e.target.closest('[data-card-remix]');
+      if (rBtn) {
+        const fig = rBtn.dataset.cardRemix, g = rBtn.dataset.cardGrammar || 'machine';
+        const txt = 'Remix @saxster/atlas figure examples/' + fig + '/ (' + g + '). First run `npx atlas boot ' + g + '` and preserve pure model.js + checks.mjs.';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied remix prompt for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+        return;
+      }
+      const eBtn = e.target.closest('[data-card-embed]');
+      if (eBtn) {
+        const fig = eBtn.dataset.cardEmbed;
+        const txt = ':::live atlas ' + fig + ' #0\n<!-- or HTML iframe -->\n<iframe src="https://saxster.github.io/atlas/examples/' + fig + '/?embed&page=0" loading="lazy" style="width:100%;height:480px;border:0"></iframe>';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied embed snippet for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+      }
+    });
+  </script>
 </body>
 </html>

@@ -22,6 +22,8 @@
 import { createStage, bindPlaybackLifecycle, smooth, wireModeBar, mountShareButton, mountCutBar, mountMediumBar } from './stage.js';
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playBoop } from './sound.js';
+import { mountStageOverlay, decodeReviewPins } from './review.js';
+import { mountPresentMode } from './present.js';
 
 const $ = id => document.getElementById(id);
 const MODE_KEY = 'atlas:machine-mode';
@@ -43,8 +45,10 @@ export function startMachine(figure) {
   const PAGES = [{ fig: figure.title, ...figure.intro, look: figure.intro.look || {} }, ...STEPS.map(s => ({ fig: s.fig || s.label, ...s, look: s.look || {} }))];
   const T0 = []; { let t = 0; for (const s of STEPS) { T0.push(t); t += s.run; } }
   const TEND = T0[N - 1] + STEPS[N - 1].run;
-  const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
+  const Q = new URLSearchParams(location.search), RENDER = Q.has('render'), EMBED = Q.has('embed');
   if (RENDER) document.documentElement.classList.add('render');
+  if (EMBED) document.documentElement.classList.add('embed');
+  const CALM = !RENDER && (Q.has('calm') || (EMBED && !Q.has('auto')));
   let S = null, raf = 0, frameReady = false, last = performance.now();
   const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
     onChange(st) {
@@ -84,7 +88,7 @@ export function startMachine(figure) {
   $('chips').innerHTML = (figure.chips || []).map((c, i) => `<div class="chip${c.tone === 'ink' ? ' chip-ink' : ''}" data-i="${i}"><span class="v">–</span><span class="l">${c.label}</span></div>`).join('');
   const stepB = [...document.querySelectorAll('#steps .step')], chipEls = [...document.querySelectorAll('#chips .chip .v')];
 
-  let mode = RENDER ? 'auto' : (localStorage.getItem(MODE_KEY) === 'auto' && !life.reduced ? 'auto' : 'manual');
+  let mode = RENDER ? 'auto' : (CALM ? 'manual' : (localStorage.getItem(MODE_KEY) === 'auto' && !life.reduced ? 'auto' : 'manual'));
   let done = !RENDER && Q.has('step') ? Math.min(Math.max(+Q.get('step') || 0, 0), N) : 0, k = 0, u = 0, wait = 0;
   let cutBar = null;
   let idleWait = 0;
@@ -193,9 +197,10 @@ export function startMachine(figure) {
     }
   }
 
-  let lastDone = -1, lastK = -1;
+  let lastDone = -1, lastK = -1, lastState = null, overlay = null, presentCtl = null;
   function draw(now, dt, pose) {
     const state = S.step({ now, dt, s: pose.s, litPage: Math.round(pose.s), running: pose.playing || mode === 'auto', clockAt: pose.clock, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1, blend: 'linear' });
+    lastState = state;
     $('readout').textContent = figure.readout(state, pose.step ? STEPS[pose.step - 1] : null);
     (figure.chips || []).forEach((c, i) => {
       const txt = pose.step >= c.from ? String(c.value(state)) : '–';
@@ -226,6 +231,8 @@ export function startMachine(figure) {
       const at = stepB[(curK || curDone + 1) - 1]; if (at && narrowQ.matches && !RENDER) at.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       $('again').classList.toggle('strong', curDone === N);
       $('hint').textContent = hintAt(curDone, curK);
+      overlay?.refreshPins();
+      presentCtl?.sync();
     }
   }
 
@@ -249,7 +256,42 @@ export function startMachine(figure) {
   if (mode === 'auto') wait = 2;   // a remembered Auto: a moment to see the page, and the Manual switch, before it moves
   document.fonts.ready.then(() => requestAnimationFrame(t => { frameReady = true; last = t; if (RENDER) draw(0, 0, poseOf(0, 0, 0)); else frame(t); }));
 
-  window.__atlas = { E: S.E, S, N: PAGES.length, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
+  if (!RENDER && !EMBED && (Q.has('inspect') || Q.has('review') || Q.has('reviewData'))) {
+    overlay = mountStageOverlay(() => S, $('gl').parentElement, {
+      figureId: location.pathname.split('/').filter(Boolean).slice(-2).join('/'),
+      getPage: () => Math.max(0, k || done),
+      getTotalPages: () => N + 1,
+      getClock: () => S?.clock || 0,
+      getModelState: () => lastState,
+      initialMode: Q.has('inspect') ? 'inspect' : 'pins',
+      initialPins: decodeReviewPins(Q.get('reviewData')),
+      reviewUrl: Q.get('review'),
+    });
+  }
+  if (!EMBED) presentCtl = mountPresentMode({
+    kind: 'machine',
+    title: figure.title,
+    count: PAGES.length,
+    getIndex: () => (k || done),
+    goTo: idx => {
+      const target = Math.max(0, Math.min(N, idx));
+      if (target === done + 1 && !k && mode === 'manual') press(target);
+      else { done = target; k = 0; u = 0; }
+      presentCtl?.sync();
+    },
+    getSlideMeta: idx => {
+      if (idx <= 0) {
+        return { kicker: `Fig. ${figure.no}`, title: figure.title, sub: figure.question, notesHtml: figure.bigIdea };
+      }
+      const st = STEPS[idx - 1];
+      return { kicker: `Fig. ${figure.no} · Step ${idx}/${N}`, title: st?.label || figure.title, sub: st?.hint || '', notesHtml: `<p>${st?.hint || ''}</p><p><b>The big idea:</b> ${figure.bigIdea}</p>` };
+    },
+    getStage: () => S,
+    initialActive: Q.has('present'),
+    renderOnly: RENDER,
+  });
+
+  window.__atlas = { E: S.E, S, N: PAGES.length, overlay, present: presentCtl, setPresent: f => presentCtl?.setActive(f), togglePresent: () => presentCtl?.toggle(), labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, press, startOver, shareUrl, setCut: c => cutBar?.apply(c, true),
     get state() { return { done, k, u, mode, cut: cutBar?.mode || 'solid' }; }, get clock() { return S.clock; } };
   if (RENDER) {
     window.DURATION = DURATION;

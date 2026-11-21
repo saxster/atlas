@@ -31,6 +31,6 @@ if (!only.length) for (const s of await subjects()) {
 }
 // the generated pages: the concept index (every link, every xref), the contents pages, and doc/skill style budgets must pass
 if (!only.length) {
-  for (const f of ['tools/build-standard.mjs', 'examples/concepts/build.mjs', 'tools/site.mjs', 'tools/bundle-ink-demo.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
+  for (const f of ['tools/build-standard.mjs', 'tools/build-voices.mjs', 'examples/concepts/build.mjs', 'tools/site.mjs', 'tools/bundle-ink-demo.mjs']) execFileSync(process.execPath, [path.join(ROOT, f), '--check'], { cwd: ROOT, stdio: 'inherit' });
   execFileSync(process.execPath, [path.join(ROOT, 'tools', 'style.mjs')], { cwd: ROOT, stdio: 'inherit' });
 }

@@ -27,8 +27,15 @@ npx atlas check examples/<subject>/<id>
 - `@saxster/atlas/diegetic.js`: 8 illustrated control schemas, `statusOrb`, `compareCurtain`, `previewStage`, `mountFloatingDock`, `createUndoStack`, `showActionReceipt`, and `mountSpaceDeck`.
 - `@saxster/atlas/chart.js`: 2D SVG charts (`moveCursor`, `moveTangent`, `setLivePath`), `waterfallChart`, `sankeyChart`, `sequenceLanes`, `isoStackChart`, and nested `spanTimeline`.
 - `@saxster/atlas/prose.js`: Bret Victor `scrub`, `val`, `term`, `byrne`, `aside`, `paramChip`, `codeBlock`, `foilCard`, `diffList`, `frameInspector`, and `anatomyOverlay`.
-- `@saxster/atlas/theme.js` & `motion.js`: perceptual `tonalScale`, WCAG-clamped `deriveAccentTokens`, optional `tintNeutrals`, `TYPOGRAPHY_PRESETS`, `controlRadius`, `mountThemeStudio`, 31 `eases`, `rubberband`, `projectMomentum`, `createMotionGovernor`, and decoupled `MOTION_FEELS`.
+- `@saxster/atlas/theme.js` & `motion.js`: perceptual `tonalScale`, WCAG-clamped `deriveAccentTokens`, optional `tintNeutrals`, `TYPOGRAPHY_PRESETS`, `controlRadius`, `mountThemeStudio`, `applyVoice`, `mountVoiceBar`, 31 `eases`, `rubberband`, `projectMomentum`, `createMotionGovernor`, and decoupled `MOTION_FEELS`.
+- `@saxster/atlas/voices.js`, `review.js`, `present.js`, `takes.js`: single-source `VOICES` manifest, spatial `mountStageOverlay` & critique pins, `?present` 16:9 lecture mode, and synchronized `mountTakesBoard`.
 - `@saxster/atlas/solvers.js`, `kinematics.js`, `sound.js`, `moments.js`: pure domain-agnostic solvers, kinematics, opt-in WebAudio, and lesson moments.
+
+## CLI & MCP Tooling
+
+- `npx atlas mcp`: local stdio MCP server exposing `atlas_boot`, `atlas_voices`, `atlas_list_examples`, `atlas_search_concepts`, `atlas_check`, `atlas_gate`, `atlas_svg_lint`, `atlas_critic`, and `atlas_stills`.
+- `npx atlas takes <figure>` & `npx atlas slides <figure> --pdf deck.pdf`: synchronized 3-take exploration boards and 16:9 presentation slide PDFs.
+- URL modes on any figure: `?voice=<id>`, `?present`, `?inspect`, `?reviewData=<base64url>`, `?embed`, `?calm`, `?render`.
 
 ## Published Examples (58 Figures & Chapters + Showcases)
 
@@ -39,8 +46,9 @@ npx atlas check examples/<subject>/<id>
 - **Atlas of Mathematics** (`examples/maths/`): 8 figures/chapters — trigonometry, calculus, linear algebra, differential equations and Fourier series
 - **Atlas of Physics** (`examples/physics/`): 18 figures/chapters —
 - **Atlas of Statistics** (`examples/statistics/`): 5 figures/chapters — probability, sampling and inference
-- **Corner Atelier** (`examples/ink-ui/`): 24 live 2.5D ink widgets, Theme Studio, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
+- **Corner Atelier** (`examples/ink-ui/`): 24 live 2.5D ink widgets, Theme Studio, Voice Gallery, State Matrix, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
 - **Concepts & Threads** (`examples/concepts/`): cross-subject concept ledger & spatial thread board.
+- **Full Catalog** (`examples/catalog.md`): machine-readable table of all subjects, grammars, and URLs.
 
 ## Docs
 

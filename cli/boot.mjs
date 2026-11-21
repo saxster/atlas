@@ -471,6 +471,22 @@ export const TARGETS = [
       'Follow docs/voices/plotter-draft.md and docs/verification-rubric.md: zero gradients, filters, skews, stroked text, bold/italic caps, or invented dimensions (mark ambiguous specs NEEDS QUALIFICATION).',
     ],
   },
+  {
+    slug: 'workflow',
+    kind: 'kit',
+    summary: 'Creator Voices, spatial review pins (?inspect/?reviewData=), 16:9 lecture mode (?present), 3-Takes board (?embed + postMessage), and stdio MCP bridge (npx atlas mcp).',
+    triggers: ['creator voices', 'review pins', 'present mode', 'lecture slides', 'takes board', 'three takes', 'mcp server', 'magic patterns workflow'],
+    modules: {
+      '@saxster/atlas/voices.js': ['DEFAULT_VOICE', 'VOICE_IDS', 'VOICES', 'resolveVoice', 'listVoices'],
+      '@saxster/atlas/theme.js': ['applyVoice', 'mountVoiceBar'],
+      '@saxster/atlas/review.js': ['PIN_SOURCES', 'PIN_SEVERITIES', 'createReviewPin', 'encodeReviewPins', 'decodeReviewPins', 'formatInspectPacket', 'formatCameraPatch', 'mountStageOverlay'],
+      '@saxster/atlas/present.js': ['buildSlideMeta', 'mountPresentMode'],
+      '@saxster/atlas/takes.js': ['buildTakesSpec', 'mountTakesBoard'],
+    },
+    invariants: [
+      'Never import Three.js in voices.js or theme.js; hide overlay and present chrome cleanly under ?render captures.',
+    ],
+  },
 ];
 
 function words(text) {

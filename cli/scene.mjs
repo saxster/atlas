@@ -3,27 +3,37 @@
 // subject is hidden by another solid along the camera ray), and optional pairwise 3D mesh intersections.
 // Returns the number of findings.
 import { serve, launch, open } from './render.mjs';
+import { createReviewPin } from '../engine/review.js';
 
-export async function scene(list, { margin = 0.02, intersections = false } = {}) {
+export async function scene(list, { margin = 0.02, intersections = false, pins = null } = {}) {
   const { server, base } = serve(), browser = await launch();
   let total = 0;
   for (const c of list) for (const [w, h, tag] of [[1440, 900, 'desk'], [390, 844, 'phone']]) {
     const R = await open(browser, base, c, w, h), found = [];
     for (let i = 0; i < R.pages; i++) {
-      await R.seek(R.mid(i));
+      const t = R.mid(i);
+      await R.seek(t);
       const rep = await R.page.evaluate(opts => window.__atlas?.sceneReport?.(opts), { margin, checkIntersections: intersections });
       if (!rep) continue;
+      const cx = Array.isArray(rep.framing?.center) ? rep.framing.center[0] * 100 : 50;
+      const cy = Array.isArray(rep.framing?.center) ? rep.framing.center[1] * 100 : 50;
       if (rep.framing && !rep.framing.inFrame) {
         const b = rep.framing.bounds;
-        found.push(`p${i} framing (${rep.framing.subject || 'scene'}) clipped [${b ? b.map(v => v.toFixed(2)).join(', ') : ''}]`);
+        const text = `p${i} framing (${rep.framing.subject || 'scene'}) clipped [${b ? b.map(v => v.toFixed(2)).join(', ') : ''}]`;
+        found.push(text);
+        pins?.push(createReviewPin({ figure: c, page: i, t, source: 'scene', severity: 'error', viewport: tag, asm: rep.framing.subject || null, xPct: cx, yPct: cy, text }));
       }
       if (rep.occlusion?.blocked) {
-        found.push(`p${i} subject "${rep.occlusion.subject || rep.occlusion.target}" occluded by ${rep.occlusion.occludedBy || rep.occlusion.by}`);
+        const text = `p${i} subject "${rep.occlusion.subject || rep.occlusion.target}" occluded by ${rep.occlusion.occludedBy || rep.occlusion.by}`;
+        found.push(text);
+        pins?.push(createReviewPin({ figure: c, page: i, t, source: 'scene', severity: 'error', viewport: tag, asm: rep.occlusion.subject || null, xPct: cx, yPct: cy, text }));
       }
       if (rep.intersections?.length) {
         for (const item of rep.intersections) {
           const [a, b] = Array.isArray(item) ? item : item.pair;
-          found.push(`p${i} mesh intersection: ${a} ∩ ${b}${item.overlap ? ` (${item.overlap}m)` : ''}`);
+          const text = `p${i} mesh intersection: ${a} ∩ ${b}${item.overlap ? ` (${item.overlap}m)` : ''}`;
+          found.push(text);
+          pins?.push(createReviewPin({ figure: c, page: i, t, source: 'scene', severity: 'warn', viewport: tag, asm: a, xPct: cx, yPct: cy, text }));
         }
       }
     }

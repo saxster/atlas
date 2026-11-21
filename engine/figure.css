@@ -122,7 +122,7 @@ div.chart > svg.chart { margin-top: 0; }
   }
   .soundtoggle:active:not(:disabled) { scale: 0.97; }
 }
-.mediumbar { margin-top: -4px; flex-wrap: wrap; border-radius: 14px; padding: 4px; gap: 3px; }
+.mediumbar, .voicebar { margin-top: -4px; flex-wrap: wrap; border-radius: 14px; padding: 4px; gap: 3px; }
 .soundtoggle {
   align-self: flex-start; border: 1px solid var(--faint); background: var(--card); color: var(--hi); cursor: pointer;
   font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px;
@@ -201,3 +201,25 @@ div.chart > svg.chart { margin-top: 0; }
 }
 .prose-note { font: 400 15.5px/1.58 var(--serif); color: var(--text); margin: 4px 0 6px; }
 html.render *, html.render *::before, html.render *::after { transition: none !important; animation: none !important; }
+
+/* ?present: full-bleed 16:9 interactive stage for Machine, Explorer & Sandbox */
+html.present .topbar, html.present .bigidea, html.present .chips { display: none; }
+html.present .fig-body { overflow: hidden; background: var(--card); }
+html.present .figpage { display: block; max-width: none; padding: 0; margin: 0; width: 100vw; height: 100vh; height: 100dvh; }
+html.present .figpage .side { display: none; }
+html.present .figpage.explorer .side,
+html.present .figpage.sandbox .side {
+  display: flex; position: fixed; left: 16px; top: 16px; bottom: 92px; width: min(296px, calc(100vw - 32px));
+  overflow-y: auto; z-index: 10; padding: 14px; border-radius: var(--atlas-r-card, 14px);
+  border: 1px solid var(--faint); background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+html.render.present .figpage .side { display: none !important; }
+html.present .figwrap, html.present .figure { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+html.present .corner.br { bottom: 84px; }
+html.present .speed { bottom: 84px; }
+
+/* ?embed: figure-only full-bleed stage across Machine, Explorer & Sandbox */
+html.embed .topbar, html.embed .side, html.embed .bigidea, html.embed .chips, html.embed .plate { display: none; }
+html.embed, html.embed body { overflow: hidden; background: var(--card); }
+html.embed .figpage { display: block; max-width: none; padding: 0; margin: 0; width: 100vw; height: 100vh; height: 100dvh; }
+html.embed .figwrap, html.embed .figure { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }

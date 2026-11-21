@@ -94,7 +94,7 @@ ${GENERATED}  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
 ${cards.join('\n')}
   </section>
   <section class="shelf-deck" id="shelf-deck" hidden aria-label="2D subject and figure deck"></section>
-  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a> · <a href="../llms.txt">llms.txt</a></p>
+  <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a> · <a href="catalog.md">catalog.md</a> · <a href="../llms.txt">llms.txt</a></p>
   <script type="application/json" id="atlas-deck-data">${deckJson}</script>
   <script type="module">
     const grid = document.getElementById('shelf-grid');
@@ -113,6 +113,12 @@ ${cards.join('\n')}
       }
     }
     btns.forEach(b => b.addEventListener('click', () => setView(b.dataset.shelfView)));
+    addEventListener('keydown', e => {
+      if (!mounted || deck.hidden || e.target?.closest?.('input, textarea, select, [contenteditable]')) return;
+      if (e.shiftKey && (e.code === 'Digit0' || e.key === ')')) { e.preventDefault(); mounted.setZoom(1.0); }
+      else if (e.shiftKey && (e.code === 'Digit1' || e.key === '!')) { e.preventDefault(); mounted.setZoom(0.72); }
+      else if (e.shiftKey && (e.code === 'Digit2' || e.key === '@')) { e.preventDefault(); mounted.setZoom(1.12); }
+    });
   </script>
 </body>
 </html>
@@ -133,10 +139,10 @@ ${sec.items.map(it => {
     n++;
     const img = fs.existsSync(path.join(EXAMPLES, s.id, 'img', `${it.id}.jpg`)) ? `\n      <img src="img/${it.id}.jpg" alt="${esc(it.alt || '')}">` : '';
     const kind = it.kind === 'book' ? (it.pages ? `${it.pages} pages` : 'book') : (it.grammar || 'figure');
-    return `    <a class="card" href="${it.id}/">
+    return `    <div class="card-slot"><a class="card" href="${it.id}/">
       <div class="no"><span>No. ${String(n).padStart(2, '0')}</span><span>${esc(kind)}</span></div>
       <h2>${esc(it.title || it.id)}</h2><i>${esc(it.sub || '')}</i>${img}
-    </a>`;
+    </a><div class="card-tools"><button type="button" data-card-remix="${esc(s.id)}/${esc(it.id)}" data-card-grammar="${esc(it.kind === 'book' ? 'book' : (it.grammar || 'machine'))}">Remix</button><button type="button" data-card-embed="${esc(s.id)}/${esc(it.id)}">Embed</button><a href="${it.id}/?present">Slides</a></div></div>`;
   }).join('\n')}
   </section>`).join('\n');
   const links = (s.links || []).map(l => `<a href="${esc(l.href.replace(/^\.\.\//, ''))}">${esc(l.label)}</a>`).join('');
@@ -147,6 +153,27 @@ ${GENERATED}  <header><a class="home" href="../">Atlas</a><span>${links}<a href=
     <p>${esc(s.tagline || s.blurb || '')}</p>
   </section>
 ${body}
+  <div class="shelf-toast" id="shelf-toast" role="status" aria-live="polite"></div>
+  <script>
+    document.addEventListener('click', async e => {
+      const toast = document.getElementById('shelf-toast');
+      const rBtn = e.target.closest('[data-card-remix]');
+      if (rBtn) {
+        const fig = rBtn.dataset.cardRemix, g = rBtn.dataset.cardGrammar || 'machine';
+        const txt = 'Remix @saxster/atlas figure examples/' + fig + '/ (' + g + '). First run \`npx atlas boot ' + g + '\` and preserve pure model.js + checks.mjs.';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied remix prompt for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+        return;
+      }
+      const eBtn = e.target.closest('[data-card-embed]');
+      if (eBtn) {
+        const fig = eBtn.dataset.cardEmbed;
+        const txt = ':::live atlas ' + fig + ' #0\\n<!-- or HTML iframe -->\\n<iframe src="https://saxster.github.io/atlas/examples/' + fig + '/?embed&page=0" loading="lazy" style="width:100%;height:480px;border:0"></iframe>';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied embed snippet for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+      }
+    });
+  </script>
 </body>
 </html>
 `;
@@ -306,20 +333,51 @@ npx atlas check examples/<subject>/<id>
 - \`@saxster/atlas/diegetic.js\`: 8 illustrated control schemas, \`statusOrb\`, \`compareCurtain\`, \`previewStage\`, \`mountFloatingDock\`, \`createUndoStack\`, \`showActionReceipt\`, and \`mountSpaceDeck\`.
 - \`@saxster/atlas/chart.js\`: 2D SVG charts (\`moveCursor\`, \`moveTangent\`, \`setLivePath\`), \`waterfallChart\`, \`sankeyChart\`, \`sequenceLanes\`, \`isoStackChart\`, and nested \`spanTimeline\`.
 - \`@saxster/atlas/prose.js\`: Bret Victor \`scrub\`, \`val\`, \`term\`, \`byrne\`, \`aside\`, \`paramChip\`, \`codeBlock\`, \`foilCard\`, \`diffList\`, \`frameInspector\`, and \`anatomyOverlay\`.
-- \`@saxster/atlas/theme.js\` & \`motion.js\`: perceptual \`tonalScale\`, WCAG-clamped \`deriveAccentTokens\`, optional \`tintNeutrals\`, \`TYPOGRAPHY_PRESETS\`, \`controlRadius\`, \`mountThemeStudio\`, 31 \`eases\`, \`rubberband\`, \`projectMomentum\`, \`createMotionGovernor\`, and decoupled \`MOTION_FEELS\`.
+- \`@saxster/atlas/theme.js\` & \`motion.js\`: perceptual \`tonalScale\`, WCAG-clamped \`deriveAccentTokens\`, optional \`tintNeutrals\`, \`TYPOGRAPHY_PRESETS\`, \`controlRadius\`, \`mountThemeStudio\`, \`applyVoice\`, \`mountVoiceBar\`, 31 \`eases\`, \`rubberband\`, \`projectMomentum\`, \`createMotionGovernor\`, and decoupled \`MOTION_FEELS\`.
+- \`@saxster/atlas/voices.js\`, \`review.js\`, \`present.js\`, \`takes.js\`: single-source \`VOICES\` manifest, spatial \`mountStageOverlay\` & critique pins, \`?present\` 16:9 lecture mode, and synchronized \`mountTakesBoard\`.
 - \`@saxster/atlas/solvers.js\`, \`kinematics.js\`, \`sound.js\`, \`moments.js\`: pure domain-agnostic solvers, kinematics, opt-in WebAudio, and lesson moments.
+
+## CLI & MCP Tooling
+
+- \`npx atlas mcp\`: local stdio MCP server exposing \`atlas_boot\`, \`atlas_voices\`, \`atlas_list_examples\`, \`atlas_search_concepts\`, \`atlas_check\`, \`atlas_gate\`, \`atlas_svg_lint\`, \`atlas_critic\`, and \`atlas_stills\`.
+- \`npx atlas takes <figure>\` & \`npx atlas slides <figure> --pdf deck.pdf\`: synchronized 3-take exploration boards and 16:9 presentation slide PDFs.
+- URL modes on any figure: \`?voice=<id>\`, \`?present\`, \`?inspect\`, \`?reviewData=<base64url>\`, \`?embed\`, \`?calm\`, \`?render\`.
 
 ## Published Examples (${totalCount} Figures & Chapters + Showcases)
 
 ${subjLines.join('\n')}
-- **Corner Atelier** (\`examples/ink-ui/\`): 24 live 2.5D ink widgets, Theme Studio, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
+- **Corner Atelier** (\`examples/ink-ui/\`): 24 live 2.5D ink widgets, Theme Studio, Voice Gallery, State Matrix, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
 - **Concepts & Threads** (\`examples/concepts/\`): cross-subject concept ledger & spatial thread board.
+- **Full Catalog** (\`examples/catalog.md\`): machine-readable table of all subjects, grammars, and URLs.
 
 ## Docs
 
 - \`llms-full.txt\`: full combined API reference, 10 Creator Voices catalog, and verification rubric.
 - \`docs/API.md\`, \`docs/voices/catalog.md\`, \`docs/decisions.md\`, \`docs/verification-rubric.md\`.
 `;
+}
+
+export function buildCatalogMd(all) {
+  const realSubjects = all.filter(s => s.id !== 'minimal');
+  const lines = [
+    '# @saxster/atlas · Examples Catalog',
+    '',
+    '> Machine-readable catalog generated by `tools/site.mjs`. Start the local stdio MCP server with `npx atlas mcp`.',
+    '',
+  ];
+  for (const s of realSubjects) {
+    lines.push(`## ${s.name} (\`examples/${s.id}/\`)`, '', s.blurb || s.tagline || '', '', '| ID | Grammar | Title | Subtitle | Path | Present URL |', '| --- | --- | --- | --- | --- | --- |');
+    for (const id of s.chapters || []) {
+      const c = s.cards?.[id] || {};
+      lines.push(`| \`${s.id}/${id}\` | \`book\` | ${c.title || id} | ${c.sub || ''} | \`examples/${s.id}/${id}/\` | \`examples/${s.id}/${id}/?present\` |`);
+    }
+    for (const id of s.figures || []) {
+      const c = s.cards?.[id] || {};
+      lines.push(`| \`${s.id}/${id}\` | \`${c.grammar || 'figure'}\` | ${c.title || id} | ${c.sub || ''} | \`examples/${s.id}/${id}/\` | \`examples/${s.id}/${id}/?present\` |`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
 }
 
 export function buildLlmsFullTxt(all) {
@@ -339,6 +397,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
     [path.join(EXAMPLES, 'index.html'), 'index.html', rootPage(all)],
     ...all.filter(s => s.contents !== false).map(s => [path.join(EXAMPLES, `${s.id}/index.html`), `${s.id}/index.html`, subjectPage(s)]),
     [path.join(EXAMPLES, 'search-index.js'), 'search-index.js', await searchIndexJs(all)],
+    [path.join(EXAMPLES, 'catalog.md'), 'examples/catalog.md', buildCatalogMd(all)],
     [path.join(ROOT, 'llms.txt'), 'llms.txt', buildLlmsTxt(all)],
     [path.join(ROOT, 'llms-full.txt'), 'llms-full.txt', buildLlmsFullTxt(all)],
   ];

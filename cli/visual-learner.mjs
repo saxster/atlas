@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { serve, launch } from './render.mjs';
+import { createReviewPin } from '../engine/review.js';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const sha = buf => crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
@@ -227,16 +228,41 @@ export async function visualLearner(
       }
     }
 
+    const diagnostics = analyzeVisualLearnerTrace(trace);
     const summary = {
       figure,
       policy,
       width,
       height,
       outcome,
-      diagnostics: analyzeVisualLearnerTrace(trace),
+      diagnostics,
       steps: trace,
     };
+    const pins = [];
+    for (const u of diagnostics.unchangedFrameStalls) {
+      const st = trace.find(s => s.step === u.step);
+      pins.push(createReviewPin({
+        figure, page: 0, t: u.step, source: 'visual-learner', severity: 'warn',
+        xPct: (st?.x || 500) / 10, yPct: (st?.y || 500) / 10,
+        text: `Step ${u.step} (${u.action}) produced identical before/after screenshots`,
+      }));
+    }
+    for (const r of diagnostics.repeatedFruitlessClicks) {
+      pins.push(createReviewPin({
+        figure, page: 0, t: r.toStep, source: 'visual-learner', severity: 'error',
+        xPct: (r.x || 500) / 10, yPct: (r.y || 500) / 10,
+        text: `Repeated fruitless clicks at (${r.x}, ${r.y}) across steps ${r.fromStep}-${r.toStep}`,
+      }));
+    }
+    for (const w of diagnostics.passiveWaitLoops) {
+      pins.push(createReviewPin({
+        figure, page: 0, t: w.toStep, source: 'visual-learner', severity: 'warn',
+        xPct: 50, yPct: 50,
+        text: `Passive wait loop with unchanged viewport across steps ${w.fromStep}-${w.toStep}`,
+      }));
+    }
     fs.writeFileSync(path.join(absOut, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
+    fs.writeFileSync(path.join(absOut, 'pins.json'), JSON.stringify(pins, null, 2) + '\n');
     fs.writeFileSync(path.join(absOut, 'report.html'), buildHtmlReport(summary));
     return summary;
   } finally {

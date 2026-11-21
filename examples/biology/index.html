@@ -22,50 +22,71 @@
   </section>
   <h2 class="section">Cells and transport</h2>
   <section class="shelf">
-    <a class="card" href="diffusion/">
+    <div class="card-slot"><a class="card" href="diffusion/">
       <div class="no"><span>No. 01</span><span>explorer</span></div>
       <h2>Across the membrane</h2><i>random walks balance without a pump</i>
       <img src="img/diffusion.jpg" alt="A cell membrane with channels between outside and inside, solute molecules bouncing through to balance both sides">
-    </a>
-    <a class="card" href="action-potential/">
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/diffusion" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="biology/diffusion">Embed</button><a href="diffusion/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="action-potential/">
       <div class="no"><span>No. 02</span><span>machine</span></div>
       <h2>Na⁺ rush and K⁺ reset</h2><i>how voltage-gated pores fire a nerve impulse</i>
       <img src="img/action-potential.jpg" alt="A phospholipid bilayer with voltage-gated Na+ and K+ channels alongside the Hodgkin–Huxley action potential spike and conductance curves">
-    </a>
-    <a class="card" href="leaf-section/">
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/action-potential" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="biology/action-potential">Embed</button><a href="action-potential/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="leaf-section/">
       <div class="no"><span>No. 03</span><span>machine</span></div>
       <h2>From 2D histology slide to 3D living leaf</h2><i>palisade light capture, spongy air spaces and guard-cell stomata</i>
       <img src="img/leaf-section.jpg" alt="A 2D biology leaf histology slide cut at 110 µm with black pochè walls that extrudes into 3D palisade columns, vascular tubes, and guard-cell stoma">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/leaf-section" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="biology/leaf-section">Embed</button><a href="leaf-section/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Populations</h2>
   <section class="shelf">
-    <a class="card" href="growth/">
+    <div class="card-slot"><a class="card" href="growth/">
       <div class="no"><span>No. 04</span><span>machine</span></div>
       <h2>One cell to a crowded dish</h2><i>doubling meets a limit</i>
       <img src="img/growth.jpg" alt="A Petri dish filling with dividing bacteria alongside the S-shaped logistic curve and the runaway exponential">
-    </a>
-    <a class="card" href="lotka-volterra/">
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/growth" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="biology/growth">Embed</button><a href="growth/?present">Slides</a></div></div>
+    <div class="card-slot"><a class="card" href="lotka-volterra/">
       <div class="no"><span>No. 05</span><span>explorer</span></div>
       <h2>Foxes, rabbits and the loop of life</h2><i>predator–prey waves and Volterra’s principle</i>
       <img src="img/lotka-volterra.jpg" alt="A phase portrait with a closed counterclockwise orbit around (R*, F*) alongside coupled prey and predator oscillation curves">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/lotka-volterra" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="biology/lotka-volterra">Embed</button><a href="lotka-volterra/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Biochemistry</h2>
   <section class="shelf">
-    <a class="card" href="enzyme/">
+    <div class="card-slot"><a class="card" href="enzyme/">
       <div class="no"><span>No. 06</span><span>machine</span></div>
       <h2>Lock, key and saturation</h2><i>how active-site turnover caps reaction speed</i>
       <img src="img/enzyme.jpg" alt="A globular blue enzyme with a catalytic cleft surrounded by amber substrate and green product beads, alongside the Michaelis–Menten saturation curve">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/enzyme" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="biology/enzyme">Embed</button><a href="enzyme/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Genetics and information</h2>
   <section class="shelf">
-    <a class="card" href="central-dogma/">
+    <div class="card-slot"><a class="card" href="central-dogma/">
       <div class="no"><span>No. 07</span><span>machine</span></div>
       <h2>Three letters a codon</h2><i>DNA to mRNA to polypeptide on the ribosome</i>
       <img src="img/central-dogma.jpg" alt="A DNA double helix transcribed into a 5-codon mRNA strand decoded by a 3D ribosome and tRNA adaptors into Met–Phe–Gly–Asp">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="biology/central-dogma" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="biology/central-dogma">Embed</button><a href="central-dogma/?present">Slides</a></div></div>
   </section>
+  <div class="shelf-toast" id="shelf-toast" role="status" aria-live="polite"></div>
+  <script>
+    document.addEventListener('click', async e => {
+      const toast = document.getElementById('shelf-toast');
+      const rBtn = e.target.closest('[data-card-remix]');
+      if (rBtn) {
+        const fig = rBtn.dataset.cardRemix, g = rBtn.dataset.cardGrammar || 'machine';
+        const txt = 'Remix @saxster/atlas figure examples/' + fig + '/ (' + g + '). First run `npx atlas boot ' + g + '` and preserve pure model.js + checks.mjs.';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied remix prompt for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+        return;
+      }
+      const eBtn = e.target.closest('[data-card-embed]');
+      if (eBtn) {
+        const fig = eBtn.dataset.cardEmbed;
+        const txt = ':::live atlas ' + fig + ' #0\n<!-- or HTML iframe -->\n<iframe src="https://saxster.github.io/atlas/examples/' + fig + '/?embed&page=0" loading="lazy" style="width:100%;height:480px;border:0"></iframe>';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied embed snippet for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+      }
+    });
+  </script>
 </body>
 </html>

@@ -22,51 +22,72 @@
   </section>
   <h2 class="section">Book</h2>
   <section class="shelf">
-    <a class="card" href="book/">
+    <div class="card-slot"><a class="card" href="book/">
       <div class="no"><span>No. 01</span><span>3 pages</span></div>
       <h2>The derivative is the slope</h2><i>a tangent sliding along a cubic</i>
       <img src="img/book.jpg" alt="The curve y = x³/3 − x on axes, with a red tangent line touching it and run and rise arrows showing its slope">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/book" data-card-grammar="book">Remix</button><button type="button" data-card-embed="minimal/book">Embed</button><a href="book/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Machine</h2>
   <section class="shelf">
-    <a class="card" href="machine/">
+    <div class="card-slot"><a class="card" href="machine/">
       <div class="no"><span>No. 02</span><span>machine</span></div>
       <h2>Half-lives</h2><i>200 nuclei, halving each step</i>
       <img src="img/machine.jpg" alt="A grid of 200 beads on a table, some red and still radioactive, the rest grey and sunk, in front of a graph of the count halving">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/machine" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="minimal/machine">Embed</button><a href="machine/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Explorer</h2>
   <section class="shelf">
-    <a class="card" href="explorer/">
+    <div class="card-slot"><a class="card" href="explorer/">
       <div class="no"><span>No. 03</span><span>explorer</span></div>
       <h2>How far does it fly?</h2><i>launch angle and range</i>
       <img src="img/explorer.jpg" alt="A ball’s arc over the ground on distance and height axes, with its velocity arrow">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/explorer" data-card-grammar="explorer">Remix</button><button type="button" data-card-embed="minimal/explorer">Embed</button><a href="explorer/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Sandbox</h2>
   <section class="shelf">
-    <a class="card" href="sandbox/">
+    <div class="card-slot"><a class="card" href="sandbox/">
       <div class="no"><span>No. 04</span><span>sandbox</span></div>
       <h2>Sculpt the electric field</h2><i>place and drag charges in 3D</i>
       <img src="img/sandbox.jpg" alt="Positive and negative charges on a 2D grid with electric field arrows and a draggable probe">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/sandbox" data-card-grammar="sandbox">Remix</button><button type="button" data-card-embed="minimal/sandbox">Embed</button><a href="sandbox/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Teardown</h2>
   <section class="shelf">
-    <a class="card" href="teardown/">
+    <div class="card-slot"><a class="card" href="teardown/">
       <div class="no"><span>No. 05</span><span>machine</span></div>
       <h2>Four-stroke teardown</h2><i>slider-crank, 2:1 gears, valve spring and cutaways</i>
       <img src="img/teardown.jpg" alt="A single-cylinder four-stroke mechanism with a cutaway block, slider-crank linkage, 14:28 camshaft spur gear pair, and helical valve spring">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/teardown" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="minimal/teardown">Embed</button><a href="teardown/?present">Slides</a></div></div>
   </section>
   <h2 class="section">Blueprint</h2>
   <section class="shelf">
-    <a class="card" href="blueprint/">
+    <div class="card-slot"><a class="card" href="blueprint/">
       <div class="no"><span>No. 06</span><span>machine</span></div>
       <h2>From 2D blueprint to 3D solar room</h2><i>log-FOV plan sheet, watertight pochè walls and solar overhang</i>
       <img src="img/blueprint.jpg" alt="A 2D architectural floorplan cut at 1.20 metres with black pochè walls and dimension chains rising into a 3D passive-solar room">
-    </a>
+    </a><div class="card-tools"><button type="button" data-card-remix="minimal/blueprint" data-card-grammar="machine">Remix</button><button type="button" data-card-embed="minimal/blueprint">Embed</button><a href="blueprint/?present">Slides</a></div></div>
   </section>
+  <div class="shelf-toast" id="shelf-toast" role="status" aria-live="polite"></div>
+  <script>
+    document.addEventListener('click', async e => {
+      const toast = document.getElementById('shelf-toast');
+      const rBtn = e.target.closest('[data-card-remix]');
+      if (rBtn) {
+        const fig = rBtn.dataset.cardRemix, g = rBtn.dataset.cardGrammar || 'machine';
+        const txt = 'Remix @saxster/atlas figure examples/' + fig + '/ (' + g + '). First run `npx atlas boot ' + g + '` and preserve pure model.js + checks.mjs.';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied remix prompt for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+        return;
+      }
+      const eBtn = e.target.closest('[data-card-embed]');
+      if (eBtn) {
+        const fig = eBtn.dataset.cardEmbed;
+        const txt = ':::live atlas ' + fig + ' #0\n<!-- or HTML iframe -->\n<iframe src="https://saxster.github.io/atlas/examples/' + fig + '/?embed&page=0" loading="lazy" style="width:100%;height:480px;border:0"></iframe>';
+        try { await navigator.clipboard?.writeText(txt); } catch {}
+        if (toast) { toast.textContent = 'Copied embed snippet for ' + fig; setTimeout(() => { toast.textContent = ''; }, 2000); }
+      }
+    });
+  </script>
 </body>
 </html>

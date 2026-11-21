@@ -6,6 +6,7 @@
 import {
   ACCENT_SWATCHES, TYPOGRAPHY_PRESETS, RADIUS_PRESETS,
   deriveAccentTokens, applyAccentTokens, auditTheme, mountSwatchBar, buildThemeCssSnippet, mountThemeStudio,
+  mountVoiceBar, listVoices,
 } from '@saxster/atlas/theme.js';
 import { draftSvg, draftArrow, draftDimension, draftHatch, draftSupportTicks, draftIsolationWrap, bindDraftIsolation } from '@saxster/atlas/draft_kit.js';
 import {
@@ -383,6 +384,93 @@ if (!RENDER) {
   }
 
   // Inline-expanding inverted floating dock
+  const voiceBarHost = $('voice-gallery-bar');
+  const voiceStageEl = $('voice-gallery-stage');
+  if (voiceBarHost && voiceStageEl) {
+    const renderVoicePlate = v => {
+      const tok = deriveAccentTokens(v.accent, {
+        page: v.paper, card: v.card, ink: v.ink, tintNeutrals: v.tintNeutrals, type: v.typography, radius: v.radius,
+      });
+      const au = auditTheme([
+        { role: 'ink/card', fg: tok.neutrals.strong, bg: tok.neutrals.card, kind: 'text' },
+        { role: 'accentInk/card', fg: tok.accentInk, bg: tok.neutrals.card, kind: 'text' },
+        { role: 'accentOn/accent', fg: tok.accentOn, bg: tok.accent, kind: 'text' },
+      ]);
+      voiceStageEl.innerHTML = [
+        `<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">`,
+        `  <strong style="font:600 22px/1.15 var(--display-font,var(--serif));color:var(--strong)">${v.label}</strong>`,
+        `  <span class="ink-voice-pill soft">R${v.register} · ${v.medium} · ${v.quirk} · ${au.ok ? 'WCAG AA PASS' : 'CHECK'}</span>`,
+        `</div>`,
+        `<p style="margin:0;color:var(--text)">${v.summary}</p>`,
+        `<div class="ink-voice-meta">`,
+        `  <span class="ink-voice-pill acc">Accent ${v.accent}</span>`,
+        `  <span class="ink-voice-pill">Type: ${v.typography}</span>`,
+        `  <span class="ink-voice-pill">Corners: ${v.radius}</span>`,
+        `  <span class="ink-voice-pill">Motion: ${v.feel}</span>`,
+        `  ${statusOrb(v.sound ? 'spark' : 'pulse', { label: v.sound ? 'WebAudio on' : 'Silent' })}`,
+        `</div>`,
+      ].join('');
+    };
+    const vgBar = mountVoiceBar(voiceBarHost, {
+      voices: listVoices().map(v => v.id),
+      initialVoice: 'bugged-sketchbook',
+      place: 'append',
+      targetEl: voiceStageEl,
+      onChange: v => renderVoicePlate(v),
+    });
+    vgBar?.apply('bugged-sketchbook');
+  }
+
+  const stateHost = $('state-previews-host');
+  if (stateHost) {
+    const matrixHtml = `<div class="state-matrix">
+      <div class="state-row">
+        <span class="state-lbl">Action Button</span>
+        <div class="state-cell">
+          <button type="button" class="studio-btn primary">Primary</button>
+          <button type="button" class="studio-btn">Secondary</button>
+          <button type="button" class="studio-btn" disabled style="opacity:.45;cursor:default">Disabled</button>
+        </div>
+      </div>
+      <div class="state-row">
+        <span class="state-lbl">Predict Choice</span>
+        <div class="state-cell">
+          <span class="st-choice">A · Neutral</span>
+          <span class="st-choice picked">B · Picked</span>
+          <span class="st-choice right">C · Answer</span>
+          <span class="st-choice wrong">D · Your guess</span>
+        </div>
+      </div>
+      <div class="state-row">
+        <span class="state-lbl">Readout Chips</span>
+        <div class="state-cell">
+          <span class="ink-voice-pill">Idle: –</span>
+          <span class="ink-voice-pill soft">Active: 9.81 m/s²</span>
+          <span class="ink-voice-pill acc">Badge · Live</span>
+        </div>
+      </div>
+      <div class="state-row">
+        <span class="state-lbl">Orbs &amp; Pins</span>
+        <div class="state-cell">
+          ${statusOrb('orbit', { label: 'Solving' })}
+          ${statusOrb('spark', { label: 'Verified' })}
+          <span class="st-pin-chip">1 · Warn</span>
+          <span class="st-pin-chip err">2 · Clip</span>
+          <span class="st-pin-chip ok">3 · Resolved</span>
+        </div>
+      </div>
+    </div>`;
+    stateHost.innerHTML = previewStage({
+      id: 'ink-state-matrix-stage',
+      title: 'State Matrix',
+      previewHtml: matrixHtml,
+      code: `import { applyVoice, mountVoiceBar } from '@saxster/atlas/theme.js';\nmountVoiceBar(barHost, { targetEl: stageEl });`,
+      themes: ['paper', 'sepia', 'dark'],
+      initialTheme: 'paper',
+    });
+    bindPreviewStage(stateHost);
+  }
+
   const swatchOpts = Object.entries(ACCENT_SWATCHES).map(([k, hex]) => ({
     value: k,
     label: k[0].toUpperCase() + k.slice(1),

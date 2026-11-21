@@ -5,6 +5,8 @@ import { createStage, bindPlaybackLifecycle, ease, mountShareButton, mountCutBar
 import { bindProse } from './prose.js';
 import { mountSoundToggle, playClick, playBoop } from './sound.js';
 import { renderControl, updateControl, bindControls, mountControlModeBar, createUndoStack, showActionReceipt } from './diegetic.js';
+import { mountStageOverlay, decodeReviewPins } from './review.js';
+import { mountPresentMode } from './present.js';
 
 function applySandboxChart(el, res, state, params, items) {
   if (!el || !res) return;
@@ -23,8 +25,10 @@ const clone = x => JSON.parse(JSON.stringify(x));
 export function startSandbox(figure) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const narrowQ = matchMedia('(max-width: 900px)');
-  const Q = new URLSearchParams(location.search), RENDER = Q.has('render');
+  const Q = new URLSearchParams(location.search), RENDER = Q.has('render'), EMBED = Q.has('embed');
   if (RENDER) document.documentElement.classList.add('render');
+  if (EMBED) document.documentElement.classList.add('embed');
+  const CALM = !RENDER && (Q.has('calm') || (EMBED && !Q.has('auto')));
   let S = null, raf = 0, frameReady = false, last = performance.now();
   const life = RENDER ? { reduced: false, hidden: false, visible: true, active: true, destroy() {} } : bindPlaybackLifecycle({
     onChange(st) {
@@ -97,11 +101,13 @@ export function startSandbox(figure) {
 
   // ---------- presets ----------
   const presetsEl = $('presets');
+  let presentCtl = null;
   function renderPresets() {
     if (!presetsEl) return;
     if (!figure.presets?.length) { presetsEl.hidden = true; return; }
     presetsEl.innerHTML = `<div class="kicker">Presets</div><div class="preset-row">${figure.presets.map(p =>
       `<button type="button" class="preset" data-preset="${p.key}" aria-pressed="${p.key === activePreset}">${p.label}</button>`).join('')}</div>`;
+    presentCtl?.sync();
   }
   if (presetsEl) {
     renderPresets();
@@ -295,6 +301,8 @@ export function startSandbox(figure) {
     onSound: (kind, dir) => { if (soundCtl?.on && soundCtl.ctx) (kind === 'scrub' ? playClick : playBoop)(soundCtl.ctx, { dir }); },
   });
 
+  let overlay = null;
+  let lastState = null;
   function build() {
     if (S) {
       S.destroy();
@@ -310,13 +318,15 @@ export function startSandbox(figure) {
       pl.hidden = false; pl.querySelector('.close').onclick = () => S.select(null);
     };
     if (cutBar?.overridden) cutBar.apply(cutBar.mode, true);
+    overlay?.syncStage();
     if (RENDER || window.__atlas) Object.assign(window.__atlas || {}, { E: S.E, S, labelReport: S.labelReport, sceneReport: S.sceneReport });
   }
   build();
 
   let clock = !RENDER && Q.has('t') ? (+Q.get('t') || 0) : 0;
   function draw(now, dt, c) {
-    const state = S.step({ now, dt, s: 0, litPage: 0, running: !life.reduced, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
+    const state = S.step({ now, dt, s: 0, litPage: 0, running: !life.reduced && !CALM, clockAt: c, narrow: narrowQ.matches, narrowZoom: figure.narrowZoom ?? 1 });
+    lastState = state;
     $('readout').textContent = figure.readout(state, params, items);
     (figure.chips || []).forEach((ch, i) => {
       const txt = String(ch.value(state, params, items));
@@ -331,7 +341,7 @@ export function startSandbox(figure) {
 
   function frame(now) {
     const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 20); last = now;
-    if (!life.reduced) clock += dt;
+    if (!life.reduced && !CALM) clock += dt;
     draw(now, dt, clock);
     if (!RENDER && !life.hidden) raf = requestAnimationFrame(frame);
     else raf = 0;
@@ -369,8 +379,41 @@ export function startSandbox(figure) {
     });
   }
 
+  if (!RENDER && !EMBED && (Q.has('inspect') || Q.has('review') || Q.has('reviewData'))) {
+    overlay = mountStageOverlay(() => S, $('gl').parentElement, {
+      figureId: location.pathname.split('/').filter(Boolean).slice(-2).join('/'),
+      getPage: () => 0,
+      getTotalPages: () => 1,
+      getClock: () => S?.clock || 0,
+      getModelState: () => lastState,
+      initialMode: Q.has('inspect') ? 'inspect' : 'pins',
+      initialPins: decodeReviewPins(Q.get('reviewData')),
+      reviewUrl: Q.get('review'),
+    });
+  }
+  const prsList = figure.presets || [];
+  if (!EMBED) presentCtl = mountPresentMode({
+    kind: 'sandbox',
+    title: figure.title,
+    count: Math.max(1, prsList.length),
+    getIndex: () => Math.max(0, prsList.findIndex(p => p.key === activePreset)),
+    goTo: idx => {
+      const pr = prsList[idx];
+      if (pr && presetsEl) presetsEl.querySelector(`[data-preset="${pr.key}"]`)?.click();
+    },
+    getSlideMeta: idx => ({
+      kicker: `Fig. ${figure.no} · ${figure.title}`,
+      title: prsList[idx]?.label || figure.title,
+      sub: figure.question,
+      notesHtml: `<p><b>The big idea:</b> ${figure.bigIdea}</p>`,
+    }),
+    getStage: () => S,
+    initialActive: Q.has('present'),
+    renderOnly: RENDER,
+  });
+
   window.__atlas = {
-    E: S.E, S, N: 1, labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, get items() { return items; },
+    E: S.E, S, N: 1, overlay, present: presentCtl, setPresent: f => presentCtl?.setActive(f), togglePresent: () => presentCtl?.toggle(), labelReport: S.labelReport, sceneReport: S.sceneReport, lifecycle: life, params, get items() { return items; },
     reset, undo, redo, get canUndo() { return undoStack.canUndo; }, get canRedo() { return undoStack.canRedo; },
     shareUrl, setCut: c => cutBar?.apply(c, true), setParam: worldHooks.setParam, setParams: worldHooks.setParams, updateItem: worldHooks.updateItem,
     get state() { return { clock, params: { ...params }, items: clone(items), activePreset, cut: cutBar?.mode || 'solid' }; },

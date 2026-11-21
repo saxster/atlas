@@ -468,7 +468,31 @@
   .ink-patterns h2 { font: 700 18px/1.2 var(--display); margin: 0 0 6px; }
   .ink-orb-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
   .ink-receipt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  html.render .ink-studio, html.render .ink-patterns { display: none; }
+  .ink-voices, .ink-states { margin-top: 28px; display: grid; gap: 16px; }
+  .ink-voice-stage {
+    padding: 18px; border-radius: var(--atlas-r-card, 14px); border: 1.5px solid var(--ink-line, #231e16);
+    background-color: var(--page); color: var(--text); display: grid; gap: 12px;
+  }
+  .ink-voice-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 600 11.5px/1 var(--mono); }
+  .ink-voice-pill { padding: 4px 9px; border-radius: var(--atlas-r-pill, 999px); border: 1px solid var(--faint); background: var(--card); color: var(--strong); }
+  .ink-voice-pill.acc { background: var(--accent); color: var(--accent-on); border-color: var(--accent-mid); }
+  .ink-voice-pill.soft { background: var(--accent-soft); color: var(--accent-ink); }
+  .state-matrix { display: grid; gap: 10px; }
+  .state-row {
+    display: grid; grid-template-columns: 120px repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; align-items: center;
+    padding: 8px 10px; border-radius: var(--atlas-r-ctl, 10px); border: 1px solid var(--faint); background: var(--card);
+  }
+  .state-lbl { font: 600 11px/1.2 var(--mono); text-transform: uppercase; color: var(--muted); }
+  .state-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .st-choice { padding: 6px 10px; border-radius: var(--atlas-r-ctl, 8px); border: 1px solid var(--faint); background: var(--card); font: 500 12px/1 var(--sans); color: var(--strong); }
+  .st-choice.picked { border-color: var(--strong); box-shadow: inset 0 0 0 1px var(--strong); }
+  .st-choice.right { border-color: #236b43; background: #eef7f1; color: #1b4d31; }
+  .st-choice.wrong { border-color: #b8343a; background: #fcefef; color: #8c2328; }
+  .st-pin-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px/1 var(--mono); padding: 4px 8px; border-radius: 999px; color: #fff; background: var(--accent-ink, #b5381f); }
+  .st-pin-chip.err { background: #b8343a; }
+  .st-pin-chip.ok { background: #236b43; }
+  @media (max-width: 680px) { .state-row { grid-template-columns: 1fr; } }
+  html.render .ink-studio, html.render .ink-patterns, html.render .ink-voices, html.render .ink-states { display: none; }
   @media (max-width: 1100px) {
     .ink-hero { grid-template-columns: 1fr; gap: 18px; }
     .ink-studio, .ink-patterns-grid { grid-template-columns: 1fr; }
@@ -580,6 +604,23 @@
         <p class="ink-studio-sub">Fixed center focus ring over Creator Voice registers × grammars with axis-locked drag, edge rubberband, and arrow-key navigation.</p>
         <div id="pattern-deck-host"></div>
       </div>
+    </div>
+  </section>
+
+  <section class="ink-voices" id="voice-gallery" aria-label="Single-Source Creator Voice Gallery">
+    <div class="ink-card bento-card">
+      <h2>Single-Source Creator Voice Gallery</h2>
+      <p class="ink-studio-sub">Driven from <code>engine/voices.json</code> → <code>engine/voices.js</code>: switch all 10 Creator Voices to morph surface warmth, typography, corner radius, motion feel, and WCAG-clamped accents simultaneously.</p>
+      <div id="voice-gallery-bar"></div>
+      <div class="ink-voice-stage atlas-dot-grid" id="voice-gallery-stage" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <section class="ink-states" id="state-previews" aria-label="Component State Previews Matrix">
+    <div class="ink-card bento-card">
+      <h2>Component State Previews Matrix</h2>
+      <p class="ink-studio-sub">Core Atlas interactive primitives across Default, Active, Disabled, Correct, Wrong, and <code>390px</code> / Dark surfaces.</p>
+      <div id="state-previews-host"></div>
     </div>
   </section>
 

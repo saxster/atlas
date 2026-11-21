@@ -783,7 +783,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
 }
 { // Programmatic boot package assembler & strict router (cli/boot.mjs)
   const { TARGETS, boot } = await import('../cli/boot.mjs');
-  const allTargetsOk = TARGETS.length === 26 && TARGETS.every(t => {
+  const allTargetsOk = TARGETS.length === 27 && TARGETS.every(t => {
     const res = boot(t.slug);
     const hasTemplates = t.kind !== 'grammar' || (res.templates?.['model.js'] && res.templates?.['checks.mjs'] && res.templates?.['world.js']);
     const hasVoiceDoc = t.kind !== 'voice' || (Boolean(res.voiceDoc) && res.markdown.includes('## Creator Voice Guide'));
@@ -799,7 +799,7 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
   const noMatchRes = boot('underwater basketweaving');
   const listRes = boot('', { list: true });
 
-  C.check('cli/boot.mjs: all 6 grammars, 10 kits & 10 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
+  C.check('cli/boot.mjs: all 6 grammars, 11 kits & 10 creator voices assemble live boot packages, complete triggers route, partial overlaps abstain (exit 0), and non-matches exit 3',
     allTargetsOk
     && trigExplorer.matched && trigExplorer.slug === 'explorer'
     && trigBlueprint.matched && trigBlueprint.slug === 'blueprint'
@@ -807,9 +807,10 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && trigVoice.matched && trigVoice.slug === 'bugged-sketchbook' && trigVoice.register === 'quirky'
     && trigWhacky.matched && trigWhacky.slug === 'whacky-lab' && trigWhacky.register === 'wild'
     && trigCombo.matched && trigCombo.slug === 'explorer' && trigCombo.supportingKits.includes('ciechanowski-mechanism')
+    && boot('mcp server').slug === 'workflow'
     && !abstainRes.matched && abstainRes.exitCode === 0 && abstainRes.candidates?.length > 0
     && !noMatchRes.matched && noMatchRes.exitCode === 3 && noMatchRes.candidates?.length === 0
-    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 26);
+    && !listRes.matched && listRes.exitCode === 0 && listRes.targets?.length === 27);
 }
 { // Pure conservation solvers, equal-flux quantileSeeds & 3D axisymmetric ray tracing (engine/solvers.js)
   const { solveNetwork, quantileSeeds, traceAxisymmetricRays } = await import('./solvers.js');
@@ -1875,5 +1876,132 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     u1?.snapshot?.v === 3 && r1?.snapshot?.v === 99 && !stack.canRedo
     && deckA.row === 0 && deckA.col === 0 && deckA.hitEdge === true
     && deckB.row === 1 && deckB.col === 0 && deckB.moved === true);
+}
+
+// Magic Patterns craft adoption tests (Creator Voices + WCAG, review.js, present.js, takes.js/cli, SpaceDeck zoom, cli/mcp.mjs)
+{
+  const voicesMod = await import('./voices.js');
+  const themeMod = await import('./theme.js');
+  const reviewMod = await import('./review.js');
+  const presentMod = await import('./present.js');
+  const takesMod = await import('./takes.js');
+  const diegMod = await import('./diegetic.js');
+  const { buildTakesHtml } = await import('../cli/takes.mjs');
+  const { createMcpServer } = await import('../cli/mcp.mjs');
+
+  const voicesList = voicesMod.listVoices();
+  let allVoicesWcagOk = voicesList.length === 10 && voicesMod.VOICE_IDS.length === 10;
+  for (const v of voicesList) {
+    const t = themeMod.deriveAccentTokens(v.accent, {
+      page: v.paper,
+      card: v.card,
+      ink: v.ink,
+      tintNeutrals: v.tintNeutrals,
+      type: v.typography,
+      radius: v.radius,
+    });
+    const aud = themeMod.auditTheme([
+      { role: 'ink/paper', fg: t.neutrals.strong, bg: t.neutrals.page, kind: 'text' },
+      { role: 'ink/card', fg: t.neutrals.strong, bg: t.neutrals.card, kind: 'text' },
+      { role: 'accentInk/paper', fg: t.accentInk, bg: t.neutrals.page, kind: 'text' },
+      { role: 'accentInk/card', fg: t.accentInk, bg: t.neutrals.card, kind: 'text' },
+      { role: 'accentInk/soft', fg: t.accentInk, bg: t.accentSoft, kind: 'text' },
+      { role: 'accentOn/accent', fg: t.accentOn, bg: t.accent, kind: 'text' },
+      { role: 'text/card', fg: t.neutrals.text, bg: t.neutrals.card, kind: 'text' },
+    ]);
+    if (!aud.ok) allVoicesWcagOk = false;
+  }
+  C.check('voices.js + theme.js: all 10 VOICES pass WCAG AA contrast & alias resolution',
+    allVoicesWcagOk
+    && voicesMod.resolveVoice('plotter').id === 'plotter-draft'
+    && voicesMod.resolveVoice('whacky').id === 'whacky-lab'
+    && voicesMod.resolveVoice('nonexistent-voice').id === voicesMod.DEFAULT_VOICE);
+
+  const pinIn = reviewMod.createReviewPin({
+    figure: 'examples/minimal/machine',
+    page: 2,
+    t: 1.2567,
+    asm: 'gear-train',
+    dataPart: 'crank',
+    xPct: -15,
+    yPct: 140,
+    source: 'labels',
+    text: 'Label clips edge',
+    camera: { target: [0.1, 0.2, 0.3], az: 0.45, el: 0.32, dist: 9.5, fov: 22 },
+  });
+  const encoded = reviewMod.encodeReviewPins([pinIn]);
+  const decoded = reviewMod.decodeReviewPins(encoded);
+  const corrupt = reviewMod.decodeReviewPins('%%%not-base64%%%');
+  const pkt = reviewMod.formatInspectPacket({
+    figure: 'examples/minimal/machine',
+    page: 2,
+    t: 1.25,
+    asm: 'gear-train',
+    camera: { target: [0, 0, 0], az: 0.5, el: 0.3, dist: 10, fov: 18 },
+    voice: 'plotter-draft',
+    note: 'Tighten crop',
+  });
+  const camDefaultFov = reviewMod.formatCameraPatch({ target: [1, 2, 3], az: 0.25, el: 0.4, dist: 12, fov: 18 }, { page: 1 });
+  C.check('review.js: pin clamp, base64url round-trip, corrupt guard, inspect citation & cam patch',
+    pinIn.xPct === 0 && pinIn.yPct === 100 && pinIn.severity === 'error'
+    && decoded.length === 1 && decoded[0].asm === 'gear-train' && decoded[0].text === 'Label clips edge'
+    && Array.isArray(corrupt) && corrupt.length === 0
+    && pkt.markdown.includes('Atlas Inspect Citation') && pkt.markdown.includes('Tighten crop')
+    && camDefaultFov.includes('// Page 1') && !camDefaultFov.includes('fov:'));
+
+  const slideLo = presentMod.buildSlideMeta({ index: -3, total: 5, title: '<b>First</b>', kicker: '<i>Ch 1</i>', sub: 'Intro <code>x</code>' });
+  const slideHi = presentMod.buildSlideMeta({ index: 99, total: 5 });
+  C.check('present.js: buildSlideMeta index clamping, HTML tag stripping & fallback notes',
+    slideLo.index === 0 && slideLo.counter === '1 / 5' && slideLo.title === 'First' && slideLo.kicker === 'Ch 1'
+    && slideLo.notesHtml.includes('<p>Intro x</p>')
+    && slideHi.index === 4 && slideHi.counter === '5 / 5' && slideHi.title === 'Slide 5');
+
+  const spec = takesMod.buildTakesSpec({ figure: '/examples/minimal/machine/', voices: ['textbook', 'plotter', 'whacky'] });
+  const html = buildTakesHtml({ title: 'Takes <Demo>', figure: 'examples/minimal/machine', voices: ['textbook-pure', 'plotter-draft', 'whacky-lab'] });
+  C.check('takes.js + cli/takes.mjs: 3-take spec URLs & XSS-safe standalone HTML',
+    spec.takes.length === 3
+    && spec.takes[0].src.includes('/examples/minimal/machine/?embed=1&calm=1&sync=takes&voice=textbook-pure')
+    && spec.takes[1].voice === 'plotter-draft'
+    && html.includes('<title>Takes &lt;Demo')
+    && !html.includes('<Demo>')
+    && html.includes('id="takes-spec"')
+    && html.includes('mountTakesBoard'));
+
+  const zClampedLo = diegMod.clampSpaceDeckZoom(0.2);
+  const zClampedHi = diegMod.clampSpaceDeckZoom(2.5);
+  const zRound = diegMod.clampSpaceDeckZoom(1.1234);
+  const zBad = diegMod.clampSpaceDeckZoom('bad');
+  C.check('diegetic.js: clampSpaceDeckZoom bounds [0.6, 1.4] & fallback',
+    zClampedLo === 0.6 && zClampedHi === 1.4 && zRound === 1.12 && zBad === 1);
+
+  const srv = createMcpServer({ root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..') });
+  const mInit = await srv.handleMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });
+  const mPing = await srv.handleMessage({ jsonrpc: '2.0', id: 2, method: 'ping', params: {} });
+  const mTools = await srv.handleMessage({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
+  const mResList = await srv.handleMessage({ jsonrpc: '2.0', id: 4, method: 'resources/list', params: {} });
+  const mResRead = await srv.handleMessage({ jsonrpc: '2.0', id: 5, method: 'resources/read', params: { uri: 'atlas://voices.json' } });
+  const mResMiss = await srv.handleMessage({ jsonrpc: '2.0', id: 6, method: 'resources/read', params: { uri: 'atlas://missing' } });
+  const mBoot = await srv.handleMessage({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'atlas_boot', arguments: { query: 'plotter-draft' } } });
+  const mVoices = await srv.handleMessage({ jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'atlas_voices', arguments: {} } });
+  const mEx = await srv.handleMessage({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'atlas_list_examples', arguments: { subject: 'physics' } } });
+  const mSearch = await srv.handleMessage({ jsonrpc: '2.0', id: 10, method: 'tools/call', params: { name: 'atlas_search_concepts', arguments: { query: 'newton', limit: 5 } } });
+  const mCheck = await srv.handleMessage({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'atlas_check', arguments: { target: 'examples/minimal/machine' } } });
+  const mLint = await srv.handleMessage({ jsonrpc: '2.0', id: 12, method: 'tools/call', params: { name: 'atlas_svg_lint', arguments: { files: ['evals/attachments/faulty-diagram.svg'], strictDraft: true } } });
+  const mEsc = await srv.handleMessage({ jsonrpc: '2.0', id: 13, method: 'tools/call', params: { name: 'atlas_svg_lint', arguments: { files: ['../etc/passwd'] } } });
+  C.check('cli/mcp.mjs: initialize, ping, tools(9), resources(5), tools/call & root confinement',
+    mInit.result?.serverInfo?.name === '@saxster/atlas'
+    && mPing.result && Object.keys(mPing.result).length === 0
+    && mTools.result?.tools?.length === 9
+    && mResList.result?.resources?.length === 5
+    && (mResRead.result?.contents?.[0]?.text || '').includes('plotter-draft')
+    && mResMiss.error?.code === -32002
+    && mBoot.result?.structuredContent?.slug === 'plotter-draft'
+    && mVoices.result?.structuredContent?.voices?.length === 10
+    && mVoices.result.structuredContent.voices.every(v => v.wcagPass)
+    && mEx.result?.structuredContent?.count > 0
+    && mSearch.result?.structuredContent?.count > 0
+    && mCheck.result?.structuredContent?.failed === 0
+    && mLint.result?.isError === true
+    && mEsc.error?.code === -32603);
 }
 C.report();

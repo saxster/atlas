@@ -1,6 +1,9 @@
 // A host page's colours as a theme for createStage (see parts.js applyTheme), plus pure WCAG 2.x contrast helpers.
 // Zero Node imports: tools/vendor.mjs bundles this file into offline Kym textbooks via esbuild.
 import { DRAFT_STANDARD } from './draft_standard.js';
+import { VOICES, VOICE_IDS, DEFAULT_VOICE, resolveVoice, listVoices } from './voices.js';
+import { applyMotionFeel } from './motion.js';
+export { VOICES, VOICE_IDS, DEFAULT_VOICE, resolveVoice, listVoices };
 export const KYM = { sheet: '--sheet', ink: '--ink', red: '--proton', blue: '--electron', green: '--green', ochre: '--neutron' };
 
 // Oliver Byrne (1847 Chiswick Press / c82.net) primary-colour geometric proof theme.
@@ -344,6 +347,100 @@ export function applyAccentTokens(el, tokensOrHex, opts = {}) {
     el.style.setProperty('--ink-r', `${radiusSpec.card}px`);
   }
   return t;
+}
+
+/**
+ * Apply a single-source Creator Voice (`engine/voices.js`) to a DOM element across colour surfaces,
+ * WCAG-clamped accent cascade, typography, corner radius, quirk/medium datasets, and motion feel,
+ * optionally syncing a live Three.js stage.
+ */
+export function applyVoice(el, voiceOrId = DEFAULT_VOICE, {
+  stage = null,
+  syncMotion = true,
+  setSurfaces = true,
+} = {}) {
+  const v = resolveVoice(voiceOrId);
+  const tokens = deriveAccentTokens(v.accent, {
+    page: v.paper,
+    card: v.card,
+    ink: v.ink,
+    tintNeutrals: v.tintNeutrals,
+    type: v.typography,
+    radius: v.radius,
+  });
+  if (el) {
+    applyAccentTokens(el, tokens, {
+      tintNeutrals: v.tintNeutrals,
+      type: v.typography,
+      radius: v.radius,
+    });
+    if (setSurfaces && el.style?.setProperty && tokens.neutrals) {
+      el.style.setProperty('--page', tokens.neutrals.page);
+      el.style.setProperty('--card', tokens.neutrals.card);
+      el.style.setProperty('--strong', tokens.neutrals.strong);
+      el.style.setProperty('--ink-line', tokens.neutrals.strong);
+      el.style.setProperty('--board', tokens.neutrals.board);
+    }
+    if (el.dataset) {
+      el.dataset.voice = v.id;
+      el.dataset.quirk = v.quirk;
+      el.dataset.medium = v.medium;
+    }
+    if (syncMotion) {
+      applyMotionFeel(el, v.feel);
+      if (el.dataset) el.dataset.feel = v.feel;
+    }
+  }
+  if (stage) {
+    stage.setQuirk?.(v.quirk, { syncMedium: false });
+    stage.setMedium?.(v.medium);
+    stage.setAccent?.(v.accent, { page: v.paper, card: v.card, ink: v.ink });
+  }
+  return { voice: v, tokens };
+}
+
+export function mountVoiceBar(anchorEl, {
+  voices = VOICE_IDS,
+  initialVoice = null,
+  place = 'after',
+  getStage = () => null,
+  targetEl = null,
+  onChange = null,
+  setSurfaces = true,
+} = {}) {
+  if (!anchorEl || typeof document === 'undefined') return null;
+  const list = (Array.isArray(voices) && voices.length ? voices : VOICE_IDS).map(id => resolveVoice(id));
+  const host = targetEl || document.documentElement;
+  let cur = resolveVoice(initialVoice || host?.dataset?.voice || getStage?.()?.voice || undefined).id;
+  if (!list.some(v => v.id === cur)) cur = list[0]?.id || DEFAULT_VOICE;
+
+  const bar = document.createElement('div');
+  bar.className = 'mode voicebar';
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', 'Creator voice');
+  bar.innerHTML = list.map(v => (
+    `<button type="button" data-voice="${v.id}" aria-pressed="${v.id === cur}" title="${v.summary}">${v.shortLabel || v.label}</button>`
+  )).join('');
+  if (place === 'before') anchorEl.before(bar);
+  else if (place === 'append') anchorEl.appendChild(bar);
+  else anchorEl.after(bar);
+
+  const apply = id => {
+    const v = resolveVoice(id);
+    cur = v.id;
+    bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.voice === cur)));
+    const S = getStage?.();
+    const res = S?.setVoice
+      ? (applyVoice(host, v.id, { stage: null, setSurfaces }), S.setVoice(v.id, { targetEl: host, setSurfaces }))
+      : applyVoice(host, v.id, { stage: S, setSurfaces });
+    onChange?.(v, res);
+    return v;
+  };
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-voice]');
+    if (b) apply(b.dataset.voice);
+  });
+  return { el: bar, apply, get voice() { return cur; } };
 }
 
 export function mountSwatchBar(anchorEl, {

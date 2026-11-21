@@ -9,9 +9,12 @@ atlas boot [<grammar|kit|voice|task>] [--list] [--json]    assemble a grammar, k
 atlas check [dir]                                          audit model.js purity and run every checks.mjs under dir (default: here)
 atlas gate [<file>] [--transcript <jsonl>]                 verify Model-First & Read-Before-Write gate (CLI or PreToolUse stdin hook)
 atlas stills <out-dir> <figure…>                           a still of every page or step, desktop and phone
-atlas critic <figure…> [--intersections]                   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
+atlas critic <figure…> [--intersections] [--pins <out.json>]   frames that jump, labels that overlap, framing/occlusion/mesh & SVG clip clashes
 atlas visual-learner <figure> [--out <dir>] [--steps <n>] [--policy scripted|ollama]   blind screenshot-only QA walk & HTML report
 atlas record <figure> [--size 1920x1080] [--fps 60] [--samples 1] [--shutter 0.5] [--loop] [--silent] [--out videos]   an MP4 with a soundtrack
+atlas slides <figure> [--out slides] [--pdf <out.pdf>] [--width 1600] [--height 900]   capture 16:9 presentation slides & optional PDF
+atlas takes <figure> [--voices a,b,c] [--compare f1,f2,f3] [--out takes.html]   build 3-Take synchronized exploration board
+atlas mcp                                                 start local stdio MCP server for coding agents
 atlas svg-lint <file…> [--strict-draft] [--compact] [--json]   lint SVG files for XML/ref hygiene and Plotter drafting rules
 atlas export-svg <in.svg> [--out <out.svg>] [--theme light|dark|atelier] [--id-prefix <p>] [--bg <hex|theme>] [--embed-font <woff2>]   resolve tokens & sanitize static SVG
 atlas svg-render <in.svg> --out <out.png> [--theme light|dark|both] [--width <px>] [--scale <n>] [--background theme|none|<hex>] [--renderer auto|browser|rsvg-convert|resvg|inkscape|magick|qlmanage]   render SVG to PNG`;
@@ -39,12 +42,19 @@ const COMMANDS = {
   async stills() { const [out, ...rest] = figures(); if (!rest.length) throw usage(); return (await import('../cli/stills.mjs')).stills(out, rest); },
   async critic() {
     const intersections = flag('--intersections');
+    const pinsOut = opt('--pins', null);
     if (!args.length) throw usage();
     const list = figures();
+    const pins = pinsOut ? [] : null;
     const j = await (await import('../cli/jumps.mjs')).jumps(list);
-    const l = await (await import('../cli/labels.mjs')).labels(list);
-    const s = await (await import('../cli/scene.mjs')).scene(list, { intersections });
-    const c = await (await import('../cli/clip.mjs')).clip(list);
+    const l = await (await import('../cli/labels.mjs')).labels(list, { pins });
+    const s = await (await import('../cli/scene.mjs')).scene(list, { intersections, pins });
+    const c = await (await import('../cli/clip.mjs')).clip(list, { pins });
+    if (pinsOut && pins) {
+      fs.mkdirSync(path.dirname(path.resolve(pinsOut)), { recursive: true });
+      fs.writeFileSync(path.resolve(pinsOut), JSON.stringify(pins, null, 2) + '\n');
+      console.log(`wrote ${pins.length} review pins -> ${pinsOut}`);
+    }
     return j + l + s + c;
   },
   async 'visual-learner'() {
@@ -72,6 +82,30 @@ const COMMANDS = {
     };
     if (!args[0]) throw usage();
     return (await (await import('../cli/record.mjs')).record(figures()[0], o)) ? 0 : 1;
+  },
+  async slides() {
+    const outDir = opt('--out', 'slides');
+    const pdf = opt('--pdf', null);
+    const width = Number(opt('--width', '1600'));
+    const height = Number(opt('--height', '900'));
+    if (!args[0]) throw usage();
+    await (await import('../cli/slides.mjs')).slides(figures()[0], { outDir, pdf, width, height });
+    return 0;
+  },
+  async takes() {
+    const voicesRaw = opt('--voices', null);
+    const compareRaw = opt('--compare', null);
+    const out = opt('--out', 'takes.html');
+    const title = opt('--title', null);
+    const voices = voicesRaw ? voicesRaw.split(',').map(s => s.trim()).filter(Boolean) : ['textbook-pure', 'bugged-sketchbook', 'whacky-lab'];
+    const compare = compareRaw ? compareRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
+    if (!args[0] && !compare) throw usage();
+    (await import('../cli/takes.mjs')).writeTakesBoard(figures()[0] || compare[0], { voices, compare, out, title });
+    return 0;
+  },
+  async mcp() {
+    (await import('../cli/mcp.mjs')).runStdioServer();
+    return new Promise(() => {});
   },
   async 'svg-lint'() {
     const strictDraft = flag('--strict-draft');

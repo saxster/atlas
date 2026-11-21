@@ -12,7 +12,13 @@
 <link rel="stylesheet" href="engine/shelf.css">
 <script type="module" src="engine/search.js"></script>
 <style>
-  .lib { max-width: 880px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
+  header span { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 14px; }
+  .agent-pills { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border-radius: 999px; background: #1c1a16; color: #f6f1e4; }
+  .agent-pills-lbl { font: 600 10px/1 var(--mono); letter-spacing: .06em; color: #b8b0a2; }
+  .agent-pill { padding: 4px 8px; border-radius: 999px; font: 600 10.5px/1 var(--mono); color: #f6f1e4; background: rgba(255,255,255,0.10); text-decoration: none; }
+  .agent-pill.strong { background: var(--accent, #ef6a4c); color: var(--accent-on, #fff); }
+
+  .lib { max-width: 1020px; margin: 0 auto; font: 16px/1.6 var(--sans); color: var(--text); }
   .lib h2 { font: 400 28px/1.2 var(--serif); color: var(--strong); margin: 44px 0 12px; }
   .lib pre { background: var(--card); box-shadow: var(--lift); border-radius: 10px; padding: 14px 18px; overflow-x: auto; font: 13px/1.6 var(--mono); color: var(--strong); }
   .lib a { color: var(--strong); text-underline-offset: 3px; }
@@ -21,13 +27,87 @@
   .lib-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 22px auto 0; justify-content: center; }
   .lib-btn {
     appearance: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px;
-    border-radius: 999px; border: 1px solid var(--strong); background: var(--strong); color: var(--card);
+    border-radius: var(--atlas-r-pill, 999px); border: 1px solid var(--strong); background: var(--strong); color: var(--card);
     font: 600 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; text-decoration: none;
   }
   .lib-btn.secondary { background: var(--card); color: var(--strong); border-color: var(--faint); }
   .lib-status { font: 500 12px/1 var(--mono); color: var(--accent-ink, var(--strong)); }
   .lib-sub { font: 400 14.5px/1.5 var(--sans); color: var(--muted); margin: 0 0 14px; }
   .lib-demo-box { margin-top: 10px; }
+
+  /* Same Math, Five Voices live metamorphosis hero */
+  .voice-hero {
+    max-width: 1020px; margin: 0 auto 38px; padding: 18px;
+    border-radius: var(--atlas-r-card, 14px); border: 1px solid var(--faint);
+    background-color: var(--page); color: var(--text);
+    box-shadow: var(--lift); display: flex; flex-direction: column; gap: 14px;
+    transition: background-color 240ms var(--atlas-ease, ease-out), border-radius 240ms;
+  }
+  .voice-hero-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+  .voice-hero-kicker { font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--accent-ink, var(--strong)); }
+  .voice-hero-title { font: 500 clamp(22px, 3vw, 30px)/1.12 var(--display-font, var(--serif)); color: var(--strong); margin: 4px 0 0; }
+  .voice-hero-wcag {
+    font: 600 11px/1 var(--mono); padding: 5px 10px; border-radius: var(--atlas-r-pill, 999px);
+    background: var(--accent-soft, #fce4df); color: var(--accent-ink, #b5381f); border: 1px solid var(--faint);
+  }
+  .voice-hero-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+  .voice-plate {
+    border-radius: var(--atlas-r-card, 14px); border: 1.5px solid var(--ink-line, var(--faint));
+    background: var(--card); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  }
+  .voice-hero[data-quirk="wild"] .voice-plate { box-shadow: 4px 4px 0 var(--ink-line, #231e16); }
+  .voice-hero[data-quirk="slightly-quirky"] .voice-plate { box-shadow: 0 3px 0 var(--ink-side, #e0d9ca); }
+  .voice-hero[data-quirk="bland"] .voice-plate { border-width: 1px; border-color: var(--faint); box-shadow: none; }
+  .voice-hero-chart svg { width: 100%; height: auto; display: block; }
+  .voice-hero-chart .curve { fill: none; stroke: var(--accent-ink, var(--strong)); stroke-width: 2; }
+  .voice-hero-chart .area { fill: var(--accent-soft, #fce4df); stroke: none; opacity: 0.7; }
+  .voice-hero-chart .frame { fill: none; stroke: var(--faint); }
+  .voice-hero-chart .zero { stroke: var(--lo); stroke-dasharray: 3 3; }
+  .voice-hero-chart .cursor { fill: var(--accent, #ef6a4c); stroke: var(--card); stroke-width: 2; }
+  .voice-hero-chart .tangent { stroke: var(--strong); stroke-width: 1.6; stroke-dasharray: 4 3; }
+  .voice-hero-chart text { font: 10.5px var(--mono); fill: var(--muted); }
+  .voice-widgets { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .voice-prose { font: 400 15px/1.6 var(--sans); color: var(--text); margin: 0; }
+  .voice-hero-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--faint); font: 500 11.5px/1.3 var(--mono); color: var(--muted); }
+  .voice-bar-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .voice-bar-wrap .voicebar { max-width: 100%; }
+
+  /* 7-subject interactive switcher */
+  .subj-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .subj-tab {
+    appearance: none; border: 1px solid var(--faint); background: var(--card); color: var(--strong);
+    border-radius: var(--atlas-r-pill, 999px); padding: 7px 13px; font: 600 12px/1 var(--mono); cursor: pointer;
+  }
+  .subj-tab[aria-pressed="true"] { background: var(--strong); color: var(--card); border-color: var(--strong); }
+  .subj-panel {
+    display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 18px; align-items: center;
+    padding: 16px; border-radius: var(--atlas-r-card, 14px); border: 1px solid var(--faint); background: var(--card); box-shadow: var(--lift);
+  }
+  .subj-thumb { width: 100%; aspect-ratio: 9 / 8; object-fit: cover; border-radius: 10px; border: 1px solid var(--faint); background: var(--page); }
+  .subj-k { font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--accent-ink, var(--muted)); }
+  .subj-h { font: 500 26px/1.15 var(--serif); color: var(--strong); margin: 6px 0; }
+  .subj-eq { display: inline-block; padding: 5px 10px; border-radius: 8px; background: var(--page); border: 1px solid var(--faint); font: 500 13px/1.3 var(--mono); color: var(--strong); margin: 6px 0 12px; }
+  .subj-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* Two-Act Dual Audience Split (For Humans / For Computers) */
+  .dual-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 22px 0; }
+  .dual-card {
+    padding: 18px; border-radius: var(--atlas-r-card, 14px); border: 1px solid var(--faint);
+    background: var(--card); color: var(--text); display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  }
+  .dual-card.dark { background: #181715; color: #f4efe3; border-color: #34302a; }
+  .dual-card.dark h3 { color: #ffffff; }
+  .dual-card.dark .dual-k { color: var(--accent, #ef6a4c); }
+  .dual-card h3 { font: 500 22px/1.15 var(--serif); color: var(--strong); margin: 0; }
+  .dual-k { font: 600 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent-ink, var(--muted)); }
+  .dual-term {
+    margin: 0; padding: 12px; border-radius: 10px; background: #100f0d; color: #dfd9cc;
+    border: 1px solid #2c2924; font: 400 12px/1.55 var(--mono); overflow-x: auto;
+  }
+  .dual-card.dark .lib-btn { background: var(--accent, #ef6a4c); color: var(--accent-on, #fff); border-color: var(--accent, #ef6a4c); }
+  .dual-card.dark .lib-btn.secondary { background: #26231e; color: #f4efe3; border-color: #3f3a32; }
+  .dual-card.dark a { color: #f4efe3; }
+
   .cmp-card {
     padding: 16px; border-radius: 10px; background: var(--card); border: 1px solid var(--faint);
     display: flex; flex-direction: column; gap: 8px;
@@ -38,10 +118,28 @@
   .cmp-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 500 12px/1.2 var(--mono); }
   .cmp-badge { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--faint); background: var(--page); color: var(--strong); }
   .cmp-card.quirky .cmp-badge { background: var(--accent); color: var(--accent-on); border-color: var(--ink-line); }
+
+  @media (max-width: 820px) {
+    .voice-hero-grid, .subj-panel, .dual-split { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-  <header><b>Atlas</b><span><a href="examples/">Examples</a><a href="examples/ink-ui/">Ink UI</a><a href="llms.txt">llms.txt</a><a href="https://github.com/saxster/atlas">Source</a></span></header>
+  <header>
+    <b>Atlas</b>
+    <span>
+      <a href="examples/">Examples</a>
+      <a href="examples/concepts/">Concepts</a>
+      <a href="examples/ink-ui/">Ink UI</a>
+      <span class="agent-pills">
+        <span class="agent-pills-lbl">FOR AGENTS</span>
+        <a class="agent-pill" href="llms.txt">llms.txt</a>
+        <a class="agent-pill" href="examples/catalog.md">catalog.md</a>
+        <a class="agent-pill strong" href="#agent-tooling">MCP</a>
+      </span>
+    </span>
+  </header>
+
   <section class="hero">
     <h1>Teaching figures for any subject.</h1>
     <p>A zero-dep teaching figure engine: write a pure checked model, say what to draw, and get a 3D or 2D paper-and-ink figure a reader can work</p>
@@ -52,7 +150,66 @@
       <span class="lib-status" id="copy-starter-status" role="status" aria-live="polite"></span>
     </div>
   </section>
+
+  <section class="voice-hero atlas-dot-grid" id="voice-hero-stage" data-voice="bugged-sketchbook" data-quirk="slightly-quirky" data-medium="pencil-wash" aria-label="Same Math, Five Voices live demonstration">
+    <div class="voice-hero-head">
+      <div>
+        <div class="voice-hero-kicker" id="hero-voice-kicker">Same Pure Math · Register 3 · Bugged Sketchbook</div>
+        <h2 class="voice-hero-title">Damped Oscillator: <code>y(t) = A e<sup>−ζωt</sup> cos(ω<sub>d</sub>t)</code></h2>
+      </div>
+      <span class="voice-hero-wcag" id="hero-wcag-badge">WCAG AA PASS</span>
+    </div>
+    <div class="voice-hero-grid">
+      <div class="voice-plate">
+        <div class="voice-hero-chart" id="hero-osc-chart"></div>
+        <div class="voice-hero-meta">
+          <span id="hero-osc-readout">E(t) = 0.000 J · Regime: Underdamped</span>
+          <span id="hero-voice-summary">Warm pencil-wash sketchbook</span>
+        </div>
+      </div>
+      <div class="voice-widgets" id="hero-widgets-host"></div>
+    </div>
+    <div class="voice-bar-wrap">
+      <div id="hero-voice-bar"></div>
+      <span class="lib-status" id="hero-voice-meta">medium: pencil-wash · feel: spring · corners: soft</span>
+    </div>
+  </section>
+
   <main class="lib">
+    <h2>Explore 7 subjects from one pure-model engine</h2>
+    <p class="lib-sub">Switch across Physics, Mathematics, Statistics, Critical Thinking, Chemistry, Economics, and Biology — open the live figure, launch 16:9 lecture slides (<code>?present</code>), or copy a targeted agent remix prompt.</p>
+    <div id="subject-switcher">
+      <div class="subj-tabs" role="group" aria-label="Atlas subjects"></div>
+      <div class="subj-panel" id="subj-panel"></div>
+    </div>
+
+    <h2 id="agent-tooling">Built for humans to read, and agents to verify</h2>
+    <div class="dual-split">
+      <article class="dual-card">
+        <span class="dual-k">For Readers &amp; Authors</span>
+        <h3>Model-first, tactile, and embeddable anywhere</h3>
+        <p>Every figure separates pure math (<code>model.js</code>) and independent checks (<code>checks.mjs</code>) from drawing (<code>world.js</code>). Launch full-bleed <code>?present</code> lecture slides, compare variants side-by-side with <code>npx atlas takes</code>, or embed into Kym textbooks.</p>
+        <div class="lib-cta" style="justify-content:flex-start;margin-top:auto">
+          <a class="lib-btn" href="examples/physics/newton/?present">Try ?present slides</a>
+          <a class="lib-btn secondary" href="examples/concepts/">Concept thread board</a>
+        </div>
+      </article>
+      <article class="dual-card dark">
+        <span class="dual-k">For Computers · Stdio MCP + CLI</span>
+        <h3>Zero-dep MCP tools &amp; spatial inspection</h3>
+        <pre class="dual-term">$ npx atlas mcp
+→ atlas_boot("explorer")       # verified exports + skeleton
+→ atlas_check("physics/newton") # model purity + 2nd proof
+→ atlas_critic("physics/newton", { pinsOut: "pins.json" })
+$ npx atlas takes physics/newton --voices textbook-pure,bugged-sketchbook,whacky-lab</pre>
+        <div class="lib-cta" style="justify-content:flex-start;margin-top:auto">
+          <button type="button" class="lib-btn" id="copy-mcp-config">Copy MCP config</button>
+          <a class="lib-btn secondary" href="examples/catalog.md">Open catalog.md</a>
+          <span class="lib-status" id="copy-mcp-status" role="status" aria-live="polite" style="color:#f6f1e4"></span>
+        </div>
+      </article>
+    </div>
+
     <h2>Six ways to work a figure</h2>
     <ul>
       <li><b>Book.</b> Scroll turns the page and the camera moves; click a part to break it down. <a href="examples/minimal/book/">Example</a></li>
@@ -74,31 +231,218 @@
     <h2>Start</h2>
 <pre>npm install github:saxster/atlas three
 npx atlas new biology/heart --grammar machine
-npx atlas boot bugged-sketchbook</pre>
-    <p>That writes a pure <code>model.js</code>, its independent <code>checks.mjs</code>, the figure and a page. Coding agents can read <a href="llms.txt"><code>llms.txt</code></a> or <a href="llms-full.txt"><code>llms-full.txt</code></a> directly.</p>
+npx atlas boot bugged-sketchbook
+npx atlas mcp</pre>
+    <p>That writes a pure <code>model.js</code>, its independent <code>checks.mjs</code>, the figure and a page. Coding agents can read <a href="llms.txt"><code>llms.txt</code></a>, <a href="llms-full.txt"><code>llms-full.txt</code></a>, or <a href="examples/catalog.md"><code>examples/catalog.md</code></a> directly.</p>
     <h2>Built with it</h2>
     <p><a href="examples/">Sixty-five figures</a> across physics, maths, statistics, critical thinking, chemistry, economics and biology, <a href="examples/ink-ui/">Corner Atelier (24 live 2.5D ink widgets)</a>, and an <a href="examples/concepts/">index of ideas</a> that cross subjects.</p>
   </main>
 
   <script type="module">
-    import { anatomyOverlay, bindAnatomyOverlay } from './engine/prose.js';
-    import { previewStage, bindPreviewStage, compareCurtain, bindCompareCurtain, statusOrb } from './engine/diegetic.js';
+    import { scrub, val, bindProse, anatomyOverlay, bindAnatomyOverlay } from './engine/prose.js';
+    import { previewStage, bindPreviewStage, compareCurtain, bindCompareCurtain, statusOrb, renderControl, bindControls } from './engine/diegetic.js';
+    import { chart, samples, moveCursor, moveTangent } from './engine/chart.js';
+    import { mountVoiceBar, deriveAccentTokens, auditTheme } from './engine/theme.js';
 
     const STARTER_PROMPT = [
       'Build a new interactive teaching figure using @saxster/atlas.',
-      'First fetch https://saxster.github.io/atlas/llms.txt (or run `npx atlas boot <grammar>`).',
+      'First fetch https://saxster.github.io/atlas/llms.txt (or run `npx atlas boot <grammar>` / `npx atlas mcp`).',
       'Scaffold with `npx atlas new <subject>/<id> --grammar machine|book|explorer|sandbox|teardown|blueprint`.',
       'Invariants: keep math pure inside model.js (zero DOM/Three.js), verify independently in checks.mjs (`npx atlas check`), and ensure ?render window.seek(t) is stateless and order-independent.',
     ].join('\n');
 
-    const copyBtn = document.getElementById('copy-starter-prompt');
-    const copyStatus = document.getElementById('copy-starter-status');
-    copyBtn?.addEventListener('click', async () => {
-      let ok = false;
-      try { await navigator.clipboard?.writeText(STARTER_PROMPT); ok = true; } catch {}
-      if (copyStatus) copyStatus.textContent = ok ? 'Starter prompt copied' : 'Prompt ready (check llms.txt)';
-      setTimeout(() => { if (copyStatus) copyStatus.textContent = ''; }, 2400);
+    const MCP_CONFIG = JSON.stringify({
+      mcpServers: {
+        atlas: { command: 'npx', args: ['atlas', 'mcp'] },
+      },
+    }, null, 2);
+
+    const copyWithStatus = (btnId, statusId, payload, okMsg) => {
+      const btn = document.getElementById(btnId);
+      const st = document.getElementById(statusId);
+      btn?.addEventListener('click', async () => {
+        let ok = false;
+        try { await navigator.clipboard?.writeText(payload); ok = true; } catch {}
+        if (st) st.textContent = ok ? okMsg : 'Ready to copy (clipboard unavailable)';
+        setTimeout(() => { if (st) st.textContent = ''; }, 2400);
+      });
+    };
+    copyWithStatus('copy-starter-prompt', 'copy-starter-status', STARTER_PROMPT, 'Starter prompt copied');
+    copyWithStatus('copy-mcp-config', 'copy-mcp-status', MCP_CONFIG, 'MCP JSON copied');
+
+    // ---------- Same Math, Five Voices live oscillator showcase ----------
+    const oscParams = { zeta: 0.18, omega: 3.2, amp: 1, cycles: 3 };
+    let oscT = 0.72;
+    const oscEval = (t, p) => {
+      const w = p.omega, z = p.zeta, A = p.amp;
+      if (z < 1) {
+        const wd = w * Math.sqrt(1 - z * z);
+        const env = A * Math.exp(-z * w * t);
+        const y = env * Math.cos(wd * t);
+        const v = -env * (z * w * Math.cos(wd * t) + wd * Math.sin(wd * t));
+        return { y, v, energy: 0.5 * (w * w * y * y + v * v), regime: 'Underdamped' };
+      }
+      if (Math.abs(z - 1) < 1e-6) {
+        const env = A * Math.exp(-w * t);
+        const y = env * (1 + w * t);
+        const v = -w * w * t * env;
+        return { y, v, energy: 0.5 * (w * w * y * y + v * v), regime: 'Critical' };
+      }
+      const g = w * Math.sqrt(z * z - 1);
+      const r1 = -w * z + g, r2 = -w * z - g;
+      const c1 = (r2 * A) / (r2 - r1), c2 = A - c1;
+      const y = c1 * Math.exp(r1 * t) + c2 * Math.exp(r2 * t);
+      const v = c1 * r1 * Math.exp(r1 * t) + c2 * r2 * Math.exp(r2 * t);
+      return { y, v, energy: 0.5 * (w * w * y * y + v * v), regime: 'Overdamped' };
+    };
+
+    const heroStage = document.getElementById('voice-hero-stage');
+    const heroChartHost = document.getElementById('hero-osc-chart');
+    const heroWidgetsHost = document.getElementById('hero-widgets-host');
+    const heroReadout = document.getElementById('hero-osc-readout');
+    const heroKicker = document.getElementById('hero-voice-kicker');
+    const heroSummary = document.getElementById('hero-voice-summary');
+    const heroMeta = document.getElementById('hero-voice-meta');
+    const heroWcag = document.getElementById('hero-wcag-badge');
+
+    const oscRange = { x0: 0, x1: 6, y0: -1.2, y1: 1.2, w: 420, h: 170 };
+    const ampSpec = { key: 'cycles', label: 'Marker time', min: 1, max: 5, step: 1, ui: { kind: 'unit-stepper', unit: 'beat', maxSlots: 5 } };
+
+    function renderHeroOscillator() {
+      if (!heroChartHost) return;
+      const pts = samples(0, 6, 90, x => oscEval(x, oscParams).y);
+      const envTop = samples(0, 6, 48, x => oscParams.amp * Math.exp(-oscParams.zeta * oscParams.omega * x));
+      heroChartHost.innerHTML = chart({
+        ...oscRange,
+        id: 'hero-osc-svg',
+        label: 'Damped harmonic oscillator displacement y(t)',
+        xlabel: 'time t (s)',
+        ylabel: 'y(t)',
+        series: [
+          { pts, fill: true, cls: 'curve' },
+          { pts: envTop, cls: 'total', tag: [0.35, 1.0, 'envelope'] },
+        ],
+        cursors: ['osc'],
+        tangents: ['slope'],
+      });
+      const st = oscEval(oscT, oscParams);
+      moveCursor(heroChartHost, 'osc', oscRange, oscT, st.y);
+      moveTangent(heroChartHost, 'slope', oscRange, oscT, st.y, st.v, 0.75);
+      if (heroReadout) {
+        heroReadout.textContent = `E(t=${oscT.toFixed(2)}s) = ${st.energy.toFixed(2)} J · ${st.regime}`;
+      }
+      proseCtl?.sync(st, oscParams);
+    }
+
+    if (heroWidgetsHost) {
+      heroWidgetsHost.innerHTML = [
+        `<p class="voice-prose">Drag inline damping ${scrub('zeta', { value: oscParams.zeta, min: 0.05, max: 1.4, step: 0.05, label: 'Damping ratio', fmt: v => v.toFixed(2), color: 'red' })} and natural frequency ${scrub('omega', { value: oscParams.omega, min: 1.5, max: 6.0, step: 0.1, unit: ' rad/s', label: 'Frequency', fmt: v => `${v.toFixed(1)} rad/s`, color: 'blue' })} — live energy ${val('energy', { initial: '0.00 J' })} (${val('regime', { initial: 'Underdamped' })}).</p>`,
+        `<div id="hero-stepper-slot">${renderControl(ampSpec, oscParams.cycles, { mode: 'creative', idPrefix: 'hero' })}</div>`,
+        `<div class="cmp-row">${statusOrb('pulse', { label: 'Pure model active' })}<span class="cmp-badge" id="hero-type-badge">type: editorial</span></div>`,
+      ].join('');
+    }
+
+    const proseCtl = heroWidgetsHost ? bindProse(heroWidgetsHost, {
+      getParams: () => oscParams,
+      setParam: (k, v) => { oscParams[k] = v; renderHeroOscillator(); },
+      formatters: {
+        energy: s => `${Number(s?.energy || 0).toFixed(2)} J`,
+        regime: s => String(s?.regime || 'Underdamped'),
+      },
+    }) : null;
+
+    if (heroWidgetsHost) {
+      bindControls(heroWidgetsHost, {
+        getParams: () => oscParams,
+        setParam: (k, v) => {
+          oscParams[k] = +v;
+          oscT = Math.min(5.2, 0.4 + (oscParams.cycles - 1) * 1.1);
+          const slot = document.getElementById('hero-stepper-slot');
+          if (slot) slot.innerHTML = renderControl(ampSpec, oscParams.cycles, { mode: 'creative', idPrefix: 'hero' });
+          renderHeroOscillator();
+        },
+      });
+    }
+    renderHeroOscillator();
+
+    const voiceBarHost = document.getElementById('hero-voice-bar');
+    const HERO_VOICES = ['textbook-pure', 'byrne-visual-proof', 'ciechanowski-mechanism', 'bugged-sketchbook', 'ncase-playable-toy', 'whacky-lab'];
+    const syncHeroVoiceUi = v => {
+      const tok = deriveAccentTokens(v.accent, { page: v.paper, card: v.card, ink: v.ink, tintNeutrals: v.tintNeutrals, type: v.typography, radius: v.radius });
+      const au = auditTheme([
+        { role: 'ink/card', fg: tok.neutrals.strong, bg: tok.neutrals.card, kind: 'text' },
+        { role: 'accentInk/card', fg: tok.accentInk, bg: tok.neutrals.card, kind: 'text' },
+        { role: 'accentOn/accent', fg: tok.accentOn, bg: tok.accent, kind: 'text' },
+      ]);
+      if (heroKicker) heroKicker.textContent = `Same Pure Math · Register ${v.register} · ${v.label}`;
+      if (heroSummary) heroSummary.textContent = v.summary;
+      if (heroMeta) heroMeta.textContent = `medium: ${v.medium} · quirk: ${v.quirk} · feel: ${v.feel} · corners: ${v.radius}`;
+      const typeBadge = document.getElementById('hero-type-badge');
+      if (typeBadge) typeBadge.textContent = `type: ${v.typography}`;
+      if (heroWcag) heroWcag.textContent = au.ok ? 'WCAG AA PASS' : 'CONTRAST WARN';
+    };
+
+    const heroVoiceCtl = voiceBarHost ? mountVoiceBar(voiceBarHost, {
+      voices: HERO_VOICES,
+      initialVoice: 'bugged-sketchbook',
+      place: 'append',
+      targetEl: heroStage,
+      onChange: v => syncHeroVoiceUi(v),
+    }) : null;
+    heroVoiceCtl?.apply('bugged-sketchbook');
+
+    // ---------- 7-Subject Switcher ----------
+    const SUBJECT_PLATES = [
+      { id: 'physics', name: 'Physics', figure: 'physics/induction', grammar: 'book', title: 'Electromagnetic Induction', sub: 'Moving magnets, eddy currents & Lenz braking', formula: 'ε = −dΦ_B / dt', img: 'examples/physics/img/induction.jpg' },
+      { id: 'maths', name: 'Mathematics', figure: 'maths/fourier', grammar: 'explorer', title: 'Fourier Series & Epicycles', sub: 'Rotating phasors summing into periodic shapes', formula: 'f(t) = Σ c_n e^{inωt}', img: 'examples/maths/img/fourier.jpg' },
+      { id: 'statistics', name: 'Statistics', figure: 'statistics/galton', grammar: 'explorer', title: 'Galton Board & Normal Limit', sub: 'Seeded binomial pegs converging to the Gaussian bell', formula: 'P(k) = C(n,k) p^k (1−p)^{n−k}', img: 'examples/statistics/img/galton.jpg' },
+      { id: 'critical-thinking', name: 'Critical Thinking', figure: 'critical-thinking/snow-simpson', grammar: 'explorer', title: 'Simpson’s Paradox & Confounding', sub: 'Aggregate trends reverse inside stratified subgroups', formula: 'P(Y|X) ≠ Σ_z P(Y|X,Z) P(Z)', img: 'examples/critical-thinking/img/snow-simpson.jpg' },
+      { id: 'chemistry', name: 'Chemistry', figure: 'chemistry/orbitals', grammar: 'book', title: 'Atomic Orbitals & Hybridization', sub: 'Spherical harmonics, nodes, and directional bonds', formula: 'ψ_{nlm}(r,θ,φ) = R_{nl}(r) Y_l^m(θ,φ)', img: 'examples/chemistry/img/orbitals.jpg' },
+      { id: 'economics', name: 'Economics', figure: 'economics/compound', grammar: 'machine', title: 'Compounding & Exponential Growth', sub: 'Discrete periods vs continuous growth over decades', formula: 'A(t) = P(1 + r/n)^{nt}', img: 'examples/economics/img/compound.jpg' },
+      { id: 'biology', name: 'Biology', figure: 'biology/enzyme', grammar: 'machine', title: 'Lock, Key & Saturation', sub: 'Substrate docking, active-site saturation, and Michaelis–Menten kinetics', formula: 'v = V_{max} [S] / (K_m + [S])', img: 'examples/biology/img/enzyme.jpg' },
+    ];
+    const subjTabs = document.querySelector('#subject-switcher .subj-tabs');
+    const subjPanel = document.getElementById('subj-panel');
+    let activeSubj = 'physics';
+    const renderSubjectPanel = id => {
+      activeSubj = id;
+      const s = SUBJECT_PLATES.find(x => x.id === id) || SUBJECT_PLATES[0];
+      subjTabs?.querySelectorAll('.subj-tab').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.subj === s.id)));
+      if (!subjPanel) return;
+      subjPanel.innerHTML = [
+        `<img class="subj-thumb" src="${s.img}" alt="${s.title} figure preview">`,
+        `<div>`,
+        `  <div class="subj-k">${s.name} · ${s.grammar}</div>`,
+        `  <h3 class="subj-h">${s.title}</h3>`,
+        `  <p style="margin:0;color:var(--muted)">${s.sub}</p>`,
+        `  <div class="subj-eq">${s.formula}</div>`,
+        `  <div class="subj-acts">`,
+        `    <a class="lib-btn" href="examples/${s.figure}/">Open figure →</a>`,
+        `    <a class="lib-btn secondary" href="examples/${s.figure}/?present">Present slides</a>`,
+        `    <button type="button" class="lib-btn secondary" data-subj-remix="${s.figure}">Copy remix prompt</button>`,
+        `    <span class="lib-status" id="subj-remix-st" role="status" aria-live="polite"></span>`,
+        `  </div>`,
+        `</div>`,
+      ].join('');
+    };
+    if (subjTabs) {
+      subjTabs.innerHTML = SUBJECT_PLATES.map(s => `<button type="button" class="subj-tab" data-subj="${s.id}" aria-pressed="${s.id === activeSubj}">${s.name}</button>`).join('');
+      subjTabs.addEventListener('click', e => {
+        const b = e.target.closest('[data-subj]');
+        if (b) renderSubjectPanel(b.dataset.subj);
+      });
+    }
+    subjPanel?.addEventListener('click', async e => {
+      const b = e.target.closest('[data-subj-remix]');
+      if (!b) return;
+      const fig = b.dataset.subjRemix;
+      const item = SUBJECT_PLATES.find(x => x.figure === fig);
+      const prompt = `Remix @saxster/atlas figure examples/${fig}/ (${item?.grammar || 'figure'}). First run \`npx atlas boot ${item?.grammar || 'machine'}\` and preserve pure model.js + checks.mjs.`;
+      try { await navigator.clipboard?.writeText(prompt); } catch {}
+      const st = document.getElementById('subj-remix-st');
+      if (st) { st.textContent = `Copied ${item?.name || fig} prompt`; setTimeout(() => { st.textContent = ''; }, 2000); }
     });
+    renderSubjectPanel('physics');
 
     const archSvg = `<svg viewBox="0 0 560 270" role="img" aria-label="Atlas figure pipeline diagram" style="width:100%;height:auto;display:block;background:var(--card)">
       <g stroke="var(--faint)" stroke-width="1" fill="none">
