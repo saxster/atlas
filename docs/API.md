@@ -130,7 +130,7 @@ Flat-stroke 2D technical drafting primitives (`@saxster/atlas/draft_kit.js`, gen
 - `draftDimension({ axis, witnesses, position, extensions, label })`: builds extension lines (`gap`, `overshoot`), `8`-unit diagonal end slashes, and split dimension lines cleared around `label.clearance`.
 - `draftHatch({ region, pattern = 'H1' | 'H2', phase, pitch })` and `draftSupportTicks({ from, to, extent, pitch, side })`: analytically clipped diagonal cut hatching and one-sided wall/ground ticks.
 - `draftInverseClip(id, frontPathD, { vb })` and `draftClearanceMask(id, maskContent, { vb })`: even-odd inverse `<clipPath>` and luminance `<mask>` knockouts without opaque background patches.
-- `draftSvg(opts)`, `draftCompactSvg(svgMarkup, opts)` (coordinate-preserving crop + `vector-effect="non-scaling-stroke"` + compact dash `--atlas-compact-dash`), and `draftIsolationWrap` / `bindDraftIsolation` (non-boosting hover/focus/toggle isolation).
+- `draftSvg(opts)`, `draftCompactSvg(svgMarkup, opts)` (coordinate-preserving crop + `vector-effect="non-scaling-stroke"` + compact dash `--atlas-compact-dash`), `draftRegistrationFrame(opts)` + `draftStippleBand(opts)` (single-ink registration plates & dot-stipple bands), and `draftIsolationWrap` / `bindDraftIsolation` (non-boosting hover/focus/toggle isolation).
 
 <!-- BEGIN GENERATED: draft-standard -->
 | Role | Width | Opacity | Dash Pattern | Meaning |

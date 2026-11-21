@@ -35,6 +35,7 @@ const head = (title, up, extra = '') => `<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${up}engine/atlas.css">
 <link rel="stylesheet" href="${up}engine/shelf.css">
+<link rel="describedby" href="${up}llms.txt" type="text/plain">
 <script type="module" src="${up}engine/search.js"></script>
 ${extra}</head>
 `;
@@ -78,7 +79,7 @@ function rootPage(all) {
     return `    <a class="card" href="${id}/"><div class="no"><span>${count}</span></div><h2>${name}</h2><i>${esc(s.blurb || blurb)}</i>${img}</a>`;
   });
   const deckJson = JSON.stringify(deckRows).replace(/</g, '\\u003c');
-  return head('Atlas', '../') + `<body>
+  return head('Atlas', '../', '<link rel="alternate" type="text/markdown" href="catalog.md" title="Atlas catalog">\n') + `<body>
 ${GENERATED}  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
   <section class="hero">
     <h1>Every subject, taken apart.</h1>
@@ -94,12 +95,31 @@ ${GENERATED}  <header><b>Atlas</b><span>Ideas, taken apart</span></header>
 ${cards.join('\n')}
   </section>
   <section class="shelf-deck" id="shelf-deck" hidden aria-label="2D subject and figure deck"></section>
+  <section class="shelf-toc" id="shelf-toc" aria-label="Interactive Book Map">
+    <div class="shelf-toc-head">
+      <span class="shelf-toc-eyebrow">Interactive Book Map</span>
+      <h2>Preview any subject's chapters before opening</h2>
+    </div>
+    <div class="shelf-toc-grid">
+      <div class="shelf-toc-tabs" id="shelf-toc-tabs" role="tablist" aria-label="Subjects"></div>
+      <div class="shelf-toc-panel" id="shelf-toc-panel" role="tabpanel"></div>
+    </div>
+  </section>
+  <details class="shelf-colophon">
+    <summary>Reader Contract &amp; Edition Colophon — What Stays Fixed vs. What Evolves</summary>
+    <div class="shelf-colophon-body">
+      <p><strong>What stays fixed:</strong> Every interactive figure rests on a pure, testable model (<code>model.js</code>) paired with independent checks (<code>checks.mjs</code>). Governing laws and conserved quantities stay invariant across devices.</p>
+      <p><strong>What evolves:</strong> Examples, voice palettes, camera choreography, and Companion Markdown indices expand as new subjects and chapters are authored.</p>
+      <p><strong>Formats included:</strong> Interactive 3D &amp; 2D figures, deterministic <code>?render</code> tour stills, and hierarchical agent-ready Markdown (<code>llms.txt</code>, <code>examples/catalog.md</code>, and per-subject <code>overview.md</code>).</p>
+    </div>
+  </details>
   <p class="foot"><a href="concepts/">Every idea, and the figures that show it</a> · <a href="ink-ui/">Corner Atelier (24 live ink controls)</a> · <a href="catalog.md">catalog.md</a> · <a href="../llms.txt">llms.txt</a></p>
   <script type="application/json" id="atlas-deck-data">${deckJson}</script>
   <script type="module">
     const grid = document.getElementById('shelf-grid');
     const deck = document.getElementById('shelf-deck');
     const btns = [...document.querySelectorAll('[data-shelf-view]')];
+    const rows = JSON.parse(document.getElementById('atlas-deck-data')?.textContent || '[]');
     let mounted = null;
     async function setView(v) {
       const showDeck = v === 'deck';
@@ -107,12 +127,31 @@ ${cards.join('\n')}
       deck.hidden = !showDeck;
       btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shelfView === v)));
       if (showDeck && !mounted) {
-        const rows = JSON.parse(document.getElementById('atlas-deck-data')?.textContent || '[]');
         const { mountSpaceDeck } = await import('../engine/diegetic.js');
         mounted = mountSpaceDeck(deck, { rows });
       }
     }
     btns.forEach(b => b.addEventListener('click', () => setView(b.dataset.shelfView)));
+    const tabsEl = document.getElementById('shelf-toc-tabs');
+    const panelEl = document.getElementById('shelf-toc-panel');
+    function selectTocSubject(subjectId) {
+      if (!tabsEl || !panelEl || !rows.length) return;
+      const row = rows.find(r => r.id === subjectId) || rows[0];
+      [...tabsEl.querySelectorAll('button')].forEach(b => b.setAttribute('aria-selected', String(b.dataset.tocSubject === row.id)));
+      const headHtml = '<div class="shelf-toc-panel-head"><h3>' + row.label + '</h3><a class="shelf-toc-all" href="' + row.id + '/">Open ' + row.label + ' shelf →</a></div>';
+      const listHtml = '<ol class="shelf-toc-list">' + row.items.map((it, idx) =>
+        '<li><a href="' + it.href + '"><span class="st-idx">' + String(idx + 1).padStart(2, '0') + '</span><span class="st-title">' + it.title + '</span><span class="st-sub">' + (it.sub || '') + '</span></a></li>'
+      ).join('') + '</ol>';
+      panelEl.innerHTML = headHtml + listHtml;
+    }
+    if (tabsEl && panelEl && rows.length) {
+      tabsEl.innerHTML = rows.map(r => '<button type="button" role="tab" data-toc-subject="' + r.id + '" aria-selected="false"><span>' + r.label + '</span><em>' + r.items.length + '</em></button>').join('');
+      tabsEl.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-toc-subject]');
+        if (btn) selectTocSubject(btn.dataset.tocSubject);
+      });
+      selectTocSubject(rows[0].id);
+    }
     addEventListener('keydown', e => {
       if (!mounted || deck.hidden || e.target?.closest?.('input, textarea, select, [contenteditable]')) return;
       if (e.shiftKey && (e.code === 'Digit0' || e.key === ')')) { e.preventDefault(); mounted.setZoom(1.0); }
@@ -146,7 +185,7 @@ ${sec.items.map(it => {
   }).join('\n')}
   </section>`).join('\n');
   const links = (s.links || []).map(l => `<a href="${esc(l.href.replace(/^\.\.\//, ''))}">${esc(l.label)}</a>`).join('');
-  return head(s.name, '../../', '<script src="../../engine/cover.js" data-contents></script>\n') + `<body>
+  return head(s.name, '../../', `<script src="../../engine/cover.js" data-contents></script>\n<link rel="alternate" type="text/markdown" href="overview.md" title="${esc(s.name)} overview">\n`) + `<body>
 ${GENERATED}  <header><a class="home" href="../">Atlas</a><span>${links}<a href="../concepts/">Concepts</a></span></header>
   <section class="hero">
     <h1>${esc(s.hero || s.name)}</h1>
@@ -302,7 +341,7 @@ export function buildLlmsTxt(all) {
   const totalCount = realSubjects.reduce((acc, s) => acc + (s.chapters?.length || 0) + (s.figures?.length || 0), 0);
   const subjLines = realSubjects.map(s => {
     const n = (s.chapters?.length || 0) + (s.figures?.length || 0);
-    return `- **${s.name}** (\`examples/${s.id}/\`): ${n} figures/chapters — ${s.blurb || s.tagline || ''}`.trim();
+    return `- **${s.name}** (\`examples/${s.id}/\` · \`examples/${s.id}/overview.md\`): ${n} figures/chapters — ${s.blurb || s.tagline || ''}`.trim();
   });
   return `# @saxster/atlas
 
@@ -380,6 +419,27 @@ export function buildCatalogMd(all) {
   return lines.join('\n');
 }
 
+export function buildSubjectOverviewMd(s) {
+  const lines = [
+    `# ${s.name} (@saxster/atlas)`,
+    '',
+    `> ${s.blurb || s.tagline || ''}`,
+    '',
+    '## Interactive Figures & Chapters',
+    '',
+  ];
+  for (const id of s.chapters || []) {
+    const c = s.cards?.[id] || {};
+    lines.push(`- **${c.title || id}** (\`${s.id}/${id}/\`): ${c.sub || ''}`.trim());
+  }
+  for (const id of s.figures || []) {
+    const c = s.cards?.[id] || {};
+    lines.push(`- **${c.title || id}** (\`${s.id}/${id}/\` · \`${c.grammar || 'figure'}\`): ${c.sub || ''}`.trim());
+  }
+  lines.push('', '## Navigation', '', '- [All Subjects (`llms.txt`)](../../llms.txt)', '- [Full Catalog (`catalog.md`)](../catalog.md)', '');
+  return lines.join('\n');
+}
+
 export function buildLlmsFullTxt(all) {
   const parts = [buildLlmsTxt(all).trimEnd()];
   for (const rel of ['docs/API.md', 'docs/voices/catalog.md', 'docs/verification-rubric.md']) {
@@ -396,6 +456,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
   const pages = [
     [path.join(EXAMPLES, 'index.html'), 'index.html', rootPage(all)],
     ...all.filter(s => s.contents !== false).map(s => [path.join(EXAMPLES, `${s.id}/index.html`), `${s.id}/index.html`, subjectPage(s)]),
+    ...all.filter(s => s.id !== 'minimal' && ((s.chapters?.length || 0) + (s.figures?.length || 0) > 0)).map(s => [path.join(EXAMPLES, `${s.id}/overview.md`), `${s.id}/overview.md`, buildSubjectOverviewMd(s)]),
     [path.join(EXAMPLES, 'search-index.js'), 'search-index.js', await searchIndexJs(all)],
     [path.join(EXAMPLES, 'catalog.md'), 'examples/catalog.md', buildCatalogMd(all)],
     [path.join(ROOT, 'llms.txt'), 'llms.txt', buildLlmsTxt(all)],

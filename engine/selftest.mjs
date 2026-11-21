@@ -2004,4 +2004,16 @@ C.check('samples: n + 1 points, both ends', samples(0, 1, 4, x => x * x).length 
     && mLint.result?.isError === true
     && mEsc.error?.code === -32603);
 }
+{
+  const { draftRegistrationFrame, draftStippleBand } = await import('./draft_kit.js');
+  const rf = draftRegistrationFrame({ width: 400, height: 300, pad: 8, arm: 5 });
+  const sb = draftStippleBand({ id: 'selftest-stipple', x: 10, y: 20, width: 180, height: 32 });
+  C.check('draft_kit: draftRegistrationFrame & draftStippleBand emit stroke-only currentColor SVG primitives',
+    rf.corners.length === 4
+    && rf.svg.includes('draft-registration-frame')
+    && !/#[0-9a-f]{3,6}/i.test(rf.svg)
+    && sb.defs.includes('id="selftest-stipple"')
+    && sb.svg.includes('url(#selftest-stipple)')
+    && !/#[0-9a-f]{3,6}/i.test(sb.svg));
+}
 C.report();

@@ -449,3 +449,46 @@ export function bindDraftIsolation(root) {
   root.addEventListener('click', onClick);
   return () => root.removeEventListener('click', onClick);
 }
+
+/** Single-ink printer's registration crosshairs (+) and optional dashed perimeter frame inside an SVG viewBox. */
+export function draftRegistrationFrame({
+  x = 0,
+  y = 0,
+  width = 560,
+  height = 440,
+  pad = 6,
+  arm = 6,
+  dashed = true,
+} = {}) {
+  const x0 = x + pad;
+  const y0 = y + pad;
+  const x1 = Math.max(x0 + 2, x + width - pad);
+  const y1 = Math.max(y0 + 2, y + height - pad);
+  const corners = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+  const marksD = corners
+    .map(([cx, cy]) => `M${num(cx - arm)} ${num(cy)}H${num(cx + arm)}M${num(cx)} ${num(cy - arm)}V${num(cy + arm)}`)
+    .join('');
+  const borderSvg = dashed
+    ? `<rect x="${num(x0)}" y="${num(y0)}" width="${num(x1 - x0)}" height="${num(y1 - y0)}" fill="none" stroke="currentColor" stroke-width="0.85" stroke-opacity="0.28" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`
+    : '';
+  const svg = `<g class="draft-registration-frame" aria-hidden="true">${borderSvg}<path d="${marksD}" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.55" stroke-linecap="square" vector-effect="non-scaling-stroke"/></g>`;
+  return { d: marksD, corners, svg };
+}
+
+/** Monochrome dot-stipple architectural layer band pattern + SVG rect helper (currentColor only). */
+export function draftStippleBand({
+  id = 'atlas-stipple',
+  x = 0,
+  y = 0,
+  width = 200,
+  height = 48,
+  pitch = 6,
+  r = 0.8,
+} = {}) {
+  const cleanId = esc(id).replace(/[^a-zA-Z0-9_-]/g, '') || 'atlas-stipple';
+  const step = positive(pitch, 'pitch');
+  const rad = positive(r, 'r');
+  const defs = `<pattern id="${cleanId}" width="${num(step)}" height="${num(step)}" patternUnits="userSpaceOnUse"><circle cx="${num(step * 0.25)}" cy="${num(step * 0.25)}" r="${num(rad)}" fill="currentColor" fill-opacity="0.24" stroke="none"/></pattern>`;
+  const svg = `<rect x="${num(x)}" y="${num(y)}" width="${num(width)}" height="${num(height)}" fill="url(#${cleanId})" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.35" vector-effect="non-scaling-stroke"/>`;
+  return { id: cleanId, defs, svg };
+}

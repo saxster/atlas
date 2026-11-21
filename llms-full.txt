@@ -39,13 +39,13 @@ npx atlas check examples/<subject>/<id>
 
 ## Published Examples (58 Figures & Chapters + Showcases)
 
-- **Atlas of Biology** (`examples/biology/`): 7 figures/chapters — cells, molecules and living machines
-- **Atlas of Chemistry** (`examples/chemistry/`): 6 figures/chapters — orbitals, molecules, reactions and energy
-- **Atlas of Critical Thinking** (`examples/critical-thinking/`): 9 figures/chapters — arguments, denominators, causal inference and evidence
-- **Atlas of Economics** (`examples/economics/`): 5 figures/chapters — money, markets and growth
-- **Atlas of Mathematics** (`examples/maths/`): 8 figures/chapters — trigonometry, calculus, linear algebra, differential equations and Fourier series
-- **Atlas of Physics** (`examples/physics/`): 18 figures/chapters —
-- **Atlas of Statistics** (`examples/statistics/`): 5 figures/chapters — probability, sampling and inference
+- **Atlas of Biology** (`examples/biology/` · `examples/biology/overview.md`): 7 figures/chapters — cells, molecules and living machines
+- **Atlas of Chemistry** (`examples/chemistry/` · `examples/chemistry/overview.md`): 6 figures/chapters — orbitals, molecules, reactions and energy
+- **Atlas of Critical Thinking** (`examples/critical-thinking/` · `examples/critical-thinking/overview.md`): 9 figures/chapters — arguments, denominators, causal inference and evidence
+- **Atlas of Economics** (`examples/economics/` · `examples/economics/overview.md`): 5 figures/chapters — money, markets and growth
+- **Atlas of Mathematics** (`examples/maths/` · `examples/maths/overview.md`): 8 figures/chapters — trigonometry, calculus, linear algebra, differential equations and Fourier series
+- **Atlas of Physics** (`examples/physics/` · `examples/physics/overview.md`): 18 figures/chapters —
+- **Atlas of Statistics** (`examples/statistics/` · `examples/statistics/overview.md`): 5 figures/chapters — probability, sampling and inference
 - **Corner Atelier** (`examples/ink-ui/`): 24 live 2.5D ink widgets, Theme Studio, Voice Gallery, State Matrix, Floating Dock, Split Compare, Span Timeline, Orbs & Space Deck.
 - **Concepts & Threads** (`examples/concepts/`): cross-subject concept ledger & spatial thread board.
 - **Full Catalog** (`examples/catalog.md`): machine-readable table of all subjects, grammars, and URLs.
@@ -190,7 +190,7 @@ Flat-stroke 2D technical drafting primitives (`@saxster/atlas/draft_kit.js`, gen
 - `draftDimension({ axis, witnesses, position, extensions, label })`: builds extension lines (`gap`, `overshoot`), `8`-unit diagonal end slashes, and split dimension lines cleared around `label.clearance`.
 - `draftHatch({ region, pattern = 'H1' | 'H2', phase, pitch })` and `draftSupportTicks({ from, to, extent, pitch, side })`: analytically clipped diagonal cut hatching and one-sided wall/ground ticks.
 - `draftInverseClip(id, frontPathD, { vb })` and `draftClearanceMask(id, maskContent, { vb })`: even-odd inverse `<clipPath>` and luminance `<mask>` knockouts without opaque background patches.
-- `draftSvg(opts)`, `draftCompactSvg(svgMarkup, opts)` (coordinate-preserving crop + `vector-effect="non-scaling-stroke"` + compact dash `--atlas-compact-dash`), and `draftIsolationWrap` / `bindDraftIsolation` (non-boosting hover/focus/toggle isolation).
+- `draftSvg(opts)`, `draftCompactSvg(svgMarkup, opts)` (coordinate-preserving crop + `vector-effect="non-scaling-stroke"` + compact dash `--atlas-compact-dash`), `draftRegistrationFrame(opts)` + `draftStippleBand(opts)` (single-ink registration plates & dot-stipple bands), and `draftIsolationWrap` / `bindDraftIsolation` (non-boosting hover/focus/toggle isolation).
 
 <!-- BEGIN GENERATED: draft-standard -->
 | Role | Width | Opacity | Dash Pattern | Meaning |

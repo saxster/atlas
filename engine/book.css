@@ -15,9 +15,15 @@
 .crumb { text-transform: uppercase; position: relative; top: 2.5px; }   /* on the title's baseline: centring their boxes left it high */
 .dots { margin-left: auto; display: flex; gap: 8px; }
 .dots button {
-  width: 22px; height: 22px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; place-items: center;
+  position: relative; width: 22px; height: 22px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; place-items: center;
 }
-.dots button::after { content: ''; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--mid); transition: background .3s; }
+.dots button + button::before {
+  content: ''; position: absolute; right: 50%; top: 50%; width: calc(100% + 8px); height: 0;
+  border-top: 1px dashed var(--faint); transform: translateY(-50%); z-index: 0; pointer-events: none;
+}
+.dots button[data-passed="true"] + button::before { border-top: 1px solid var(--hi); opacity: .55; }
+.dots button::after { content: ''; position: relative; z-index: 1; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--mid); background: var(--card); transition: background .3s, border-color .3s; }
+.dots button[data-passed="true"]::after { background: var(--strong); border-color: var(--strong); }
 .dots button[aria-current="true"]::after { background: var(--hi); border-color: var(--hi); }
 
 .book {
@@ -274,6 +280,8 @@ html[data-quirk="wild"] .practice .reveal {
 
 /* ---- top bar: pager (small screens) and the equation sheet ---- */
 .pager { display: none; align-items: center; gap: 4px; margin-left: auto; font: 500 12px var(--mono); color: var(--hi); }
+.pager-jump-wrap { position: relative; display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border-radius: 6px; }
+.page-jump { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
 .pager button { width: 36px; height: 36px; border: 0; background: none; font: 400 22px/1 var(--serif); color: var(--hi); cursor: pointer; border-radius: 50%; transition: scale 120ms var(--ease-out), background 150ms; }
 .eqlink { font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); text-decoration: none; text-transform: uppercase; }
 .playbtn {
